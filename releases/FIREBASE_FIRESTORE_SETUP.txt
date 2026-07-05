@@ -1,0 +1,9 @@
+DEPRECATED — use SUPABASE_SETUP.txt instead
+============================================
+
+Firestore was removed in v1.10.0 because Firebase billing could not be enabled.
+Cross-device sync now uses Supabase (free tier).
+
+See: releases/SUPABASE_SETUP.txt
+
+Firebase Auth is still used for login/signup on the app.

@@ -1,0 +1,24 @@
+CLIVORA — Firebase SHA-1 Fingerprints
+=====================================
+Add ALL of these in Firebase Console:
+Project Settings → Your apps → Clivora (org.codcrafters.clivora) → Add fingerprint
+
+1) LOCAL DEBUG (flutter run, debug APK on your PC/phone)
+   SHA-1: 8E:A7:26:D4:ED:67:4F:24:81:43:A0:95:DD:B3:F1:58:59:2B:23:F3
+
+2) LOCAL RELEASE APK (APK you build & install directly — upload keystore)
+   SHA-1: 96:93:81:80:EE:59:27:D2:46:B2:BD:FC:6C:96:C6:93:2E:1A:1D:36
+   (from Google Play Console → Upload key certificate)
+
+3) PLAY STORE INSTALLS (users who install from Google Play)
+   SHA-1: E3:C7:F5:BD:2E:20:FD:29:8C:1D:0B:BC:80:98:72:87:B7:AC:47:69
+   (from Google Play Console → App signing key certificate)
+
+Minimum for testing:
+- Installing clivora-v1.6.1-release.apk on your phone → add #2 (and #1 if using debug builds)
+- After publishing to Play Store → add #3 as well (Google Sign-In for Play users)
+
+Optional SHA-256 (Firebase usually only needs SHA-1):
+- Debug:     0D:F5:AA:08:A8:6E:15:47:31:48:3A:4D:F5:A7:52:27:CD:87:A9:37:86:60:00:C0:2C:02:23:95:2F:23:E1:BA
+- Upload:    E7:96:CB:F9:5A:E9:61:26:13:A6:F3:A9:5C:B4:28:4A:2F:2C:FE:39:8F:2D:30:DF:BF:7B:88:88:4F:4F:05:F6
+- Play sign: 0D:C0:91:E6:A2:B3:63:EF:08:E1:B4:E7:70:5A:31:4B:14:7C:C8:3A:67:6C:40:3B:D7:D0:77:BF:DA:84:D0:25
