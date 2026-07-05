@@ -1,0 +1,650 @@
+import 'package:drift/drift.dart' show Value;
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/auth/auth_service.dart';
+import '../../core/auth/user_roles.dart';
+import '../../core/cloud/cloud_message_repository.dart';
+import '../../core/cloud/cloud_project_repository.dart';
+import '../../core/cloud/supabase_auth_helper.dart';
+import '../../core/services/admin_management_service.dart';
+import '../../core/constants/plan_limits.dart';
+import '../../core/utils/duration_formatter.dart';
+import '../database/database.dart';
+import '../database/user_scoped_queries.dart';
+import 'database_provider.dart';
+export 'database_provider.dart';
+
+int? _ownerId(Ref ref) => ref.watch(authStateProvider).valueOrNull?.id;
+
+final businessProfileProvider = StreamProvider<BusinessProfile>((ref) {
+  final userId = _ownerId(ref);
+  if (userId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchBusinessProfileForUser(userId);
+});
+
+final invoiceBrandingProvider = StreamProvider<InvoiceBranding>((ref) {
+  final userId = _ownerId(ref);
+  if (userId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchInvoiceBrandingForUser(userId);
+});
+
+final appSettingsProvider = StreamProvider<AppSettingsTableData>((ref) {
+  final userId = _ownerId(ref);
+  if (userId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchAppSettingsForUser(userId);
+});
+
+final clientProjectsProvider = StreamProvider<List<Project>>((ref) {
+  final user = ref.watch(authStateProvider).valueOrNull;
+  if (user == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchProjectsForClient(user.id);
+});
+
+/// Client portal — merges local SQLite links + Supabase cross-device shares.
+final clientSharedProjectsProvider = StreamProvider<List<ClientSharedProjectView>>((ref) {
+  final user = ref.watch(authStateProvider).valueOrNull;
+  if (user == null) return const Stream.empty();
+  return watchUnifiedClientProjects(ref, user);
+});
+
+final themeModeProvider =
+    StateNotifierProvider<ThemeModeNotifier, ThemeMode>((ref) {
+  return ThemeModeNotifier(ref);
+});
+
+class ThemeModeNotifier extends StateNotifier<ThemeMode> {
+  ThemeModeNotifier(this.ref) : super(ThemeMode.light) {
+    _load();
+  }
+
+  final Ref ref;
+
+  Future<void> _load() async {
+    try {
+      final userId = ref.read(authStateProvider).valueOrNull?.id;
+      if (userId == null) return;
+      final settings = await ref.read(databaseProvider).watchAppSettingsForUser(userId).first;
+      if (!mounted) return;
+      state = settings.themeMode == 'dark' ? ThemeMode.dark : ThemeMode.light;
+    } catch (_) {
+      if (!mounted) return;
+      state = ThemeMode.light;
+    }
+  }
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    final userId = ref.read(authStateProvider).valueOrNull?.id;
+    if (userId == null) return;
+    state = mode;
+    await ref.read(databaseProvider).saveAppSettingsForUser(
+          userId,
+          AppSettingsTableCompanion(
+            themeMode: Value(mode == ThemeMode.dark ? 'dark' : 'light'),
+          ),
+        );
+  }
+}
+
+final customersProvider =
+    StreamProvider.family<List<Customer>, String?>((ref, search) {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchCustomersForUser(ownerId, search: search);
+});
+
+final customerCountProvider = FutureProvider<int>((ref) async {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return 0;
+  return ref.watch(databaseProvider).countCustomersForUser(ownerId);
+});
+
+final projectCountProvider = FutureProvider<int>((ref) async {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return 0;
+  return ref.watch(databaseProvider).countProjectsForUser(ownerId);
+});
+
+final projectsProvider =
+    StreamProvider.family<List<Project>, ProjectFilter>((ref, filter) {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchProjectsForUser(
+        ownerId,
+        search: filter.search,
+        status: filter.status,
+      );
+});
+
+class ProjectFilter {
+  const ProjectFilter({this.search, this.status = 'all'});
+
+  final String? search;
+  final String status;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ProjectFilter &&
+      other.search == search &&
+      other.status == status;
+
+  @override
+  int get hashCode => Object.hash(search, status);
+}
+
+final projectStatsProvider = FutureProvider<ProjectStats>((ref) async {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) {
+    return const ProjectStats(active: 0, earned: 0, unpaid: 0, totalTrackedSeconds: 0);
+  }
+  final db = ref.watch(databaseProvider);
+  final active = await db.countActiveProjectsForUser(ownerId);
+  final projects = await db.watchProjectsForUser(ownerId).first;
+  double earned = 0;
+  double unpaid = 0;
+  var totalSeconds = 0;
+  for (final p in projects) {
+    if (p.status == 'completed') earned += p.budget;
+    if (p.status == 'in_progress') unpaid += p.budget;
+    totalSeconds += await db.totalSecondsForProjectForUser(ownerId, p.id);
+  }
+  return ProjectStats(
+    active: active,
+    earned: earned,
+    unpaid: unpaid,
+    totalTrackedSeconds: totalSeconds,
+  );
+});
+
+class ProjectStats {
+  const ProjectStats({
+    required this.active,
+    required this.earned,
+    required this.unpaid,
+    required this.totalTrackedSeconds,
+  });
+
+  final int active;
+  final double earned;
+  final double unpaid;
+  final int totalTrackedSeconds;
+
+  String get trackedHoursLabel => formatTrackedDuration(totalTrackedSeconds);
+}
+
+final invoicesProvider =
+    StreamProvider.family<List<Invoice>, String?>((ref, status) {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchInvoicesForUser(ownerId, status: status);
+});
+
+final invoiceStatsProvider = FutureProvider<InvoiceStats>((ref) async {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const InvoiceStats(total: 0, outstanding: 0, paid: 0);
+  final db = ref.watch(databaseProvider);
+  final all = await db.watchInvoicesForUser(ownerId).first;
+  final outstanding = await db.sumOutstandingForUser(ownerId);
+  final paid = await db.sumPaidForUser(ownerId);
+  return InvoiceStats(
+    total: all.length,
+    outstanding: outstanding,
+    paid: paid,
+  );
+});
+
+class InvoiceStats {
+  const InvoiceStats({
+    required this.total,
+    required this.outstanding,
+    required this.paid,
+  });
+
+  final int total;
+  final double outstanding;
+  final double paid;
+}
+
+final monthlyInvoiceCountProvider = FutureProvider<int>((ref) async {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return 0;
+  return ref.watch(databaseProvider).countInvoicesThisMonthForUser(ownerId);
+});
+
+final dashboardStatsProvider = FutureProvider<DashboardStats>((ref) async {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) {
+    return const DashboardStats(revenue: 0, totalInvoiced: 0, outstanding: 0, customers: 0, activeProjects: 0);
+  }
+  final db = ref.watch(databaseProvider);
+  final customers = await db.countCustomersForUser(ownerId);
+  final activeProjects = await db.countActiveProjectsForUser(ownerId);
+  final outstanding = await db.sumOutstandingForUser(ownerId);
+  final paid = await db.sumPaidForUser(ownerId);
+  final totalInvoiced = await db.sumTotalInvoicedForUser(ownerId);
+  return DashboardStats(
+    revenue: paid,
+    totalInvoiced: totalInvoiced,
+    outstanding: outstanding,
+    customers: customers,
+    activeProjects: activeProjects,
+  );
+});
+
+class DashboardStats {
+  const DashboardStats({
+    required this.revenue,
+    required this.totalInvoiced,
+    required this.outstanding,
+    required this.customers,
+    required this.activeProjects,
+  });
+
+  final double revenue;
+  final double totalInvoiced;
+  final double outstanding;
+  final int customers;
+  final int activeProjects;
+}
+
+final planLimitServiceProvider = Provider<PlanLimitService>((ref) {
+  return PlanLimitService(ref);
+});
+
+class PlanLimitService {
+  PlanLimitService(this.ref);
+
+  final Ref ref;
+
+  Future<String> currentPlan() async {
+    final userId = ref.read(authStateProvider).valueOrNull?.id;
+    if (userId == null) return 'free';
+    final settings = await ref.read(databaseProvider).watchAppSettingsForUser(userId).first;
+    return settings.subscriptionPlan;
+  }
+
+  Future<bool> canAddCustomer() async {
+    if (await _isPro()) return true;
+    final ownerId = ref.read(authStateProvider).valueOrNull?.id;
+    if (ownerId == null) return false;
+    final count = await ref.read(databaseProvider).countCustomersForUser(ownerId);
+    return count < PlanLimits.freeMaxClients;
+  }
+
+  Future<bool> canAddProject() async {
+    if (await _isPro()) return true;
+    final ownerId = ref.read(authStateProvider).valueOrNull?.id;
+    if (ownerId == null) return false;
+    final count = await ref.read(projectCountProvider.future);
+    return count < PlanLimits.freeMaxProjects;
+  }
+
+  Future<bool> canAddInvoice() async {
+    if (await _isPro()) return true;
+    final count = await ref.read(monthlyInvoiceCountProvider.future);
+    return count < PlanLimits.freeMaxInvoicesPerMonth;
+  }
+
+  Future<bool> _isPro() async {
+    final user = ref.read(authStateProvider).valueOrNull;
+    if (isAdminUser(user)) return true;
+    return (await currentPlan()) == PlanLimits.proPlan;
+  }
+
+  Future<void> setPlan(String plan) async {
+    final userId = ref.read(authStateProvider).valueOrNull?.id;
+    if (userId == null) return;
+    await ref.read(databaseProvider).saveAppSettingsForUser(
+          userId,
+          AppSettingsTableCompanion(subscriptionPlan: Value(plan)),
+        );
+    ref.invalidate(appSettingsProvider);
+  }
+}
+
+/// Reactive Pro status from subscription plan in settings / Google Play / admin.
+final isProProvider = Provider<bool>((ref) {
+  final user = ref.watch(authStateProvider).valueOrNull;
+  if (isAdminUser(user)) return true;
+  final plan = ref.watch(subscriptionPlanProvider).valueOrNull;
+  return plan == PlanLimits.proPlan;
+});
+
+final subscriptionPlanProvider = StreamProvider<String>((ref) {
+  final userId = _ownerId(ref);
+  if (userId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchAppSettingsForUser(userId).map((s) => s.subscriptionPlan);
+});
+
+final teamMembersProvider = StreamProvider<List<TeamMember>>((ref) {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchTeamMembers(ownerId);
+});
+
+final clientInboxProvider = StreamProvider<List<ClientMessage>>((ref) {
+  final userId = _ownerId(ref);
+  if (userId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchInboxForUser(userId);
+});
+
+/// Client inbox — local + Supabase (cross-device).
+final unifiedClientInboxProvider = StreamProvider<List<ClientInboxEntry>>((ref) {
+  final user = ref.watch(authStateProvider).valueOrNull;
+  if (user == null) return const Stream.empty();
+  return watchUnifiedClientInbox(ref, user);
+});
+
+/// Freelancer mailbox — sent + received (Supabase).
+final freelancerMailboxProvider = StreamProvider<List<CloudMessage>>((ref) {
+  final uid = SupabaseAuthHelper.currentUid;
+  if (uid == null || uid.isEmpty) return const Stream.empty();
+  return ref.watch(cloudMessageRepositoryProvider).watchFreelancerMailbox(uid: uid);
+});
+
+final unreadMessagesProvider = FutureProvider<int>((ref) async {
+  final user = ref.watch(authStateProvider).valueOrNull;
+  if (user == null) return 0;
+  var count = 0;
+  if (isClientUser(user)) {
+    ref.watch(unifiedClientInboxProvider);
+    final inbox = await ref.read(unifiedClientInboxProvider.future);
+    count += inbox.where((m) => !m.isRead).length;
+  } else {
+    count += await ref.read(freelancerUnreadProvider.future);
+  }
+  count += await ref.read(cloudUnreadCountProvider.future);
+  return count;
+});
+
+final freelancerUnreadProvider = FutureProvider<int>((ref) async {
+  ref.watch(freelancerMailboxProvider);
+  final uid = SupabaseAuthHelper.currentUid;
+  if (uid == null) return 0;
+  final mailbox = await ref.read(freelancerMailboxProvider.future);
+  return mailbox.where((m) => m.toUid == uid && !m.isRead).length;
+});
+
+final clientInvoicesProvider = FutureProvider<List<Invoice>>((ref) async {
+  final userId = ref.watch(authStateProvider).valueOrNull?.id;
+  if (userId == null) return [];
+  return ref.read(databaseProvider).watchInvoicesForClient(userId);
+});
+
+final messageTemplatesProvider =
+    StreamProvider.family<List<MessageTemplate>, String?>((ref, category) {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchMessageTemplatesForUser(ownerId, category: category);
+});
+
+final contractsProvider =
+    StreamProvider.family<List<Contract>, String?>((ref, status) {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchContractsForUser(ownerId, status: status);
+});
+
+// Tasks
+final tasksProvider =
+    StreamProvider.family<List<Task>, TaskFilter>((ref, filter) {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchTasksForUser(
+        ownerId,
+        status: filter.status,
+        upcoming: filter.upcoming,
+      );
+});
+
+class TaskFilter {
+  const TaskFilter({this.status = 'all', this.upcoming = false});
+
+  final String status;
+  final bool upcoming;
+
+  @override
+  bool operator ==(Object other) =>
+      other is TaskFilter && other.status == status && other.upcoming == upcoming;
+
+  @override
+  int get hashCode => Object.hash(status, upcoming);
+}
+
+// Expenses
+final expensesProvider =
+    StreamProvider.family<List<Expense>, String?>((ref, category) {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchExpensesForUser(ownerId, category: category);
+});
+
+final expenseStatsProvider = FutureProvider<ExpenseStats>((ref) async {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const ExpenseStats(total: 0, monthly: 0, count: 0);
+  final db = ref.watch(databaseProvider);
+  final all = await db.watchExpensesForUser(ownerId).first;
+  final now = DateTime.now();
+  final monthStart = DateTime(now.year, now.month);
+  double monthly = 0;
+  double total = 0;
+  for (final e in all) {
+    total += e.amount;
+    if (e.expenseDate.isAfter(monthStart.subtract(const Duration(days: 1)))) {
+      monthly += e.amount;
+    }
+  }
+  return ExpenseStats(total: total, monthly: monthly, count: all.length);
+});
+
+class ExpenseStats {
+  const ExpenseStats({
+    required this.total,
+    required this.monthly,
+    required this.count,
+  });
+
+  final double total;
+  final double monthly;
+  final int count;
+}
+
+// Notes
+final notesProvider = StreamProvider.family<List<Note>, String?>((ref, type) {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchNotesForUser(ownerId, type: type);
+});
+
+// Reports
+final reportsProvider = FutureProvider<ReportData>((ref) async {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) {
+    return const ReportData(
+      revenue: 0, outstanding: 0, monthlyExpenses: 0, totalExpenses: 0,
+      profit: 0, monthlyProfit: 0, customers: 0, projects: 0, pendingTasks: 0,
+    );
+  }
+  final db = ref.watch(databaseProvider);
+  final paid = await db.sumPaidForUser(ownerId);
+  final outstanding = await db.sumOutstandingForUser(ownerId);
+  final now = DateTime.now();
+  final monthStart = DateTime(now.year, now.month);
+  final expenses = await db.sumExpensesForUser(ownerId, since: monthStart);
+  final totalExpenses = await db.sumExpensesForUser(ownerId);
+  final customers = await db.countCustomersForUser(ownerId);
+  final projects = await db.countProjectsForUser(ownerId);
+  final pendingTasks = await db.countPendingTasksForUser(ownerId);
+  return ReportData(
+    revenue: paid,
+    outstanding: outstanding,
+    monthlyExpenses: expenses,
+    totalExpenses: totalExpenses,
+    profit: paid - totalExpenses,
+    monthlyProfit: paid - expenses,
+    customers: customers,
+    projects: projects,
+    pendingTasks: pendingTasks,
+  );
+});
+
+class ReportData {
+  const ReportData({
+    required this.revenue,
+    required this.outstanding,
+    required this.monthlyExpenses,
+    required this.totalExpenses,
+    required this.profit,
+    required this.monthlyProfit,
+    required this.customers,
+    required this.projects,
+    required this.pendingTasks,
+  });
+
+  final double revenue;
+  final double outstanding;
+  final double monthlyExpenses;
+  final double totalExpenses;
+  final double profit;
+  final double monthlyProfit;
+  final int customers;
+  final int projects;
+  final int pendingTasks;
+}
+
+// Notifications
+final notificationsProvider = FutureProvider<List<AppNotification>>((ref) async {
+  final user = ref.watch(authStateProvider).valueOrNull;
+  if (user == null) return [];
+  final db = ref.watch(databaseProvider);
+  final notifications = <AppNotification>[];
+  final now = DateTime.now();
+
+  final unread = await db.countUnreadMessages(user.id);
+  if (unread > 0) {
+    notifications.add(AppNotification(
+      title: unread == 1 ? '1 new message' : '$unread new messages',
+      message: isClientUser(user)
+          ? 'Open Messages to read updates from your freelancer'
+          : 'You have unread client messages',
+      type: NotificationType.message,
+      route: isClientUser(user) ? '/client-messages' : '/client-messages',
+      priority: 0,
+    ));
+  }
+
+  if (isClientUser(user)) {
+    notifications.sort((a, b) => a.priority.compareTo(b.priority));
+    return notifications;
+  }
+
+  final ownerId = user.id;
+  final allInvoices = await db.watchInvoicesForUser(ownerId).first;
+  for (final inv in allInvoices.where((i) => i.status == 'overdue')) {
+    notifications.add(AppNotification(
+      title: 'Overdue Invoice ${inv.invoiceNumber}',
+      message: 'Payment is overdue',
+      type: NotificationType.invoice,
+      route: '/invoices/${inv.id}/edit',
+      priority: 0,
+    ));
+  }
+  for (final inv in allInvoices.where((i) => i.status == 'sent')) {
+    notifications.add(AppNotification(
+      title: 'Pending Payment ${inv.invoiceNumber}',
+      message: 'Invoice sent, awaiting payment',
+      type: NotificationType.invoice,
+      route: '/invoices/${inv.id}/edit',
+      priority: 2,
+    ));
+  }
+
+  final tasks = await db.watchTasksForUser(ownerId).first;
+  for (final task in tasks.where((t) => !t.completed && t.dueDate != null)) {
+    if (task.dueDate!.isBefore(now.add(const Duration(days: 1)))) {
+      notifications.add(AppNotification(
+        title: 'Task Due: ${task.title}',
+        message: 'Due ${task.dueDate!.toLocal().toString().split(' ').first}',
+        type: NotificationType.task,
+        route: '/tasks/${task.id}/edit',
+        priority: task.dueDate!.isBefore(now) ? 1 : 3,
+      ));
+    }
+  }
+
+  notifications.sort((a, b) => a.priority.compareTo(b.priority));
+  return notifications;
+});
+
+enum NotificationType { invoice, task, project, message }
+
+class AppNotification {
+  const AppNotification({
+    required this.title,
+    required this.message,
+    required this.type,
+    required this.route,
+    required this.priority,
+  });
+
+  final String title;
+  final String message;
+  final NotificationType type;
+  final String route;
+  final int priority;
+}
+
+// Calendar events
+final calendarEventsProvider = FutureProvider<List<CalendarEvent>>((ref) async {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return [];
+  final db = ref.watch(databaseProvider);
+  final events = <CalendarEvent>[];
+
+  final tasks = await db.watchTasksForUser(ownerId).first;
+  for (final task in tasks.where((t) => t.dueDate != null)) {
+    events.add(CalendarEvent(
+      title: task.title,
+      date: task.dueDate!,
+      type: 'task',
+      color: task.completed ? Colors.grey : Colors.blue,
+    ));
+  }
+
+  final projects = await db.watchProjectsForUser(ownerId).first;
+  for (final project in projects.where((p) => p.deadline != null)) {
+    events.add(CalendarEvent(
+      title: '${project.name} deadline',
+      date: project.deadline!,
+      type: 'project',
+      color: Colors.orange,
+    ));
+  }
+
+  final invoices = await db.watchInvoicesForUser(ownerId).first;
+  for (final inv in invoices.where((i) => i.dueDate != null)) {
+    events.add(CalendarEvent(
+      title: 'Invoice ${inv.invoiceNumber} due',
+      date: inv.dueDate!,
+      type: 'invoice',
+      color: inv.status == 'overdue' ? Colors.red : Colors.green,
+    ));
+  }
+
+  events.sort((a, b) => a.date.compareTo(b.date));
+  return events;
+});
+
+class CalendarEvent {
+  const CalendarEvent({
+    required this.title,
+    required this.date,
+    required this.type,
+    required this.color,
+  });
+
+  final String title;
+  final DateTime date;
+  final String type;
+  final Color color;
+}

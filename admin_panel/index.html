@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CLIVORA Admin Panel — CodCrafters</title>
+  <style>
+    :root {
+      --teal: #14b8a6;
+      --navy: #0f172a;
+      --slate: #64748b;
+      --border: #e2e8f0;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --danger: #dc2626;
+      --success: #16a34a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--navy);
+    }
+    .hidden { display: none !important; }
+    #login-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: linear-gradient(135deg, #0f172a 0%, #134e4a 100%);
+    }
+    .login-card {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 32px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+    }
+    .login-card h1 { margin: 0 0 8px; font-size: 1.5rem; }
+    .login-card p { color: var(--slate); margin: 0 0 24px; font-size: 0.9rem; }
+    label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.95rem;
+      margin-bottom: 16px;
+    }
+    button {
+      background: var(--teal);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+    button:hover { filter: brightness(1.05); }
+    button.secondary { background: var(--navy); }
+    button.danger { background: var(--danger); }
+    .error { color: var(--danger); font-size: 0.85rem; margin-bottom: 12px; }
+    header {
+      background: var(--navy);
+      color: white;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    header h1 { margin: 0; font-size: 1.2rem; }
+    header span { color: #94a3b8; font-size: 0.85rem; }
+    main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+    }
+    .stat-card .value { font-size: 1.8rem; font-weight: 800; color: var(--teal); }
+    .stat-card .label { color: var(--slate); font-size: 0.85rem; margin-top: 4px; }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .panel h2 { margin: 0 0 16px; font-size: 1.1rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); }
+    th { color: var(--slate); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
+    .toolbar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+    .badge.pro { background: #ccfbf1; color: #0f766e; }
+    .badge.admin { background: #ede9fe; color: #6d28d9; }
+    .badge.free { background: #f1f5f9; color: #475569; }
+    .actions button { margin-right: 8px; padding: 6px 10px; font-size: 0.8rem; }
+    footer { text-align: center; color: var(--slate); font-size: 0.8rem; padding: 32px; }
+  </style>
+</head>
+<body>
+  <div id="login-screen">
+    <div class="login-card">
+      <h1>CLIVORA Admin</h1>
+      <p>CodCrafters platform dashboard. Sign in with your admin email.</p>
+      <div id="login-error" class="error hidden"></div>
+      <label for="email">Admin Email</label>
+      <input id="email" type="email" placeholder="admin@codcrafters.org" autocomplete="username" />
+      <label for="password">Panel Password</label>
+      <input id="password" type="password" placeholder="Panel password" autocomplete="current-password" />
+      <button type="button" id="login-btn" style="width:100%">Sign In</button>
+      <p style="margin-top:16px;font-size:0.8rem;color:var(--slate)">Default password: <code>ClivoraAdmin2026!</code></p>
+    </div>
+  </div>
+
+  <div id="app" class="hidden">
+    <header>
+      <div>
+        <h1>CLIVORA Admin Panel</h1>
+        <span id="admin-email-display"></span>
+      </div>
+      <button class="secondary" id="logout-btn">Sign Out</button>
+    </header>
+    <main>
+      <div class="stats" id="stats-row"></div>
+
+      <div class="panel">
+        <h2>Import Analytics</h2>
+        <p style="color:var(--slate);font-size:0.9rem;margin-top:0">
+          In the CLIVORA app: Hub → Settings → <strong>Export Analytics (Admin)</strong>, then import the JSON file here.
+        </p>
+        <div class="toolbar">
+          <input type="file" id="import-file" accept=".json,application/json" />
+          <button type="button" id="clear-data-btn" class="danger">Clear All Data</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Registered Users</h2>
+        <div class="toolbar">
+          <button type="button" id="add-user-btn">+ Add User</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr><th>Name</th><th>Email</th><th>Role</th><th>Plan</th><th>Joined</th><th></th></tr>
+            </thead>
+            <tbody id="users-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Recent Events</h2>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr><th>Event</th><th>User</th><th>Plan</th><th>Amount</th><th>Date</th></tr>
+            </thead>
+            <tbody id="events-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel" id="add-user-panel" style="display:none">
+        <h2>Add / Edit User</h2>
+        <input type="hidden" id="edit-user-id" />
+        <label>Name</label>
+        <input id="user-name" />
+        <label>Email</label>
+        <input id="user-email" type="email" />
+        <label>Role</label>
+        <select id="user-role">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+        <label>Plan</label>
+        <select id="user-plan">
+          <option value="free">Free</option>
+          <option value="pro">Pro</option>
+        </select>
+        <div class="toolbar">
+          <button type="button" id="save-user-btn">Save User</button>
+          <button type="button" id="cancel-user-btn" class="secondary">Cancel</button>
+        </div>
+      </div>
+    </main>
+    <footer>CLIVORA by CodCrafters · Admin panel v1.5</footer>
+  </div>
+
+  <script>
+    const ADMIN_EMAILS = ['admin@codcrafters.org', 'usmanghias1@gmail.com'];
+    const PANEL_PASSWORD = 'ClivoraAdmin2026!';
+    const PRO_PRICE_PKR = 2000;
+    const STORAGE_KEY = 'clivora_admin_data_v1';
+    const SESSION_KEY = 'clivora_admin_session';
+
+    const $ = (id) => document.getElementById(id);
+
+    function loadData() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"users":[],"events":[],"imports":[]}');
+      } catch {
+        return { users: [], events: [], imports: [] };
+      }
+    }
+
+    function saveData(data) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function mergeImport(payload) {
+      const data = loadData();
+      const imp = {
+        importedAt: new Date().toISOString(),
+        source: payload.exportedAt || 'unknown',
+        summary: payload.summary || {}
+      };
+      data.imports = [imp, ...(data.imports || [])].slice(0, 50);
+
+      const existingEmails = new Set(data.users.map((u) => u.email.toLowerCase()));
+      (payload.users || []).forEach((u) => {
+        const email = (u.email || '').toLowerCase();
+        if (!email) return;
+        const plan = ADMIN_EMAILS.includes(email) ? 'pro' : (u.role === 'admin' ? 'pro' : 'free');
+        if (existingEmails.has(email)) {
+          const idx = data.users.findIndex((x) => x.email.toLowerCase() === email);
+          data.users[idx] = { ...data.users[idx], ...u, plan };
+        } else {
+          data.users.push({ ...u, plan, source: 'import' });
+          existingEmails.add(email);
+        }
+      });
+
+      const eventIds = new Set((data.events || []).map((e) => e.id));
+      (payload.events || []).forEach((e) => {
+        if (!eventIds.has(e.id)) {
+          data.events.push(e);
+          eventIds.add(e.id);
+        }
+      });
+      data.events.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      saveData(data);
+    }
+
+    function computeStats() {
+      const data = loadData();
+      const signups = (data.events || []).filter((e) => e.eventType === 'signup').length;
+      const proActivations = (data.events || []).filter((e) => e.eventType === 'pro_activate').length;
+      const proUsers = (data.users || []).filter((u) => u.plan === 'pro').length;
+      const mrr = proActivations * PRO_PRICE_PKR || proUsers * PRO_PRICE_PKR;
+      return { totalUsers: data.users.length, signups, proUsers: Math.max(proUsers, proActivations), mrr, imports: (data.imports || []).length };
+    }
+
+    function renderStats() {
+      const s = computeStats();
+      $('stats-row').innerHTML = `
+        <div class="stat-card"><div class="value">${s.totalUsers}</div><div class="label">Total Users</div></div>
+        <div class="stat-card"><div class="value">${s.signups}</div><div class="label">Sign-ups</div></div>
+        <div class="stat-card"><div class="value">${s.proUsers}</div><div class="label">Pro Users</div></div>
+        <div class="stat-card"><div class="value">Rs ${s.mrr.toLocaleString()}</div><div class="label">Est. MRR (PKR)</div></div>
+        <div class="stat-card"><div class="value">${s.imports}</div><div class="label">Imports</div></div>
+      `;
+    }
+
+    function renderUsers() {
+      const data = loadData();
+      const tbody = $('users-table');
+      if (!data.users.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="color:var(--slate)">No users yet. Import analytics or add manually.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.users.map((u) => {
+        const roleBadge = u.role === 'admin' ? '<span class="badge admin">Admin</span>' : '<span class="badge free">User</span>';
+        const planBadge = u.plan === 'pro' ? '<span class="badge pro">Pro</span>' : '<span class="badge free">Free</span>';
+        const joined = u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—';
+        return `<tr>
+          <td>${escapeHtml(u.name || '—')}</td>
+          <td>${escapeHtml(u.email)}</td>
+          <td>${roleBadge}</td>
+          <td>${planBadge}</td>
+          <td>${joined}</td>
+          <td class="actions">
+            <button type="button" data-edit="${u.id}">Edit</button>
+            <button type="button" class="danger" data-del="${u.id}">Delete</button>
+          </td>
+        </tr>`;
+      }).join('');
+
+      tbody.querySelectorAll('[data-edit]').forEach((btn) => {
+        btn.addEventListener('click', () => editUser(Number(btn.dataset.edit)));
+      });
+      tbody.querySelectorAll('[data-del]').forEach((btn) => {
+        btn.addEventListener('click', () => deleteUser(Number(btn.dataset.del)));
+      });
+    }
+
+    function renderEvents() {
+      const data = loadData();
+      const tbody = $('events-table');
+      const events = (data.events || []).slice(0, 100);
+      if (!events.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="color:var(--slate)">No events. Import analytics from the app.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = events.map((e) => {
+        const amt = e.amount > 0 ? `Rs ${e.amount}` : '—';
+        const date = e.createdAt ? new Date(e.createdAt).toLocaleString() : '—';
+        return `<tr>
+          <td>${escapeHtml((e.eventType || '').replace(/_/g, ' '))}</td>
+          <td>${escapeHtml(e.userEmail || e.userName || '—')}</td>
+          <td>${escapeHtml(e.plan || '—')}</td>
+          <td>${amt}</td>
+          <td>${date}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function refresh() {
+      renderStats();
+      renderUsers();
+      renderEvents();
+    }
+
+    function showApp(email) {
+      $('login-screen').classList.add('hidden');
+      $('app').classList.remove('hidden');
+      $('admin-email-display').textContent = email;
+      refresh();
+    }
+
+    function login() {
+      const email = $('email').value.trim().toLowerCase();
+      const password = $('password').value;
+      const err = $('login-error');
+      if (!ADMIN_EMAILS.includes(email)) {
+        err.textContent = 'This email is not authorized for admin access.';
+        err.classList.remove('hidden');
+        return;
+      }
+      if (password !== PANEL_PASSWORD) {
+        err.textContent = 'Incorrect panel password.';
+        err.classList.remove('hidden');
+        return;
+      }
+      err.classList.add('hidden');
+      sessionStorage.setItem(SESSION_KEY, email);
+      showApp(email);
+    }
+
+    function logout() {
+      sessionStorage.removeItem(SESSION_KEY);
+      $('app').classList.add('hidden');
+      $('login-screen').classList.remove('hidden');
+      $('password').value = '';
+    }
+
+    function editUser(id) {
+      const data = loadData();
+      const u = data.users.find((x) => x.id === id);
+      if (!u) return;
+      $('edit-user-id').value = u.id;
+      $('user-name').value = u.name || '';
+      $('user-email').value = u.email || '';
+      $('user-role').value = u.role || 'user';
+      $('user-plan').value = u.plan || 'free';
+      $('add-user-panel').style.display = 'block';
+    }
+
+    function deleteUser(id) {
+      if (!confirm('Delete this user record?')) return;
+      const data = loadData();
+      data.users = data.users.filter((u) => u.id !== id);
+      saveData(data);
+      refresh();
+    }
+
+    function saveUser() {
+      const data = loadData();
+      const id = $('edit-user-id').value;
+      const user = {
+        id: id ? Number(id) : Date.now(),
+        name: $('user-name').value.trim(),
+        email: $('user-email').value.trim().toLowerCase(),
+        role: $('user-role').value,
+        plan: $('user-plan').value,
+        createdAt: new Date().toISOString()
+      };
+      if (!user.email) return alert('Email is required');
+      if (id) {
+        const idx = data.users.findIndex((u) => u.id === Number(id));
+        if (idx >= 0) data.users[idx] = { ...data.users[idx], ...user };
+      } else {
+        data.users.push(user);
+      }
+      saveData(data);
+      $('add-user-panel').style.display = 'none';
+      refresh();
+    }
+
+    $('login-btn').addEventListener('click', login);
+    $('password').addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
+    $('logout-btn').addEventListener('click', logout);
+    $('import-file').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const payload = JSON.parse(text);
+        mergeImport(payload);
+        refresh();
+        alert('Import successful!');
+      } catch (err) {
+        alert('Invalid JSON file: ' + err.message);
+      }
+      e.target.value = '';
+    });
+    $('clear-data-btn').addEventListener('click', () => {
+      if (confirm('Clear all admin panel data? This cannot be undone.')) {
+        localStorage.removeItem(STORAGE_KEY);
+        refresh();
+      }
+    });
+    $('add-user-btn').addEventListener('click', () => {
+      $('edit-user-id').value = '';
+      $('user-name').value = '';
+      $('user-email').value = '';
+      $('user-role').value = 'user';
+      $('user-plan').value = 'free';
+      $('add-user-panel').style.display = 'block';
+    });
+    $('save-user-btn').addEventListener('click', saveUser);
+    $('cancel-user-btn').addEventListener('click', () => { $('add-user-panel').style.display = 'none'; });
+
+    const session = sessionStorage.getItem(SESSION_KEY);
+    if (session && ADMIN_EMAILS.includes(session)) {
+      showApp(session);
+    }
+  </script>
+</body>
+</html>

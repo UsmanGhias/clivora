@@ -1,0 +1,70 @@
+CLIVORA v1.10.0 — Supabase cloud sync
+======================================
+
+Firebase Auth stays for login/signup (Google + email).
+Cross-device sync (messages + shared projects) uses Supabase Postgres.
+
+YOUR PROJECT
+------------
+URL:     https://jtzjwgovqczlccyeujhq.supabase.co
+Ref:     jtzjwgovqczlccyeujhq
+Region:  Asia-Pacific
+
+STEP 1 — Run database schema (required)
+---------------------------------------
+1. Open Supabase Dashboard → Clivora → SQL Editor
+2. Open file: supabase/migrations/001_clivora_schema.sql
+3. Paste entire contents → Run
+
+This creates: profiles, client_messages, project_shares, clivora_events + RLS + realtime.
+
+STEP 2 — Enable Auth providers
+------------------------------
+Dashboard → Authentication → Providers
+
+Email: ON (confirm email can be OFF for testing)
+
+Google: ON
+  - Use the same Google OAuth Web Client ID as Firebase:
+    976757530869-ap3ea6t2noq56o46tfokgdp6haj6ioqj.apps.googleusercontent.com
+  - Add Android client if prompted (package: org.codcrafters.clivora)
+
+STEP 3 — API key (if app fails to connect)
+------------------------------------------
+Dashboard → Project Settings → API
+Copy the **anon public** key (starts with eyJ...)
+If the publishable key in the app fails, update:
+  lib/core/constants/supabase_config.dart → kSupabaseAnonKey
+
+STEP 4 — Install app
+--------------------
+releases/clivora-v1.10.0.apk (after build)
+
+SECURITY
+--------
+- Database password is ONLY for direct Postgres / dashboard — never put it in the app.
+- App uses anon/publishable key + Row Level Security.
+
+HOW SYNC WORKS
+--------------
+1. User signs in (Firebase + mirrored Supabase session)
+2. Profile upserted to `profiles`
+3. Freelancer saves project → `project_shares`
+4. Messages → `client_messages`
+5. Client on another phone (same email) sees realtime updates
+
+TEST
+----
+Phone A: freelancer, customer email = client@example.com, create project
+Phone B: client account client@example.com → Client Portal + Messages
+
+ADMIN
+-----
+- Web: https://clivora.codcrafters.org/admin (HTTP sync unchanged)
+- Supabase table `clivora_events` mirrors analytics (optional dashboard later)
+
+CLI (optional)
+--------------
+supabase login
+supabase link --project-ref jtzjwgovqczlccyeujhq
+supabase db push
