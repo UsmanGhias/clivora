@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_navigation.dart';
 import '../../core/services/referral_service.dart';
+import '../../core/services/last_login_service.dart';
 import '../../core/auth/auth_service.dart';
 import '../../core/auth/user_roles.dart';
 import '../../core/theme/clivora_colors.dart';
@@ -56,6 +57,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         return;
       }
       _showRoleMismatchIfNeeded();
+      await LastLoginService.record('email');
       navigateAfterAuth(context, ref);
     } catch (e) {
       if (mounted) {
@@ -110,6 +112,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         return;
       }
       _showRoleMismatchIfNeeded();
+      await LastLoginService.record('google');
       navigateAfterAuth(context, ref);
     } catch (e) {
       if (mounted) {
@@ -132,6 +135,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             const SizedBox(height: 40),
             const Center(child: ClivoraLogo(size: 88, borderRadius: 24)),
             const SizedBox(height: 16),
+            Text(
+              'CLIVORA — your business OS for freelancers and clients',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(color: ClivoraColors.primaryPurple),
+            ),
+            const SizedBox(height: 8),
             Text(
               'Welcome back',
               textAlign: TextAlign.center,
@@ -399,6 +408,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
                   onPressed: () => setState(() => _obscure = !_obscure),
                 ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                'Use 6+ characters with letters and numbers for a stronger password.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: ClivoraColors.textSecondary),
               ),
             ),
             const SizedBox(height: 16),

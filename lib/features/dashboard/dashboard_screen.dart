@@ -19,6 +19,7 @@ import '../../shared/widgets/coach_mark_overlay.dart';
 import '../../shared/widgets/messages_icon_button.dart';
 import '../../shared/widgets/notification_icon_button.dart';
 import '../../shared/widgets/skeleton_loading.dart';
+import '../../shared/widgets/today_overdue_card.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -220,7 +221,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   data: (stats) => _StatsGrid(stats: stats, onNavigate: context.go),
                 ),
               ),
-              const SizedBox(height: 24),
+              const TodayOverdueCard(),
+              const SizedBox(height: 8),
               Container(
                 key: _quickKey,
                 width: double.infinity,
