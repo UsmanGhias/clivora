@@ -64,3 +64,7 @@ end;
 $$;
 
 grant execute on function public.credit_referral_on_purchase(uuid, uuid, text, integer) to service_role;
+
+revoke all on function public.credit_referral_on_purchase(uuid, uuid, text, integer) from public;
+revoke all on function public.credit_referral_on_purchase(uuid, uuid, text, integer) from anon;
+revoke all on function public.credit_referral_on_purchase(uuid, uuid, text, integer) from authenticated;

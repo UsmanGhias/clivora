@@ -1,12 +1,48 @@
-// CLIVORA transactional email — Resend API (Supabase secrets).
-// Set secrets: RESEND_API_KEY, RESEND_FROM (e.g. "CLIVORA <onboarding@resend.dev>")
-// Optional: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (auto in edge runtime)
+// CLIVORA transactional email — Resend API with branded HTML templates.
+// Secrets: RESEND_API_KEY, RESEND_FROM (e.g. "CLIVORA <onboarding@resend.dev>")
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import {
+  adminNoticeTemplate,
+  clientInviteTemplate,
+  passwordResetNoticeTemplate,
+  wrapBrandedEmail,
+} from "./email_brand.ts";
 
 const ALLOWED = new Set(["password_reset", "admin_notice", "client_invite"]);
 const MONTHLY_LIMIT = 3000;
+
+type EmailBody = {
+  to?: string;
+  subject?: string;
+  html?: string;
+  purpose?: string;
+  freelancerName?: string;
+  clientName?: string;
+  adminMessage?: string;
+  wrapBrand?: boolean;
+};
+
+function buildHtml(purpose: string, body: EmailBody, subject: string): string {
+  if (purpose === "client_invite" && body.freelancerName && body.clientName) {
+    return clientInviteTemplate(body.freelancerName, body.clientName);
+  }
+  if (purpose === "password_reset") {
+    return passwordResetNoticeTemplate();
+  }
+  if (purpose === "admin_notice") {
+    const msg = body.adminMessage ?? body.html ?? "";
+    return adminNoticeTemplate(subject, msg);
+  }
+  const inner = body.html ?? "";
+  if (body.wrapBrand === false) return inner;
+  return wrapBrandedEmail({
+    preheader: subject,
+    title: subject,
+    bodyHtml: inner,
+  });
+}
 
 serve(async (req) => {
   if (req.method !== "POST") {
@@ -35,7 +71,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: "Invalid session" }), { status: 401 });
   }
 
-  let body: { to?: string; subject?: string; html?: string; purpose?: string };
+  let body: EmailBody;
   try {
     body = await req.json();
   } catch {
@@ -44,8 +80,8 @@ serve(async (req) => {
 
   const to = (body.to ?? "").trim().toLowerCase();
   const subject = (body.subject ?? "").trim();
-  const html = (body.html ?? "").trim();
   const purpose = (body.purpose ?? "").trim();
+  const html = buildHtml(purpose, body, subject);
 
   if (!to.includes("@") || !subject || !html) {
     return new Response(JSON.stringify({ error: "Missing to, subject, or html" }), { status: 400 });

@@ -22,6 +22,7 @@ class ClivoraEmailService {
     required String htmlBody,
     required ClivoraEmailPurpose purpose,
     bool countTowardQuota = true,
+    Map<String, dynamic>? extraFields,
   }) async {
     if (countTowardQuota && purpose != ClivoraEmailPurpose.passwordReset) {
       if (!await ref.read(emailQuotaServiceProvider).canSendEmail()) {
@@ -35,8 +36,9 @@ class ClivoraEmailService {
         body: {
           'to': to.trim().toLowerCase(),
           'subject': subject,
-          'html': htmlBody,
           'purpose': purpose.name,
+          if (htmlBody.isNotEmpty) 'html': htmlBody,
+          ...?extraFields,
         },
       );
       if (response.status != 200) {
@@ -64,11 +66,8 @@ class ClivoraEmailService {
   Future<String?> sendPasswordResetNotice(String email) {
     return sendSpecialEmail(
       to: email,
-      subject: 'CLIVORA: Password reset requested',
-      htmlBody:
-          '<p>A password reset was requested for your CLIVORA account.</p>'
-          '<p>If you did not request this, ignore this email.</p>'
-          '<p>Use the reset link from the app or contact support.</p>',
+      subject: 'Reset your CLIVORA password',
+      htmlBody: '',
       purpose: ClivoraEmailPurpose.passwordReset,
       countTowardQuota: false,
     );
@@ -82,11 +81,26 @@ class ClivoraEmailService {
     return sendSpecialEmail(
       to: to,
       subject: '$freelancerName invited you to CLIVORA',
-      htmlBody:
-          '<p>Hi $clientName,</p>'
-          '<p><strong>$freelancerName</strong> added you as a client on CLIVORA.</p>'
-          '<p>Download the app, sign up as a <strong>Client</strong> with this email, and view shared projects, invoices, and messages.</p>',
+      htmlBody: '',
       purpose: ClivoraEmailPurpose.clientInvite,
+      extraFields: {
+        'freelancerName': freelancerName,
+        'clientName': clientName,
+      },
+    );
+  }
+
+  Future<String?> sendAdminNotice({
+    required String to,
+    required String subject,
+    required String message,
+  }) {
+    return sendSpecialEmail(
+      to: to,
+      subject: subject,
+      htmlBody: message,
+      purpose: ClivoraEmailPurpose.adminNotice,
+      extraFields: {'adminMessage': message},
     );
   }
 }
