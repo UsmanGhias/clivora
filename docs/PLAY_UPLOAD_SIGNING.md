@@ -10,6 +10,23 @@ Recent CI/agent builds used the **debug keystore** (`07:FF:0F:A4:...`) because `
 
 ## Fix (one time)
 
+### Option A — Cursor Cloud secrets (fastest for agent rebuilds)
+
+1. On your PC (where `clivora-upload-keystore.jks` lives), run:
+
+```bash
+base64 -w0 android/clivora-upload-keystore.jks
+```
+
+2. In **Cursor → Cloud Agent → Secrets**, add:
+- `ANDROID_KEYSTORE_BASE64` = output from step 1
+- `ANDROID_KEYSTORE_PASSWORD` = your keystore password
+- `ANDROID_KEY_ALIAS` = `clivora` (optional)
+
+3. Re-run the agent build: `BUILD_AAB=1 ./build-android.sh`
+
+### Option B — Copy files into repo (local only, never commit)
+
 1. Copy your upload keystore to `android/clivora-upload-keystore.jks` (the file used for Play Console v2.6.1).
 2. Create `android/key.properties`:
 
