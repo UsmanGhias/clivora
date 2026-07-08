@@ -92,6 +92,9 @@ bool isClientRoute(String location) {
 bool isRouteAllowedForUser(User? user, String location) {
   if (user == null) return isPublicRoute(location);
   if (isPublicRoute(location)) return true;
+  if (isAdminUser(user) && (location == '/admin-console' || location == '/admin')) {
+    return true;
+  }
   if (isClientUser(user)) return isClientRoute(location);
   return isFreelancerRoute(location);
 }
@@ -123,6 +126,9 @@ String? authRedirect({required String location, required User? user, required bo
 
   // Shared routes (e.g. /notifications) are in both lists — do not redirect clients away.
   if (isClientUser(user) && isFreelancerRoute(path) && !isClientRoute(path)) {
+    if (isAdminUser(user) && (path == '/admin-console' || path == '/admin')) {
+      return null;
+    }
     return '/client-portal';
   }
 

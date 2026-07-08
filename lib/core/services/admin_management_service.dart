@@ -1,11 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/providers/app_providers.dart';
 import '../../data/providers/database_provider.dart';
 import '../auth/auth_service.dart';
 import '../auth/user_roles.dart';
 import '../cloud/cloud_notification_repository.dart';
 import '../cloud/supabase_auth_helper.dart';
 import '../cloud/supabase_sync_service.dart';
+import '../constants/plan_limits.dart';
 
 final cloudNotificationsProvider = StreamProvider<List<CloudNotification>>((ref) {
   final uid = SupabaseAuthHelper.currentUid;
@@ -65,7 +67,39 @@ class AdminManagementService {
     final local = await ref.read(databaseProvider).getUserByEmail(normalized);
     if (local != null) {
       await ref.read(databaseProvider).updateUser(
-            local.copyWith(role: 'admin', accountType: kAccountAdmin),
+            local.copyWith(role: 'admin'),
+          );
+    }
+
+    return null;
+  }
+
+  Future<String?> grantProByEmail(String email, {bool revoke = false}) async {
+    final user = ref.read(authStateProvider).valueOrNull;
+    if (!isSuperAdmin(user)) return 'Only the super admin can change Pro plans.';
+
+    final normalized = email.trim().toLowerCase();
+    if (normalized.isEmpty || !normalized.contains('@')) return 'Enter a valid email.';
+
+    final uid = await ref.read(supabaseSyncServiceProvider).uidForEmail(normalized);
+    if (uid == null) {
+      return 'No CLIVORA account found for $normalized.';
+    }
+
+    try {
+      await ref.read(supabaseClientProvider).rpc('grant_pro_by_email', params: {
+        'p_email': normalized,
+        'p_plan': revoke ? 'free' : 'pro',
+      });
+    } catch (e) {
+      return 'Could not update cloud Pro plan: $e';
+    }
+
+    final local = await ref.read(databaseProvider).getUserByEmail(normalized);
+    if (local != null) {
+      await ref.read(planLimitServiceProvider).setPlanForUser(
+            local.id,
+            revoke ? PlanLimits.freePlan : PlanLimits.proPlan,
           );
     }
 
