@@ -47,6 +47,10 @@ class AdminSyncService {
   }
 
   Future<bool> _postEvent(AppAnalytic event) async {
+    if (kAdminSyncKey.isEmpty) {
+      if (kDebugMode) debugPrint('Admin sync skipped: ADMIN_SYNC_KEY not configured');
+      return false;
+    }
     try {
       final uri = Uri.parse('$kAdminApiBaseUrl/api/admin/sync');
       final response = await http

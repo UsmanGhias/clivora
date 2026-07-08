@@ -8,6 +8,7 @@ import '../core/theme/clivora_colors.dart';
 import '../core/utils/exit_dialog.dart';
 import '../data/providers/app_providers.dart';
 import '../shared/widgets/offline_status_bar.dart';
+import '../shared/widgets/sync_failure_banner.dart';
 
 class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.child});
@@ -64,6 +65,7 @@ class AppShell extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const OfflineStatusBar(),
+            const SyncFailureBanner(),
             Container(
               margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               decoration: BoxDecoration(

@@ -5,9 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../../core/constants/plan_limits.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../data/models/invoice_line_item.dart';
+import '../../data/models/invoice_line_item.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_bottom_sheet.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
+import '../../shared/widgets/contact_action_chips.dart';
 import '../../shared/widgets/empty_state.dart';
 
 class CustomersScreen extends ConsumerStatefulWidget {
@@ -107,6 +109,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                   itemBuilder: (context, index) {
                     final c = customers[index];
                     final emails = parseStringList(c.emails);
+                    final phones = parseStringList(c.phones);
                     return Dismissible(
                       key: ValueKey(c.id),
                       direction: DismissDirection.endToStart,
@@ -144,12 +147,22 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                           child: Text(c.contactPerson.isNotEmpty ? c.contactPerson[0].toUpperCase() : '?'),
                         ),
                         title: Text(c.contactPerson, style: const TextStyle(fontWeight: FontWeight.w600)),
-                        subtitle: Text(
-                          c.company.isNotEmpty
-                              ? c.company
-                              : emails.isNotEmpty
-                                  ? emails.first
-                                  : 'No contact info',
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              c.company.isNotEmpty
+                                  ? c.company
+                                  : emails.isNotEmpty
+                                      ? emails.first
+                                      : 'No contact info',
+                            ),
+                            ContactActionChips(
+                              phone: phones.isNotEmpty ? phones.first : '',
+                              email: emails.isNotEmpty ? emails.first : '',
+                              whatsapp: c.whatsapp,
+                            ),
+                          ],
                         ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,

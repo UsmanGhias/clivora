@@ -9,7 +9,7 @@ class SubscriptionManager {
   static const _kGraceUntil = 'sub_grace_until_ms';
   static const _kVerifiedPurchase = 'sub_verified_purchase';
   static const _kProductId = 'sub_product_id';
-  static const graceDays = 3;
+  static const graceDays = 1;
 
   static Future<void> activatePro({
     Duration period = const Duration(days: 30),

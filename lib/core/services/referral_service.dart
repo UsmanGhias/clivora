@@ -1,8 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../auth/auth_service.dart';
-import '../constants/plan_limits.dart';
+import '../cloud/supabase_auth_helper.dart';
 
 final referralServiceProvider = Provider<ReferralService>((ref) {
   return ReferralService(ref);
@@ -28,6 +29,22 @@ class ReferralService {
     return codeForUser(userId);
   }
 
+  Future<void> syncCodeToCloud() async {
+    final uid = SupabaseAuthHelper.currentUid;
+    final userId = ref.read(authStateProvider).valueOrNull?.id;
+    if (uid == null || userId == null) return;
+    final code = codeForUser(userId);
+    try {
+      await SupabaseAuthHelper.client.from('referral_codes').upsert({
+        'user_id': uid,
+        'code': code,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      });
+    } catch (e) {
+      debugPrint('Referral code sync failed: $e');
+    }
+  }
+
   Future<String> shareMessage() async {
     final code = await myCode() ?? 'CLIVORA';
     return 'Join me on CLIVORA — the business OS for freelancers & clients. '
@@ -51,14 +68,53 @@ class ReferralService {
   }
 
   Future<int> referralCount() async {
+    final uid = SupabaseAuthHelper.currentUid;
+    if (uid != null) {
+      try {
+        final row = await SupabaseAuthHelper.client
+            .from('referral_codes')
+            .select('referral_count')
+            .eq('user_id', uid)
+            .maybeSingle();
+        if (row != null) return (row['referral_count'] as num?)?.toInt() ?? 0;
+      } catch (_) {}
+    }
     final userId = ref.read(authStateProvider).valueOrNull?.id;
     if (userId == null) return 0;
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt('clivora_referral_count_$userId') ?? 0;
   }
 
-  /// Call when a referred user completes their first Pro purchase.
-  Future<void> recordSuccessfulReferral(int referrerUserId) async {
+  Future<void> creditReferrerOnVerifiedPurchase(String code) async {
+    final referredUid = SupabaseAuthHelper.currentUid;
+    if (referredUid == null) return;
+
+    try {
+      final referrerRow = await SupabaseAuthHelper.client
+          .from('referral_codes')
+          .select('user_id')
+          .eq('code', code.trim().toUpperCase())
+          .maybeSingle();
+
+      final referrerUid = referrerRow?['user_id'] as String?;
+      if (referrerUid == null || referrerUid == referredUid) return;
+
+      await SupabaseAuthHelper.client.rpc('credit_referral_on_purchase', params: {
+        'p_referrer_uid': referrerUid,
+        'p_referred_uid': referredUid,
+        'p_code': code.trim().toUpperCase(),
+        'p_bonus_days': bonusDaysPerReferral,
+      });
+    } catch (e) {
+      debugPrint('Cloud referral credit failed: $e');
+      final referrerId = userIdFromCode(code);
+      if (referrerId != null) {
+        await recordSuccessfulReferralLocal(referrerId);
+      }
+    }
+  }
+
+  Future<void> recordSuccessfulReferralLocal(int referrerUserId) async {
     final prefs = await SharedPreferences.getInstance();
     final count = (prefs.getInt('clivora_referral_count_$referrerUserId') ?? 0) + 1;
     await prefs.setInt('clivora_referral_count_$referrerUserId', count);
@@ -69,13 +125,23 @@ class ReferralService {
   }
 
   Future<int> bonusDaysEarned() async {
+    final uid = SupabaseAuthHelper.currentUid;
+    if (uid != null) {
+      try {
+        final row = await SupabaseAuthHelper.client
+            .from('referral_codes')
+            .select('bonus_days_earned')
+            .eq('user_id', uid)
+            .maybeSingle();
+        if (row != null) return (row['bonus_days_earned'] as num?)?.toInt() ?? 0;
+      } catch (_) {}
+    }
     final userId = ref.read(authStateProvider).valueOrNull?.id;
     if (userId == null) return 0;
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt('clivora_referral_bonus_days_$userId') ?? 0;
   }
 
-  /// Resolve referrer user id from code (local heuristic; cloud sync can extend later).
   int? userIdFromCode(String code) {
     final normalized = code.trim().toUpperCase().replaceFirst('CLIVORA', '');
     if (normalized.isEmpty) return null;
