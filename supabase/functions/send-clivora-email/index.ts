@@ -3,14 +3,16 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import {
-  adminNoticeTemplate,
-  clientInviteTemplate,
-  passwordResetNoticeTemplate,
-  wrapBrandedEmail,
-} from "./email_brand.ts";
+import { renderTemplate } from "./email_brand.ts";
 
-const ALLOWED = new Set(["password_reset", "admin_notice", "client_invite"]);
+const ALLOWED = new Set([
+  "password_reset",
+  "admin_notice",
+  "client_invite",
+  "team_invite",
+  "task_completed",
+  "welcome",
+]);
 const MONTHLY_LIMIT = 3000;
 
 type EmailBody = {
@@ -20,29 +22,16 @@ type EmailBody = {
   purpose?: string;
   freelancerName?: string;
   clientName?: string;
+  ownerName?: string;
+  inviteeName?: string;
+  projectName?: string;
+  role?: string;
+  taskTitle?: string;
+  userName?: string;
+  accountType?: string;
   adminMessage?: string;
   wrapBrand?: boolean;
 };
-
-function buildHtml(purpose: string, body: EmailBody, subject: string): string {
-  if (purpose === "client_invite" && body.freelancerName && body.clientName) {
-    return clientInviteTemplate(body.freelancerName, body.clientName);
-  }
-  if (purpose === "password_reset") {
-    return passwordResetNoticeTemplate();
-  }
-  if (purpose === "admin_notice") {
-    const msg = body.adminMessage ?? body.html ?? "";
-    return adminNoticeTemplate(subject, msg);
-  }
-  const inner = body.html ?? "";
-  if (body.wrapBrand === false) return inner;
-  return wrapBrandedEmail({
-    preheader: subject,
-    title: subject,
-    bodyHtml: inner,
-  });
-}
 
 serve(async (req) => {
   if (req.method !== "POST") {
@@ -81,13 +70,17 @@ serve(async (req) => {
   const to = (body.to ?? "").trim().toLowerCase();
   const subject = (body.subject ?? "").trim();
   const purpose = (body.purpose ?? "").trim();
-  const html = buildHtml(purpose, body, subject);
 
-  if (!to.includes("@") || !subject || !html) {
-    return new Response(JSON.stringify({ error: "Missing to, subject, or html" }), { status: 400 });
+  if (!to.includes("@") || !subject) {
+    return new Response(JSON.stringify({ error: "Missing to or subject" }), { status: 400 });
   }
   if (!ALLOWED.has(purpose)) {
     return new Response(JSON.stringify({ error: "Purpose not allowed" }), { status: 403 });
+  }
+
+  const html = renderTemplate(purpose, body);
+  if (!html) {
+    return new Response(JSON.stringify({ error: "Missing template fields or html" }), { status: 400 });
   }
 
   const adminClient = serviceKey ? createClient(supabaseUrl, serviceKey) : null;

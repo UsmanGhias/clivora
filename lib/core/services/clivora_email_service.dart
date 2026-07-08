@@ -103,12 +103,72 @@ class ClivoraEmailService {
       extraFields: {'adminMessage': message},
     );
   }
+
+  Future<String?> sendTeamInviteEmail({
+    required String to,
+    required String ownerName,
+    required String inviteeName,
+    required String role,
+    String projectName = '',
+  }) {
+    return sendSpecialEmail(
+      to: to,
+      subject: '$ownerName invited you to their CLIVORA team',
+      htmlBody: '',
+      purpose: ClivoraEmailPurpose.teamInvite,
+      extraFields: {
+        'ownerName': ownerName,
+        'inviteeName': inviteeName,
+        'role': role,
+        if (projectName.isNotEmpty) 'projectName': projectName,
+      },
+    );
+  }
+
+  Future<String?> sendTaskCompletedEmail({
+    required String to,
+    required String clientName,
+    required String taskTitle,
+    required String projectName,
+  }) {
+    return sendSpecialEmail(
+      to: to,
+      subject: 'Task completed: $taskTitle',
+      htmlBody: '',
+      purpose: ClivoraEmailPurpose.taskCompleted,
+      extraFields: {
+        'clientName': clientName,
+        'taskTitle': taskTitle,
+        'projectName': projectName,
+      },
+    );
+  }
+
+  Future<String?> sendWelcomeEmail({
+    required String to,
+    required String userName,
+    required String accountType,
+  }) {
+    return sendSpecialEmail(
+      to: to,
+      subject: 'Welcome to CLIVORA',
+      htmlBody: '',
+      purpose: ClivoraEmailPurpose.welcome,
+      extraFields: {
+        'userName': userName,
+        'accountType': accountType,
+      },
+    );
+  }
 }
 
 enum ClivoraEmailPurpose {
   passwordReset,
   adminNotice,
   clientInvite,
+  teamInvite,
+  taskCompleted,
+  welcome,
 }
 
 extension on ClivoraEmailPurpose {
@@ -120,6 +180,12 @@ extension on ClivoraEmailPurpose {
         return 'admin_notice';
       case ClivoraEmailPurpose.clientInvite:
         return 'client_invite';
+      case ClivoraEmailPurpose.teamInvite:
+        return 'team_invite';
+      case ClivoraEmailPurpose.taskCompleted:
+        return 'task_completed';
+      case ClivoraEmailPurpose.welcome:
+        return 'welcome';
     }
   }
 }

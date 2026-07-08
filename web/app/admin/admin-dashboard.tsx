@@ -324,7 +324,7 @@ export default function AdminDashboard({ adminEmails }: Props) {
             {loading ? "Signing in…" : "Sign in"}
           </button>
           <p style={{ marginTop: 16, fontSize: "0.8rem", color: "#64748b" }}>
-            v2.4.1 · Supabase live · Vercel
+            v2.6.6 · Supabase live · Vercel
           </p>
         </form>
       </div>
@@ -463,7 +463,7 @@ export default function AdminDashboard({ adminEmails }: Props) {
       </main>
 
       <footer style={{ textAlign: "center", color: "#64748b", fontSize: "0.8rem", padding: 32 }}>
-        CLIVORA by CodCrafters · Admin panel v2.4.1
+        CLIVORA by CodCrafters · Admin panel v2.6.6
       </footer>
     </div>
   );

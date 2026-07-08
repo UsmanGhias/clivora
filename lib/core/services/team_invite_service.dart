@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../auth/auth_service.dart';
+import 'clivora_email_service.dart';
 import '../cloud/cloud_notification_repository.dart';
 import '../cloud/cloud_project_repository.dart';
 import '../cloud/supabase_auth_helper.dart';
@@ -132,6 +133,17 @@ class TeamInviteService {
                 : 'You were invited to join a CLIVORA team.',
             kind: 'team_invite',
           );
+    }
+
+    final emailErr = await ref.read(clivoraEmailServiceProvider).sendTeamInviteEmail(
+          to: inviteeEmail,
+          ownerName: owner.name,
+          inviteeName: name.trim(),
+          role: role,
+          projectName: projectName,
+        );
+    if (emailErr != null) {
+      debugPrint('Team invite email failed (invite saved): $emailErr');
     }
 
     return null;
