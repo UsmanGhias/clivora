@@ -105,7 +105,6 @@ class _ClivoraAppState extends ConsumerState<ClivoraApp> with WidgetsBindingObse
   @override
   Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeProvider);
-    final locale = ref.watch(appLocaleProvider);
     final user = ref.watch(authStateProvider).valueOrNull;
     final portal = isClientUser(user) ? ClivoraPortal.client : ClivoraPortal.freelancer;
 
@@ -115,8 +114,8 @@ class _ClivoraAppState extends ConsumerState<ClivoraApp> with WidgetsBindingObse
       theme: ClivoraTheme.light(portal: portal),
       darkTheme: ClivoraTheme.dark(portal: portal),
       themeMode: themeMode,
-      locale: locale,
-      supportedLocales: AppLocalizations.supportedLocales,
+      locale: const Locale('en'),
+      supportedLocales: const [Locale('en')],
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       routerConfig: appRouter,
       builder: (context, child) {

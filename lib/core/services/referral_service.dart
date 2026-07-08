@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,24 +20,45 @@ class ReferralService {
   final Ref ref;
 
   static const bonusDaysPerReferral = 7;
-  static const playStoreReferralBase = 'https://play.google.com/store/apps/details?id=org.codcrafters.clivora&referrer=';
+  static const playStoreUrl =
+      'https://play.google.com/store/apps/details?id=org.codcrafters.clivora';
+  static const playStoreReferralBase = '$playStoreUrl&referrer=';
 
-  String codeForUser(int userId) {
-    final hash = userId.toRadixString(36).toUpperCase();
-    return 'CLIVORA${hash.padLeft(6, '0').substring(0, 6)}';
+  String _prefsKey(int userId) => 'clivora_referral_code_v2_$userId';
+
+  bool _isLegacyPredictable(String code) {
+    final upper = code.trim().toUpperCase();
+    return RegExp(r'^CLIVORA0*\d+$').hasMatch(upper);
+  }
+
+  String _generateUniqueCode(int userId) {
+    final random = Random.secure();
+    final nonce = List<int>.generate(12, (_) => random.nextInt(256));
+    final digest = sha256.convert(utf8.encode('clivora_ref_$userId:${nonce.join(',')}'));
+    final token = digest.toString().substring(0, 10).toUpperCase();
+    return 'CLV$token';
   }
 
   Future<String?> myCode() async {
     final userId = ref.read(authStateProvider).valueOrNull?.id;
     if (userId == null) return null;
-    return codeForUser(userId);
+
+    final prefs = await SharedPreferences.getInstance();
+    var code = prefs.getString(_prefsKey(userId));
+    if (code == null || code.isEmpty || _isLegacyPredictable(code)) {
+      code = _generateUniqueCode(userId);
+      await prefs.setString(_prefsKey(userId), code);
+      await syncCodeToCloud(code);
+    }
+    return code;
   }
 
-  Future<void> syncCodeToCloud() async {
+  Future<void> syncCodeToCloud([String? explicitCode]) async {
     final uid = SupabaseAuthHelper.currentUid;
     final userId = ref.read(authStateProvider).valueOrNull?.id;
     if (uid == null || userId == null) return;
-    final code = codeForUser(userId);
+    final code = explicitCode ?? await myCode();
+    if (code == null) return;
     try {
       await SupabaseAuthHelper.client.from('referral_codes').upsert({
         'user_id': uid,
@@ -47,8 +72,8 @@ class ReferralService {
 
   Future<String> shareMessage() async {
     final code = await myCode() ?? 'CLIVORA';
-    return 'Join me on CLIVORA — the business OS for freelancers & clients. '
-        'Use my code $code when you sign up. '
+    return 'Join me on CLIVORA for clients, projects, invoices and chat. '
+        'Use my code $code when you subscribe to Pro. '
         'Download: $playStoreReferralBase$code';
   }
 
@@ -107,10 +132,6 @@ class ReferralService {
       });
     } catch (e) {
       debugPrint('Cloud referral credit failed: $e');
-      final referrerId = userIdFromCode(code);
-      if (referrerId != null) {
-        await recordSuccessfulReferralLocal(referrerId);
-      }
     }
   }
 
@@ -140,15 +161,5 @@ class ReferralService {
     if (userId == null) return 0;
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt('clivora_referral_bonus_days_$userId') ?? 0;
-  }
-
-  int? userIdFromCode(String code) {
-    final normalized = code.trim().toUpperCase().replaceFirst('CLIVORA', '');
-    if (normalized.isEmpty) return null;
-    try {
-      return int.parse(normalized, radix: 36);
-    } catch (_) {
-      return null;
-    }
   }
 }

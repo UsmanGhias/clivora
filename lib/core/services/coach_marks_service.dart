@@ -5,11 +5,11 @@ final coachMarksServiceProvider = Provider<CoachMarksService>((ref) {
   return CoachMarksService();
 });
 
-/// Per-user dashboard tips (coach marks). Can be disabled in settings.
+/// Dashboard tips shown once per account type (freelancer vs client) on this device.
 class CoachMarksService {
   static const _enabledKey = 'clivora_coach_marks_enabled';
-
-  String _doneKey(int userId) => 'clivora_dashboard_coach_done_$userId';
+  static const _freelancerKey = 'clivora_dashboard_coach_done_freelancer';
+  static const _clientKey = 'clivora_dashboard_coach_done_client';
 
   Future<bool> isEnabled() async {
     final prefs = await SharedPreferences.getInstance();
@@ -21,18 +21,20 @@ class CoachMarksService {
     await prefs.setBool(_enabledKey, value);
   }
 
-  Future<bool> isDashboardCompleteForUser(int userId) async {
+  String _keyForRole({required bool isClient}) => isClient ? _clientKey : _freelancerKey;
+
+  Future<bool> isDashboardCompleteForRole({required bool isClient}) async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_doneKey(userId)) ?? false;
+    return prefs.getBool(_keyForRole(isClient: isClient)) ?? false;
   }
 
-  Future<void> markDashboardCompleteForUser(int userId) async {
+  Future<void> markDashboardCompleteForRole({required bool isClient}) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_doneKey(userId), true);
+    await prefs.setBool(_keyForRole(isClient: isClient), true);
   }
 
-  Future<bool> shouldShowForUser(int userId) async {
+  Future<bool> shouldShowForRole({required bool isClient}) async {
     if (!await isEnabled()) return false;
-    return !(await isDashboardCompleteForUser(userId));
+    return !(await isDashboardCompleteForRole(isClient: isClient));
   }
 }

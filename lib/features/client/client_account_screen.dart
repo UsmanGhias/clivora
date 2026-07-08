@@ -190,7 +190,17 @@ class _ClientAccountScreenState extends ConsumerState<ClientAccountScreen> {
                 ],
               ),
             ),
-            if (!isPro) ...[
+            if (isPro) ...[
+              const SizedBox(height: 16),
+              Card(
+                color: ClivoraColors.clientAccent.withValues(alpha: 0.12),
+                child: const ListTile(
+                  leading: Icon(Icons.verified_rounded, color: ClivoraColors.clientAccent),
+                  title: Text('Client Pro active', style: TextStyle(fontWeight: FontWeight.w700)),
+                  subtitle: Text('Verified badge, unlimited contracts and PDF downloads'),
+                ),
+              ),
+            ] else ...[
               const SizedBox(height: 16),
               Card(
                 color: ClivoraColors.clientAccent.withValues(alpha: 0.08),

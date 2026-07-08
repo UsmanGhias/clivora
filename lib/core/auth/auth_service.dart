@@ -264,6 +264,10 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         scopes: const ['email', 'profile'],
       );
 
+      try {
+        await googleSignIn.signOut();
+      } catch (_) {}
+
       final googleUser = await googleSignIn.signIn();
       if (googleUser == null) return 'Sign in cancelled';
 
@@ -271,7 +275,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       if (email.isEmpty) return 'Google account has no email address.';
 
       final googleAuth = await googleUser.authentication;
-      if (googleAuth.idToken == null) return 'Google sign-in failed: no ID token.';
+      if (googleAuth.idToken == null) {
+        return 'Google sign-in failed: no ID token. Add this APK signing SHA-1 in Firebase Console.';
+      }
 
       try {
         await SupabaseAuthHelper.signInWithGoogle(
@@ -359,6 +365,10 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       return null;
     } catch (e, st) {
       debugPrint('Google sign-in error: $e\n$st');
+      final msg = e.toString();
+      if (msg.contains('ApiException: 10') || msg.contains('sign_in_failed')) {
+        return 'Google sign-in failed. Register this APK SHA-1 in Firebase, then retry.';
+      }
       return 'Google sign-in failed. Try again or use email sign-in.';
     }
   }

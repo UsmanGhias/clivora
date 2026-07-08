@@ -191,7 +191,6 @@ class MoreScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
           const SectionHeader(title: 'Appearance'),
-          _LanguageTile(ref: ref),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
@@ -607,55 +606,6 @@ class _TemplateOption extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _LanguageTile extends ConsumerWidget {
-  const _LanguageTile({required this.ref});
-
-  final WidgetRef ref;
-
-  @override
-  Widget build(BuildContext context, WidgetRef _) {
-    final locale = ref.watch(appLocaleProvider);
-    final l10n = AppLocalizations.of(context)!;
-    final code = locale?.languageCode ?? 'en';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Theme.of(context).dividerColor),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: ClivoraColors.iconTeal,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.translate, color: ClivoraColors.primary, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(child: Text(l10n.settingsLanguage, style: const TextStyle(fontWeight: FontWeight.w500))),
-          DropdownButton<String>(
-            value: code,
-            underline: const SizedBox.shrink(),
-            items: [
-              DropdownMenuItem(value: 'en', child: Text(l10n.languageEnglish)),
-              DropdownMenuItem(value: 'ur', child: Text(l10n.languageUrdu)),
-            ],
-            onChanged: (v) {
-              if (v != null) ref.read(appLocaleProvider.notifier).setLocaleCode(v);
-            },
-          ),
-        ],
       ),
     );
   }

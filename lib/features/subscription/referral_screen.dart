@@ -68,7 +68,7 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            stats.code ?? '—',
+                            stats.code ?? 'N/A',
                             style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: 2),
                           ),
                         ),
@@ -116,7 +116,7 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> {
               controller: _applyController,
               textCapitalization: TextCapitalization.characters,
               decoration: const InputDecoration(
-                hintText: 'CLIVORAXXXXXX',
+                hintText: 'CLVXXXXXXXXXX',
                 prefixIcon: Icon(Icons.redeem_outlined),
               ),
             ),

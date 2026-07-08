@@ -26,7 +26,6 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
   bool? _biometricSupported;
   bool _biometricEnabled = false;
   bool _coachMarksEnabled = true;
-  String _locale = 'en';
   bool _loading = true;
 
   @override
@@ -39,13 +38,11 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
     final bio = ref.read(biometricServiceProvider);
     final supported = await bio.isSupported;
     final enabled = await bio.isEnabled;
-    final locale = await ref.read(localeServiceProvider).getLocaleCode();
     final coachEnabled = await ref.read(coachMarksServiceProvider).isEnabled();
     if (mounted) {
       setState(() {
         _biometricSupported = supported;
         _biometricEnabled = enabled;
-        _locale = locale;
         _coachMarksEnabled = coachEnabled;
         _loading = false;
       });
@@ -187,21 +184,6 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
                   onChanged: (v) async {
                     await ref.read(coachMarksServiceProvider).setEnabled(v);
                     setState(() => _coachMarksEnabled = v);
-                  },
-                ),
-                const Divider(height: 32),
-                Text('Language', style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
-                SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'en', label: Text('English')),
-                    ButtonSegment(value: 'ur', label: Text('Urdu')),
-                  ],
-                  selected: {_locale},
-                  onSelectionChanged: (s) async {
-                    final code = s.first;
-                    await ref.read(appLocaleProvider.notifier).setLocaleCode(code);
-                    setState(() => _locale = code);
                   },
                 ),
                 const Divider(height: 32),
