@@ -63,15 +63,32 @@ Purple `#6C3CE1`, navy header, CODCrafters footer. Redeployed v2 (2026-07-08).
 
 Monorepo includes Next.js 14 admin matching `clivora.codcrafters.org/admin` (v2.6.6).
 
-Push to standalone repo: create `UsmanGhias/clivora-web` on GitHub, then:
+## Push to standalone repo `UsmanGhias/clivora-web`
+
+The Cloud Agent GitHub token only has access to `UsmanGhias/clivora` unless you grant Cursor app access to `clivora-web`.
+
+### Option A — Grant Cursor access (recommended)
+
+1. GitHub → **Settings** → **Applications** → **Cursor** → **Configure**
+2. Under **Repository access**, add **UsmanGhias/clivora-web**
+3. Re-run the agent or run `./push-to-clivora-web.sh` locally
+
+### Option B — Mirror from `clivora-web-sync` branch
+
+Web files at repo root are on branch `clivora-web-sync` in `UsmanGhias/clivora`:
 
 ```bash
-cd web && git init && git add . && git commit -m "CLIVORA web admin v2.6.6"
-git remote add origin https://github.com/UsmanGhias/clivora-web.git
-git branch -M main && git push -u origin main
+git clone https://github.com/UsmanGhias/clivora-web.git
+cd clivora-web
+git pull https://github.com/UsmanGhias/clivora clivora-web-sync
+git push origin main
 ```
 
-Deploy to Vercel with env vars from `web/README.md`.
+### Option C — GitHub Actions sync
+
+Add secret `CLIVORA_WEB_SYNC_TOKEN` (PAT with `repo` scope for `clivora-web`) to `UsmanGhias/clivora`, then run workflow **Sync web to clivora-web**.
+
+Deploy to Vercel with env vars below.
 
 ## Data privacy
 

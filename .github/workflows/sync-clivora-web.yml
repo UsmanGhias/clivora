@@ -1,0 +1,39 @@
+name: Sync web to clivora-web
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - cursor/fixes-v2-6-6-d928
+    paths:
+      - 'web/**'
+      - '.github/workflows/sync-clivora-web.yml'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout clivora
+        uses: actions/checkout@v4
+
+      - name: Push web/ to UsmanGhias/clivora-web
+        env:
+          SYNC_TOKEN: ${{ secrets.CLIVORA_WEB_SYNC_TOKEN }}
+        run: |
+          if [ -z "$SYNC_TOKEN" ]; then
+            echo "::error::Add repository secret CLIVORA_WEB_SYNC_TOKEN (GitHub PAT with repo scope for UsmanGhias/clivora-web)"
+            exit 1
+          fi
+          WORK=/tmp/clivora-web-export
+          rm -rf "$WORK"
+          mkdir -p "$WORK"
+          cp -a web/. "$WORK/"
+          cd "$WORK"
+          git init -b main
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add -A
+          git commit -m "Sync from UsmanGhias/clivora@${GITHUB_SHA::7} — CLIVORA web admin"
+          git remote add origin "https://x-access-token:${SYNC_TOKEN}@github.com/UsmanGhias/clivora-web.git"
+          git push origin main --force
