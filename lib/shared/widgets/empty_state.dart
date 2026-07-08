@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../core/theme/clivora_colors.dart';
+import '../../core/theme/clivora_tokens.dart';
+import '../../core/theme/theme_context.dart';
 
 class EmptyState extends StatelessWidget {
   const EmptyState({
@@ -18,34 +19,49 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final semantic = context.clivoraColors;
+    final layout = context.clivoraLayout;
+
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 56, color: ClivoraColors.labelGray.withValues(alpha: 0.6)),
-          const SizedBox(height: 16),
-          Text(
-            message,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: ClivoraColors.textSecondary,
-                ),
-          ),
-          if (actionLabel != null && onAction != null) ...[
-            const SizedBox(height: 20),
-            TextButton(
-              onPressed: onAction,
-              style: TextButton.styleFrom(
-                backgroundColor: ClivoraColors.primaryPurple.withValues(alpha: 0.1),
-                foregroundColor: ClivoraColors.primaryPurple,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              child: Text(actionLabel!, style: const TextStyle(fontWeight: FontWeight.w600)),
+      child: Padding(
+        padding: const EdgeInsets.all(ClivoraSpacing.xxl),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 56,
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
+            const SizedBox(height: ClivoraSpacing.lg),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(height: ClivoraSpacing.xl),
+              TextButton(
+                onPressed: onAction,
+                style: TextButton.styleFrom(
+                  backgroundColor: semantic.brand.withValues(alpha: 0.1),
+                  foregroundColor: semantic.brand,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: ClivoraSpacing.xxl,
+                    vertical: ClivoraSpacing.md,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(layout.buttonRadius),
+                  ),
+                ),
+                child: Text(actionLabel!),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

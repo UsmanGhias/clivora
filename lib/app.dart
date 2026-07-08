@@ -18,6 +18,7 @@ import 'core/services/task_reminder_service.dart';
 import 'core/services/locale_service.dart';
 import 'core/services/telemetry_service.dart';
 import 'core/utils/crm_refresh.dart';
+import 'core/auth/user_roles.dart';
 import 'core/theme/clivora_theme.dart';
 import 'data/providers/app_providers.dart';
 import 'l10n/app_localizations.dart';
@@ -105,12 +106,14 @@ class _ClivoraAppState extends ConsumerState<ClivoraApp> with WidgetsBindingObse
   Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeProvider);
     final locale = ref.watch(appLocaleProvider);
+    final user = ref.watch(authStateProvider).valueOrNull;
+    final portal = isClientUser(user) ? ClivoraPortal.client : ClivoraPortal.freelancer;
 
     return MaterialApp.router(
       title: 'CLIVORA',
       debugShowCheckedModeBanner: false,
-      theme: ClivoraTheme.light(),
-      darkTheme: ClivoraTheme.dark(),
+      theme: ClivoraTheme.light(portal: portal),
+      darkTheme: ClivoraTheme.dark(portal: portal),
       themeMode: themeMode,
       locale: locale,
       supportedLocales: AppLocalizations.supportedLocales,
