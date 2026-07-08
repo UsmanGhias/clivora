@@ -8,6 +8,7 @@ import '../../core/auth/user_roles.dart';
 import '../../core/cloud/supabase_auth_helper.dart';
 import '../../core/cloud/cloud_notification_repository.dart';
 import '../../core/services/admin_management_service.dart';
+import '../../core/services/team_invite_service.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
@@ -21,6 +22,7 @@ class NotificationsScreen extends ConsumerWidget {
     final alertsAsync = ref.watch(notificationsProvider);
     final tasksAsync = ref.watch(freelancerClientTasksProvider);
     final mailboxAsync = ref.watch(freelancerMailboxProvider);
+    final teamInvitesAsync = ref.watch(pendingTeamInvitesProvider);
     final isClient = isClientUser(ref.watch(authStateProvider).valueOrNull);
 
     return ClivoraScaffold(
@@ -32,7 +34,7 @@ class NotificationsScreen extends ConsumerWidget {
           ref.invalidate(notificationsProvider);
           ref.invalidate(freelancerClientTasksProvider);
           ref.invalidate(clientAssignedTasksProvider);
-          ref.invalidate(freelancerMailboxProvider);
+          ref.invalidate(pendingTeamInvitesProvider);
         },
         child: ListView(
           padding: const EdgeInsets.all(20),
@@ -59,6 +61,39 @@ class NotificationsScreen extends ConsumerWidget {
                     ...items.map((n) => Padding(
                           padding: const EdgeInsets.only(bottom: 10),
                           child: _CloudNotificationTile(notification: n),
+                        )),
+                    const SizedBox(height: 16),
+                  ],
+                );
+              },
+            ),
+            teamInvitesAsync.when(
+              loading: () => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
+              data: (invites) {
+                if (invites.isEmpty) return const SizedBox.shrink();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Team invites', style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 10),
+                    ...invites.map((invite) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: ListTile(
+                            onTap: () => context.push('/team-invites'),
+                            tileColor: Theme.of(context).cardColor,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(color: Theme.of(context).dividerColor),
+                            ),
+                            leading: const Icon(Icons.groups_outlined, color: ClivoraColors.primaryPurple),
+                            title: Text(
+                              invite.projectName.isNotEmpty ? invite.projectName : 'Team invite',
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            subtitle: const Text('Tap to accept or decline'),
+                            trailing: const Icon(Icons.chevron_right),
+                          ),
                         )),
                     const SizedBox(height: 16),
                   ],

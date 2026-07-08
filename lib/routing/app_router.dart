@@ -14,6 +14,7 @@ import '../features/client/client_activity_screen.dart';
 import '../features/client/client_tasks_screen.dart';
 import '../features/client/client_account_screen.dart';
 import '../features/team/team_screen.dart';
+import '../features/team/team_invites_screen.dart';
 import '../features/customers/customer_form_screen.dart';
 import '../features/customers/customers_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
@@ -32,7 +33,7 @@ import '../features/settings/legal_document_screen.dart';
 import '../features/settings/security_settings_screen.dart';
 import '../core/constants/legal_documents.dart';
 import '../features/onboarding/onboarding_screen.dart';
-import '../features/calendar/calendar_screen.dart';
+import '../features/onboarding/value_guidelines_screen.dart';
 import '../features/reports/reports_screen.dart';
 import '../features/search/global_search_screen.dart';
 import '../features/notifications/notifications_screen.dart';
@@ -61,6 +62,21 @@ final appRouter = GoRouter(
     loading: authSessionLoading,
   ),
   routes: [
+    GoRoute(
+      path: '/value-guidelines',
+      builder: (context, state) => Consumer(
+        builder: (context, ref, _) => ValueGuidelinesScreen(
+          onContinue: () async {
+            await ref.read(onboardingServiceProvider).markGuidelinesSeen();
+            if (context.mounted) {
+              final done = await ref.read(onboardingServiceProvider).isComplete();
+              if (!context.mounted) return;
+              context.go(done ? '/login' : '/onboarding');
+            }
+          },
+        ),
+      ),
+    ),
     GoRoute(
       path: '/onboarding',
       builder: (context, state) => Consumer(
@@ -292,6 +308,11 @@ final appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/team',
       builder: (context, state) => const TeamScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/team-invites',
+      builder: (context, state) => const TeamInvitesScreen(),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,

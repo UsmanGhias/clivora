@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../cloud/supabase_auth_helper.dart';
 import '../constants/plan_limits.dart';
@@ -40,15 +41,23 @@ class ClivoraEmailService {
       );
       if (response.status != 200) {
         final data = response.data;
-        return data is Map ? '${data['error'] ?? response.status}' : 'Email failed (${response.status})';
+        final detail = data is Map ? '${data['error'] ?? response.status}' : 'Email failed (${response.status})';
+        return detail;
       }
       if (countTowardQuota && purpose != ClivoraEmailPurpose.passwordReset) {
         await ref.read(emailQuotaServiceProvider).recordSent();
       }
       return null;
+    } on FunctionException catch (e) {
+      debugPrint('Clivora email FunctionException: ${e.details}');
+      final details = e.details;
+      if (details is Map && details['error'] != null) {
+        return '${details['error']}';
+      }
+      return 'Email service error (${e.status}). Check RESEND_API_KEY on send-clivora-email.';
     } catch (e) {
       debugPrint('Clivora email error: $e');
-      return 'Email service unavailable. Set RESEND_API_KEY on send-clivora-email Edge Function.';
+      return 'Email service unavailable. Deploy send-clivora-email with RESEND_API_KEY set.';
     }
   }
 

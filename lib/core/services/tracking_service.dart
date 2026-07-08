@@ -6,6 +6,7 @@ import '../../core/cloud/cloud_notification_repository.dart';
 import '../../core/cloud/cloud_project_repository.dart';
 import '../../data/database/database.dart';
 import '../../data/database/user_scoped_queries.dart';
+import '../../data/models/invoice_line_item.dart';
 import '../../data/providers/app_providers.dart';
 
 final trackingServiceProvider = Provider<TrackingService>((ref) {
@@ -38,6 +39,46 @@ class TrackingService {
     if (entityType == 'project') {
       await _notifyClientProjectUpdate(ownerId, entityId, status, note);
     }
+  }
+
+  /// Notifies linked clients when a freelancer marks a task complete.
+  Future<void> notifyTaskCompleted(Task task) async {
+    final ownerId = ref.read(authStateProvider).valueOrNull?.id;
+    if (ownerId == null || !task.completed) return;
+
+    await ref.read(databaseProvider).insertTrackingEvent(
+          TrackingEventsCompanion.insert(
+            ownerUserId: ownerId,
+            entityType: 'task',
+            entityId: task.id,
+            status: 'completed',
+            note: Value('Task completed: ${task.title}'),
+          ),
+        );
+
+    if (task.projectId != null) {
+      await logStatusChange(
+        entityType: 'project',
+        entityId: task.projectId!,
+        status: 'task_completed',
+        note: 'Task completed: ${task.title}',
+      );
+      return;
+    }
+
+    if (task.customerId == null) return;
+    final db = ref.read(databaseProvider);
+    final customer = await db.getCustomerForUser(ownerId, task.customerId!);
+    if (customer == null) return;
+    final emails = parseStringList(customer.emails);
+    if (emails.isEmpty) return;
+
+    await ref.read(cloudNotificationRepositoryProvider).send(
+          toEmail: emails.first,
+          title: 'Task completed',
+          body: '${task.title} is marked complete.',
+          kind: 'task',
+        );
   }
 
   Future<void> _notifyClientProjectUpdate(

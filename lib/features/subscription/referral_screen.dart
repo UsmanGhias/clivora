@@ -123,12 +123,12 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> {
             const SizedBox(height: 12),
             OutlinedButton(
               onPressed: () async {
-                await ref.read(referralServiceProvider).applyReferralCode(_applyController.text);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Referral code saved — bonus applies when you subscribe')),
-                  );
-                }
+                final err = await ref.read(referralServiceProvider).applyReferralCode(_applyController.text);
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(err ?? 'Referral code saved. Bonus applies when you subscribe to Pro.')),
+                );
+                if (err == null) _applyController.clear();
               },
               child: const Text('Apply code'),
             ),

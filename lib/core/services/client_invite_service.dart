@@ -59,14 +59,23 @@ class ClientInviteService {
           );
     }
 
-    // Optional real email — special purpose only (not for every message).
+    // Optional real email — never block saving the client if email fails.
     final emailErr = await ref.read(clivoraEmailServiceProvider).sendClientInviteEmail(
           to: email,
           freelancerName: businessName,
           clientName: customer.contactPerson,
         );
     if (emailErr != null) {
-      throw Exception(emailErr);
+      throw ClientInviteEmailException(emailErr);
     }
   }
+}
+
+/// Client saved locally; only the optional invite email failed.
+class ClientInviteEmailException implements Exception {
+  ClientInviteEmailException(this.message);
+  final String message;
+
+  @override
+  String toString() => message;
 }

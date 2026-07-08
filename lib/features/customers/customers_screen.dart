@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants/plan_limits.dart';
+import '../../core/utils/crm_refresh.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../data/models/invoice_line_item.dart';
 import '../../data/models/invoice_line_item.dart';
@@ -54,6 +55,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
     );
     if (confirmed == true) {
       await ref.read(databaseProvider).deleteCustomer(id);
+      invalidateCrmData(ref, customers: true);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Customer deleted')));
       }
