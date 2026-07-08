@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Build CLIVORA Android release APK (and optionally AAB).
 set -euo pipefail
-export PATH="${FLUTTER_HOME:-/opt/flutter}/bin:${PATH}"
-export ANDROID_HOME="${ANDROID_HOME:-/opt/android-sdk}"
+export PATH="${FLUTTER_HOME:-$HOME/flutter}/bin:${PATH}"
+export ANDROID_HOME="${ANDROID_HOME:-$HOME/android-sdk}"
 cd "$(dirname "$0")"
 
 VER=$(rg '^version:' pubspec.yaml | awk '{print $2}' | cut -d+ -f1)
