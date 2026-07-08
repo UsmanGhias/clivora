@@ -71,7 +71,7 @@ export default function HomePage() {
         </a>
       </div>
       <p style={{ marginTop: 48, fontSize: "0.85rem", color: "#94a3b8" }}>
-        v2.4.1 · CodCrafters
+        v2.6.6 · CodCrafters
       </p>
     </main>
   );

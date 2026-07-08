@@ -48,20 +48,30 @@ GOOGLE_PLAY_SERVICE_ACCOUNT_JSON={...}
 
 `send-clivora-email` renders CLIVORA-branded HTML for:
 
-| Purpose | Template |
-|---------|----------|
-| `client_invite` | Invite with Play Store CTA (pass `freelancerName`, `clientName`) |
-| `password_reset` | Branded reset notice |
-| `admin_notice` | Admin alert with dashboard link |
+| Purpose | Template | Fields |
+|---------|----------|--------|
+| `client_invite` | Invite with Play Store CTA | `freelancerName`, `clientName` |
+| `team_invite` | Team collaboration invite | `ownerName`, `inviteeName`, `role`, `projectName` |
+| `password_reset` | Branded reset notice | (none) |
+| `admin_notice` | Admin alert with dashboard link | `adminMessage` |
+| `task_completed` | Task done notification | `clientName`, `taskTitle`, `projectName` |
+| `welcome` | New account welcome | `userName`, `accountType` |
 
-Purple `#6C3CE1`, navy header, CODCrafters footer.
+Purple `#6C3CE1`, navy header, CODCrafters footer. Redeployed v2 (2026-07-08).
 
 ## Web admin (`web/`)
 
-Monorepo includes Next.js admin matching `clivora.codcrafters.org/admin`:
+Monorepo includes Next.js 14 admin matching `clivora.codcrafters.org/admin` (v2.6.6).
 
-- Deploy `web/` to Vercel as `clivora-web`
-- Set `ADMIN_SYNC_KEY` to match Flutter `ADMIN_SYNC_KEY` dart-define
+Push to standalone repo: create `UsmanGhias/clivora-web` on GitHub, then:
+
+```bash
+cd web && git init && git add . && git commit -m "CLIVORA web admin v2.6.6"
+git remote add origin https://github.com/UsmanGhias/clivora-web.git
+git branch -M main && git push -u origin main
+```
+
+Deploy to Vercel with env vars from `web/README.md`.
 
 ## Data privacy
 
