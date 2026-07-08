@@ -10,6 +10,7 @@ import '../../data/database/database.dart';
 import '../../data/database/user_scoped_queries.dart';
 import '../../data/models/invoice_line_item.dart';
 import '../../data/providers/app_providers.dart';
+import 'client_pdf_quota_service.dart';
 import 'invoice_pdf_service.dart';
 
 /// Preview a shared invoice with the freelancer's branding (client portal).
