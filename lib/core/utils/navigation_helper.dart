@@ -35,9 +35,9 @@ Future<bool> requireProFeature(
   final result = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: Text('$featureName — $planName'),
+      title: Text('$featureName ($planName)'),
       content: Text(
-        '$featureName requires $planName (Rs 2,000/mo — limited offer from Rs 2,800). '
+        '$featureName requires $planName (Rs 2,000/mo, limited offer from Rs 2,800). '
         'Subscribe securely through Google Play.',
       ),
       actions: [

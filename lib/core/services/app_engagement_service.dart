@@ -17,12 +17,12 @@ class AppEngagementService {
   final Ref ref;
 
   static const playStorePackage = ProPricing.playStorePackage;
+  static const playStoreUrl = ReferralService.playStoreUrl;
 
   Future<void> shareApp({String? customMessage}) async {
     final message = customMessage ??
-        'Try CLIVORA — manage clients, invoices, projects & chat in one app. '
-        '${ProPricing.playStoreUrl}';
-    await Share.share(message, subject: 'CLIVORA — Your Business OS');
+        'Try CLIVORA for clients, invoices, projects and chat in one app.\n$playStoreUrl';
+    await Share.share(message, subject: 'CLIVORA');
   }
 
   Future<void> shareReferral() async {
@@ -31,7 +31,7 @@ class AppEngagementService {
   }
 
   Future<void> openPlayStoreListing() async {
-    final uri = Uri.parse(ProPricing.playStoreUrl);
+    final uri = Uri.parse(playStoreUrl);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
@@ -40,7 +40,7 @@ class AppEngagementService {
   /// Opens Play Store review page (same listing; users tap Reviews).
   Future<void> rateApp() async {
     final marketUri = Uri.parse('market://details?id=$playStorePackage');
-    final webUri = Uri.parse('${ProPricing.playStoreUrl}&showAllReviews=true');
+    final webUri = Uri.parse('$playStoreUrl&showAllReviews=true');
     if (await canLaunchUrl(marketUri)) {
       await launchUrl(marketUri, mode: LaunchMode.externalApplication);
     } else if (await canLaunchUrl(webUri)) {
@@ -49,7 +49,6 @@ class AppEngagementService {
   }
 
   Future<bool> shouldPromptRating() async {
-    // Caller can show in-app rating prompt after 5 sessions — kept simple here.
     return true;
   }
 

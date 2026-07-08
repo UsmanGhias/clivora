@@ -15,7 +15,7 @@ import '../../data/database/database.dart';
 import '../../data/providers/app_providers.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/widgets/clivora_logo.dart';
-import '../../shared/widgets/coach_mark_overlay.dart';
+import '../../shared/widgets/simple_coach_tour.dart';
 import '../../shared/widgets/messages_icon_button.dart';
 import '../../shared/widgets/notification_icon_button.dart';
 import '../../shared/widgets/skeleton_loading.dart';
@@ -30,10 +30,6 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   final _scrollController = ScrollController();
-  final _statsKey = GlobalKey();
-  final _quickKey = GlobalKey();
-  final _searchKey = GlobalKey();
-  bool _showCoachMarks = false;
 
   @override
   void dispose() {
@@ -48,20 +44,36 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Future<void> _maybeShowCoachMarks() async {
-    final userId = ref.read(authStateProvider).valueOrNull?.id;
-    if (userId == null) return;
-    final show = await ref.read(coachMarksServiceProvider).shouldShowForUser(userId);
-    if (!show) return;
+    final user = ref.read(authStateProvider).valueOrNull;
+    if (user == null || isClientUser(user)) return;
+    final show = await ref.read(coachMarksServiceProvider).shouldShowForRole(isClient: false);
+    if (!show || !mounted) return;
     try {
       await ref.read(dashboardStatsProvider.future);
     } catch (_) {}
-    await Future<void>.delayed(const Duration(milliseconds: 350));
-    if (mounted) setState(() => _showCoachMarks = true);
-  }
-
-  Future<void> _finishCoachMarks(int userId) async {
-    await ref.read(coachMarksServiceProvider).markDashboardCompleteForUser(userId);
-    if (mounted) setState(() => _showCoachMarks = false);
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    await showSimpleCoachTour(
+      context,
+      steps: [
+        SimpleCoachStep(
+          icon: Icons.insights_outlined,
+          title: l10n.coachMarkStatsTitle,
+          body: l10n.coachMarkStatsBody,
+        ),
+        SimpleCoachStep(
+          icon: Icons.bolt_outlined,
+          title: l10n.coachMarkQuickTitle,
+          body: l10n.coachMarkQuickBody,
+        ),
+        SimpleCoachStep(
+          icon: Icons.search_rounded,
+          title: l10n.coachMarkSearchTitle,
+          body: l10n.coachMarkSearchBody,
+        ),
+      ],
+      onComplete: () => ref.read(coachMarksServiceProvider).markDashboardCompleteForRole(isClient: false),
+    );
   }
 
   @override
@@ -84,38 +96,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: _showCoachMarks && authUser != null
-            ? CoachMarkOverlay(
-                scrollController: _scrollController,
-                bottomInset: CoachMarkOverlay.shellBottomInset(context),
-                steps: [
-                  CoachMarkStep(
-                    targetKey: _statsKey,
-                    title: l10n.coachMarkStatsTitle,
-                    body: l10n.coachMarkStatsBody,
-                    padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
-                  ),
-                  CoachMarkStep(
-                    targetKey: _quickKey,
-                    title: l10n.coachMarkQuickTitle,
-                    body: l10n.coachMarkQuickBody,
-                    padding: const EdgeInsets.all(6),
-                  ),
-                  CoachMarkStep(
-                    targetKey: _searchKey,
-                    title: l10n.coachMarkSearchTitle,
-                    body: l10n.coachMarkSearchBody,
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                  ),
-                ],
-                nextLabel: l10n.coachMarkNext,
-                doneLabel: l10n.coachMarkDone,
-                skipLabel: 'Skip tour',
-                onComplete: () => _finishCoachMarks(authUser.id),
-                onSkip: () => _finishCoachMarks(authUser.id),
-                child: _dashboardBody(context, l10n, statsAsync, profileAsync, authUser, projectsAsync, customersAsync, ownerName, photoPath, isGuest),
-              )
-            : _dashboardBody(context, l10n, statsAsync, profileAsync, authUser, projectsAsync, customersAsync, ownerName, photoPath, isGuest),
+        child: _dashboardBody(context, l10n, statsAsync, profileAsync, authUser, projectsAsync, customersAsync, ownerName, photoPath, isGuest),
       ),
     );
   }
@@ -213,7 +194,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
               const SizedBox(height: 20),
               Container(
-                key: _statsKey,
                 width: double.infinity,
                 child: statsAsync.when(
                   loading: () => const _StatsGridPlaceholder(),
@@ -224,13 +204,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const TodayOverdueCard(),
               const SizedBox(height: 8),
               Container(
-                key: _quickKey,
                 width: double.infinity,
                 child: _QuickActions(ref: ref, l10n: l10n),
               ),
               const SizedBox(height: 12),
               Container(
-                key: _searchKey,
                 width: double.infinity,
                 child: OutlinedButton.icon(
                   onPressed: () => openFormRoute(context, '/search'),
