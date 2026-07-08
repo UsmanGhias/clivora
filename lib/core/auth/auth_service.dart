@@ -242,9 +242,10 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
 
     final isAdmin = kAdminEmails.contains(trimmedEmail);
     if (isAdmin) {
-      await _db.updateUser(user.copyWith(role: 'admin', accountType: kAccountAdmin));
+      await _db.updateUser(user.copyWith(role: 'admin'));
     }
 
+    await _syncCloudSubscriptionPlan(user.id);
     await _setSession(user.id);
     _invalidateUserData();
 
@@ -349,11 +350,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       }
 
       if (isAdmin) {
-        await _db.updateUser(user.copyWith(role: 'admin', accountType: kAccountAdmin));
+        await _db.updateUser(user.copyWith(role: 'admin'));
       }
 
       final sessionUser = await _db.safeGetUser(user.id);
       if (sessionUser == null) return 'Could not load your profile. Try again.';
+      await _syncCloudSubscriptionPlan(sessionUser.id);
       await _setSession(sessionUser.id);
       _invalidateUserData();
 
@@ -493,6 +495,18 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     _invalidateUserData();
   }
 
+  Future<void> _syncCloudSubscriptionPlan(int userId) async {
+    try {
+      final profile = await SupabaseAuthHelper.fetchOwnProfile();
+      final cloudPlan = profile?['subscription_plan'] as String?;
+      if (cloudPlan == PlanLimits.proPlan || cloudPlan == PlanLimits.freePlan) {
+        await ref.read(planLimitServiceProvider).setPlanForUser(userId, cloudPlan!);
+      }
+    } catch (e) {
+      debugPrint('Cloud subscription sync: $e');
+    }
+  }
+
   void _invalidateUserData() {
     ref.invalidate(customersProvider);
     ref.invalidate(projectsProvider);
@@ -501,6 +515,8 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     ref.invalidate(businessProfileProvider);
     ref.invalidate(invoiceBrandingProvider);
     ref.invalidate(appSettingsProvider);
+    ref.invalidate(cloudSubscriptionPlanProvider);
+    ref.invalidate(serverSubscriptionProvider);
     ref.invalidate(dashboardStatsProvider);
     ref.invalidate(clientProjectsProvider);
     ref.invalidate(clientSharedProjectsProvider);
@@ -540,6 +556,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       } catch (e) {
         debugPrint('Cloud profile sync on session: $e');
       }
+      await _syncCloudSubscriptionPlan(userId);
       try {
         await ref.read(supabaseSyncServiceProvider).onUserSignedIn(user);
       } catch (e) {

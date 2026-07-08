@@ -348,11 +348,18 @@ class PlanLimitService {
   Future<void> setPlan(String plan) async {
     final userId = ref.read(authStateProvider).valueOrNull?.id;
     if (userId == null) return;
+    await setPlanForUser(userId, plan);
+  }
+
+  Future<void> setPlanForUser(int userId, String plan) async {
     await ref.read(databaseProvider).saveAppSettingsForUser(
           userId,
           AppSettingsTableCompanion(subscriptionPlan: Value(plan)),
         );
-    ref.invalidate(appSettingsProvider);
+    final currentId = ref.read(authStateProvider).valueOrNull?.id;
+    if (currentId == userId) {
+      ref.invalidate(appSettingsProvider);
+    }
   }
 }
 
@@ -362,8 +369,17 @@ final isProProvider = Provider<bool>((ref) {
   if (isAdminUser(user)) return true;
   final serverSub = ref.watch(serverSubscriptionProvider).valueOrNull;
   if (serverSub == true) return true;
+  final cloudPlan = ref.watch(cloudSubscriptionPlanProvider).valueOrNull;
+  if (cloudPlan == PlanLimits.proPlan) return true;
   final plan = ref.watch(subscriptionPlanProvider).valueOrNull;
   return PlanFeatures.isPro(plan);
+});
+
+/// Supabase profiles.subscription_plan (admin grants, server truth when online).
+final cloudSubscriptionPlanProvider = FutureProvider<String?>((ref) async {
+  ref.watch(authStateProvider);
+  final profile = await SupabaseAuthHelper.fetchOwnProfile();
+  return profile?['subscription_plan'] as String?;
 });
 
 /// Server-verified subscription from Supabase (when online).

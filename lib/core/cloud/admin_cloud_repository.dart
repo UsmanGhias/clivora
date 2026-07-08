@@ -36,6 +36,10 @@ class CloudProfileRow {
   }
 
   String get typeLabel {
+    if (role == 'admin' && accountType == 'client') return 'Client (Admin)';
+    if (role == 'admin' && (accountType == 'freelancer' || accountType == 'user')) {
+      return 'Freelancer (Admin)';
+    }
     if (accountType == 'admin' || role == 'admin') return 'Admin';
     if (accountType == 'client') return 'Client';
     return 'Freelancer';
