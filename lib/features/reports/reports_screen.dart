@@ -3,9 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/services/analytics_export_service.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../data/database/database.dart';
+import '../../data/database/user_scoped_queries.dart';
+import '../../core/cloud/cloud_invoice_repository.dart';
+import '../../core/auth/auth_service.dart';
+import '../../core/services/sync_outbox_service.dart';
+import '../../core/services/tracking_service.dart';
+import '../../core/auth/user_roles.dart';
+import '../../core/constants/plan_features.dart';
+import '../../core/utils/navigation_helper.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 
@@ -19,6 +28,30 @@ class ReportsScreen extends ConsumerWidget {
     return ClivoraScaffold(
       title: 'Reports',
       showBackButton: true,
+      action: IconButton(
+        tooltip: 'Export report',
+        icon: const Icon(Icons.ios_share_outlined),
+        onPressed: () async {
+          final user = ref.read(authStateProvider).valueOrNull;
+          final plan = ref.read(subscriptionPlanProvider).valueOrNull;
+          final isClient = isClientUser(user);
+          if (!PlanFeatures.dataExport(plan) && !isClient) {
+            await requireProFeature(context, isPro: ref.read(isProProvider), featureName: 'Data export');
+            return;
+          }
+          if (isClient && !PlanFeatures.clientDataExport(plan)) {
+            await requireProFeature(context, isPro: ref.read(isProProvider), featureName: 'Data export', isClient: true);
+            return;
+          }
+          try {
+            await ref.read(analyticsExportServiceProvider).exportAndShare();
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Export failed: $e')));
+            }
+          }
+        },
+      ),
       body: reportsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
@@ -196,77 +229,6 @@ class _MiniStat extends StatelessWidget {
   }
 }
 
-class CalendarScreen extends ConsumerWidget {
-  const CalendarScreen({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final eventsAsync = ref.watch(calendarEventsProvider);
-
-    return ClivoraScaffold(
-      title: 'Calendar',
-      showBackButton: true,
-      body: eventsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (events) {
-          if (events.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.calendar_today_outlined, size: 56, color: ClivoraColors.labelGray.withValues(alpha: 0.6)),
-                  const SizedBox(height: 16),
-                  Text('No upcoming events', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: ClivoraColors.textSecondary)),
-                  const SizedBox(height: 8),
-                  Text('Add tasks, projects, or invoices with due dates', style: Theme.of(context).textTheme.bodySmall, textAlign: TextAlign.center),
-                ],
-              ),
-            );
-          }
-          return ListView.separated(
-            itemCount: events.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final event = events[index];
-              return ListTile(
-                tileColor: Theme.of(context).cardColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: Theme.of(context).dividerColor),
-                ),
-                leading: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: event.color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        DateFormat('d').format(event.date),
-                        style: TextStyle(fontWeight: FontWeight.w700, color: event.color, fontSize: 16),
-                      ),
-                      Text(
-                        DateFormat('MMM').format(event.date),
-                        style: TextStyle(fontSize: 10, color: event.color),
-                      ),
-                    ],
-                  ),
-                ),
-                title: Text(event.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text('${event.type[0].toUpperCase()}${event.type.substring(1)} · ${DateFormat('EEEE, MMM d').format(event.date)}'),
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-}
-
 class PaymentsScreen extends ConsumerWidget {
   const PaymentsScreen({super.key});
 
@@ -327,11 +289,61 @@ class _PaymentTile extends ConsumerWidget {
   final Invoice invoice;
   final bool showMarkPaid;
 
+  Future<void> _confirmPaid(BuildContext context, WidgetRef ref) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Mark as paid?'),
+        content: Text(
+          'Confirm that ${invoice.invoiceNumber} (${formatCurrency(invoice.total)}) has been received.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Mark paid')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+
+    final user = ref.read(authStateProvider).valueOrNull;
+    if (user == null) return;
+
+    final updated = invoice.copyWith(status: 'paid', updatedAt: DateTime.now());
+    await ref.read(databaseProvider).updateInvoice(updated);
+    await ref.read(trackingServiceProvider).logStatusChange(
+          entityType: 'invoice',
+          entityId: invoice.id,
+          status: 'paid',
+          note: 'Payment recorded from Hub',
+        );
+
+    final customer = await ref.read(databaseProvider).getCustomerForUser(user.id, invoice.customerId);
+    if (customer != null && customer.emails.isNotEmpty) {
+      await ref.read(cloudInvoiceRepositoryProvider).syncInvoiceToClient(
+            freelancer: user,
+            invoice: updated,
+            clientEmail: customer.emails.split(',').first.trim(),
+          );
+    }
+
+    ref.invalidate(invoicesProvider(null));
+    ref.invalidate(invoicesProvider('sent'));
+    ref.invalidate(invoicesProvider('paid'));
+    await ref.read(syncOutboxServiceProvider).reconcileInvoiceShares();
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${invoice.invoiceNumber} marked as paid')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
+        onTap: showMarkPaid ? () => _confirmPaid(context, ref) : null,
         tileColor: Theme.of(context).cardColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -342,27 +354,14 @@ class _PaymentTile extends ConsumerWidget {
           color: showMarkPaid ? ClivoraColors.warningOrange : ClivoraColors.successGreen,
         ),
         title: Text(invoice.invoiceNumber, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(showMarkPaid ? 'Awaiting payment' : 'Paid'),
+        subtitle: Text(showMarkPaid ? 'Tap to record payment' : 'Paid'),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(formatCurrency(invoice.total), style: const TextStyle(fontWeight: FontWeight.w700)),
             if (showMarkPaid) ...[
               const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.check, color: ClivoraColors.successGreen),
-                tooltip: 'Mark as paid',
-                onPressed: () async {
-                  await ref.read(databaseProvider).updateInvoice(
-                        invoice.copyWith(status: 'paid', updatedAt: DateTime.now()),
-                      );
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('${invoice.invoiceNumber} marked as paid')),
-                    );
-                  }
-                },
-              ),
+              Icon(Icons.chevron_right, color: ClivoraColors.labelGray.withValues(alpha: 0.8)),
             ],
           ],
         ),

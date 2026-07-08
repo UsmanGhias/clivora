@@ -8,10 +8,12 @@ import '../../core/auth/user_roles.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../core/utils/form_validators.dart';
 import '../../data/database/database.dart';
+import '../../core/services/app_engagement_service.dart';
+import '../../core/utils/navigation_helper.dart';
+import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_logo.dart';
-import '../../shared/widgets/clivora_scaffold.dart';
 
-/// Client account — personal info only (no business/invoice settings).
+/// Client account — profile, quick links, sign out.
 class ClientAccountScreen extends ConsumerStatefulWidget {
   const ClientAccountScreen({super.key});
 
@@ -23,6 +25,7 @@ class _ClientAccountScreenState extends ConsumerState<ClientAccountScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   bool _initialized = false;
+  bool _saving = false;
 
   @override
   void dispose() {
@@ -60,11 +63,13 @@ class _ClientAccountScreenState extends ConsumerState<ClientAccountScreen> {
       showFormError(context, emailErr);
       return;
     }
+    setState(() => _saving = true);
     final error = await ref.read(authStateProvider.notifier).updateProfile(
           name: _nameController.text,
           email: _emailController.text,
         );
     if (!mounted) return;
+    setState(() => _saving = false);
     if (error != null) {
       showFormError(context, error);
       return;
@@ -73,6 +78,18 @@ class _ClientAccountScreenState extends ConsumerState<ClientAccountScreen> {
   }
 
   Future<void> _signOut() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Sign out?'),
+        content: const Text('You can sign back in anytime with the same email.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Sign out')),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
     await ref.read(authStateProvider.notifier).signOut();
     if (mounted) context.go('/login');
   }
@@ -80,111 +97,266 @@ class _ClientAccountScreenState extends ConsumerState<ClientAccountScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authStateProvider).valueOrNull;
+    final projectCount = ref.watch(clientSharedProjectsProvider).valueOrNull?.length ?? 0;
+    final isPro = ref.watch(isProProvider);
+
     if (!_initialized && user != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) setState(() => _populate(user));
       });
     }
 
-    return ClivoraScaffold(
-      title: 'My Account',
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: ClivoraColors.clientGradient,
-              borderRadius: BorderRadius.circular(20),
+    return Scaffold(
+      backgroundColor: ClivoraColors.clientSurface,
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          children: [
+            const Text(
+              'My Account',
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: ClivoraColors.clientAccent),
             ),
-            child: Row(
-              children: [
-                ProfileAvatar(photoPath: user?.profilePhotoPath, name: user?.name ?? 'C', radius: 32),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Text(
-                          'CLIENT ACCOUNT',
-                          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.6),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        user?.name ?? 'Client',
-                        style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
-                      ),
-                      Text(
-                        user?.email ?? '',
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13),
-                      ),
-                    ],
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: ClivoraColors.clientGradient,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: ClivoraColors.clientAccent.withValues(alpha: 0.25),
+                    blurRadius: 16,
+                    offset: const Offset(0, 8),
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          Center(
-            child: Stack(
-              children: [
-                ProfileAvatar(photoPath: user?.profilePhotoPath, name: _nameController.text, radius: 48),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Material(
-                    color: ClivoraColors.clientAccent,
-                    shape: const CircleBorder(),
-                    child: InkWell(
-                      onTap: () => _pickPhoto(ImageSource.gallery),
-                      customBorder: const CircleBorder(),
-                      child: const Padding(
-                        padding: EdgeInsets.all(8),
-                        child: Icon(Icons.camera_alt, color: Colors.white, size: 18),
-                      ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => _pickPhoto(ImageSource.gallery),
+                    child: Stack(
+                      children: [
+                        ProfileAvatar(
+                          photoPath: user?.profilePhotoPath,
+                          name: user?.name ?? 'C',
+                          radius: 36,
+                          showVerified: isPro,
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                            child: const Icon(Icons.camera_alt, size: 14, color: ClivoraColors.clientAccent),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'CLIENT ACCOUNT',
+                            style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.6),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          user?.name ?? 'Client',
+                          style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+                        ),
+                        Text(
+                          user?.email ?? '',
+                          style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '$projectCount shared project${projectCount == 1 ? '' : 's'}',
+                          style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
-          TextField(
-            controller: _nameController,
-            decoration: const InputDecoration(labelText: 'FULL NAME', prefixIcon: Icon(Icons.person_outline)),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _emailController,
-            keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(labelText: 'EMAIL', prefixIcon: Icon(Icons.email_outlined)),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Your freelancer shares projects with this email address.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: ClivoraColors.textSecondary),
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: _save,
-            style: ElevatedButton.styleFrom(backgroundColor: ClivoraColors.clientAccent),
-            child: const Text('Save Changes'),
-          ),
-          const SizedBox(height: 16),
-          OutlinedButton(
-            onPressed: _signOut,
-            child: const Text('Sign Out', style: TextStyle(color: ClivoraColors.errorRed)),
-          ),
-          const SizedBox(height: 24),
-          const Center(child: ClivoraLogo(size: 28, borderRadius: 8)),
-        ],
+            if (!isPro) ...[
+              const SizedBox(height: 16),
+              Card(
+                color: ClivoraColors.clientAccent.withValues(alpha: 0.08),
+                child: ListTile(
+                  leading: const Icon(Icons.workspace_premium, color: ClivoraColors.clientAccent),
+                  title: const Text('Upgrade to Client Pro', style: TextStyle(fontWeight: FontWeight.w700)),
+                  subtitle: const Text('Rs 2,000/mo · unlimited contracts & PDFs'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/upgrade'),
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
+            const _SectionLabel('Share & rewards'),
+            const SizedBox(height: 10),
+            _QuickLinkTile(
+              icon: Icons.share_outlined,
+              label: 'Share CLIVORA',
+              onTap: () => ref.read(appEngagementServiceProvider).shareApp(),
+            ),
+            _QuickLinkTile(
+              icon: Icons.card_giftcard_outlined,
+              label: 'Refer & earn bonus days',
+              onTap: () => context.push('/referral'),
+            ),
+            _QuickLinkTile(
+              icon: Icons.star_outline,
+              label: 'Rate on Google Play',
+              onTap: () => ref.read(appEngagementServiceProvider).showRateDialog(context),
+            ),
+            const SizedBox(height: 24),
+            const _SectionLabel('Quick links'),
+            const SizedBox(height: 10),
+            _QuickLinkTile(
+              icon: Icons.person_outline,
+              label: 'Edit full profile',
+              onTap: () => context.push('/profile'),
+            ),
+            _QuickLinkTile(
+              icon: Icons.folder_shared_outlined,
+              label: 'Shared projects',
+              onTap: () => context.go('/client-portal'),
+            ),
+            _QuickLinkTile(
+              icon: Icons.mail_outline_rounded,
+              label: 'Messages',
+              onTap: () => context.go('/client-messages'),
+            ),
+            _QuickLinkTile(
+              icon: Icons.notifications_outlined,
+              label: 'Updates & notifications',
+              onTap: () => context.go('/client-activity'),
+            ),
+            _QuickLinkTile(
+              icon: Icons.person_add_alt_1_outlined,
+              label: 'Link a freelancer',
+              onTap: () => context.push('/client-link-freelancer'),
+            ),
+            const SizedBox(height: 24),
+            const _SectionLabel('Profile details'),
+            const SizedBox(height: 10),
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _nameController,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: const InputDecoration(
+                        labelText: 'FULL NAME',
+                        prefixIcon: Icon(Icons.person_outline),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(
+                        labelText: 'EMAIL',
+                        prefixIcon: Icon(Icons.email_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Freelancers share projects and invoices with this email.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: ClivoraColors.textSecondary),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: _saving ? null : _save,
+              style: FilledButton.styleFrom(
+                backgroundColor: ClivoraColors.clientAccent,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              child: _saving
+                  ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Text('Save changes'),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: _signOut,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: ClivoraColors.errorRed,
+                side: const BorderSide(color: ClivoraColors.errorRed),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              child: const Text('Sign out'),
+            ),
+            const SizedBox(height: 32),
+            const Center(child: ClivoraLogo(size: 28, borderRadius: 8)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text.toUpperCase(),
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.8,
+        color: ClivoraColors.textSecondary,
+      ),
+    );
+  }
+}
+
+class _QuickLinkTile extends StatelessWidget {
+  const _QuickLinkTile({required this.icon, required this.label, required this.onTap});
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: ListTile(
+        leading: Icon(icon, color: ClivoraColors.clientAccent),
+        title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+        trailing: const Icon(Icons.chevron_right, size: 20),
+        onTap: onTap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
   }

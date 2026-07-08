@@ -7,10 +7,15 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/services/locale_service.dart';
 import '../../core/auth/auth_service.dart';
+import '../../l10n/app_localizations.dart';
+import '../../core/services/app_engagement_service.dart';
+import '../../core/auth/user_roles.dart';
 import '../../core/utils/admin_helper.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../core/constants/plan_limits.dart';
+import '../../core/constants/plan_features.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../data/database/database.dart';
@@ -21,6 +26,7 @@ import '../../shared/widgets/clivora_scaffold.dart';
 import '../../shared/widgets/clivora_logo.dart';
 import '../../shared/widgets/step_progress_card.dart';
 import '../../shared/widgets/tool_grid_tile.dart';
+import '../../core/services/analytics_export_service.dart';
 
 class MoreScreen extends ConsumerWidget {
   const MoreScreen({super.key});
@@ -33,9 +39,12 @@ class MoreScreen extends ConsumerWidget {
     final authUser = ref.watch(authStateProvider).valueOrNull;
 
     final planAsync = ref.watch(subscriptionPlanProvider);
+    final isPro = ref.watch(isProProvider);
+    final plan = planAsync.valueOrNull;
 
     return ClivoraScaffold(
       title: 'Workspace',
+      showMessagesButton: true,
       body: ListView(
         children: [
           profileAsync.when(
@@ -66,8 +75,14 @@ class MoreScreen extends ConsumerWidget {
             children: [
               ToolGridTile(icon: Icons.receipt_long_outlined, label: 'Invoices', iconBackground: ClivoraColors.iconPurple, iconColor: ClivoraColors.primaryPurple, onTap: () => context.go('/invoices')),
               ToolGridTile(icon: Icons.task_alt_outlined, label: 'Tasks', iconBackground: ClivoraColors.iconOrange, iconColor: ClivoraColors.warningOrange, onTap: () => context.push('/tasks')),
-              ToolGridTile(icon: Icons.calendar_today_outlined, label: 'Calendar', iconBackground: ClivoraColors.iconGreen, iconColor: ClivoraColors.successGreen, onTap: () => context.push('/calendar')),
-              ToolGridTile(icon: Icons.people_outline, label: 'Team', iconBackground: ClivoraColors.iconBlue, iconColor: Colors.blue, onTap: () => context.push('/team')),
+              ToolGridTile(icon: Icons.calendar_today_outlined, label: 'Calendar', iconBackground: ClivoraColors.iconGreen, iconColor: ClivoraColors.successGreen, onTap: () async {
+                if (!PlanFeatures.calendarView(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'Calendar', isClient: false)) return;
+                if (context.mounted) context.push('/calendar');
+              }),
+              ToolGridTile(icon: Icons.people_outline, label: 'Team', iconBackground: ClivoraColors.iconBlue, iconColor: Colors.blue, onTap: () async {
+                if (!PlanFeatures.teamCollaboration(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'Team')) return;
+                if (context.mounted) context.push('/team');
+              }),
               ToolGridTile(icon: Icons.forum_outlined, label: 'Messages', iconBackground: ClivoraColors.iconTeal, iconColor: ClivoraColors.primary, onTap: () => context.go('/freelancer-messages')),
               ToolGridTile(icon: Icons.payment_outlined, label: 'Payments', iconBackground: ClivoraColors.iconTeal, iconColor: Colors.teal, onTap: () => context.push('/payments')),
               ToolGridTile(icon: Icons.notifications_outlined, label: 'Follow-ups', iconBackground: ClivoraColors.iconRed, iconColor: ClivoraColors.errorRed, onTap: () => context.push('/notifications')),
@@ -82,14 +97,41 @@ class MoreScreen extends ConsumerWidget {
             crossAxisSpacing: 12,
             childAspectRatio: 0.85,
             children: [
-              ToolGridTile(icon: Icons.cloud_outlined, label: 'File Vault', iconBackground: ClivoraColors.iconBlue, iconColor: Colors.blue, onTap: () => context.push('/storage')),
+              ToolGridTile(icon: Icons.cloud_outlined, label: 'File Vault', iconBackground: ClivoraColors.iconBlue, iconColor: Colors.blue, onTap: () async {
+                if (!PlanFeatures.fileVault(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'File Vault')) return;
+                if (context.mounted) context.push('/storage');
+              }),
               ToolGridTile(icon: Icons.note_outlined, label: 'Notes', iconBackground: ClivoraColors.iconOrange, iconColor: ClivoraColors.warningOrange, onTap: () => context.push('/notes')),
               ToolGridTile(icon: Icons.bar_chart_outlined, label: 'Reports', iconBackground: ClivoraColors.iconIndigo, iconColor: Colors.indigo, onTap: () => context.push('/reports')),
+              ToolGridTile(icon: Icons.insights_outlined, label: 'Analytics', iconBackground: ClivoraColors.iconPurple, iconColor: ClivoraColors.primaryPurple, onTap: () => context.push('/analytics')),
+              ToolGridTile(icon: Icons.backup_outlined, label: 'Backup', iconBackground: ClivoraColors.iconGreen, iconColor: ClivoraColors.successGreen, onTap: () => context.push('/backup')),
+              ToolGridTile(
+                icon: Icons.ios_share_outlined,
+                label: 'Export',
+                iconBackground: ClivoraColors.iconGreen,
+                iconColor: ClivoraColors.successGreen,
+                onTap: () async {
+                  if (!PlanFeatures.dataExport(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'Data export')) return;
+                  try {
+                    await ref.read(analyticsExportServiceProvider).exportAndShare();
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Export failed: $e')));
+                    }
+                  }
+                },
+              ),
               ToolGridTile(icon: Icons.receipt_outlined, label: 'Expenses', iconBackground: ClivoraColors.iconRed, iconColor: ClivoraColors.errorRed, onTap: () => context.push('/expenses')),
               ToolGridTile(icon: Icons.forum_outlined, label: 'Templates', iconBackground: ClivoraColors.iconTeal, iconColor: Colors.teal, onTap: () => context.push('/templates')),
-              ToolGridTile(icon: Icons.auto_awesome_outlined, label: 'CLIVORA AI', iconBackground: ClivoraColors.iconPurple, iconColor: ClivoraColors.primaryPurple, onTap: () => context.push('/ai-assistant')),
+              ToolGridTile(icon: Icons.auto_awesome_outlined, label: 'CLIVORA AI', iconBackground: ClivoraColors.iconPurple, iconColor: ClivoraColors.primaryPurple, onTap: () async {
+                if (!PlanFeatures.aiAssistant(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'CLIVORA AI')) return;
+                if (context.mounted) context.push('/ai-assistant');
+              }),
               ToolGridTile(icon: Icons.description_outlined, label: 'Contracts', iconBackground: ClivoraColors.iconPurple, iconColor: ClivoraColors.primaryPurple, onTap: () => context.push('/contracts')),
-              ToolGridTile(icon: Icons.bolt_outlined, label: 'Workflows', iconBackground: ClivoraColors.iconYellow, iconColor: Colors.amber, onTap: () => context.push('/automations')),
+              ToolGridTile(icon: Icons.bolt_outlined, label: 'Workflows', iconBackground: ClivoraColors.iconYellow, iconColor: Colors.amber, onTap: () async {
+                if (!PlanFeatures.automations(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'Workflows')) return;
+                if (context.mounted) context.push('/automations');
+              }),
             ],
           ),
           const SizedBox(height: 24),
@@ -103,13 +145,19 @@ class MoreScreen extends ConsumerWidget {
           if (isAdminUser(authUser))
             _SettingsTile(
               icon: Icons.admin_panel_settings_outlined,
-              label: 'CodCrafters Admin',
-              onTap: () => context.push('/admin'),
+              label: isSuperAdmin(authUser) ? 'Command Center' : 'CodCrafters Admin',
+              onTap: () => context.push(isSuperAdmin(authUser) ? '/admin-console' : '/admin'),
             ),
           _SettingsTile(
             icon: Icons.business_outlined,
             label: 'Business Settings',
             onTap: () => _showBusinessSettings(context, ref),
+          ),
+          _SettingsTile(
+            icon: Icons.shield_outlined,
+            label: 'Security & Privacy',
+            subtitle: 'Biometric lock, delete account, licenses',
+            onTap: () => context.push('/security'),
           ),
           _SettingsTile(
             icon: Icons.palette_outlined,
@@ -118,11 +166,32 @@ class MoreScreen extends ConsumerWidget {
           ),
           _SettingsTile(
             icon: Icons.diamond_outlined,
-            label: 'Upgrade to Pro',
+            label: isPro ? 'Manage Pro' : 'Upgrade to Pro',
+            subtitle: isPro ? 'Active subscription' : 'Rs 2,000/mo · offer from Rs 2,800',
             onTap: () => context.push('/upgrade'),
           ),
           const SizedBox(height: 24),
+          const SectionHeader(title: 'Share & Grow'),
+          _SettingsTile(
+            icon: Icons.share_outlined,
+            label: 'Share CLIVORA',
+            subtitle: 'Tell friends about the app',
+            onTap: () => ref.read(appEngagementServiceProvider).shareApp(),
+          ),
+          _SettingsTile(
+            icon: Icons.card_giftcard_outlined,
+            label: 'Refer & earn',
+            subtitle: 'Get bonus Pro days',
+            onTap: () => context.push('/referral'),
+          ),
+          _SettingsTile(
+            icon: Icons.star_outline,
+            label: 'Rate on Google Play',
+            onTap: () => ref.read(appEngagementServiceProvider).showRateDialog(context),
+          ),
+          const SizedBox(height: 24),
           const SectionHeader(title: 'Appearance'),
+          _LanguageTile(ref: ref),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
@@ -538,6 +607,55 @@ class _TemplateOption extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _LanguageTile extends ConsumerWidget {
+  const _LanguageTile({required this.ref});
+
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context, WidgetRef _) {
+    final locale = ref.watch(appLocaleProvider);
+    final l10n = AppLocalizations.of(context)!;
+    final code = locale?.languageCode ?? 'en';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Theme.of(context).dividerColor),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: ClivoraColors.iconTeal,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.translate, color: ClivoraColors.primary, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Text(l10n.settingsLanguage, style: const TextStyle(fontWeight: FontWeight.w500))),
+          DropdownButton<String>(
+            value: code,
+            underline: const SizedBox.shrink(),
+            items: [
+              DropdownMenuItem(value: 'en', child: Text(l10n.languageEnglish)),
+              DropdownMenuItem(value: 'ur', child: Text(l10n.languageUrdu)),
+            ],
+            onChanged: (v) {
+              if (v != null) ref.read(appLocaleProvider.notifier).setLocaleCode(v);
+            },
+          ),
+        ],
       ),
     );
   }

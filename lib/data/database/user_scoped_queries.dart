@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 
 import 'database.dart';
 import 'user_defaults.dart';
@@ -154,6 +155,11 @@ extension UserScopedQueries on AppDatabase {
       .get()
       .then((list) => list.length);
 
+  Future<int> countTasksForProjectForUser(int ownerUserId, int projectId) => (select(tasks)
+        ..where((t) => t.ownerUserId.equals(ownerUserId) & t.projectId.equals(projectId)))
+      .get()
+      .then((list) => list.length);
+
   // ——— Expenses ———
   Stream<List<Expense>> watchExpensesForUser(int ownerUserId, {String? category}) {
     final query = select(expenses)
@@ -196,16 +202,43 @@ extension UserScopedQueries on AppDatabase {
 
   Future<BusinessProfile> getOrCreateBusinessProfile(int userId) async {
     await repairUserDefaultsNulls(userId);
-    final existing = await (select(businessProfiles)..where((t) => t.userId.equals(userId))).getSingleOrNull();
-    if (existing != null) return existing;
-    await into(businessProfiles).insertOnConflictUpdate(
-      defaultBusinessProfileCompanion(userId),
-    );
-    final created = await (select(businessProfiles)..where((t) => t.userId.equals(userId))).getSingleOrNull();
-    if (created == null) {
-      throw StateError('Could not create business profile for user $userId');
+    try {
+      final existing = await (select(businessProfiles)..where((t) => t.userId.equals(userId))).getSingleOrNull();
+      if (existing != null) return existing;
+    } catch (e) {
+      debugPrint('getOrCreateBusinessProfile read: $e');
     }
-    return created;
+    try {
+      await into(businessProfiles).insertOnConflictUpdate(
+        defaultBusinessProfileCompanion(userId),
+      );
+    } catch (e) {
+      debugPrint('getOrCreateBusinessProfile insert: $e');
+    }
+    await repairUserDefaultsNulls(userId);
+    try {
+      final created = await (select(businessProfiles)..where((t) => t.userId.equals(userId))).getSingleOrNull();
+      if (created != null) return created;
+    } catch (e) {
+      debugPrint('getOrCreateBusinessProfile re-read: $e');
+    }
+    return BusinessProfile(
+      userId: userId,
+      businessName: '',
+      businessEmail: '',
+      businessPhone: '',
+      ownerName: '',
+      businessAddress: '',
+      businessCity: '',
+      businessPostalCode: '',
+      businessCountry: '',
+      skills: '[]',
+      bio: '',
+      clientCompany: '',
+      clientIndustry: '',
+      clientWebsite: '',
+      memberSince: DateTime.now(),
+    );
   }
 
   Future<void> saveBusinessProfileForUser(int userId, BusinessProfilesCompanion entry) async {
@@ -224,16 +257,32 @@ extension UserScopedQueries on AppDatabase {
 
   Future<InvoiceBranding> getOrCreateInvoiceBranding(int userId) async {
     await repairUserDefaultsNulls(userId);
-    final existing = await (select(invoiceBrandings)..where((t) => t.userId.equals(userId))).getSingleOrNull();
-    if (existing != null) return existing;
-    await into(invoiceBrandings).insertOnConflictUpdate(
-      defaultInvoiceBrandingCompanion(userId),
-    );
-    final created = await (select(invoiceBrandings)..where((t) => t.userId.equals(userId))).getSingleOrNull();
-    if (created == null) {
-      throw StateError('Could not create invoice branding for user $userId');
+    try {
+      final existing = await (select(invoiceBrandings)..where((t) => t.userId.equals(userId))).getSingleOrNull();
+      if (existing != null) return existing;
+    } catch (e) {
+      debugPrint('getOrCreateInvoiceBranding read: $e');
     }
-    return created;
+    try {
+      await into(invoiceBrandings).insertOnConflictUpdate(
+        defaultInvoiceBrandingCompanion(userId),
+      );
+    } catch (e) {
+      debugPrint('getOrCreateInvoiceBranding insert: $e');
+    }
+    await repairUserDefaultsNulls(userId);
+    try {
+      final created = await (select(invoiceBrandings)..where((t) => t.userId.equals(userId))).getSingleOrNull();
+      if (created != null) return created;
+    } catch (e) {
+      debugPrint('getOrCreateInvoiceBranding re-read: $e');
+    }
+    return InvoiceBranding(
+      userId: userId,
+      accentColor: '#6C63FF',
+      templateStyle: 'classic',
+      showLogo: true,
+    );
   }
 
   Future<void> saveInvoiceBrandingForUser(int userId, InvoiceBrandingsCompanion entry) async {
@@ -249,12 +298,20 @@ extension UserScopedQueries on AppDatabase {
       readsFrom: {appSettingsTable},
     ).watch().asyncMap((_) async {
       await getOrCreateAppSettings(userId);
-      final settings = await (select(appSettingsTable)..where((t) => t.userId.equals(userId)))
-          .getSingleOrNull();
-      if (settings == null) {
-        throw StateError('Could not create app settings for user $userId');
+      try {
+        final settings = await (select(appSettingsTable)..where((t) => t.userId.equals(userId)))
+            .getSingleOrNull();
+        if (settings != null) return settings;
+      } catch (e) {
+        debugPrint('watchAppSettingsForUser read: $e');
       }
-      return settings;
+      return AppSettingsTableData(
+        userId: userId,
+        themeMode: 'light',
+        currency: 'USD',
+        timezone: 'UTC',
+        subscriptionPlan: 'free',
+      );
     });
   }
 
@@ -292,6 +349,12 @@ extension UserScopedQueries on AppDatabase {
       query.where((t) => t.ownerUserId.equals(ownerUserId) & t.status.equals(status));
     }
     return query.watch();
+  }
+
+  Future<Contract?> getContractForUser(int ownerUserId, int contractId) {
+    return (select(contracts)
+          ..where((t) => t.ownerUserId.equals(ownerUserId) & t.id.equals(contractId)))
+        .getSingleOrNull();
   }
 
   // ——— Tracking ———
@@ -459,18 +522,97 @@ extension UserScopedQueries on AppDatabase {
       (delete(teamMembers)..where((t) => t.id.equals(id))).go();
 
   Future<List<Invoice>> watchInvoicesForClient(int clientUserId) async {
-    final projects = await watchProjectsForClient(clientUserId).first;
-    if (projects.isEmpty) return [];
-    final projectIds = projects.map((p) => p.id).toSet();
-    final links = await (select(projectClientLinks)..where((t) => t.clientUserId.equals(clientUserId))).get();
-    if (links.isEmpty) return [];
-    final freelancerId = links.first.freelancerUserId;
-    final all = await watchInvoicesForUser(freelancerId).first;
-    return all.where((inv) => inv.projectId != null && projectIds.contains(inv.projectId)).toList();
+    return watchInvoicesForClientStream(clientUserId).first;
+  }
+
+  Stream<List<Invoice>> watchInvoicesForClientStream(int clientUserId) async* {
+    await for (final projects in watchProjectsForClient(clientUserId)) {
+      if (projects.isEmpty) {
+        yield [];
+        continue;
+      }
+      final projectIds = projects.map((p) => p.id).toSet();
+      final links = await getFreelancerLinksForClient(clientUserId);
+      if (links.isEmpty) {
+        yield [];
+        continue;
+      }
+      final freelancerIds = links.map((l) => l.freelancerUserId).toSet();
+      final invoices = <Invoice>[];
+      for (final freelancerId in freelancerIds) {
+        final all = await watchInvoicesForUser(freelancerId).first;
+        invoices.addAll(
+          all.where((inv) => inv.projectId != null && projectIds.contains(inv.projectId)),
+        );
+      }
+      invoices.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      yield invoices;
+    }
+  }
+
+  Future<User?> getFreelancerUserForClientInvoice(int clientUserId, Invoice invoice) async {
+    if (invoice.projectId == null) return null;
+    return getFreelancerUserForClientProject(clientUserId, invoice.projectId!);
+  }
+
+  Stream<List<Contract>> watchContractsForClient(int clientUserId) async* {
+    await for (final links
+        in (select(projectClientLinks)..where((t) => t.clientUserId.equals(clientUserId))).watch()) {
+      final results = <Contract>[];
+      final seen = <int>{};
+      for (final link in links) {
+        final project = await (select(projects)..where((t) => t.id.equals(link.projectId))).getSingleOrNull();
+        if (project == null) continue;
+        final rows = await (select(contracts)
+              ..where(
+                (t) =>
+                    t.ownerUserId.equals(link.freelancerUserId) &
+                    t.customerId.equals(project.customerId) &
+                    t.status.equals('draft').not(),
+              )
+              ..orderBy([(t) => OrderingTerm.desc(t.updatedAt)]))
+            .get();
+        for (final c in rows) {
+          if (seen.add(c.id)) results.add(c);
+        }
+      }
+      results.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      yield results;
+    }
+  }
+
+  Stream<List<ProjectTimeEntry>> watchTimeEntriesForClientProject(int clientUserId, int projectId) async* {
+    await for (final links
+        in (select(projectClientLinks)..where((t) => t.clientUserId.equals(clientUserId))).watch()) {
+      final link = links.where((l) => l.projectId == projectId).firstOrNull;
+      if (link == null) {
+        yield [];
+        continue;
+      }
+      yield* (select(projectTimeEntries)
+            ..where((t) => t.projectId.equals(projectId) & t.ownerUserId.equals(link.freelancerUserId)))
+          .watch();
+    }
+  }
+
+  Future<int> countMessageTemplatesForUser(int ownerUserId) {
+    return (select(messageTemplates)..where((t) => t.ownerUserId.equals(ownerUserId))).get().then((l) => l.length);
   }
 
   Future<List<ProjectClientLink>> getFreelancerLinksForClient(int clientUserId) {
     return (select(projectClientLinks)..where((t) => t.clientUserId.equals(clientUserId))).get();
+  }
+
+  Future<ProjectClientLink?> getClientLinkForProject(int clientUserId, int projectId) {
+    return (select(projectClientLinks)
+          ..where((t) => t.clientUserId.equals(clientUserId) & t.projectId.equals(projectId)))
+        .getSingleOrNull();
+  }
+
+  Future<User?> getFreelancerUserForClientProject(int clientUserId, int projectId) async {
+    final link = await getClientLinkForProject(clientUserId, projectId);
+    if (link == null) return null;
+    return getUser(link.freelancerUserId);
   }
 
   Future<void> linkPendingClientsForUser(int clientUserId, String email) async {

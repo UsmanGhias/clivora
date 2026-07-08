@@ -31,6 +31,8 @@ part 'database.g.dart';
     ProjectClientLinks,
     ClientMessages,
     TeamMembers,
+    FileAttachments,
+    CalendarReminders,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -39,7 +41,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 15;
 
   bool _databaseRepaired = false;
 
@@ -104,6 +106,20 @@ class AppDatabase extends _$AppDatabase {
           if (from < 12) {
             await m.createTable(clientMessages);
             await m.createTable(teamMembers);
+          }
+          if (from < 13) {
+            await repairAllDatabaseNulls();
+          }
+          if (from < 14) {
+            await m.createTable(fileAttachments);
+            await m.createTable(calendarReminders);
+          }
+          if (from < 15) {
+            await m.addColumn(businessProfiles, businessProfiles.skills);
+            await m.addColumn(businessProfiles, businessProfiles.bio);
+            await m.addColumn(businessProfiles, businessProfiles.clientCompany);
+            await m.addColumn(businessProfiles, businessProfiles.clientIndustry);
+            await m.addColumn(businessProfiles, businessProfiles.clientWebsite);
           }
         },
       );
@@ -707,6 +723,14 @@ class AppDatabase extends _$AppDatabase {
       (select(appAnalytics)..orderBy([(t) => OrderingTerm.desc(t.createdAt)])).get();
 
   // Project time tracking
+  Future<void> stopActiveTimeEntryForUser(int ownerUserId) async {
+    final active = await getActiveTimeEntryForUser(ownerUserId);
+    if (active != null) {
+      await stopTimeEntry(active.id);
+    }
+  }
+
+  @Deprecated('Use getActiveTimeEntryForUser(ownerUserId) instead')
   Future<ProjectTimeEntry?> getActiveTimeEntry() =>
       (select(projectTimeEntries)..where((t) => t.endedAt.isNull())).getSingleOrNull();
 
@@ -738,6 +762,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> stopActiveTimeEntry() async {
+    // Legacy global stop — only closes entries without endedAt (prefer user-scoped API).
     final active = await getActiveTimeEntry();
     if (active != null) {
       await stopTimeEntry(active.id);
@@ -775,6 +800,59 @@ class AppDatabase extends _$AppDatabase {
       }
       return totals;
     });
+  }
+
+  // File attachments
+  Future<List<FileAttachment>> getAttachmentsForEntity({
+    required int ownerUserId,
+    required String entityType,
+    required int entityId,
+  }) {
+    return (select(fileAttachments)
+          ..where(
+            (t) =>
+                t.ownerUserId.equals(ownerUserId) &
+                t.entityType.equals(entityType) &
+                t.entityId.equals(entityId),
+          )
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .get();
+  }
+
+  Future<List<FileAttachment>> watchAllAttachmentsForUser(int ownerUserId) {
+    return (select(fileAttachments)
+          ..where((t) => t.ownerUserId.equals(ownerUserId))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .get();
+  }
+
+  Future<int> insertAttachment(FileAttachmentsCompanion entry) => into(fileAttachments).insert(entry);
+
+  Future<int> deleteAttachment(int id) =>
+      (delete(fileAttachments)..where((t) => t.id.equals(id))).go();
+
+  // Calendar reminders
+  Stream<List<CalendarReminder>> watchRemindersForUser(int ownerUserId) {
+    return (select(calendarReminders)
+          ..where((t) => t.ownerUserId.equals(ownerUserId) & t.completed.equals(false))
+          ..orderBy([(t) => OrderingTerm.asc(calendarReminders.scheduledAt)]))
+        .watch();
+  }
+
+  Future<int> insertReminder(CalendarRemindersCompanion entry) =>
+      into(calendarReminders).insert(entry);
+
+  Future<bool> completeReminder(int id) async {
+    final row = await (select(calendarReminders)..where((t) => t.id.equals(id))).getSingleOrNull();
+    if (row == null) return false;
+    return update(calendarReminders).replace(row.copyWith(completed: true));
+  }
+
+  Future<List<TrackingEvent>> watchAllTrackingForUser(int ownerUserId) {
+    return (select(trackingEvents)
+          ..where((t) => t.ownerUserId.equals(ownerUserId))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .get();
   }
 }
 

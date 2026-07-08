@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/clivora_colors.dart';
+import 'messages_icon_button.dart';
 
 class ClivoraScaffold extends StatelessWidget {
   const ClivoraScaffold({
@@ -10,6 +11,8 @@ class ClivoraScaffold extends StatelessWidget {
     required this.body,
     this.action,
     this.showBackButton = false,
+    this.showMessagesButton = false,
+    this.messagesRoute = '/freelancer-messages',
     this.padding = const EdgeInsets.symmetric(horizontal: 20),
     this.floatingActionButton,
   });
@@ -18,6 +21,8 @@ class ClivoraScaffold extends StatelessWidget {
   final Widget body;
   final Widget? action;
   final bool showBackButton;
+  final bool showMessagesButton;
+  final String messagesRoute;
   final EdgeInsets padding;
   final Widget? floatingActionButton;
 
@@ -45,6 +50,10 @@ class ClivoraScaffold extends StatelessWidget {
                   Expanded(
                     child: Text(title, style: Theme.of(context).textTheme.headlineLarge),
                   ),
+                  if (showMessagesButton) ...[
+                    MessagesIconButton(route: messagesRoute),
+                    if (action != null) const SizedBox(width: 8),
+                  ],
                   if (action != null) action!,
                 ],
               ),

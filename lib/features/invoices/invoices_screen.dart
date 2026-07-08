@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/constants/plan_limits.dart';
 import '../../core/services/invoice_share_helper.dart';
+import '../../core/services/sync_outbox_service.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../core/utils/currency_formatter.dart';
@@ -30,6 +31,9 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
   void initState() {
     super.initState();
     _status = widget.initialFilter ?? 'all';
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(syncOutboxServiceProvider).reconcileInvoiceShares();
+    });
   }
 
   @override
@@ -59,6 +63,7 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
 
     return ClivoraScaffold(
       title: 'Invoices',
+      showMessagesButton: true,
       action: ClivoraIconButton(icon: Icons.add, onPressed: _onAddInvoice),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

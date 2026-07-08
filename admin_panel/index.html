@@ -149,9 +149,30 @@
       </div>
 
       <div class="panel">
+        <h2>Free vs Pro Plans</h2>
+        <table>
+          <thead><tr><th>Feature</th><th>Free</th><th>Pro</th></tr></thead>
+          <tbody>
+            <tr><td>Clients</td><td>3</td><td>Unlimited</td></tr>
+            <tr><td>Projects</td><td>5</td><td>Unlimited</td></tr>
+            <tr><td>Invoices / month</td><td>10</td><td>Unlimited</td></tr>
+            <tr><td>Emails / month</td><td>5</td><td>500</td></tr>
+            <tr><td>Storage</td><td>100 MB</td><td>5 GB</td></tr>
+            <tr><td>Biometric lock</td><td>—</td><td>✓</td></tr>
+            <tr><td>Verified badge</td><td>—</td><td>✓</td></tr>
+            <tr><td>Custom workflows</td><td>—</td><td>✓</td></tr>
+            <tr><td>CLIVORA AI Pro</td><td>Local</td><td>Cloud + local</td></tr>
+            <tr><td>Advanced analytics</td><td>Basic</td><td>Full</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel">
         <h2>Registered Users</h2>
         <div class="toolbar">
+          <input type="search" id="user-search" placeholder="Search name or email…" style="max-width:280px;margin-bottom:0" />
           <button type="button" id="add-user-btn">+ Add User</button>
+          <button type="button" id="grant-all-pro-btn" class="secondary">Grant Pro (filtered)</button>
         </div>
         <div style="overflow-x:auto">
           <table>
@@ -159,6 +180,21 @@
               <tr><th>Name</th><th>Email</th><th>Role</th><th>Plan</th><th>Joined</th><th></th></tr>
             </thead>
             <tbody id="users-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Audit Trail</h2>
+        <p style="color:var(--slate);font-size:0.9rem;margin-top:0">
+          Invoice status changes, admin grants, payments, and notifications synced from the mobile app.
+        </p>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr><th>Action</th><th>User</th><th>Detail</th><th>Date</th></tr>
+            </thead>
+            <tbody id="audit-table"></tbody>
           </table>
         </div>
       </div>
@@ -198,7 +234,7 @@
         </div>
       </div>
     </main>
-    <footer>CLIVORA by CodCrafters · Admin panel v1.5</footer>
+    <footer>CLIVORA by CodCrafters · Admin panel v2.0</footer>
   </div>
 
   <script>
@@ -261,8 +297,9 @@
       const signups = (data.events || []).filter((e) => e.eventType === 'signup').length;
       const proActivations = (data.events || []).filter((e) => e.eventType === 'pro_activate').length;
       const proUsers = (data.users || []).filter((u) => u.plan === 'pro').length;
+      const auditEvents = (data.events || []).filter((e) => (e.eventType || '').startsWith('audit_')).length;
       const mrr = proActivations * PRO_PRICE_PKR || proUsers * PRO_PRICE_PKR;
-      return { totalUsers: data.users.length, signups, proUsers: Math.max(proUsers, proActivations), mrr, imports: (data.imports || []).length };
+      return { totalUsers: data.users.length, signups, proUsers: Math.max(proUsers, proActivations), mrr, imports: (data.imports || []).length, auditEvents };
     }
 
     function renderStats() {
@@ -273,17 +310,21 @@
         <div class="stat-card"><div class="value">${s.proUsers}</div><div class="label">Pro Users</div></div>
         <div class="stat-card"><div class="value">Rs ${s.mrr.toLocaleString()}</div><div class="label">Est. MRR (PKR)</div></div>
         <div class="stat-card"><div class="value">${s.imports}</div><div class="label">Imports</div></div>
+        <div class="stat-card"><div class="value">${s.auditEvents}</div><div class="label">Audit Events</div></div>
       `;
     }
 
     function renderUsers() {
       const data = loadData();
       const tbody = $('users-table');
-      if (!data.users.length) {
+      const q = ($('user-search')?.value || '').trim().toLowerCase();
+      let users = data.users || [];
+      if (q) users = users.filter((u) => (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q));
+      if (!users.length) {
         tbody.innerHTML = '<tr><td colspan="6" style="color:var(--slate)">No users yet. Import analytics or add manually.</td></tr>';
         return;
       }
-      tbody.innerHTML = data.users.map((u) => {
+      tbody.innerHTML = users.map((u) => {
         const roleBadge = u.role === 'admin' ? '<span class="badge admin">Admin</span>' : '<span class="badge free">User</span>';
         const planBadge = u.plan === 'pro' ? '<span class="badge pro">Pro</span>' : '<span class="badge free">Free</span>';
         const joined = u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—';
@@ -306,6 +347,25 @@
       tbody.querySelectorAll('[data-del]').forEach((btn) => {
         btn.addEventListener('click', () => deleteUser(Number(btn.dataset.del)));
       });
+    }
+
+    function renderAudit() {
+      const data = loadData();
+      const tbody = $('audit-table');
+      const audits = (data.events || []).filter((e) => (e.eventType || '').startsWith('audit_')).slice(0, 50);
+      if (!audits.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="color:var(--slate)">No audit events yet.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = audits.map((e) => {
+        const date = e.createdAt ? new Date(e.createdAt).toLocaleString() : '—';
+        return `<tr>
+          <td>${escapeHtml((e.eventType || '').replace('audit_', '').replace(/_/g, ' '))}</td>
+          <td>${escapeHtml(e.userEmail || e.userName || '—')}</td>
+          <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis">${escapeHtml(e.payload || '—')}</td>
+          <td>${date}</td>
+        </tr>`;
+      }).join('');
     }
 
     function renderEvents() {
@@ -336,6 +396,7 @@
     function refresh() {
       renderStats();
       renderUsers();
+      renderAudit();
       renderEvents();
     }
 
@@ -445,6 +506,20 @@
       $('user-role').value = 'user';
       $('user-plan').value = 'free';
       $('add-user-panel').style.display = 'block';
+    });
+    $('user-search')?.addEventListener('input', renderUsers);
+    $('grant-all-pro-btn')?.addEventListener('click', () => {
+      const q = ($('user-search')?.value || '').trim().toLowerCase();
+      const data = loadData();
+      let count = 0;
+      data.users = (data.users || []).map((u) => {
+        const match = !q || (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q);
+        if (match && u.plan !== 'pro') { count++; return { ...u, plan: 'pro' }; }
+        return u;
+      });
+      saveData(data);
+      refresh();
+      alert(count ? `Granted Pro to ${count} user(s).` : 'No matching users to upgrade.');
     });
     $('save-user-btn').addEventListener('click', saveUser);
     $('cancel-user-btn').addEventListener('click', () => { $('add-user-panel').style.display = 'none'; });

@@ -20,6 +20,7 @@ class ProjectTimeTrackerCard extends ConsumerWidget {
     final _ = tracker.tick;
     final seconds = tracker.elapsedSecondsFor(projectId, totals);
     final isActive = tracker.activeProjectId == projectId;
+    final blocked = tracker.isRunning && !isActive;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -78,7 +79,22 @@ class ProjectTimeTrackerCard extends ConsumerWidget {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => ref.read(projectTimeTrackerProvider.notifier).toggle(projectId),
+                  onPressed: blocked
+                      ? null
+                      : () async {
+                          try {
+                            await ref.read(projectTimeTrackerProvider.notifier).toggle(projectId);
+                          } on TimeTrackerConflictException catch (e) {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Stop the timer on project #${e.activeProjectId} before starting another.',
+                                ),
+                              ),
+                            );
+                          }
+                        },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: isActive ? Colors.white : null,
                     side: BorderSide(color: isActive ? Colors.white54 : Theme.of(context).dividerColor),

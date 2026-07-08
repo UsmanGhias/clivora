@@ -3287,6 +3287,62 @@ class $BusinessProfilesTable extends BusinessProfiles
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _skillsMeta = const VerificationMeta('skills');
+  @override
+  late final GeneratedColumn<String> skills = GeneratedColumn<String>(
+    'skills',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _bioMeta = const VerificationMeta('bio');
+  @override
+  late final GeneratedColumn<String> bio = GeneratedColumn<String>(
+    'bio',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _clientCompanyMeta = const VerificationMeta(
+    'clientCompany',
+  );
+  @override
+  late final GeneratedColumn<String> clientCompany = GeneratedColumn<String>(
+    'client_company',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _clientIndustryMeta = const VerificationMeta(
+    'clientIndustry',
+  );
+  @override
+  late final GeneratedColumn<String> clientIndustry = GeneratedColumn<String>(
+    'client_industry',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _clientWebsiteMeta = const VerificationMeta(
+    'clientWebsite',
+  );
+  @override
+  late final GeneratedColumn<String> clientWebsite = GeneratedColumn<String>(
+    'client_website',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _memberSinceMeta = const VerificationMeta(
     'memberSince',
   );
@@ -3312,6 +3368,11 @@ class $BusinessProfilesTable extends BusinessProfiles
     businessCity,
     businessPostalCode,
     businessCountry,
+    skills,
+    bio,
+    clientCompany,
+    clientIndustry,
+    clientWebsite,
     memberSince,
   ];
   @override
@@ -3416,6 +3477,45 @@ class $BusinessProfilesTable extends BusinessProfiles
         ),
       );
     }
+    if (data.containsKey('skills')) {
+      context.handle(
+        _skillsMeta,
+        skills.isAcceptableOrUnknown(data['skills']!, _skillsMeta),
+      );
+    }
+    if (data.containsKey('bio')) {
+      context.handle(
+        _bioMeta,
+        bio.isAcceptableOrUnknown(data['bio']!, _bioMeta),
+      );
+    }
+    if (data.containsKey('client_company')) {
+      context.handle(
+        _clientCompanyMeta,
+        clientCompany.isAcceptableOrUnknown(
+          data['client_company']!,
+          _clientCompanyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('client_industry')) {
+      context.handle(
+        _clientIndustryMeta,
+        clientIndustry.isAcceptableOrUnknown(
+          data['client_industry']!,
+          _clientIndustryMeta,
+        ),
+      );
+    }
+    if (data.containsKey('client_website')) {
+      context.handle(
+        _clientWebsiteMeta,
+        clientWebsite.isAcceptableOrUnknown(
+          data['client_website']!,
+          _clientWebsiteMeta,
+        ),
+      );
+    }
     if (data.containsKey('member_since')) {
       context.handle(
         _memberSinceMeta,
@@ -3478,6 +3578,26 @@ class $BusinessProfilesTable extends BusinessProfiles
         DriftSqlType.string,
         data['${effectivePrefix}business_country'],
       )!,
+      skills: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}skills'],
+      )!,
+      bio: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}bio'],
+      )!,
+      clientCompany: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}client_company'],
+      )!,
+      clientIndustry: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}client_industry'],
+      )!,
+      clientWebsite: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}client_website'],
+      )!,
       memberSince: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}member_since'],
@@ -3503,6 +3623,11 @@ class BusinessProfile extends DataClass implements Insertable<BusinessProfile> {
   final String businessCity;
   final String businessPostalCode;
   final String businessCountry;
+  final String skills;
+  final String bio;
+  final String clientCompany;
+  final String clientIndustry;
+  final String clientWebsite;
   final DateTime memberSince;
   const BusinessProfile({
     required this.userId,
@@ -3516,6 +3641,11 @@ class BusinessProfile extends DataClass implements Insertable<BusinessProfile> {
     required this.businessCity,
     required this.businessPostalCode,
     required this.businessCountry,
+    required this.skills,
+    required this.bio,
+    required this.clientCompany,
+    required this.clientIndustry,
+    required this.clientWebsite,
     required this.memberSince,
   });
   @override
@@ -3536,6 +3666,11 @@ class BusinessProfile extends DataClass implements Insertable<BusinessProfile> {
     map['business_city'] = Variable<String>(businessCity);
     map['business_postal_code'] = Variable<String>(businessPostalCode);
     map['business_country'] = Variable<String>(businessCountry);
+    map['skills'] = Variable<String>(skills);
+    map['bio'] = Variable<String>(bio);
+    map['client_company'] = Variable<String>(clientCompany);
+    map['client_industry'] = Variable<String>(clientIndustry);
+    map['client_website'] = Variable<String>(clientWebsite);
     map['member_since'] = Variable<DateTime>(memberSince);
     return map;
   }
@@ -3557,6 +3692,11 @@ class BusinessProfile extends DataClass implements Insertable<BusinessProfile> {
       businessCity: Value(businessCity),
       businessPostalCode: Value(businessPostalCode),
       businessCountry: Value(businessCountry),
+      skills: Value(skills),
+      bio: Value(bio),
+      clientCompany: Value(clientCompany),
+      clientIndustry: Value(clientIndustry),
+      clientWebsite: Value(clientWebsite),
       memberSince: Value(memberSince),
     );
   }
@@ -3580,6 +3720,11 @@ class BusinessProfile extends DataClass implements Insertable<BusinessProfile> {
         json['businessPostalCode'],
       ),
       businessCountry: serializer.fromJson<String>(json['businessCountry']),
+      skills: serializer.fromJson<String>(json['skills']),
+      bio: serializer.fromJson<String>(json['bio']),
+      clientCompany: serializer.fromJson<String>(json['clientCompany']),
+      clientIndustry: serializer.fromJson<String>(json['clientIndustry']),
+      clientWebsite: serializer.fromJson<String>(json['clientWebsite']),
       memberSince: serializer.fromJson<DateTime>(json['memberSince']),
     );
   }
@@ -3598,6 +3743,11 @@ class BusinessProfile extends DataClass implements Insertable<BusinessProfile> {
       'businessCity': serializer.toJson<String>(businessCity),
       'businessPostalCode': serializer.toJson<String>(businessPostalCode),
       'businessCountry': serializer.toJson<String>(businessCountry),
+      'skills': serializer.toJson<String>(skills),
+      'bio': serializer.toJson<String>(bio),
+      'clientCompany': serializer.toJson<String>(clientCompany),
+      'clientIndustry': serializer.toJson<String>(clientIndustry),
+      'clientWebsite': serializer.toJson<String>(clientWebsite),
       'memberSince': serializer.toJson<DateTime>(memberSince),
     };
   }
@@ -3614,6 +3764,11 @@ class BusinessProfile extends DataClass implements Insertable<BusinessProfile> {
     String? businessCity,
     String? businessPostalCode,
     String? businessCountry,
+    String? skills,
+    String? bio,
+    String? clientCompany,
+    String? clientIndustry,
+    String? clientWebsite,
     DateTime? memberSince,
   }) => BusinessProfile(
     userId: userId ?? this.userId,
@@ -3629,6 +3784,11 @@ class BusinessProfile extends DataClass implements Insertable<BusinessProfile> {
     businessCity: businessCity ?? this.businessCity,
     businessPostalCode: businessPostalCode ?? this.businessPostalCode,
     businessCountry: businessCountry ?? this.businessCountry,
+    skills: skills ?? this.skills,
+    bio: bio ?? this.bio,
+    clientCompany: clientCompany ?? this.clientCompany,
+    clientIndustry: clientIndustry ?? this.clientIndustry,
+    clientWebsite: clientWebsite ?? this.clientWebsite,
     memberSince: memberSince ?? this.memberSince,
   );
   BusinessProfile copyWithCompanion(BusinessProfilesCompanion data) {
@@ -3660,6 +3820,17 @@ class BusinessProfile extends DataClass implements Insertable<BusinessProfile> {
       businessCountry: data.businessCountry.present
           ? data.businessCountry.value
           : this.businessCountry,
+      skills: data.skills.present ? data.skills.value : this.skills,
+      bio: data.bio.present ? data.bio.value : this.bio,
+      clientCompany: data.clientCompany.present
+          ? data.clientCompany.value
+          : this.clientCompany,
+      clientIndustry: data.clientIndustry.present
+          ? data.clientIndustry.value
+          : this.clientIndustry,
+      clientWebsite: data.clientWebsite.present
+          ? data.clientWebsite.value
+          : this.clientWebsite,
       memberSince: data.memberSince.present
           ? data.memberSince.value
           : this.memberSince,
@@ -3680,6 +3851,11 @@ class BusinessProfile extends DataClass implements Insertable<BusinessProfile> {
           ..write('businessCity: $businessCity, ')
           ..write('businessPostalCode: $businessPostalCode, ')
           ..write('businessCountry: $businessCountry, ')
+          ..write('skills: $skills, ')
+          ..write('bio: $bio, ')
+          ..write('clientCompany: $clientCompany, ')
+          ..write('clientIndustry: $clientIndustry, ')
+          ..write('clientWebsite: $clientWebsite, ')
           ..write('memberSince: $memberSince')
           ..write(')'))
         .toString();
@@ -3698,6 +3874,11 @@ class BusinessProfile extends DataClass implements Insertable<BusinessProfile> {
     businessCity,
     businessPostalCode,
     businessCountry,
+    skills,
+    bio,
+    clientCompany,
+    clientIndustry,
+    clientWebsite,
     memberSince,
   );
   @override
@@ -3715,6 +3896,11 @@ class BusinessProfile extends DataClass implements Insertable<BusinessProfile> {
           other.businessCity == this.businessCity &&
           other.businessPostalCode == this.businessPostalCode &&
           other.businessCountry == this.businessCountry &&
+          other.skills == this.skills &&
+          other.bio == this.bio &&
+          other.clientCompany == this.clientCompany &&
+          other.clientIndustry == this.clientIndustry &&
+          other.clientWebsite == this.clientWebsite &&
           other.memberSince == this.memberSince);
 }
 
@@ -3730,6 +3916,11 @@ class BusinessProfilesCompanion extends UpdateCompanion<BusinessProfile> {
   final Value<String> businessCity;
   final Value<String> businessPostalCode;
   final Value<String> businessCountry;
+  final Value<String> skills;
+  final Value<String> bio;
+  final Value<String> clientCompany;
+  final Value<String> clientIndustry;
+  final Value<String> clientWebsite;
   final Value<DateTime> memberSince;
   const BusinessProfilesCompanion({
     this.userId = const Value.absent(),
@@ -3743,6 +3934,11 @@ class BusinessProfilesCompanion extends UpdateCompanion<BusinessProfile> {
     this.businessCity = const Value.absent(),
     this.businessPostalCode = const Value.absent(),
     this.businessCountry = const Value.absent(),
+    this.skills = const Value.absent(),
+    this.bio = const Value.absent(),
+    this.clientCompany = const Value.absent(),
+    this.clientIndustry = const Value.absent(),
+    this.clientWebsite = const Value.absent(),
     this.memberSince = const Value.absent(),
   });
   BusinessProfilesCompanion.insert({
@@ -3757,6 +3953,11 @@ class BusinessProfilesCompanion extends UpdateCompanion<BusinessProfile> {
     this.businessCity = const Value.absent(),
     this.businessPostalCode = const Value.absent(),
     this.businessCountry = const Value.absent(),
+    this.skills = const Value.absent(),
+    this.bio = const Value.absent(),
+    this.clientCompany = const Value.absent(),
+    this.clientIndustry = const Value.absent(),
+    this.clientWebsite = const Value.absent(),
     this.memberSince = const Value.absent(),
   });
   static Insertable<BusinessProfile> custom({
@@ -3771,6 +3972,11 @@ class BusinessProfilesCompanion extends UpdateCompanion<BusinessProfile> {
     Expression<String>? businessCity,
     Expression<String>? businessPostalCode,
     Expression<String>? businessCountry,
+    Expression<String>? skills,
+    Expression<String>? bio,
+    Expression<String>? clientCompany,
+    Expression<String>? clientIndustry,
+    Expression<String>? clientWebsite,
     Expression<DateTime>? memberSince,
   }) {
     return RawValuesInsertable({
@@ -3786,6 +3992,11 @@ class BusinessProfilesCompanion extends UpdateCompanion<BusinessProfile> {
       if (businessPostalCode != null)
         'business_postal_code': businessPostalCode,
       if (businessCountry != null) 'business_country': businessCountry,
+      if (skills != null) 'skills': skills,
+      if (bio != null) 'bio': bio,
+      if (clientCompany != null) 'client_company': clientCompany,
+      if (clientIndustry != null) 'client_industry': clientIndustry,
+      if (clientWebsite != null) 'client_website': clientWebsite,
       if (memberSince != null) 'member_since': memberSince,
     });
   }
@@ -3802,6 +4013,11 @@ class BusinessProfilesCompanion extends UpdateCompanion<BusinessProfile> {
     Value<String>? businessCity,
     Value<String>? businessPostalCode,
     Value<String>? businessCountry,
+    Value<String>? skills,
+    Value<String>? bio,
+    Value<String>? clientCompany,
+    Value<String>? clientIndustry,
+    Value<String>? clientWebsite,
     Value<DateTime>? memberSince,
   }) {
     return BusinessProfilesCompanion(
@@ -3816,6 +4032,11 @@ class BusinessProfilesCompanion extends UpdateCompanion<BusinessProfile> {
       businessCity: businessCity ?? this.businessCity,
       businessPostalCode: businessPostalCode ?? this.businessPostalCode,
       businessCountry: businessCountry ?? this.businessCountry,
+      skills: skills ?? this.skills,
+      bio: bio ?? this.bio,
+      clientCompany: clientCompany ?? this.clientCompany,
+      clientIndustry: clientIndustry ?? this.clientIndustry,
+      clientWebsite: clientWebsite ?? this.clientWebsite,
       memberSince: memberSince ?? this.memberSince,
     );
   }
@@ -3856,6 +4077,21 @@ class BusinessProfilesCompanion extends UpdateCompanion<BusinessProfile> {
     if (businessCountry.present) {
       map['business_country'] = Variable<String>(businessCountry.value);
     }
+    if (skills.present) {
+      map['skills'] = Variable<String>(skills.value);
+    }
+    if (bio.present) {
+      map['bio'] = Variable<String>(bio.value);
+    }
+    if (clientCompany.present) {
+      map['client_company'] = Variable<String>(clientCompany.value);
+    }
+    if (clientIndustry.present) {
+      map['client_industry'] = Variable<String>(clientIndustry.value);
+    }
+    if (clientWebsite.present) {
+      map['client_website'] = Variable<String>(clientWebsite.value);
+    }
     if (memberSince.present) {
       map['member_since'] = Variable<DateTime>(memberSince.value);
     }
@@ -3876,6 +4112,11 @@ class BusinessProfilesCompanion extends UpdateCompanion<BusinessProfile> {
           ..write('businessCity: $businessCity, ')
           ..write('businessPostalCode: $businessPostalCode, ')
           ..write('businessCountry: $businessCountry, ')
+          ..write('skills: $skills, ')
+          ..write('bio: $bio, ')
+          ..write('clientCompany: $clientCompany, ')
+          ..write('clientIndustry: $clientIndustry, ')
+          ..write('clientWebsite: $clientWebsite, ')
           ..write('memberSince: $memberSince')
           ..write(')'))
         .toString();
@@ -10393,6 +10634,1172 @@ class TeamMembersCompanion extends UpdateCompanion<TeamMember> {
   }
 }
 
+class $FileAttachmentsTable extends FileAttachments
+    with TableInfo<$FileAttachmentsTable, FileAttachment> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $FileAttachmentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _ownerUserIdMeta = const VerificationMeta(
+    'ownerUserId',
+  );
+  @override
+  late final GeneratedColumn<int> ownerUserId = GeneratedColumn<int>(
+    'owner_user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  static const VerificationMeta _entityTypeMeta = const VerificationMeta(
+    'entityType',
+  );
+  @override
+  late final GeneratedColumn<String> entityType = GeneratedColumn<String>(
+    'entity_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityIdMeta = const VerificationMeta(
+    'entityId',
+  );
+  @override
+  late final GeneratedColumn<int> entityId = GeneratedColumn<int>(
+    'entity_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileNameMeta = const VerificationMeta(
+    'fileName',
+  );
+  @override
+  late final GeneratedColumn<String> fileName = GeneratedColumn<String>(
+    'file_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localPathMeta = const VerificationMeta(
+    'localPath',
+  );
+  @override
+  late final GeneratedColumn<String> localPath = GeneratedColumn<String>(
+    'local_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _mimeTypeMeta = const VerificationMeta(
+    'mimeType',
+  );
+  @override
+  late final GeneratedColumn<String> mimeType = GeneratedColumn<String>(
+    'mime_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _sizeBytesMeta = const VerificationMeta(
+    'sizeBytes',
+  );
+  @override
+  late final GeneratedColumn<int> sizeBytes = GeneratedColumn<int>(
+    'size_bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    ownerUserId,
+    entityType,
+    entityId,
+    fileName,
+    localPath,
+    mimeType,
+    sizeBytes,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'file_attachments';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<FileAttachment> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('owner_user_id')) {
+      context.handle(
+        _ownerUserIdMeta,
+        ownerUserId.isAcceptableOrUnknown(
+          data['owner_user_id']!,
+          _ownerUserIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_ownerUserIdMeta);
+    }
+    if (data.containsKey('entity_type')) {
+      context.handle(
+        _entityTypeMeta,
+        entityType.isAcceptableOrUnknown(data['entity_type']!, _entityTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityTypeMeta);
+    }
+    if (data.containsKey('entity_id')) {
+      context.handle(
+        _entityIdMeta,
+        entityId.isAcceptableOrUnknown(data['entity_id']!, _entityIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityIdMeta);
+    }
+    if (data.containsKey('file_name')) {
+      context.handle(
+        _fileNameMeta,
+        fileName.isAcceptableOrUnknown(data['file_name']!, _fileNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileNameMeta);
+    }
+    if (data.containsKey('local_path')) {
+      context.handle(
+        _localPathMeta,
+        localPath.isAcceptableOrUnknown(data['local_path']!, _localPathMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_localPathMeta);
+    }
+    if (data.containsKey('mime_type')) {
+      context.handle(
+        _mimeTypeMeta,
+        mimeType.isAcceptableOrUnknown(data['mime_type']!, _mimeTypeMeta),
+      );
+    }
+    if (data.containsKey('size_bytes')) {
+      context.handle(
+        _sizeBytesMeta,
+        sizeBytes.isAcceptableOrUnknown(data['size_bytes']!, _sizeBytesMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  FileAttachment map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return FileAttachment(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      ownerUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}owner_user_id'],
+      )!,
+      entityType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_type'],
+      )!,
+      entityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}entity_id'],
+      )!,
+      fileName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_name'],
+      )!,
+      localPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_path'],
+      )!,
+      mimeType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mime_type'],
+      )!,
+      sizeBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}size_bytes'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $FileAttachmentsTable createAlias(String alias) {
+    return $FileAttachmentsTable(attachedDatabase, alias);
+  }
+}
+
+class FileAttachment extends DataClass implements Insertable<FileAttachment> {
+  final int id;
+  final int ownerUserId;
+  final String entityType;
+  final int entityId;
+  final String fileName;
+  final String localPath;
+  final String mimeType;
+  final int sizeBytes;
+  final DateTime createdAt;
+  const FileAttachment({
+    required this.id,
+    required this.ownerUserId,
+    required this.entityType,
+    required this.entityId,
+    required this.fileName,
+    required this.localPath,
+    required this.mimeType,
+    required this.sizeBytes,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['owner_user_id'] = Variable<int>(ownerUserId);
+    map['entity_type'] = Variable<String>(entityType);
+    map['entity_id'] = Variable<int>(entityId);
+    map['file_name'] = Variable<String>(fileName);
+    map['local_path'] = Variable<String>(localPath);
+    map['mime_type'] = Variable<String>(mimeType);
+    map['size_bytes'] = Variable<int>(sizeBytes);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  FileAttachmentsCompanion toCompanion(bool nullToAbsent) {
+    return FileAttachmentsCompanion(
+      id: Value(id),
+      ownerUserId: Value(ownerUserId),
+      entityType: Value(entityType),
+      entityId: Value(entityId),
+      fileName: Value(fileName),
+      localPath: Value(localPath),
+      mimeType: Value(mimeType),
+      sizeBytes: Value(sizeBytes),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory FileAttachment.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return FileAttachment(
+      id: serializer.fromJson<int>(json['id']),
+      ownerUserId: serializer.fromJson<int>(json['ownerUserId']),
+      entityType: serializer.fromJson<String>(json['entityType']),
+      entityId: serializer.fromJson<int>(json['entityId']),
+      fileName: serializer.fromJson<String>(json['fileName']),
+      localPath: serializer.fromJson<String>(json['localPath']),
+      mimeType: serializer.fromJson<String>(json['mimeType']),
+      sizeBytes: serializer.fromJson<int>(json['sizeBytes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'ownerUserId': serializer.toJson<int>(ownerUserId),
+      'entityType': serializer.toJson<String>(entityType),
+      'entityId': serializer.toJson<int>(entityId),
+      'fileName': serializer.toJson<String>(fileName),
+      'localPath': serializer.toJson<String>(localPath),
+      'mimeType': serializer.toJson<String>(mimeType),
+      'sizeBytes': serializer.toJson<int>(sizeBytes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  FileAttachment copyWith({
+    int? id,
+    int? ownerUserId,
+    String? entityType,
+    int? entityId,
+    String? fileName,
+    String? localPath,
+    String? mimeType,
+    int? sizeBytes,
+    DateTime? createdAt,
+  }) => FileAttachment(
+    id: id ?? this.id,
+    ownerUserId: ownerUserId ?? this.ownerUserId,
+    entityType: entityType ?? this.entityType,
+    entityId: entityId ?? this.entityId,
+    fileName: fileName ?? this.fileName,
+    localPath: localPath ?? this.localPath,
+    mimeType: mimeType ?? this.mimeType,
+    sizeBytes: sizeBytes ?? this.sizeBytes,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  FileAttachment copyWithCompanion(FileAttachmentsCompanion data) {
+    return FileAttachment(
+      id: data.id.present ? data.id.value : this.id,
+      ownerUserId: data.ownerUserId.present
+          ? data.ownerUserId.value
+          : this.ownerUserId,
+      entityType: data.entityType.present
+          ? data.entityType.value
+          : this.entityType,
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
+      fileName: data.fileName.present ? data.fileName.value : this.fileName,
+      localPath: data.localPath.present ? data.localPath.value : this.localPath,
+      mimeType: data.mimeType.present ? data.mimeType.value : this.mimeType,
+      sizeBytes: data.sizeBytes.present ? data.sizeBytes.value : this.sizeBytes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FileAttachment(')
+          ..write('id: $id, ')
+          ..write('ownerUserId: $ownerUserId, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityId: $entityId, ')
+          ..write('fileName: $fileName, ')
+          ..write('localPath: $localPath, ')
+          ..write('mimeType: $mimeType, ')
+          ..write('sizeBytes: $sizeBytes, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    ownerUserId,
+    entityType,
+    entityId,
+    fileName,
+    localPath,
+    mimeType,
+    sizeBytes,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FileAttachment &&
+          other.id == this.id &&
+          other.ownerUserId == this.ownerUserId &&
+          other.entityType == this.entityType &&
+          other.entityId == this.entityId &&
+          other.fileName == this.fileName &&
+          other.localPath == this.localPath &&
+          other.mimeType == this.mimeType &&
+          other.sizeBytes == this.sizeBytes &&
+          other.createdAt == this.createdAt);
+}
+
+class FileAttachmentsCompanion extends UpdateCompanion<FileAttachment> {
+  final Value<int> id;
+  final Value<int> ownerUserId;
+  final Value<String> entityType;
+  final Value<int> entityId;
+  final Value<String> fileName;
+  final Value<String> localPath;
+  final Value<String> mimeType;
+  final Value<int> sizeBytes;
+  final Value<DateTime> createdAt;
+  const FileAttachmentsCompanion({
+    this.id = const Value.absent(),
+    this.ownerUserId = const Value.absent(),
+    this.entityType = const Value.absent(),
+    this.entityId = const Value.absent(),
+    this.fileName = const Value.absent(),
+    this.localPath = const Value.absent(),
+    this.mimeType = const Value.absent(),
+    this.sizeBytes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  FileAttachmentsCompanion.insert({
+    this.id = const Value.absent(),
+    required int ownerUserId,
+    required String entityType,
+    required int entityId,
+    required String fileName,
+    required String localPath,
+    this.mimeType = const Value.absent(),
+    this.sizeBytes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : ownerUserId = Value(ownerUserId),
+       entityType = Value(entityType),
+       entityId = Value(entityId),
+       fileName = Value(fileName),
+       localPath = Value(localPath);
+  static Insertable<FileAttachment> custom({
+    Expression<int>? id,
+    Expression<int>? ownerUserId,
+    Expression<String>? entityType,
+    Expression<int>? entityId,
+    Expression<String>? fileName,
+    Expression<String>? localPath,
+    Expression<String>? mimeType,
+    Expression<int>? sizeBytes,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (ownerUserId != null) 'owner_user_id': ownerUserId,
+      if (entityType != null) 'entity_type': entityType,
+      if (entityId != null) 'entity_id': entityId,
+      if (fileName != null) 'file_name': fileName,
+      if (localPath != null) 'local_path': localPath,
+      if (mimeType != null) 'mime_type': mimeType,
+      if (sizeBytes != null) 'size_bytes': sizeBytes,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  FileAttachmentsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? ownerUserId,
+    Value<String>? entityType,
+    Value<int>? entityId,
+    Value<String>? fileName,
+    Value<String>? localPath,
+    Value<String>? mimeType,
+    Value<int>? sizeBytes,
+    Value<DateTime>? createdAt,
+  }) {
+    return FileAttachmentsCompanion(
+      id: id ?? this.id,
+      ownerUserId: ownerUserId ?? this.ownerUserId,
+      entityType: entityType ?? this.entityType,
+      entityId: entityId ?? this.entityId,
+      fileName: fileName ?? this.fileName,
+      localPath: localPath ?? this.localPath,
+      mimeType: mimeType ?? this.mimeType,
+      sizeBytes: sizeBytes ?? this.sizeBytes,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (ownerUserId.present) {
+      map['owner_user_id'] = Variable<int>(ownerUserId.value);
+    }
+    if (entityType.present) {
+      map['entity_type'] = Variable<String>(entityType.value);
+    }
+    if (entityId.present) {
+      map['entity_id'] = Variable<int>(entityId.value);
+    }
+    if (fileName.present) {
+      map['file_name'] = Variable<String>(fileName.value);
+    }
+    if (localPath.present) {
+      map['local_path'] = Variable<String>(localPath.value);
+    }
+    if (mimeType.present) {
+      map['mime_type'] = Variable<String>(mimeType.value);
+    }
+    if (sizeBytes.present) {
+      map['size_bytes'] = Variable<int>(sizeBytes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FileAttachmentsCompanion(')
+          ..write('id: $id, ')
+          ..write('ownerUserId: $ownerUserId, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityId: $entityId, ')
+          ..write('fileName: $fileName, ')
+          ..write('localPath: $localPath, ')
+          ..write('mimeType: $mimeType, ')
+          ..write('sizeBytes: $sizeBytes, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CalendarRemindersTable extends CalendarReminders
+    with TableInfo<$CalendarRemindersTable, CalendarReminder> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CalendarRemindersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _ownerUserIdMeta = const VerificationMeta(
+    'ownerUserId',
+  );
+  @override
+  late final GeneratedColumn<int> ownerUserId = GeneratedColumn<int>(
+    'owner_user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _scheduledAtMeta = const VerificationMeta(
+    'scheduledAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> scheduledAt = GeneratedColumn<DateTime>(
+    'scheduled_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('reminder'),
+  );
+  static const VerificationMeta _linkedEntityIdMeta = const VerificationMeta(
+    'linkedEntityId',
+  );
+  @override
+  late final GeneratedColumn<int> linkedEntityId = GeneratedColumn<int>(
+    'linked_entity_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _linkedEntityTypeMeta = const VerificationMeta(
+    'linkedEntityType',
+  );
+  @override
+  late final GeneratedColumn<String> linkedEntityType = GeneratedColumn<String>(
+    'linked_entity_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _completedMeta = const VerificationMeta(
+    'completed',
+  );
+  @override
+  late final GeneratedColumn<bool> completed = GeneratedColumn<bool>(
+    'completed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("completed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    ownerUserId,
+    title,
+    notes,
+    scheduledAt,
+    kind,
+    linkedEntityId,
+    linkedEntityType,
+    completed,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'calendar_reminders';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CalendarReminder> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('owner_user_id')) {
+      context.handle(
+        _ownerUserIdMeta,
+        ownerUserId.isAcceptableOrUnknown(
+          data['owner_user_id']!,
+          _ownerUserIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_ownerUserIdMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('scheduled_at')) {
+      context.handle(
+        _scheduledAtMeta,
+        scheduledAt.isAcceptableOrUnknown(
+          data['scheduled_at']!,
+          _scheduledAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_scheduledAtMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    }
+    if (data.containsKey('linked_entity_id')) {
+      context.handle(
+        _linkedEntityIdMeta,
+        linkedEntityId.isAcceptableOrUnknown(
+          data['linked_entity_id']!,
+          _linkedEntityIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('linked_entity_type')) {
+      context.handle(
+        _linkedEntityTypeMeta,
+        linkedEntityType.isAcceptableOrUnknown(
+          data['linked_entity_type']!,
+          _linkedEntityTypeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('completed')) {
+      context.handle(
+        _completedMeta,
+        completed.isAcceptableOrUnknown(data['completed']!, _completedMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CalendarReminder map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CalendarReminder(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      ownerUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}owner_user_id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      )!,
+      scheduledAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}scheduled_at'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      linkedEntityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}linked_entity_id'],
+      ),
+      linkedEntityType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}linked_entity_type'],
+      )!,
+      completed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}completed'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CalendarRemindersTable createAlias(String alias) {
+    return $CalendarRemindersTable(attachedDatabase, alias);
+  }
+}
+
+class CalendarReminder extends DataClass
+    implements Insertable<CalendarReminder> {
+  final int id;
+  final int ownerUserId;
+  final String title;
+  final String notes;
+  final DateTime scheduledAt;
+  final String kind;
+  final int? linkedEntityId;
+  final String linkedEntityType;
+  final bool completed;
+  final DateTime createdAt;
+  const CalendarReminder({
+    required this.id,
+    required this.ownerUserId,
+    required this.title,
+    required this.notes,
+    required this.scheduledAt,
+    required this.kind,
+    this.linkedEntityId,
+    required this.linkedEntityType,
+    required this.completed,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['owner_user_id'] = Variable<int>(ownerUserId);
+    map['title'] = Variable<String>(title);
+    map['notes'] = Variable<String>(notes);
+    map['scheduled_at'] = Variable<DateTime>(scheduledAt);
+    map['kind'] = Variable<String>(kind);
+    if (!nullToAbsent || linkedEntityId != null) {
+      map['linked_entity_id'] = Variable<int>(linkedEntityId);
+    }
+    map['linked_entity_type'] = Variable<String>(linkedEntityType);
+    map['completed'] = Variable<bool>(completed);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  CalendarRemindersCompanion toCompanion(bool nullToAbsent) {
+    return CalendarRemindersCompanion(
+      id: Value(id),
+      ownerUserId: Value(ownerUserId),
+      title: Value(title),
+      notes: Value(notes),
+      scheduledAt: Value(scheduledAt),
+      kind: Value(kind),
+      linkedEntityId: linkedEntityId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(linkedEntityId),
+      linkedEntityType: Value(linkedEntityType),
+      completed: Value(completed),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory CalendarReminder.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CalendarReminder(
+      id: serializer.fromJson<int>(json['id']),
+      ownerUserId: serializer.fromJson<int>(json['ownerUserId']),
+      title: serializer.fromJson<String>(json['title']),
+      notes: serializer.fromJson<String>(json['notes']),
+      scheduledAt: serializer.fromJson<DateTime>(json['scheduledAt']),
+      kind: serializer.fromJson<String>(json['kind']),
+      linkedEntityId: serializer.fromJson<int?>(json['linkedEntityId']),
+      linkedEntityType: serializer.fromJson<String>(json['linkedEntityType']),
+      completed: serializer.fromJson<bool>(json['completed']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'ownerUserId': serializer.toJson<int>(ownerUserId),
+      'title': serializer.toJson<String>(title),
+      'notes': serializer.toJson<String>(notes),
+      'scheduledAt': serializer.toJson<DateTime>(scheduledAt),
+      'kind': serializer.toJson<String>(kind),
+      'linkedEntityId': serializer.toJson<int?>(linkedEntityId),
+      'linkedEntityType': serializer.toJson<String>(linkedEntityType),
+      'completed': serializer.toJson<bool>(completed),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  CalendarReminder copyWith({
+    int? id,
+    int? ownerUserId,
+    String? title,
+    String? notes,
+    DateTime? scheduledAt,
+    String? kind,
+    Value<int?> linkedEntityId = const Value.absent(),
+    String? linkedEntityType,
+    bool? completed,
+    DateTime? createdAt,
+  }) => CalendarReminder(
+    id: id ?? this.id,
+    ownerUserId: ownerUserId ?? this.ownerUserId,
+    title: title ?? this.title,
+    notes: notes ?? this.notes,
+    scheduledAt: scheduledAt ?? this.scheduledAt,
+    kind: kind ?? this.kind,
+    linkedEntityId: linkedEntityId.present
+        ? linkedEntityId.value
+        : this.linkedEntityId,
+    linkedEntityType: linkedEntityType ?? this.linkedEntityType,
+    completed: completed ?? this.completed,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  CalendarReminder copyWithCompanion(CalendarRemindersCompanion data) {
+    return CalendarReminder(
+      id: data.id.present ? data.id.value : this.id,
+      ownerUserId: data.ownerUserId.present
+          ? data.ownerUserId.value
+          : this.ownerUserId,
+      title: data.title.present ? data.title.value : this.title,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      scheduledAt: data.scheduledAt.present
+          ? data.scheduledAt.value
+          : this.scheduledAt,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      linkedEntityId: data.linkedEntityId.present
+          ? data.linkedEntityId.value
+          : this.linkedEntityId,
+      linkedEntityType: data.linkedEntityType.present
+          ? data.linkedEntityType.value
+          : this.linkedEntityType,
+      completed: data.completed.present ? data.completed.value : this.completed,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CalendarReminder(')
+          ..write('id: $id, ')
+          ..write('ownerUserId: $ownerUserId, ')
+          ..write('title: $title, ')
+          ..write('notes: $notes, ')
+          ..write('scheduledAt: $scheduledAt, ')
+          ..write('kind: $kind, ')
+          ..write('linkedEntityId: $linkedEntityId, ')
+          ..write('linkedEntityType: $linkedEntityType, ')
+          ..write('completed: $completed, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    ownerUserId,
+    title,
+    notes,
+    scheduledAt,
+    kind,
+    linkedEntityId,
+    linkedEntityType,
+    completed,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CalendarReminder &&
+          other.id == this.id &&
+          other.ownerUserId == this.ownerUserId &&
+          other.title == this.title &&
+          other.notes == this.notes &&
+          other.scheduledAt == this.scheduledAt &&
+          other.kind == this.kind &&
+          other.linkedEntityId == this.linkedEntityId &&
+          other.linkedEntityType == this.linkedEntityType &&
+          other.completed == this.completed &&
+          other.createdAt == this.createdAt);
+}
+
+class CalendarRemindersCompanion extends UpdateCompanion<CalendarReminder> {
+  final Value<int> id;
+  final Value<int> ownerUserId;
+  final Value<String> title;
+  final Value<String> notes;
+  final Value<DateTime> scheduledAt;
+  final Value<String> kind;
+  final Value<int?> linkedEntityId;
+  final Value<String> linkedEntityType;
+  final Value<bool> completed;
+  final Value<DateTime> createdAt;
+  const CalendarRemindersCompanion({
+    this.id = const Value.absent(),
+    this.ownerUserId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.scheduledAt = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.linkedEntityId = const Value.absent(),
+    this.linkedEntityType = const Value.absent(),
+    this.completed = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  CalendarRemindersCompanion.insert({
+    this.id = const Value.absent(),
+    required int ownerUserId,
+    required String title,
+    this.notes = const Value.absent(),
+    required DateTime scheduledAt,
+    this.kind = const Value.absent(),
+    this.linkedEntityId = const Value.absent(),
+    this.linkedEntityType = const Value.absent(),
+    this.completed = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : ownerUserId = Value(ownerUserId),
+       title = Value(title),
+       scheduledAt = Value(scheduledAt);
+  static Insertable<CalendarReminder> custom({
+    Expression<int>? id,
+    Expression<int>? ownerUserId,
+    Expression<String>? title,
+    Expression<String>? notes,
+    Expression<DateTime>? scheduledAt,
+    Expression<String>? kind,
+    Expression<int>? linkedEntityId,
+    Expression<String>? linkedEntityType,
+    Expression<bool>? completed,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (ownerUserId != null) 'owner_user_id': ownerUserId,
+      if (title != null) 'title': title,
+      if (notes != null) 'notes': notes,
+      if (scheduledAt != null) 'scheduled_at': scheduledAt,
+      if (kind != null) 'kind': kind,
+      if (linkedEntityId != null) 'linked_entity_id': linkedEntityId,
+      if (linkedEntityType != null) 'linked_entity_type': linkedEntityType,
+      if (completed != null) 'completed': completed,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  CalendarRemindersCompanion copyWith({
+    Value<int>? id,
+    Value<int>? ownerUserId,
+    Value<String>? title,
+    Value<String>? notes,
+    Value<DateTime>? scheduledAt,
+    Value<String>? kind,
+    Value<int?>? linkedEntityId,
+    Value<String>? linkedEntityType,
+    Value<bool>? completed,
+    Value<DateTime>? createdAt,
+  }) {
+    return CalendarRemindersCompanion(
+      id: id ?? this.id,
+      ownerUserId: ownerUserId ?? this.ownerUserId,
+      title: title ?? this.title,
+      notes: notes ?? this.notes,
+      scheduledAt: scheduledAt ?? this.scheduledAt,
+      kind: kind ?? this.kind,
+      linkedEntityId: linkedEntityId ?? this.linkedEntityId,
+      linkedEntityType: linkedEntityType ?? this.linkedEntityType,
+      completed: completed ?? this.completed,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (ownerUserId.present) {
+      map['owner_user_id'] = Variable<int>(ownerUserId.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (scheduledAt.present) {
+      map['scheduled_at'] = Variable<DateTime>(scheduledAt.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (linkedEntityId.present) {
+      map['linked_entity_id'] = Variable<int>(linkedEntityId.value);
+    }
+    if (linkedEntityType.present) {
+      map['linked_entity_type'] = Variable<String>(linkedEntityType.value);
+    }
+    if (completed.present) {
+      map['completed'] = Variable<bool>(completed.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CalendarRemindersCompanion(')
+          ..write('id: $id, ')
+          ..write('ownerUserId: $ownerUserId, ')
+          ..write('title: $title, ')
+          ..write('notes: $notes, ')
+          ..write('scheduledAt: $scheduledAt, ')
+          ..write('kind: $kind, ')
+          ..write('linkedEntityId: $linkedEntityId, ')
+          ..write('linkedEntityType: $linkedEntityType, ')
+          ..write('completed: $completed, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -10424,6 +11831,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $ProjectClientLinksTable(this);
   late final $ClientMessagesTable clientMessages = $ClientMessagesTable(this);
   late final $TeamMembersTable teamMembers = $TeamMembersTable(this);
+  late final $FileAttachmentsTable fileAttachments = $FileAttachmentsTable(
+    this,
+  );
+  late final $CalendarRemindersTable calendarReminders =
+      $CalendarRemindersTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -10447,6 +11859,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     projectClientLinks,
     clientMessages,
     teamMembers,
+    fileAttachments,
+    calendarReminders,
   ];
 }
 
@@ -10744,6 +12158,47 @@ final class $$UsersTableReferences
     ).filter((f) => f.ownerUserId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_teamMembersRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$FileAttachmentsTable, List<FileAttachment>>
+  _fileAttachmentsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.fileAttachments,
+    aliasName: 'users__id__file_attachments__owner_user_id',
+  );
+
+  $$FileAttachmentsTableProcessedTableManager get fileAttachmentsRefs {
+    final manager = $$FileAttachmentsTableTableManager(
+      $_db,
+      $_db.fileAttachments,
+    ).filter((f) => f.ownerUserId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _fileAttachmentsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$CalendarRemindersTable, List<CalendarReminder>>
+  _calendarRemindersRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.calendarReminders,
+        aliasName: 'users__id__calendar_reminders__owner_user_id',
+      );
+
+  $$CalendarRemindersTableProcessedTableManager get calendarRemindersRefs {
+    final manager = $$CalendarRemindersTableTableManager(
+      $_db,
+      $_db.calendarReminders,
+    ).filter((f) => f.ownerUserId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _calendarRemindersRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -11149,6 +12604,56 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
           }) => $$TeamMembersTableFilterComposer(
             $db: $db,
             $table: $db.teamMembers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> fileAttachmentsRefs(
+    Expression<bool> Function($$FileAttachmentsTableFilterComposer f) f,
+  ) {
+    final $$FileAttachmentsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.fileAttachments,
+      getReferencedColumn: (t) => t.ownerUserId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$FileAttachmentsTableFilterComposer(
+            $db: $db,
+            $table: $db.fileAttachments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> calendarRemindersRefs(
+    Expression<bool> Function($$CalendarRemindersTableFilterComposer f) f,
+  ) {
+    final $$CalendarRemindersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.calendarReminders,
+      getReferencedColumn: (t) => t.ownerUserId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CalendarRemindersTableFilterComposer(
+            $db: $db,
+            $table: $db.calendarReminders,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -11616,6 +13121,57 @@ class $$UsersTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> fileAttachmentsRefs<T extends Object>(
+    Expression<T> Function($$FileAttachmentsTableAnnotationComposer a) f,
+  ) {
+    final $$FileAttachmentsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.fileAttachments,
+      getReferencedColumn: (t) => t.ownerUserId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$FileAttachmentsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.fileAttachments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> calendarRemindersRefs<T extends Object>(
+    Expression<T> Function($$CalendarRemindersTableAnnotationComposer a) f,
+  ) {
+    final $$CalendarRemindersTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.calendarReminders,
+          getReferencedColumn: (t) => t.ownerUserId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CalendarRemindersTableAnnotationComposer(
+                $db: $db,
+                $table: $db.calendarReminders,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$UsersTableTableManager
@@ -11646,6 +13202,8 @@ class $$UsersTableTableManager
             bool trackingEventsRefs,
             bool projectTimeEntriesRefs,
             bool teamMembersRefs,
+            bool fileAttachmentsRefs,
+            bool calendarRemindersRefs,
           })
         > {
   $$UsersTableTableManager(_$AppDatabase db, $UsersTable table)
@@ -11729,6 +13287,8 @@ class $$UsersTableTableManager
                 trackingEventsRefs = false,
                 projectTimeEntriesRefs = false,
                 teamMembersRefs = false,
+                fileAttachmentsRefs = false,
+                calendarRemindersRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -11747,6 +13307,8 @@ class $$UsersTableTableManager
                     if (trackingEventsRefs) db.trackingEvents,
                     if (projectTimeEntriesRefs) db.projectTimeEntries,
                     if (teamMembersRefs) db.teamMembers,
+                    if (fileAttachmentsRefs) db.fileAttachments,
+                    if (calendarRemindersRefs) db.calendarReminders,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -12009,6 +13571,48 @@ class $$UsersTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (fileAttachmentsRefs)
+                        await $_getPrefetchedData<
+                          User,
+                          $UsersTable,
+                          FileAttachment
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UsersTableReferences
+                              ._fileAttachmentsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UsersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).fileAttachmentsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.ownerUserId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (calendarRemindersRefs)
+                        await $_getPrefetchedData<
+                          User,
+                          $UsersTable,
+                          CalendarReminder
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UsersTableReferences
+                              ._calendarRemindersRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UsersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).calendarRemindersRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.ownerUserId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -12044,6 +13648,8 @@ typedef $$UsersTableProcessedTableManager =
         bool trackingEventsRefs,
         bool projectTimeEntriesRefs,
         bool teamMembersRefs,
+        bool fileAttachmentsRefs,
+        bool calendarRemindersRefs,
       })
     >;
 typedef $$CustomersTableCreateCompanionBuilder =
@@ -15105,6 +16711,11 @@ typedef $$BusinessProfilesTableCreateCompanionBuilder =
       Value<String> businessCity,
       Value<String> businessPostalCode,
       Value<String> businessCountry,
+      Value<String> skills,
+      Value<String> bio,
+      Value<String> clientCompany,
+      Value<String> clientIndustry,
+      Value<String> clientWebsite,
       Value<DateTime> memberSince,
     });
 typedef $$BusinessProfilesTableUpdateCompanionBuilder =
@@ -15120,6 +16731,11 @@ typedef $$BusinessProfilesTableUpdateCompanionBuilder =
       Value<String> businessCity,
       Value<String> businessPostalCode,
       Value<String> businessCountry,
+      Value<String> skills,
+      Value<String> bio,
+      Value<String> clientCompany,
+      Value<String> clientIndustry,
+      Value<String> clientWebsite,
       Value<DateTime> memberSince,
     });
 
@@ -15206,6 +16822,31 @@ class $$BusinessProfilesTableFilterComposer
 
   ColumnFilters<String> get businessCountry => $composableBuilder(
     column: $table.businessCountry,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get skills => $composableBuilder(
+    column: $table.skills,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bio => $composableBuilder(
+    column: $table.bio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get clientCompany => $composableBuilder(
+    column: $table.clientCompany,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get clientIndustry => $composableBuilder(
+    column: $table.clientIndustry,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get clientWebsite => $composableBuilder(
+    column: $table.clientWebsite,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -15297,6 +16938,31 @@ class $$BusinessProfilesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get skills => $composableBuilder(
+    column: $table.skills,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get bio => $composableBuilder(
+    column: $table.bio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get clientCompany => $composableBuilder(
+    column: $table.clientCompany,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get clientIndustry => $composableBuilder(
+    column: $table.clientIndustry,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get clientWebsite => $composableBuilder(
+    column: $table.clientWebsite,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get memberSince => $composableBuilder(
     column: $table.memberSince,
     builder: (column) => ColumnOrderings(column),
@@ -15381,6 +17047,27 @@ class $$BusinessProfilesTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get skills =>
+      $composableBuilder(column: $table.skills, builder: (column) => column);
+
+  GeneratedColumn<String> get bio =>
+      $composableBuilder(column: $table.bio, builder: (column) => column);
+
+  GeneratedColumn<String> get clientCompany => $composableBuilder(
+    column: $table.clientCompany,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get clientIndustry => $composableBuilder(
+    column: $table.clientIndustry,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get clientWebsite => $composableBuilder(
+    column: $table.clientWebsite,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get memberSince => $composableBuilder(
     column: $table.memberSince,
     builder: (column) => column,
@@ -15451,6 +17138,11 @@ class $$BusinessProfilesTableTableManager
                 Value<String> businessCity = const Value.absent(),
                 Value<String> businessPostalCode = const Value.absent(),
                 Value<String> businessCountry = const Value.absent(),
+                Value<String> skills = const Value.absent(),
+                Value<String> bio = const Value.absent(),
+                Value<String> clientCompany = const Value.absent(),
+                Value<String> clientIndustry = const Value.absent(),
+                Value<String> clientWebsite = const Value.absent(),
                 Value<DateTime> memberSince = const Value.absent(),
               }) => BusinessProfilesCompanion(
                 userId: userId,
@@ -15464,6 +17156,11 @@ class $$BusinessProfilesTableTableManager
                 businessCity: businessCity,
                 businessPostalCode: businessPostalCode,
                 businessCountry: businessCountry,
+                skills: skills,
+                bio: bio,
+                clientCompany: clientCompany,
+                clientIndustry: clientIndustry,
+                clientWebsite: clientWebsite,
                 memberSince: memberSince,
               ),
           createCompanionCallback:
@@ -15479,6 +17176,11 @@ class $$BusinessProfilesTableTableManager
                 Value<String> businessCity = const Value.absent(),
                 Value<String> businessPostalCode = const Value.absent(),
                 Value<String> businessCountry = const Value.absent(),
+                Value<String> skills = const Value.absent(),
+                Value<String> bio = const Value.absent(),
+                Value<String> clientCompany = const Value.absent(),
+                Value<String> clientIndustry = const Value.absent(),
+                Value<String> clientWebsite = const Value.absent(),
                 Value<DateTime> memberSince = const Value.absent(),
               }) => BusinessProfilesCompanion.insert(
                 userId: userId,
@@ -15492,6 +17194,11 @@ class $$BusinessProfilesTableTableManager
                 businessCity: businessCity,
                 businessPostalCode: businessPostalCode,
                 businessCountry: businessCountry,
+                skills: skills,
+                bio: bio,
+                clientCompany: clientCompany,
+                clientIndustry: clientIndustry,
+                clientWebsite: clientWebsite,
                 memberSince: memberSince,
               ),
           withReferenceMapper: (p0) => p0
@@ -21388,6 +23095,832 @@ typedef $$TeamMembersTableProcessedTableManager =
       TeamMember,
       PrefetchHooks Function({bool ownerUserId})
     >;
+typedef $$FileAttachmentsTableCreateCompanionBuilder =
+    FileAttachmentsCompanion Function({
+      Value<int> id,
+      required int ownerUserId,
+      required String entityType,
+      required int entityId,
+      required String fileName,
+      required String localPath,
+      Value<String> mimeType,
+      Value<int> sizeBytes,
+      Value<DateTime> createdAt,
+    });
+typedef $$FileAttachmentsTableUpdateCompanionBuilder =
+    FileAttachmentsCompanion Function({
+      Value<int> id,
+      Value<int> ownerUserId,
+      Value<String> entityType,
+      Value<int> entityId,
+      Value<String> fileName,
+      Value<String> localPath,
+      Value<String> mimeType,
+      Value<int> sizeBytes,
+      Value<DateTime> createdAt,
+    });
+
+final class $$FileAttachmentsTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $FileAttachmentsTable, FileAttachment> {
+  $$FileAttachmentsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $UsersTable _ownerUserIdTable(_$AppDatabase db) =>
+      db.users.createAlias('file_attachments__owner_user_id__users__id');
+
+  $$UsersTableProcessedTableManager get ownerUserId {
+    final $_column = $_itemColumn<int>('owner_user_id')!;
+
+    final manager = $$UsersTableTableManager(
+      $_db,
+      $_db.users,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_ownerUserIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$FileAttachmentsTableFilterComposer
+    extends Composer<_$AppDatabase, $FileAttachmentsTable> {
+  $$FileAttachmentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get entityId => $composableBuilder(
+    column: $table.entityId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fileName => $composableBuilder(
+    column: $table.fileName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get localPath => $composableBuilder(
+    column: $table.localPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mimeType => $composableBuilder(
+    column: $table.mimeType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sizeBytes => $composableBuilder(
+    column: $table.sizeBytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$UsersTableFilterComposer get ownerUserId {
+    final $$UsersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ownerUserId,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableFilterComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$FileAttachmentsTableOrderingComposer
+    extends Composer<_$AppDatabase, $FileAttachmentsTable> {
+  $$FileAttachmentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get entityId => $composableBuilder(
+    column: $table.entityId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fileName => $composableBuilder(
+    column: $table.fileName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get localPath => $composableBuilder(
+    column: $table.localPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mimeType => $composableBuilder(
+    column: $table.mimeType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sizeBytes => $composableBuilder(
+    column: $table.sizeBytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$UsersTableOrderingComposer get ownerUserId {
+    final $$UsersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ownerUserId,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableOrderingComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$FileAttachmentsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $FileAttachmentsTable> {
+  $$FileAttachmentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get entityId =>
+      $composableBuilder(column: $table.entityId, builder: (column) => column);
+
+  GeneratedColumn<String> get fileName =>
+      $composableBuilder(column: $table.fileName, builder: (column) => column);
+
+  GeneratedColumn<String> get localPath =>
+      $composableBuilder(column: $table.localPath, builder: (column) => column);
+
+  GeneratedColumn<String> get mimeType =>
+      $composableBuilder(column: $table.mimeType, builder: (column) => column);
+
+  GeneratedColumn<int> get sizeBytes =>
+      $composableBuilder(column: $table.sizeBytes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$UsersTableAnnotationComposer get ownerUserId {
+    final $$UsersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ownerUserId,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$FileAttachmentsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $FileAttachmentsTable,
+          FileAttachment,
+          $$FileAttachmentsTableFilterComposer,
+          $$FileAttachmentsTableOrderingComposer,
+          $$FileAttachmentsTableAnnotationComposer,
+          $$FileAttachmentsTableCreateCompanionBuilder,
+          $$FileAttachmentsTableUpdateCompanionBuilder,
+          (FileAttachment, $$FileAttachmentsTableReferences),
+          FileAttachment,
+          PrefetchHooks Function({bool ownerUserId})
+        > {
+  $$FileAttachmentsTableTableManager(
+    _$AppDatabase db,
+    $FileAttachmentsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$FileAttachmentsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$FileAttachmentsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$FileAttachmentsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> ownerUserId = const Value.absent(),
+                Value<String> entityType = const Value.absent(),
+                Value<int> entityId = const Value.absent(),
+                Value<String> fileName = const Value.absent(),
+                Value<String> localPath = const Value.absent(),
+                Value<String> mimeType = const Value.absent(),
+                Value<int> sizeBytes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => FileAttachmentsCompanion(
+                id: id,
+                ownerUserId: ownerUserId,
+                entityType: entityType,
+                entityId: entityId,
+                fileName: fileName,
+                localPath: localPath,
+                mimeType: mimeType,
+                sizeBytes: sizeBytes,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int ownerUserId,
+                required String entityType,
+                required int entityId,
+                required String fileName,
+                required String localPath,
+                Value<String> mimeType = const Value.absent(),
+                Value<int> sizeBytes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => FileAttachmentsCompanion.insert(
+                id: id,
+                ownerUserId: ownerUserId,
+                entityType: entityType,
+                entityId: entityId,
+                fileName: fileName,
+                localPath: localPath,
+                mimeType: mimeType,
+                sizeBytes: sizeBytes,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$FileAttachmentsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({ownerUserId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (ownerUserId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.ownerUserId,
+                                referencedTable:
+                                    $$FileAttachmentsTableReferences
+                                        ._ownerUserIdTable(db),
+                                referencedColumn:
+                                    $$FileAttachmentsTableReferences
+                                        ._ownerUserIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$FileAttachmentsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $FileAttachmentsTable,
+      FileAttachment,
+      $$FileAttachmentsTableFilterComposer,
+      $$FileAttachmentsTableOrderingComposer,
+      $$FileAttachmentsTableAnnotationComposer,
+      $$FileAttachmentsTableCreateCompanionBuilder,
+      $$FileAttachmentsTableUpdateCompanionBuilder,
+      (FileAttachment, $$FileAttachmentsTableReferences),
+      FileAttachment,
+      PrefetchHooks Function({bool ownerUserId})
+    >;
+typedef $$CalendarRemindersTableCreateCompanionBuilder =
+    CalendarRemindersCompanion Function({
+      Value<int> id,
+      required int ownerUserId,
+      required String title,
+      Value<String> notes,
+      required DateTime scheduledAt,
+      Value<String> kind,
+      Value<int?> linkedEntityId,
+      Value<String> linkedEntityType,
+      Value<bool> completed,
+      Value<DateTime> createdAt,
+    });
+typedef $$CalendarRemindersTableUpdateCompanionBuilder =
+    CalendarRemindersCompanion Function({
+      Value<int> id,
+      Value<int> ownerUserId,
+      Value<String> title,
+      Value<String> notes,
+      Value<DateTime> scheduledAt,
+      Value<String> kind,
+      Value<int?> linkedEntityId,
+      Value<String> linkedEntityType,
+      Value<bool> completed,
+      Value<DateTime> createdAt,
+    });
+
+final class $$CalendarRemindersTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $CalendarRemindersTable,
+          CalendarReminder
+        > {
+  $$CalendarRemindersTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $UsersTable _ownerUserIdTable(_$AppDatabase db) =>
+      db.users.createAlias('calendar_reminders__owner_user_id__users__id');
+
+  $$UsersTableProcessedTableManager get ownerUserId {
+    final $_column = $_itemColumn<int>('owner_user_id')!;
+
+    final manager = $$UsersTableTableManager(
+      $_db,
+      $_db.users,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_ownerUserIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$CalendarRemindersTableFilterComposer
+    extends Composer<_$AppDatabase, $CalendarRemindersTable> {
+  $$CalendarRemindersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get scheduledAt => $composableBuilder(
+    column: $table.scheduledAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get linkedEntityId => $composableBuilder(
+    column: $table.linkedEntityId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get linkedEntityType => $composableBuilder(
+    column: $table.linkedEntityType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get completed => $composableBuilder(
+    column: $table.completed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$UsersTableFilterComposer get ownerUserId {
+    final $$UsersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ownerUserId,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableFilterComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CalendarRemindersTableOrderingComposer
+    extends Composer<_$AppDatabase, $CalendarRemindersTable> {
+  $$CalendarRemindersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get scheduledAt => $composableBuilder(
+    column: $table.scheduledAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get linkedEntityId => $composableBuilder(
+    column: $table.linkedEntityId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get linkedEntityType => $composableBuilder(
+    column: $table.linkedEntityType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get completed => $composableBuilder(
+    column: $table.completed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$UsersTableOrderingComposer get ownerUserId {
+    final $$UsersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ownerUserId,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableOrderingComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CalendarRemindersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CalendarRemindersTable> {
+  $$CalendarRemindersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get scheduledAt => $composableBuilder(
+    column: $table.scheduledAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<int> get linkedEntityId => $composableBuilder(
+    column: $table.linkedEntityId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get linkedEntityType => $composableBuilder(
+    column: $table.linkedEntityType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get completed =>
+      $composableBuilder(column: $table.completed, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$UsersTableAnnotationComposer get ownerUserId {
+    final $$UsersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ownerUserId,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CalendarRemindersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CalendarRemindersTable,
+          CalendarReminder,
+          $$CalendarRemindersTableFilterComposer,
+          $$CalendarRemindersTableOrderingComposer,
+          $$CalendarRemindersTableAnnotationComposer,
+          $$CalendarRemindersTableCreateCompanionBuilder,
+          $$CalendarRemindersTableUpdateCompanionBuilder,
+          (CalendarReminder, $$CalendarRemindersTableReferences),
+          CalendarReminder,
+          PrefetchHooks Function({bool ownerUserId})
+        > {
+  $$CalendarRemindersTableTableManager(
+    _$AppDatabase db,
+    $CalendarRemindersTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CalendarRemindersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CalendarRemindersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CalendarRemindersTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> ownerUserId = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> notes = const Value.absent(),
+                Value<DateTime> scheduledAt = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<int?> linkedEntityId = const Value.absent(),
+                Value<String> linkedEntityType = const Value.absent(),
+                Value<bool> completed = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => CalendarRemindersCompanion(
+                id: id,
+                ownerUserId: ownerUserId,
+                title: title,
+                notes: notes,
+                scheduledAt: scheduledAt,
+                kind: kind,
+                linkedEntityId: linkedEntityId,
+                linkedEntityType: linkedEntityType,
+                completed: completed,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int ownerUserId,
+                required String title,
+                Value<String> notes = const Value.absent(),
+                required DateTime scheduledAt,
+                Value<String> kind = const Value.absent(),
+                Value<int?> linkedEntityId = const Value.absent(),
+                Value<String> linkedEntityType = const Value.absent(),
+                Value<bool> completed = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => CalendarRemindersCompanion.insert(
+                id: id,
+                ownerUserId: ownerUserId,
+                title: title,
+                notes: notes,
+                scheduledAt: scheduledAt,
+                kind: kind,
+                linkedEntityId: linkedEntityId,
+                linkedEntityType: linkedEntityType,
+                completed: completed,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$CalendarRemindersTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({ownerUserId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (ownerUserId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.ownerUserId,
+                                referencedTable:
+                                    $$CalendarRemindersTableReferences
+                                        ._ownerUserIdTable(db),
+                                referencedColumn:
+                                    $$CalendarRemindersTableReferences
+                                        ._ownerUserIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CalendarRemindersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CalendarRemindersTable,
+      CalendarReminder,
+      $$CalendarRemindersTableFilterComposer,
+      $$CalendarRemindersTableOrderingComposer,
+      $$CalendarRemindersTableAnnotationComposer,
+      $$CalendarRemindersTableCreateCompanionBuilder,
+      $$CalendarRemindersTableUpdateCompanionBuilder,
+      (CalendarReminder, $$CalendarRemindersTableReferences),
+      CalendarReminder,
+      PrefetchHooks Function({bool ownerUserId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -21428,4 +23961,8 @@ class $AppDatabaseManager {
       $$ClientMessagesTableTableManager(_db, _db.clientMessages);
   $$TeamMembersTableTableManager get teamMembers =>
       $$TeamMembersTableTableManager(_db, _db.teamMembers);
+  $$FileAttachmentsTableTableManager get fileAttachments =>
+      $$FileAttachmentsTableTableManager(_db, _db.fileAttachments);
+  $$CalendarRemindersTableTableManager get calendarReminders =>
+      $$CalendarRemindersTableTableManager(_db, _db.calendarReminders);
 }

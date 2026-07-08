@@ -7,6 +7,7 @@ import '../core/auth/user_roles.dart';
 import '../core/theme/clivora_colors.dart';
 import '../core/utils/exit_dialog.dart';
 import '../data/providers/app_providers.dart';
+import '../shared/widgets/offline_status_bar.dart';
 
 class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.child});
@@ -25,7 +26,7 @@ class AppShell extends ConsumerWidget {
     _NavItem('/client-portal', Icons.home_outlined, Icons.home_rounded, 'Home'),
     _NavItem('/client-messages', Icons.mail_outline, Icons.mail_rounded, 'Messages'),
     _NavItem('/client-invoices', Icons.receipt_long_outlined, Icons.receipt_long, 'Invoices'),
-    _NavItem('/client-activity', Icons.notifications_outlined, Icons.notifications_rounded, 'Updates'),
+    _NavItem('/client-activity', Icons.notifications_outlined, Icons.notifications_rounded, 'Updates', badgeTab: true),
     _NavItem('/client-account', Icons.person_outline, Icons.person, 'Account'),
   ];
 
@@ -49,8 +50,7 @@ class AppShell extends ConsumerWidget {
             : ClivoraColors.darkSurface);
     final location = GoRouterState.of(context).uri.toString();
     final currentIndex = _indexFromLocation(location, tabs);
-    final unreadAsync = ref.watch(unreadMessagesProvider);
-    final unreadCount = unreadAsync.valueOrNull ?? 0;
+    final badgeCount = ref.watch(unreadBadgeCountProvider);
 
     return PopScope(
       canPop: false,
@@ -63,19 +63,7 @@ class AppShell extends ConsumerWidget {
         bottomNavigationBar: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (isClient)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-                color: ClivoraColors.clientSurface,
-                child: Text(
-                  unreadCount > 0
-                      ? '$unreadCount new message${unreadCount == 1 ? '' : 's'} from your freelancer'
-                      : 'Client portal — projects, invoices & messages',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 11, color: ClivoraColors.clientAccent, fontWeight: FontWeight.w600),
-                ),
-              ),
+            const OfflineStatusBar(),
             Container(
               margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               decoration: BoxDecoration(
@@ -101,6 +89,7 @@ class AppShell extends ConsumerWidget {
                           item: tabs[i],
                           selected: currentIndex == i,
                           accent: accent,
+                          badgeCount: tabs[i].badgeTab ? badgeCount : 0,
                           onTap: () => context.go(tabs[i].path),
                         ),
                     ],
@@ -116,12 +105,13 @@ class AppShell extends ConsumerWidget {
 }
 
 class _NavItem {
-  const _NavItem(this.path, this.icon, this.activeIcon, this.label);
+  const _NavItem(this.path, this.icon, this.activeIcon, this.label, {this.badgeTab = false});
 
   final String path;
   final IconData icon;
   final IconData activeIcon;
   final String label;
+  final bool badgeTab;
 }
 
 class _BottomNavItem extends StatelessWidget {
@@ -129,12 +119,14 @@ class _BottomNavItem extends StatelessWidget {
     required this.item,
     required this.selected,
     required this.accent,
+    required this.badgeCount,
     required this.onTap,
   });
 
   final _NavItem item;
   final bool selected;
   final Color accent;
+  final int badgeCount;
   final VoidCallback onTap;
 
   @override
@@ -155,7 +147,30 @@ class _BottomNavItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(selected ? item.activeIcon : item.icon, color: color, size: 22),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(selected ? item.activeIcon : item.icon, color: color, size: 22),
+                if (badgeCount > 0)
+                  Positioned(
+                    right: -6,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                      decoration: BoxDecoration(
+                        color: ClivoraColors.errorRed,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        badgeCount > 99 ? '99+' : '$badgeCount',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             if (selected) ...[
               const SizedBox(height: 2),
               Text(

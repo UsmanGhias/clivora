@@ -1,32 +1,25 @@
-CLIVORA v2.1.0 — Supabase + Web Admin Setup
+CLIVORA v2.2.0 — Supabase + Web Admin Setup
 ============================================
 
-PART 1 — DATABASE
------------------
-Run in Supabase SQL Editor (in order):
+PART 1 — DATABASE (run in order)
+--------------------------------
   1. supabase/migrations/001_clivora_schema.sql
   2. supabase/migrations/002_notifications_client_tasks.sql
+  3. supabase/migrations/003_strict_roles_privacy.sql
+  4. supabase/migrations/004_fix_google_auth_profile.sql   ← fixes Google login
 
-New tables: notifications, client_tasks (realtime enabled)
+v2.2 locks one email = one role (freelancer OR client OR admin).
+Optional wipe (only if you need a clean cloud): see comment at top of 003.
 
-PART 2 — WEB ADMIN SYNC (clivora.codcrafters.org)
--------------------------------------------------
-Vercel project: clivora-web
+PART 2 — WEB ADMIN (Vercel clivora-web)
+---------------------------------------
+  ADMIN_SYNC_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 
-Environment variables (Vercel → Settings → Environment Variables):
-  ADMIN_SYNC_KEY=ClivoraSync2026!
-  SUPABASE_URL=https://jtzjwgovqczlccyeujhq.supabase.co
-  SUPABASE_SERVICE_ROLE_KEY=<from Supabase → Project Settings → API → service_role>
+PART 3 — APP v2.2.0
+-------------------
+  Strict freelancer/client separation
+  Super admin Command Center (usmanghias1@gmail.com)
+  Fixed client task assignment + notifications
+  Privacy RLS — users only see linked data
 
-Without SERVICE_ROLE_KEY the admin panel falls back to ephemeral /tmp storage.
-With it, stats read from clivora_events + profiles in Supabase (reliable).
-
-PART 3 — APP (v2.1.0)
----------------------
-  Required client email on add → invite message + notification
-  Notifications: read/delete (freelancer + client)
-  Client can assign tasks to freelancer
-  Pro: admin accounts only (Google Play billing scaffold)
-  Super admin (usmanghias1@gmail.com) can grant more admins in-app
-
-Install: releases/clivora-v2.1.0.apk (after build)
+Install: releases/clivora-v2.2.0.apk

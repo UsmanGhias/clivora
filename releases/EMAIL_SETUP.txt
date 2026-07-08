@@ -1,0 +1,49 @@
+CLIVORA — Email delivery (Gmail SMTP via Supabase Edge Function)
+================================================================
+
+In-app chat, tasks, invoices, and project updates stay in the app (Supabase).
+Real Gmail is used only for special purposes:
+
+  • password_reset   — admin password reset notice
+  • admin_notice     — platform admin alerts
+  • client_invite    — optional invite when freelancer adds a client
+
+Deploy steps
+------------
+
+1. Supabase Dashboard → SQL Editor → run migration:
+   supabase/migrations/005_invoice_shares.sql (if not already run)
+
+2. Supabase CLI (or Dashboard → Edge Functions):
+   Deploy: supabase/functions/send-clivora-email/
+
+3. Supabase Dashboard → Project Settings → Edge Functions → Secrets:
+   GMAIL_USER=your@gmail.com
+   GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx   (Google App Password, no spaces)
+
+   Never commit these values to git.
+
+4. Test from Admin Console → Controls → Send reset email
+
+Gmail App Password
+------------------
+Google Account → Security → 2-Step Verification → App passwords
+Create an app password for "Mail" and paste it into GMAIL_APP_PASSWORD.
+
+Volume
+------
+Gmail SMTP is for low-volume transactional mail only.
+For production scale, switch to Resend/SendGrid and update the edge function.
+
+Until email is configured
+-------------------------
+Clients and freelancers still receive in-app Messages and Notifications.
+Both users must sign in (not Guest) so Supabase sync works.
+
+Migrations (run in order)
+-------------------------
+001_clivora_schema.sql
+002_notifications_client_tasks.sql
+003_strict_roles_privacy.sql
+004_fix_google_auth_profile.sql
+005_invoice_shares.sql

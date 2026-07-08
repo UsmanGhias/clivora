@@ -2,6 +2,8 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_service.dart';
+import '../../core/cloud/cloud_notification_repository.dart';
+import '../../core/cloud/cloud_project_repository.dart';
 import '../../data/database/database.dart';
 import '../../data/database/user_scoped_queries.dart';
 import '../../data/providers/app_providers.dart';
@@ -31,6 +33,44 @@ class TrackingService {
             status: status,
             note: Value(note),
           ),
+        );
+
+    if (entityType == 'project') {
+      await _notifyClientProjectUpdate(ownerId, entityId, status, note);
+    }
+  }
+
+  Future<void> _notifyClientProjectUpdate(
+    int ownerId,
+    int projectId,
+    String status,
+    String note,
+  ) async {
+    final db = ref.read(databaseProvider);
+    final project = await db.getProjectForUser(ownerId, projectId);
+    if (project == null) return;
+
+    final link = await (db.select(db.projectClientLinks)..where((t) => t.projectId.equals(projectId)))
+        .getSingleOrNull();
+    if (link == null) return;
+
+    final freelancer = ref.read(authStateProvider).valueOrNull;
+    if (freelancer != null) {
+      await ref.read(cloudProjectRepositoryProvider).shareHybrid(
+            freelancer: freelancer,
+            clientEmail: link.clientEmail,
+            localProjectId: projectId,
+            project: project,
+          );
+    }
+
+    final label = status.replaceAll('_', ' ');
+    final body = note.isNotEmpty ? '$label: $note' : 'Project status is now $label';
+    await ref.read(cloudNotificationRepositoryProvider).send(
+          toEmail: link.clientEmail,
+          title: 'Update: ${project.name}',
+          body: body,
+          kind: 'project',
         );
   }
 }

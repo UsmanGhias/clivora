@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/clivora_colors.dart';
 import '../../data/providers/app_providers.dart';
@@ -134,7 +135,38 @@ class PlanLimitBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return const SizedBox.shrink();
+    final isPro = ref.watch(isProProvider);
+    if (isPro || current >= max) {
+      return const SizedBox.shrink();
+    }
+    final remaining = max - current;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      child: Material(
+        color: ClivoraColors.chipBackground,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => context.push('/upgrade'),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, size: 20, color: ClivoraColors.primaryPurple),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '$current of $max $resource on Free plan · $remaining left',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+                const Icon(Icons.chevron_right, size: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

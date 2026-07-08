@@ -5,14 +5,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/auth/auth_service.dart';
 import '../../core/auth/user_roles.dart';
 import '../../core/cloud/cloud_message_repository.dart';
+import 'dart:async';
+
+import '../../features/client/client_contract_view.dart';
+import '../../core/cloud/cloud_invoice_repository.dart';
 import '../../core/cloud/cloud_project_repository.dart';
 import '../../core/cloud/supabase_auth_helper.dart';
 import '../../core/services/admin_management_service.dart';
+import '../../core/services/client_pdf_quota_service.dart';
 import '../../core/constants/plan_limits.dart';
+import '../../core/constants/plan_features.dart';
 import '../../core/utils/duration_formatter.dart';
 import '../database/database.dart';
 import '../database/user_scoped_queries.dart';
 import 'database_provider.dart';
+export 'chat_providers.dart';
 export 'database_provider.dart';
 
 int? _ownerId(Ref ref) => ref.watch(authStateProvider).valueOrNull?.id;
@@ -285,10 +292,50 @@ class PlanLimitService {
     return count < PlanLimits.freeMaxInvoicesPerMonth;
   }
 
+  Future<bool> canAddTemplate() async {
+    if (await _isPro()) return true;
+    final ownerId = ref.read(authStateProvider).valueOrNull?.id;
+    if (ownerId == null) return false;
+    final count = await ref.read(databaseProvider).countMessageTemplatesForUser(ownerId);
+    return count < PlanLimits.freeMaxTemplates;
+  }
+
+  Future<bool> canAddTaskToProject(int? projectId) async {
+    if (await _isPro()) return true;
+    if (projectId == null) return true;
+    final ownerId = ref.read(authStateProvider).valueOrNull?.id;
+    if (ownerId == null) return false;
+    final count = await ref.read(databaseProvider).countTasksForProjectForUser(ownerId, projectId);
+    return count < PlanLimits.freeMaxTasksPerProject;
+  }
+
+  Future<bool> canAddClientContract(int currentCount) async {
+    if (await _isPro()) return true;
+    return currentCount < PlanLimits.freeMaxClientContracts;
+  }
+
+  Future<bool> canDownloadClientInvoicePdf() async {
+    if (await _isPro()) return true;
+    return ref.read(clientPdfQuotaServiceProvider).canDownload();
+  }
+
+  Future<bool> canUseBiometric() async {
+    return PlanFeatures.biometricLock(await currentPlan());
+  }
+
+  Future<bool> canUseAi() async => PlanFeatures.aiAssistant(await currentPlan());
+
+  Future<bool> canUseWorkflows() async => PlanFeatures.customWorkflows(await currentPlan());
+
+  Future<bool> canUseAdvancedAnalytics() async => PlanFeatures.advancedAnalytics(await currentPlan());
+
+  Future<int> storageLimitBytes() async =>
+      PlanFeatures.fileVaultLimitBytes(await currentPlan());
+
   Future<bool> _isPro() async {
     final user = ref.read(authStateProvider).valueOrNull;
     if (isAdminUser(user)) return true;
-    return (await currentPlan()) == PlanLimits.proPlan;
+    return PlanFeatures.isPro(await currentPlan());
   }
 
   Future<void> setPlan(String plan) async {
@@ -307,7 +354,7 @@ final isProProvider = Provider<bool>((ref) {
   final user = ref.watch(authStateProvider).valueOrNull;
   if (isAdminUser(user)) return true;
   final plan = ref.watch(subscriptionPlanProvider).valueOrNull;
-  return plan == PlanLimits.proPlan;
+  return PlanFeatures.isPro(plan);
 });
 
 final subscriptionPlanProvider = StreamProvider<String>((ref) {
@@ -365,11 +412,128 @@ final freelancerUnreadProvider = FutureProvider<int>((ref) async {
   return mailbox.where((m) => m.toUid == uid && !m.isRead).length;
 });
 
-final clientInvoicesProvider = FutureProvider<List<Invoice>>((ref) async {
-  final userId = ref.watch(authStateProvider).valueOrNull?.id;
-  if (userId == null) return [];
-  return ref.read(databaseProvider).watchInvoicesForClient(userId);
+final clientCloudInvoicesProvider = StreamProvider<List<CloudInvoiceShare>>((ref) {
+  final user = ref.watch(authStateProvider).valueOrNull;
+  if (user == null) return const Stream.empty();
+  return ref.watch(cloudInvoiceRepositoryProvider).watchForClient(
+        email: user.email,
+        uid: SupabaseAuthHelper.currentUid,
+      );
 });
+
+final clientInvoicesProvider = StreamProvider<List<Invoice>>((ref) {
+  final userId = ref.watch(authStateProvider).valueOrNull?.id;
+  if (userId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchInvoicesForClientStream(userId);
+});
+
+final clientContractsProvider = StreamProvider<List<ClientContractView>>((ref) {
+  final user = ref.watch(authStateProvider).valueOrNull;
+  if (user == null) return const Stream.empty();
+  return _watchClientContracts(ref, user);
+});
+
+Stream<List<ClientContractView>> _watchClientContracts(Ref ref, User user) {
+  final db = ref.read(databaseProvider);
+  final controller = StreamController<List<ClientContractView>>();
+  var inbox = <ClientInboxEntry>[];
+  var local = <Contract>[];
+
+  void emit() => controller.add(mergeClientContractViews(inbox: inbox, local: local));
+
+  final inboxSub = watchUnifiedClientInbox(ref, user).listen(
+    (value) {
+      inbox = value;
+      emit();
+    },
+    onError: controller.addError,
+  );
+  final localSub = db.watchContractsForClient(user.id).listen(
+    (value) {
+      local = value;
+      emit();
+    },
+    onError: controller.addError,
+  );
+
+  ref.onDispose(() {
+    inboxSub.cancel();
+    localSub.cancel();
+    controller.close();
+  });
+
+  return controller.stream;
+}
+
+class ClientActivityItem {
+  const ClientActivityItem({
+    required this.projectId,
+    required this.projectName,
+    required this.status,
+    required this.note,
+    required this.createdAt,
+  });
+
+  final int projectId;
+  final String projectName;
+  final String status;
+  final String note;
+  final DateTime createdAt;
+}
+
+final clientActivityProvider = StreamProvider<List<ClientActivityItem>>((ref) async* {
+  final user = ref.watch(authStateProvider).valueOrNull;
+  if (user == null) {
+    yield [];
+    return;
+  }
+  final db = ref.watch(databaseProvider);
+  await for (final projects in db.watchProjectsForClient(user.id)) {
+    final items = <ClientActivityItem>[];
+    for (final project in projects) {
+      final events = await db.watchTrackingForClientProject(
+        clientUserId: user.id,
+        projectId: project.id,
+      ).first;
+      for (final e in events) {
+        items.add(ClientActivityItem(
+          projectId: project.id,
+          projectName: project.name,
+          status: e.status,
+          note: e.note,
+          createdAt: e.createdAt,
+        ));
+      }
+    }
+    items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    yield items.take(50).toList();
+  }
+});
+
+/// Combined unread badge for dashboard / client portal bells (live streams).
+final unreadBadgeCountProvider = Provider<int>((ref) {
+  final user = ref.watch(authStateProvider).valueOrNull;
+  if (user == null) return 0;
+  final uid = SupabaseAuthHelper.currentUid;
+  var count = 0;
+
+  final cloud = ref.watch(cloudNotificationsProvider).valueOrNull ?? [];
+  count += cloud.where((n) => !n.isRead).length;
+
+  if (isClientUser(user)) {
+    final inbox = ref.watch(unifiedClientInboxProvider).valueOrNull ?? [];
+    count += inbox.where((m) => !m.isRead).length;
+  } else if (uid != null) {
+    final mailbox = ref.watch(freelancerMailboxProvider).valueOrNull ?? [];
+    count += mailbox.where((m) => m.toUid == uid && !m.isRead).length;
+    final tasks = ref.watch(freelancerClientTasksProvider).valueOrNull ?? [];
+    count += tasks.where((t) => !t.isRead).length;
+  }
+
+  return count;
+});
+
+final notificationBadgeProvider = Provider<bool>((ref) => ref.watch(unreadBadgeCountProvider) > 0);
 
 final messageTemplatesProvider =
     StreamProvider.family<List<MessageTemplate>, String?>((ref, category) {
@@ -528,7 +692,7 @@ final notificationsProvider = FutureProvider<List<AppNotification>>((ref) async 
           ? 'Open Messages to read updates from your freelancer'
           : 'You have unread client messages',
       type: NotificationType.message,
-      route: isClientUser(user) ? '/client-messages' : '/client-messages',
+      route: isClientUser(user) ? '/client-messages' : '/freelancer-messages',
       priority: 0,
     ));
   }
@@ -631,8 +795,38 @@ final calendarEventsProvider = FutureProvider<List<CalendarEvent>>((ref) async {
     ));
   }
 
+  final tracking = await db.watchAllTrackingForUser(ownerId);
+  for (final t in tracking.take(200)) {
+    events.add(CalendarEvent(
+      title: t.note.isNotEmpty ? t.note : '${t.entityType} update',
+      date: t.createdAt,
+      type: 'activity',
+      color: Colors.teal,
+    ));
+  }
+
   events.sort((a, b) => a.date.compareTo(b.date));
   return events;
+});
+
+final calendarRemindersProvider = StreamProvider<List<CalendarEvent>>((ref) async* {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) {
+    yield [];
+    return;
+  }
+  await for (final reminders in ref.watch(databaseProvider).watchRemindersForUser(ownerId)) {
+    yield reminders
+        .map(
+          (r) => CalendarEvent(
+            title: r.title,
+            date: r.scheduledAt,
+            type: r.kind,
+            color: Colors.purple,
+          ),
+        )
+        .toList();
+  }
 });
 
 class CalendarEvent {

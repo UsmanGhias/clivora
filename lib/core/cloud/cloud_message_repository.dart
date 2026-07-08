@@ -107,6 +107,58 @@ class CloudMessageRepository {
     });
   }
 
+  Stream<List<CloudMessage>> watchClientMailbox({required String uid, required String email}) {
+    var sent = <CloudMessage>[];
+    var received = <CloudMessage>[];
+
+    final controller = StreamController<List<CloudMessage>>();
+    final sentSub = _db
+        .from('client_messages')
+        .stream(primaryKey: ['id'])
+        .eq('from_uid', uid)
+        .listen((rows) {
+      sent = rows.map(CloudMessage.fromRow).toList();
+      controller.add(_mergeMailbox(sent, received));
+    }, onError: controller.addError);
+    final recvSub = _db
+        .from('client_messages')
+        .stream(primaryKey: ['id'])
+        .eq('to_uid', uid)
+        .listen((rows) {
+      received = rows.map(CloudMessage.fromRow).toList();
+      controller.add(_mergeMailbox(sent, received));
+    }, onError: (e) => debugPrint('Client mailbox error: $e'));
+
+    controller.onCancel = () {
+      sentSub.cancel();
+      recvSub.cancel();
+    };
+    return controller.stream;
+  }
+
+  /// All messages in a thread with one contact (chronological).
+  Stream<List<CloudMessage>> watchThread({
+    required String myUid,
+    required String myEmail,
+    required String peerEmail,
+  }) async* {
+    final peer = peerEmail.trim().toLowerCase();
+    final me = myEmail.trim().toLowerCase();
+    await for (final all in watchClientMailbox(uid: myUid, email: myEmail)) {
+      final thread = all.where((m) {
+        final to = m.toEmail.trim().toLowerCase();
+        final from = m.fromEmail.trim().toLowerCase();
+        return (from == me && to == peer) || (from == peer && to == me);
+      }).toList();
+      thread.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      yield thread;
+    }
+  }
+
+  Future<void> markMessageReadById(String messageId) async {
+    await _db.from('client_messages').update({'is_read': true}).eq('id', messageId);
+  }
+
   Stream<List<CloudMessage>> watchFreelancerMailbox({required String uid}) async* {
     var sent = <CloudMessage>[];
     var received = <CloudMessage>[];

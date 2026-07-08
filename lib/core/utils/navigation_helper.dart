@@ -2,9 +2,70 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// Opens create/edit screens immediately. Plan limits are enforced on save only.
+import '../auth/auth_service.dart';
+import '../auth/user_roles.dart';
+import '../constants/plan_features.dart';
+import '../constants/plan_limits.dart';
+import 'plan_limit_dialog.dart';
+import '../../data/providers/app_providers.dart';
+
+/// Opens create/edit screens (limits should be checked before calling).
 void openFormRoute(BuildContext context, String path) {
   context.push(path);
+}
+
+/// Opens notifications — client goes to Updates tab; freelancer opens full screen.
+void openNotifications(BuildContext context, {required bool isClient}) {
+  if (isClient) {
+    context.go('/client-activity');
+  } else {
+    context.push('/notifications');
+  }
+}
+
+/// Shows upgrade dialog — works for both freelancer and client accounts.
+Future<bool> requireProFeature(
+  BuildContext context, {
+  required bool isPro,
+  required String featureName,
+  bool isClient = false,
+}) async {
+  if (isPro) return true;
+  final planName = isClient ? 'Client Pro' : 'Freelancer Pro';
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text('$featureName — $planName'),
+      content: Text(
+        '$featureName requires $planName (Rs 2,000/mo — limited offer from Rs 2,800). '
+        'Subscribe securely through Google Play.',
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Not now')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('View plans')),
+      ],
+    ),
+  );
+  if (result == true && context.mounted) {
+    context.push('/upgrade');
+  }
+  return false;
+}
+
+Future<bool> guardAccountFeature(
+  BuildContext context,
+  WidgetRef ref, {
+  required String feature,
+  required String featureName,
+}) async {
+  final user = ref.read(authStateProvider).valueOrNull;
+  final isClient = isClientUser(user);
+  final plan = ref.read(subscriptionPlanProvider).valueOrNull;
+  final isPro = ref.read(isProProvider);
+  if (PlanFeatures.hasFeature(plan: plan, isClient: isClient, feature: feature)) {
+    return true;
+  }
+  return requireProFeature(context, isPro: isPro, featureName: featureName, isClient: isClient);
 }
 
 Future<bool> tryOpenWithPlanCheck(
@@ -15,6 +76,50 @@ Future<bool> tryOpenWithPlanCheck(
   required String resource,
   required int max,
 }) async {
+  if (!await canAdd()) {
+    if (!context.mounted) return false;
+    final upgrade = await showPlanLimitDialog(context, resource: resource, max: max);
+    if (upgrade && context.mounted) context.push('/upgrade');
+    return false;
+  }
   openFormRoute(context, path);
   return true;
+}
+
+/// Opens create routes from AI insights with the same plan checks as list screens.
+Future<void> openInsightRoute(BuildContext context, WidgetRef ref, String path) async {
+  if (path == '/customers/new') {
+    await tryOpenWithPlanCheck(
+      context,
+      ref: ref,
+      canAdd: () => ref.read(planLimitServiceProvider).canAddCustomer(),
+      path: path,
+      resource: 'clients',
+      max: PlanLimits.freeMaxClients,
+    );
+    return;
+  }
+  if (path == '/projects/new') {
+    await tryOpenWithPlanCheck(
+      context,
+      ref: ref,
+      canAdd: () => ref.read(planLimitServiceProvider).canAddProject(),
+      path: path,
+      resource: 'projects',
+      max: PlanLimits.freeMaxProjects,
+    );
+    return;
+  }
+  if (path == '/invoices/new') {
+    await tryOpenWithPlanCheck(
+      context,
+      ref: ref,
+      canAdd: () => ref.read(planLimitServiceProvider).canAddInvoice(),
+      path: path,
+      resource: 'invoices this month',
+      max: PlanLimits.freeMaxInvoicesPerMonth,
+    );
+    return;
+  }
+  context.push(path);
 }

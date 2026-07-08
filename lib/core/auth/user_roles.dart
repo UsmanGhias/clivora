@@ -21,9 +21,14 @@ bool isSuperAdmin(User? user) {
   return user.email.toLowerCase() == kSuperAdminEmail;
 }
 
+bool isGuestEmail(String email) {
+  final lower = email.toLowerCase();
+  return lower == kGuestEmail || (lower.startsWith('guest_') && lower.endsWith('@clivora.local'));
+}
+
 bool isGuestUser(User? user) {
   if (user == null) return false;
-  return user.email == kGuestEmail;
+  return isGuestEmail(user.email);
 }
 
 bool isFreelancerUser(User? user) {

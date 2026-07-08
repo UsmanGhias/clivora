@@ -8,6 +8,10 @@ import '../../core/services/invoice_share_helper.dart';
 import '../../core/services/invoice_pdf_service.dart';
 import '../../core/auth/auth_service.dart';
 import '../../core/constants/currencies.dart';
+import '../../core/cloud/cloud_invoice_repository.dart';
+import '../../core/cloud/supabase_sync_service.dart';
+import '../../core/constants/invoice_statuses.dart';
+import '../../core/services/audit_log_service.dart';
 import '../../core/services/automation_service.dart';
 import '../../core/services/tracking_service.dart';
 import '../../core/theme/clivora_colors.dart';
@@ -15,10 +19,13 @@ import '../../core/utils/currency_formatter.dart';
 import '../../data/database/database.dart';
 import '../../data/database/user_scoped_queries.dart';
 import '../../data/models/invoice_line_item.dart';
+import '../../core/constants/plan_limits.dart';
 import '../../core/utils/crm_refresh.dart';
+import '../../core/utils/plan_limit_dialog.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/step_progress_card.dart';
-import '../../shared/widgets/tracking_timeline.dart';
+import '../../shared/widgets/entity_activity_timeline.dart';
+import '../../shared/widgets/entity_attachments_panel.dart';
 
 class InvoiceFormScreen extends ConsumerStatefulWidget {
   const InvoiceFormScreen({super.key, this.invoiceId});
@@ -147,6 +154,17 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
         );
       }
     } else {
+      if (!await ref.read(planLimitServiceProvider).canAddInvoice()) {
+        if (mounted) {
+          final upgrade = await showPlanLimitDialog(
+            context,
+            resource: 'invoices this month',
+            max: PlanLimits.freeMaxInvoicesPerMonth,
+          );
+          if (upgrade && mounted) context.push('/upgrade');
+        }
+        return;
+      }
       savedId = await db.insertInvoice(
         InvoicesCompanion.insert(
           ownerUserId: ownerId,
@@ -172,6 +190,14 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
             status: _status,
             note: widget.invoiceId == null ? 'Invoice created' : 'Status updated',
           );
+      if (_previousStatus != null && _previousStatus != _status) {
+        await ref.read(auditLogServiceProvider).logInvoiceStatusChange(
+              invoiceId: savedId,
+              fromStatus: _previousStatus!,
+              toStatus: _status,
+              invoiceNumber: _numberController.text.trim(),
+            );
+      }
     }
 
     final savedInvoice = await db.getInvoiceForUser(ownerId, savedId!);
@@ -180,6 +206,21 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
             savedInvoice,
             previousStatus: _previousStatus,
           );
+
+      if (savedInvoice.status == 'sent' || savedInvoice.status == 'overdue' || savedInvoice.status == 'paid') {
+        final customer = await db.getCustomerForUser(ownerId, savedInvoice.customerId);
+        final emails = customer != null ? parseStringList(customer.emails) : <String>[];
+        final freelancer = ref.read(authStateProvider).valueOrNull;
+        if (freelancer != null && emails.isNotEmpty) {
+          final clientUid = await ref.read(supabaseSyncServiceProvider).uidForEmail(emails.first);
+          await ref.read(cloudInvoiceRepositoryProvider).syncInvoiceToClient(
+                freelancer: freelancer,
+                invoice: savedInvoice,
+                clientEmail: emails.first,
+                clientUid: clientUid,
+              );
+        }
+      }
     }
 
     if (mounted) {
@@ -397,12 +438,9 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                         DropdownButtonFormField<String>(
                           initialValue: _status,
                           decoration: const InputDecoration(),
-                          items: const [
-                            DropdownMenuItem(value: 'draft', child: Text('Draft')),
-                            DropdownMenuItem(value: 'sent', child: Text('Sent')),
-                            DropdownMenuItem(value: 'paid', child: Text('Paid')),
-                            DropdownMenuItem(value: 'overdue', child: Text('Overdue')),
-                          ],
+                          items: InvoiceStatuses.all
+                              .map((s) => DropdownMenuItem(value: s, child: Text(InvoiceStatuses.label(s))))
+                              .toList(),
                           onChanged: (v) => setState(() => _status = v ?? 'draft'),
                         ),
                         const SizedBox(height: 16),
@@ -440,7 +478,17 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: Theme.of(context).dividerColor),
                       ),
-                      child: TrackingTimeline(entityType: 'invoice', entityId: widget.invoiceId!),
+                      child: EntityActivityTimeline(entityType: 'invoice', entityId: widget.invoiceId!),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Theme.of(context).dividerColor),
+                      ),
+                      child: EntityAttachmentsPanel(entityType: 'invoice', entityId: widget.invoiceId!),
                     ),
                   ],
                 ],

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/auth/auth_service.dart';
 import '../../core/auth/user_roles.dart';
+import '../../core/cloud/supabase_auth_helper.dart';
 import '../../core/cloud/cloud_notification_repository.dart';
 import '../../core/services/admin_management_service.dart';
 import '../../core/theme/clivora_colors.dart';
@@ -19,6 +20,7 @@ class NotificationsScreen extends ConsumerWidget {
     final cloudAsync = ref.watch(cloudNotificationsProvider);
     final alertsAsync = ref.watch(notificationsProvider);
     final tasksAsync = ref.watch(freelancerClientTasksProvider);
+    final mailboxAsync = ref.watch(freelancerMailboxProvider);
     final isClient = isClientUser(ref.watch(authStateProvider).valueOrNull);
 
     return ClivoraScaffold(
@@ -30,6 +32,7 @@ class NotificationsScreen extends ConsumerWidget {
           ref.invalidate(notificationsProvider);
           ref.invalidate(freelancerClientTasksProvider);
           ref.invalidate(clientAssignedTasksProvider);
+          ref.invalidate(freelancerMailboxProvider);
         },
         child: ListView(
           padding: const EdgeInsets.all(20),
@@ -62,6 +65,38 @@ class NotificationsScreen extends ConsumerWidget {
                 );
               },
             ),
+            if (!isClient)
+              mailboxAsync.when(
+                loading: () => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
+                data: (messages) {
+                  final unread = messages.where((m) => !m.isRead && m.toUid == SupabaseAuthHelper.currentUid).take(5).toList();
+                  if (unread.isEmpty) return const SizedBox.shrink();
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Unread messages', style: Theme.of(context).textTheme.titleMedium),
+                      const SizedBox(height: 10),
+                      ...unread.map((m) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: ListTile(
+                              onTap: () => context.push('/freelancer-messages'),
+                              tileColor: Theme.of(context).cardColor,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                side: BorderSide(color: Theme.of(context).dividerColor),
+                              ),
+                              leading: const Icon(Icons.mail_outline, color: ClivoraColors.primary),
+                              title: Text(m.fromEmail, style: const TextStyle(fontWeight: FontWeight.w600)),
+                              subtitle: Text(m.body.length > 80 ? '${m.body.substring(0, 80)}…' : m.body),
+                              trailing: const Icon(Icons.chevron_right),
+                            ),
+                          )),
+                      const SizedBox(height: 16),
+                    ],
+                  );
+                },
+              ),
             if (!isClient)
               tasksAsync.when(
                 loading: () => const SizedBox.shrink(),
@@ -163,7 +198,7 @@ class _CloudNotificationTile extends ConsumerWidget {
         ),
         child: const Icon(Icons.delete_outline, color: Colors.white),
       ),
-      onDismissed: (_) => repo.delete(notification.id),
+      onDismissed: (_) => _dismiss(ref),
       child: Material(
         color: notification.isRead ? Theme.of(context).cardColor : ClivoraColors.primary.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
@@ -171,6 +206,11 @@ class _CloudNotificationTile extends ConsumerWidget {
           borderRadius: BorderRadius.circular(16),
           onTap: () async {
             if (!notification.isRead) await repo.markRead(notification.id);
+            ref.invalidate(cloudNotificationsProvider);
+            ref.invalidate(unreadBadgeCountProvider);
+            if (!context.mounted) return;
+            final route = _routeForKind(notification.kind, ref);
+            if (route != null) context.push(route);
           },
           child: Container(
             padding: const EdgeInsets.all(16),
@@ -200,7 +240,7 @@ class _CloudNotificationTile extends ConsumerWidget {
                 ),
                 IconButton(
                   icon: const Icon(Icons.close, size: 18),
-                  onPressed: () => repo.delete(notification.id),
+                  onPressed: () => _dismiss(ref),
                 ),
               ],
             ),
@@ -210,14 +250,44 @@ class _CloudNotificationTile extends ConsumerWidget {
     );
   }
 
+  Future<void> _dismiss(WidgetRef ref) async {
+    await ref.read(cloudNotificationRepositoryProvider).delete(notification.id);
+    ref.invalidate(cloudNotificationsProvider);
+    ref.invalidate(unreadBadgeCountProvider);
+  }
+
   IconData _iconForKind(String kind) {
     switch (kind) {
       case 'invite':
         return Icons.mail_outline;
       case 'task':
         return Icons.assignment_outlined;
+      case 'invoice':
+        return Icons.receipt_long_outlined;
+      case 'project':
+        return Icons.work_outline;
+      case 'contract':
+        return Icons.description_outlined;
       default:
         return Icons.notifications_outlined;
+    }
+  }
+
+  String? _routeForKind(String kind, WidgetRef ref) {
+    final isClient = isClientUser(ref.read(authStateProvider).valueOrNull);
+    switch (kind) {
+      case 'task':
+        return isClient ? '/client-tasks' : '/notifications';
+      case 'invoice':
+        return isClient ? '/client-invoices' : '/invoices';
+      case 'project':
+        return isClient ? '/client-portal' : '/projects';
+      case 'contract':
+        return isClient ? '/client-contracts' : '/contracts';
+      case 'invite':
+        return isClient ? '/client-messages' : '/freelancer-messages';
+      default:
+        return null;
     }
   }
 }

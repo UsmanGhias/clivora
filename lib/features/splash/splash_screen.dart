@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_route_helper.dart';
+import '../../core/services/biometric_service.dart';
+import '../../core/services/onboarding_service.dart';
 import '../../core/auth/auth_service.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../core/utils/exit_dialog.dart';
@@ -39,12 +41,30 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   Future<void> _navigate() async {
     await Future<void>.delayed(const Duration(milliseconds: 2200));
     if (!mounted) return;
-    // Wait for auth session restore
     await ref.read(authStateProvider.notifier).ensureLoaded();
     if (!mounted) return;
+
+    final onboardingDone = await ref.read(onboardingServiceProvider).isComplete();
+    if (!mounted) return;
+
     final user = ref.read(authStateProvider).valueOrNull;
     if (user != null) {
+      final bio = ref.read(biometricServiceProvider);
+      if (await bio.isEnabled && await bio.canUseBiometric() && await bio.shouldPromptUnlock()) {
+        final ok = await bio.authenticate(reason: 'Unlock CLIVORA');
+        if (!mounted) return;
+        if (!ok) {
+          await ref.read(authStateProvider.notifier).signOut();
+          if (mounted) context.go('/login');
+          return;
+        }
+      } else {
+        bio.markSessionUnlocked();
+      }
+      if (!mounted) return;
       context.go(homeRouteForUser(user));
+    } else if (!onboardingDone) {
+      context.go('/onboarding');
     } else {
       context.go('/login');
     }

@@ -6,6 +6,8 @@ import '../constants/pro_pricing.dart';
 import '../../data/database/database.dart';
 import '../../data/providers/app_providers.dart';
 import 'admin_sync_service.dart';
+import 'connectivity_service.dart';
+import 'sync_outbox_service.dart';
 
 final analyticsServiceProvider = Provider<AnalyticsService>((ref) {
   return AnalyticsService(ref);
@@ -36,16 +38,33 @@ class AnalyticsService {
       ),
     );
     ref.read(adminSyncServiceProvider).syncPendingEvents();
-    try {
-      await ref.read(supabaseSyncServiceProvider).mirrorAnalyticsEvent(
-            eventType: eventType,
-            userEmail: email ?? '',
-            userName: name ?? '',
-            plan: plan,
-            amount: amount,
-            payload: payload,
+    final online = await ref.read(connectivityServiceProvider).isOnlineNow();
+    if (online) {
+      try {
+        await ref.read(supabaseSyncServiceProvider).mirrorAnalyticsEvent(
+              eventType: eventType,
+              userEmail: email ?? '',
+              userName: name ?? '',
+              plan: plan,
+              amount: amount,
+              payload: payload,
+            );
+      } catch (_) {}
+    } else {
+      await ref.read(syncOutboxServiceProvider).enqueue(
+            SyncOutboxItem(
+              kind: 'analytics',
+              payload: {
+                'eventType': eventType,
+                'email': email,
+                'name': name,
+                'plan': plan,
+                'amount': amount,
+                'payload': payload,
+              },
+            ),
           );
-    } catch (_) {}
+    }
   }
 
   Future<void> trackSignup({required String email, required String name}) =>

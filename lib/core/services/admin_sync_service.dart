@@ -8,6 +8,9 @@ import 'package:http/http.dart' as http;
 import '../constants/admin_config.dart';
 import '../../data/database/database.dart';
 import '../../data/providers/app_providers.dart';
+import 'cloud_write_guard.dart';
+import 'connectivity_service.dart';
+import 'sync_outbox_service.dart';
 
 final adminSyncServiceProvider = Provider<AdminSyncService>((ref) {
   return AdminSyncService(ref);
@@ -20,6 +23,17 @@ class AdminSyncService {
   final Ref ref;
 
   Future<void> syncPendingEvents() async {
+    final online = await ref.read(connectivityServiceProvider).isOnlineNow();
+    if (!online) {
+      await ref.read(syncOutboxServiceProvider).enqueue(
+            SyncOutboxItem(kind: 'admin_sync', payload: {}),
+          );
+      return;
+    }
+    await flushPendingEvents();
+  }
+
+  Future<void> flushPendingEvents() async {
     final db = ref.read(databaseProvider);
     final pending = await db.getUnsyncedAnalytics();
     if (pending.isEmpty) return;
