@@ -77,14 +77,19 @@ class ReferralService {
         'Download: $playStoreReferralBase$code';
   }
 
-  Future<void> applyReferralCode(String rawCode) async {
+  Future<String?> applyReferralCode(String rawCode) async {
     final code = rawCode.trim().toUpperCase();
-    if (code.isEmpty) return;
+    if (code.isEmpty) return 'Enter a referral code';
+    final my = await myCode();
+    if (my != null && my.toUpperCase() == code) {
+      return 'You cannot use your own referral code';
+    }
     final userId = ref.read(authStateProvider).valueOrNull?.id;
-    if (userId == null) return;
+    if (userId == null) return 'Sign in to apply a referral code';
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('clivora_my_referral_used', code);
     await prefs.setInt('clivora_referral_applied_at_$userId', DateTime.now().millisecondsSinceEpoch);
+    return null;
   }
 
   Future<String?> appliedReferralCode() async {

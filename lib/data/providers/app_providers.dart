@@ -101,16 +101,22 @@ final customersProvider =
   return ref.watch(databaseProvider).watchCustomersForUser(ownerId, search: search);
 });
 
-final customerCountProvider = FutureProvider<int>((ref) async {
+final customerCountProvider = StreamProvider<int>((ref) {
   final ownerId = _ownerId(ref);
-  if (ownerId == null) return 0;
-  return ref.watch(databaseProvider).countCustomersForUser(ownerId);
+  if (ownerId == null) return const Stream.empty();
+  return ref
+      .watch(databaseProvider)
+      .watchCustomersForUser(ownerId)
+      .map((list) => list.length);
 });
 
-final projectCountProvider = FutureProvider<int>((ref) async {
+final projectCountProvider = StreamProvider<int>((ref) {
   final ownerId = _ownerId(ref);
-  if (ownerId == null) return 0;
-  return ref.watch(databaseProvider).countProjectsForUser(ownerId);
+  if (ownerId == null) return const Stream.empty();
+  return ref
+      .watch(databaseProvider)
+      .watchProjectsForUser(ownerId)
+      .map((list) => list.length);
 });
 
 final projectsProvider =

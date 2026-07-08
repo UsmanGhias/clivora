@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../constants/admin_config.dart';
+
 /// Primary authentication for CLIVORA — Supabase Auth (email + Google).
 class SupabaseAuthHelper {
   static SupabaseClient get client => Supabase.instance.client;
@@ -130,7 +132,10 @@ class SupabaseAuthHelper {
 
   static Future<String?> resetPasswordForEmail(String email) async {
     try {
-      await client.auth.resetPasswordForEmail(email.trim().toLowerCase());
+      await client.auth.resetPasswordForEmail(
+        email.trim().toLowerCase(),
+        redirectTo: kPasswordResetRedirectUrl,
+      );
       return null;
     } catch (e) {
       return 'Could not send reset email: $e';

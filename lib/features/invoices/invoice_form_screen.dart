@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart' show Value;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -133,7 +134,8 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
     final ownerId = ref.read(authStateProvider).valueOrNull!.id;
     int? savedId = widget.invoiceId;
 
-    if (widget.invoiceId != null) {
+    try {
+      if (widget.invoiceId != null) {
       final existing = await db.getInvoiceForUser(ownerId, widget.invoiceId!);
       if (existing != null) {
         await db.updateInvoice(
@@ -208,17 +210,21 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
           );
 
       if (savedInvoice.status == 'sent' || savedInvoice.status == 'overdue' || savedInvoice.status == 'paid') {
-        final customer = await db.getCustomerForUser(ownerId, savedInvoice.customerId);
-        final emails = customer != null ? parseStringList(customer.emails) : <String>[];
-        final freelancer = ref.read(authStateProvider).valueOrNull;
-        if (freelancer != null && emails.isNotEmpty) {
-          final clientUid = await ref.read(supabaseSyncServiceProvider).uidForEmail(emails.first);
-          await ref.read(cloudInvoiceRepositoryProvider).syncInvoiceToClient(
-                freelancer: freelancer,
-                invoice: savedInvoice,
-                clientEmail: emails.first,
-                clientUid: clientUid,
-              );
+        try {
+          final customer = await db.getCustomerForUser(ownerId, savedInvoice.customerId);
+          final emails = customer != null ? parseStringList(customer.emails) : <String>[];
+          final freelancer = ref.read(authStateProvider).valueOrNull;
+          if (freelancer != null && emails.isNotEmpty) {
+            final clientUid = await ref.read(supabaseSyncServiceProvider).uidForEmail(emails.first);
+            await ref.read(cloudInvoiceRepositoryProvider).syncInvoiceToClient(
+                  freelancer: freelancer,
+                  invoice: savedInvoice,
+                  clientEmail: emails.first,
+                  clientUid: clientUid,
+                );
+          }
+        } catch (e) {
+          debugPrint('Invoice cloud sync: $e');
         }
       }
     }
@@ -238,6 +244,13 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
         ),
       );
       context.pop();
+    }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not save invoice: $e')),
+        );
+      }
     }
   }
 

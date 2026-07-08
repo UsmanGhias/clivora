@@ -47,6 +47,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final onboardingDone = await ref.read(onboardingServiceProvider).isComplete();
     if (!mounted) return;
 
+    final guidelinesSeen = await ref.read(onboardingServiceProvider).guidelinesSeen();
+    if (!mounted) return;
+
     final user = ref.read(authStateProvider).valueOrNull;
     if (user != null) {
       final bio = ref.read(biometricServiceProvider);
@@ -63,6 +66,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       }
       if (!mounted) return;
       context.go(homeRouteForUser(user));
+    } else if (!guidelinesSeen) {
+      context.go('/value-guidelines');
     } else if (!onboardingDone) {
       context.go('/onboarding');
     } else {

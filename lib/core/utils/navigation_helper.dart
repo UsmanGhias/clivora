@@ -14,13 +14,9 @@ void openFormRoute(BuildContext context, String path) {
   context.push(path);
 }
 
-/// Opens notifications — client goes to Updates tab; freelancer opens full screen.
+/// Opens notifications for freelancer and client accounts.
 void openNotifications(BuildContext context, {required bool isClient}) {
-  if (isClient) {
-    context.go('/client-activity');
-  } else {
-    context.push('/notifications');
-  }
+  context.push('/notifications');
 }
 
 /// Shows upgrade dialog — works for both freelancer and client accounts.

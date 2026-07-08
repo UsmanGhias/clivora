@@ -267,6 +267,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _referralController = TextEditingController();
   bool _loading = false;
   bool _obscure = true;
+  bool _referralExpanded = false;
   String _accountType = kAccountFreelancer;
 
   @override
@@ -293,7 +294,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         return;
       }
       if (_referralController.text.trim().isNotEmpty) {
-        await ref.read(referralServiceProvider).applyReferralCode(_referralController.text);
+        final refErr = await ref.read(referralServiceProvider).applyReferralCode(_referralController.text);
+        if (refErr != null && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(refErr)));
+        }
       }
       final user = ref.read(authStateProvider).valueOrNull;
       if (user != null && !isAdminUser(user) && !isGuestUser(user)) {
@@ -356,7 +360,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         return;
       }
       if (_referralController.text.trim().isNotEmpty) {
-        await ref.read(referralServiceProvider).applyReferralCode(_referralController.text);
+        final refErr = await ref.read(referralServiceProvider).applyReferralCode(_referralController.text);
+        if (refErr != null && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(refErr)));
+        }
       }
       final user = ref.read(authStateProvider).valueOrNull;
       if (user != null && !isAdminUser(user) && !isGuestUser(user)) {
@@ -392,20 +399,25 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     onPressed: () => context.go('/login'),
                     icon: const Icon(Icons.arrow_back_ios_new, size: 20),
                   ),
-                  const Expanded(
-                    child: Text('Create account', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                  ),
+                  const Spacer(),
                   const SizedBox(width: 48),
                 ],
               ),
               const SizedBox(height: 8),
-              const Center(child: ClivoraLogo(size: 56, borderRadius: 16)),
-              const SizedBox(height: 16),
+              const Center(child: ClivoraLogo(size: 64, borderRadius: 18)),
+              const SizedBox(height: 12),
+              Text(
+                'Create account',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 12),
               AccountTypeSelector(
                 selected: _accountType,
                 onChanged: (v) => setState(() => _accountType = v),
+                compact: true,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
             TextField(
               controller: _nameController,
               textCapitalization: TextCapitalization.words,
@@ -438,17 +450,35 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(color: ClivoraColors.textSecondary),
               ),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _referralController,
-              textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(
-                labelText: 'REFERRAL CODE (optional)',
-                hintText: 'CLVXXXXXXXXXX',
-                prefixIcon: Icon(Icons.card_giftcard_outlined),
+            const SizedBox(height: 8),
+            Theme(
+              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                title: Text(
+                  'Have a referral code?',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                trailing: Icon(
+                  _referralExpanded ? Icons.expand_less : Icons.expand_more,
+                  color: ClivoraColors.textSecondary,
+                ),
+                onExpansionChanged: (v) => setState(() => _referralExpanded = v),
+                children: [
+                  TextField(
+                    controller: _referralController,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: const InputDecoration(
+                      labelText: 'REFERRAL CODE',
+                      hintText: 'CLVXXXXXXXXXX',
+                      prefixIcon: Icon(Icons.card_giftcard_outlined),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loading ? null : _signup,
               child: _loading

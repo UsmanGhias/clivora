@@ -9,7 +9,7 @@ String homeRouteForUser(User? user) {
   return '/dashboard';
 }
 
-const _publicRoutes = {'/', '/login', '/signup'};
+const _publicRoutes = {'/', '/login', '/signup', '/value-guidelines', '/onboarding'};
 
 /// Routes only freelancers (and admin/guest preview as freelancer) may access.
 const freelancerShellRoutes = {
@@ -40,6 +40,7 @@ const freelancerExtraRoutes = {
   '/admin',
   '/admin-console',
   '/team',
+  '/team-invites',
   '/storage',
   '/freelancer-messages',
 };
@@ -55,6 +56,10 @@ const clientShellRoutes = {
   '/client-account',
   '/client-tasks',
   '/notifications',
+  '/profile',
+  '/upgrade',
+  '/referral',
+  '/team-invites',
 };
 
 bool isPublicRoute(String location) {

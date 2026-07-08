@@ -9,6 +9,7 @@ import '../../core/theme/clivora_colors.dart';
 import '../../core/constants/plan_limits.dart';
 import '../../core/utils/plan_limit_dialog.dart';
 import '../../core/services/task_reminder_service.dart';
+import '../../core/services/tracking_service.dart';
 import '../../data/database/database.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
@@ -97,13 +98,16 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                           value: task.completed,
                           activeColor: ClivoraColors.successGreen,
                           onChanged: (v) async {
-                            await ref.read(databaseProvider).updateTask(
-                                  task.copyWith(
-                                    completed: v ?? false,
-                                    status: (v ?? false) ? 'completed' : 'pending',
-                                    updatedAt: DateTime.now(),
-                                  ),
-                                );
+                            final completed = v ?? false;
+                            final updated = task.copyWith(
+                              completed: completed,
+                              status: completed ? 'completed' : 'pending',
+                              updatedAt: DateTime.now(),
+                            );
+                            await ref.read(databaseProvider).updateTask(updated);
+                            if (completed) {
+                              await ref.read(trackingServiceProvider).notifyTaskCompleted(updated);
+                            }
                           },
                         ),
                         title: Text(

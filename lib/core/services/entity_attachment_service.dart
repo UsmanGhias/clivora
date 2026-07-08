@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../auth/auth_service.dart';
+import 'vault_service.dart';
 import '../../data/database/database.dart';
 import '../../data/providers/app_providers.dart';
 
@@ -57,12 +58,21 @@ class EntityAttachmentService {
     final picked = await picker.pickImage(source: source, maxWidth: 2400, imageQuality: 88);
     if (picked == null) return null;
 
-    final dir = await _attachmentDir(ownerId, entityType, entityId);
-    final ext = p.extension(picked.path);
+    final bytes = await File(picked.path).readAsBytes();
+    final plan = await ref.read(planLimitServiceProvider).currentPlan();
+    final vaultResult = await VaultService.saveBytes(bytes, plan: plan, ext: p.extension(picked.path));
+    if (vaultResult.isQuota) {
+      throw VaultQuotaException(
+        'File wallet full (${VaultService.formatSize(vaultResult.used ?? 0)} / ${VaultService.formatSize(vaultResult.limit ?? VaultService.freeLimitBytes)}). Upgrade to Pro for more storage.',
+      );
+    }
+    if (!vaultResult.ok) {
+      throw Exception(vaultResult.error ?? 'Could not save file to wallet');
+    }
+
+    final destPath = vaultResult.path!;
+    final size = bytes.length;
     final fileName = p.basename(picked.path);
-    final destPath = p.join(dir.path, '${DateTime.now().millisecondsSinceEpoch}$ext');
-    await File(picked.path).copy(destPath);
-    final size = await File(destPath).length();
 
     final id = await ref.read(databaseProvider).insertAttachment(
           FileAttachmentsCompanion.insert(
@@ -71,7 +81,7 @@ class EntityAttachmentService {
             entityId: entityId,
             fileName: fileName,
             localPath: destPath,
-            mimeType: Value(_mimeForExt(ext)),
+            mimeType: Value(_mimeForExt(p.extension(picked.path))),
             sizeBytes: Value(size),
           ),
         );
@@ -83,7 +93,7 @@ class EntityAttachmentService {
       entityId: entityId,
       fileName: fileName,
       localPath: destPath,
-      mimeType: _mimeForExt(ext),
+      mimeType: _mimeForExt(p.extension(picked.path)),
       sizeBytes: size,
       createdAt: DateTime.now(),
     );
@@ -117,8 +127,13 @@ class EntityAttachmentService {
   }
 
   static String formatSize(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    return VaultService.formatSize(bytes);
   }
+}
+
+class VaultQuotaException implements Exception {
+  VaultQuotaException(this.message);
+  final String message;
+  @override
+  String toString() => message;
 }
