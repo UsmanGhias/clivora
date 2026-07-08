@@ -1,18 +1,16 @@
-# CLIVORA v2.6.4 test APK
+# CLIVORA v2.6.4 downloads
 
-**File:** `clivora-2.6.4.apk` (82 MB, version 2.6.4+45)
+**Version:** 2.6.4+45
 
-## Download from this cloud run
+## Direct download (use these on your phone or PC)
 
-Pick any of these paths in the file browser:
+| File | URL |
+|------|-----|
+| **APK** (device install) | https://github.com/UsmanGhias/clivora/releases/download/v2.6.4-test/clivora-2.6.4.apk |
+| **AAB** (Play Console) | https://github.com/UsmanGhias/clivora/releases/download/v2.6.4-test/clivora-2.6.4.aab |
+| **Release page** | https://github.com/UsmanGhias/clivora/releases/tag/v2.6.4-test |
 
-| Path |
-|------|
-| `/home/ubuntu/Downloads/clivora-2.6.4.apk` |
-| `/workspace/clivora-2.6.4.apk` |
-| `/workspace/dist/clivora-2.6.4.apk` |
-| `/workspace/releases/clivora-2.6.4.apk` |
-
-Artifacts copy: `/opt/cursor/artifacts/apk/clivora-2.6.4.apk`
-
-Install on Android (enable “Install unknown apps” if sideloading).
+### Install APK on Android
+1. Open the APK link on your phone (or download on PC and transfer)
+2. Enable **Install unknown apps** for Chrome/Files
+3. Tap the APK to install
