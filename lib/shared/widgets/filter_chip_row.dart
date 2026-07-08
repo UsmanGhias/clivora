@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../core/theme/clivora_colors.dart';
+import '../../core/theme/clivora_tokens.dart';
+import '../../core/theme/theme_context.dart';
 
 class FilterChipRow extends StatelessWidget {
   const FilterChipRow({
@@ -16,39 +17,48 @@ class FilterChipRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final semantic = context.clivoraColors;
+    final layout = context.clivoraLayout;
+
     return SizedBox(
       height: 40,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: options.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => const SizedBox(width: ClivoraSpacing.sm),
         itemBuilder: (context, index) {
           final option = options[index];
           final isSelected = option == selected;
-          return GestureDetector(
-            onTap: () => onSelected(option),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? ClivoraColors.primaryPurple.withValues(alpha: 0.08)
-                    : ClivoraColors.chipBackground,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: isSelected
-                      ? ClivoraColors.primaryPurple
-                      : Colors.transparent,
-                  width: 1.5,
+          return Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => onSelected(option),
+              borderRadius: BorderRadius.circular(layout.chipRadius),
+              child: AnimatedContainer(
+                duration: ClivoraDurations.fast,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 10,
                 ),
-              ),
-              child: Text(
-                _label(option),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: isSelected
-                      ? ClivoraColors.primaryPurple
-                      : ClivoraColors.textSecondary,
+                decoration: BoxDecoration(
+                  color: isSelected ? semantic.chipSelectedBg : semantic.chipBg,
+                  borderRadius: BorderRadius.circular(layout.chipRadius),
+                  border: Border.all(
+                    color: isSelected
+                        ? semantic.chipSelectedBorder
+                        : Colors.transparent,
+                    width: 1.5,
+                  ),
+                ),
+                child: Text(
+                  _label(option),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: isSelected
+                        ? semantic.brand
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             ),
