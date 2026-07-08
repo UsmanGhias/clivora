@@ -6,7 +6,6 @@ import '../auth/user_roles.dart';
 import '../cloud/cloud_notification_repository.dart';
 import '../cloud/supabase_auth_helper.dart';
 import '../cloud/supabase_sync_service.dart';
-import '../constants/plan_limits.dart';
 
 final cloudNotificationsProvider = StreamProvider<List<CloudNotification>>((ref) {
   final uid = SupabaseAuthHelper.currentUid;
@@ -56,10 +55,9 @@ class AdminManagementService {
     }
 
     try {
-      await ref.read(supabaseClientProvider).from('profiles').update({
-        'role': 'admin',
-        'account_type': 'admin',
-      }).eq('id', uid);
+      await ref.read(supabaseClientProvider).rpc('grant_admin_by_email', params: {
+        'p_email': normalized,
+      });
     } catch (e) {
       return 'Could not update cloud profile: $e';
     }

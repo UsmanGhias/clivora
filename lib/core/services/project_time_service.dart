@@ -3,12 +3,15 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_service.dart';
-import '../../data/database/database.dart';
+import '../../core/utils/duration_formatter.dart';
+import '../../core/services/tracking_service.dart';
 import '../../data/database/user_scoped_queries.dart';
 import '../../data/providers/app_providers.dart';
 
 final projectTimeTrackerProvider =
-    StateNotifierProvider<ProjectTimeTrackerNotifier, ProjectTimeTrackerState>((ref) {
+    StateNotifierProvider.autoDispose<ProjectTimeTrackerNotifier, ProjectTimeTrackerState>((ref) {
+  // Recreate tracker state when the signed-in user changes.
+  ref.watch(authStateProvider.select((s) => s.valueOrNull?.id));
   return ProjectTimeTrackerNotifier(ref);
 });
 
@@ -69,15 +72,21 @@ class ProjectTimeTrackerNotifier extends StateNotifier<ProjectTimeTrackerState> 
 
   Future<void> _loadActive() async {
     final ownerId = _ownerId;
-    if (ownerId == null) return;
+    if (ownerId == null) {
+      state = const ProjectTimeTrackerState();
+      return;
+    }
     final active = await ref.read(databaseProvider).getActiveTimeEntryForUser(ownerId);
-    if (active != null && mounted) {
+    if (!mounted) return;
+    if (active != null) {
       state = ProjectTimeTrackerState(
         activeProjectId: active.projectId,
         activeEntryId: active.id,
         startedAt: active.startedAt,
       );
       _startTicker();
+    } else {
+      state = const ProjectTimeTrackerState();
     }
   }
 
@@ -97,11 +106,11 @@ class ProjectTimeTrackerNotifier extends StateNotifier<ProjectTimeTrackerState> 
   Future<void> start(int projectId) async {
     final ownerId = _ownerId;
     if (ownerId == null) return;
-    final db = ref.read(databaseProvider);
     if (state.activeProjectId == projectId) return;
-    if (state.activeEntryId != null) {
-      await db.stopTimeEntry(state.activeEntryId!);
+    if (state.isRunning && state.activeProjectId != projectId) {
+      throw TimeTrackerConflictException(state.activeProjectId!);
     }
+    final db = ref.read(databaseProvider);
     final entryId = await db.startTimeEntryForUser(ownerId, projectId);
     state = ProjectTimeTrackerState(
       activeProjectId: projectId,
@@ -111,15 +120,43 @@ class ProjectTimeTrackerNotifier extends StateNotifier<ProjectTimeTrackerState> 
     _startTicker();
     ref.invalidate(projectTrackedSecondsMapProvider);
     ref.invalidate(projectStatsProvider);
+
+    final project = await db.getProjectForUser(ownerId, projectId);
+    if (project != null) {
+      await ref.read(trackingServiceProvider).logStatusChange(
+            entityType: 'project',
+            entityId: projectId,
+            status: project.status,
+            note: 'Time tracking started',
+          );
+    }
   }
 
   Future<void> stop() async {
     if (state.activeEntryId == null) return;
+    final projectId = state.activeProjectId;
+    final startedAt = state.startedAt;
     await ref.read(databaseProvider).stopTimeEntry(state.activeEntryId!);
     _stopTicker();
     state = const ProjectTimeTrackerState();
     ref.invalidate(projectTrackedSecondsMapProvider);
     ref.invalidate(projectStatsProvider);
+
+    if (projectId != null && startedAt != null) {
+      final ownerId = _ownerId;
+      if (ownerId == null) return;
+      final db = ref.read(databaseProvider);
+      final project = await db.getProjectForUser(ownerId, projectId);
+      final sessionSeconds = DateTime.now().difference(startedAt).inSeconds;
+      if (project != null) {
+        await ref.read(trackingServiceProvider).logStatusChange(
+              entityType: 'project',
+              entityId: projectId,
+              status: project.status,
+              note: 'Time tracking stopped (${formatTrackedDuration(sessionSeconds)} this session)',
+            );
+      }
+    }
   }
 
   Future<void> toggle(int projectId) async {
@@ -135,4 +172,9 @@ class ProjectTimeTrackerNotifier extends StateNotifier<ProjectTimeTrackerState> 
     _stopTicker();
     super.dispose();
   }
+}
+
+class TimeTrackerConflictException implements Exception {
+  TimeTrackerConflictException(this.activeProjectId);
+  final int activeProjectId;
 }

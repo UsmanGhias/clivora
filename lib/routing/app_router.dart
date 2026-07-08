@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/auth/auth_route_helper.dart';
+import '../core/services/onboarding_service.dart';
 import '../core/auth/auth_session.dart';
+import '../features/client/client_contracts_screen.dart';
 import '../features/client/client_invoices_screen.dart';
-import '../features/client/client_messages_screen.dart';
+import '../features/client/client_link_freelancer_screen.dart';
+import '../features/messages/simple_chat_screen.dart';
 import '../features/client/client_portal_screen.dart';
 import '../features/client/client_activity_screen.dart';
 import '../features/client/client_tasks_screen.dart';
@@ -16,19 +20,30 @@ import '../features/dashboard/dashboard_screen.dart';
 import '../features/expenses/expenses_screen.dart';
 import '../features/invoices/invoice_form_screen.dart';
 import '../features/invoices/invoices_screen.dart';
-import '../features/messages/freelancer_messages_screen.dart';
 import '../features/more/more_screen.dart';
 import '../features/notes/notes_screen.dart';
+import '../features/projects/project_time_tracker_screen.dart';
 import '../features/projects/project_form_screen.dart';
 import '../features/projects/projects_screen.dart';
-import '../features/reports/reports_screen.dart' show CalendarScreen, PaymentsScreen, ReportsScreen;
+import '../features/analytics/analytics_dashboard_screen.dart';
+import '../features/calendar/calendar_screen.dart';
+import '../features/settings/backup_restore_screen.dart';
+import '../features/settings/legal_document_screen.dart';
+import '../features/settings/security_settings_screen.dart';
+import '../core/constants/legal_documents.dart';
+import '../features/onboarding/onboarding_screen.dart';
+import '../features/calendar/calendar_screen.dart';
+import '../features/reports/reports_screen.dart';
+import '../features/search/global_search_screen.dart';
 import '../features/notifications/notifications_screen.dart';
 import '../features/auth/auth_screens.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/splash/splash_screen.dart';
+import '../features/admin/admin_console_screen.dart';
 import '../features/admin/admin_dashboard_screen.dart';
 import '../features/pro/pro_screens.dart';
 import '../features/subscription/upgrade_screen.dart';
+import '../features/subscription/referral_screen.dart';
 import '../features/tasks/tasks_screen.dart';
 import 'app_shell.dart';
 import 'auth_refresh.dart';
@@ -46,6 +61,17 @@ final appRouter = GoRouter(
     loading: authSessionLoading,
   ),
   routes: [
+    GoRoute(
+      path: '/onboarding',
+      builder: (context, state) => Consumer(
+        builder: (context, ref, _) => OnboardingScreen(
+          onComplete: () async {
+            await ref.read(onboardingServiceProvider).markComplete();
+            if (context.mounted) context.go('/login');
+          },
+        ),
+      ),
+    ),
     GoRoute(
       path: '/login',
       builder: (context, state) => const LoginScreen(),
@@ -87,7 +113,12 @@ final appRouter = GoRouter(
         GoRoute(
           path: '/client-messages',
           pageBuilder: (context, state) =>
-              const NoTransitionPage(child: ClientMessagesScreen()),
+              const NoTransitionPage(child: SimpleChatScreen(isClient: true)),
+        ),
+        GoRoute(
+          path: '/client-link-freelancer',
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: ClientLinkFreelancerScreen()),
         ),
         GoRoute(
           path: '/client-invoices',
@@ -105,6 +136,11 @@ final appRouter = GoRouter(
               const NoTransitionPage(child: ClientActivityScreen()),
         ),
         GoRoute(
+          path: '/client-contracts',
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: ClientContractsScreen()),
+        ),
+        GoRoute(
           path: '/client-tasks',
           pageBuilder: (context, state) =>
               const NoTransitionPage(child: ClientTasksScreen()),
@@ -117,7 +153,7 @@ final appRouter = GoRouter(
         GoRoute(
           path: '/freelancer-messages',
           pageBuilder: (context, state) =>
-              const NoTransitionPage(child: FreelancerMessagesScreen()),
+              const NoTransitionPage(child: SimpleChatScreen(isClient: false)),
         ),
         GoRoute(
           path: '/more',
@@ -150,6 +186,14 @@ final appRouter = GoRouter(
       builder: (context, state) {
         final id = int.parse(state.pathParameters['id']!);
         return ProjectFormScreen(projectId: id);
+      },
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/projects/:id/time',
+      builder: (context, state) {
+        final id = int.parse(state.pathParameters['id']!);
+        return ProjectTimeTrackerScreen(projectId: id);
       },
     ),
     GoRoute(
@@ -221,6 +265,11 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
+      path: '/search',
+      builder: (context, state) => const GlobalSearchScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
       path: '/reports',
       builder: (context, state) => const ReportsScreen(),
     ),
@@ -256,6 +305,11 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
+      path: '/referral',
+      builder: (context, state) => const ReferralScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
       path: '/ai-assistant',
       builder: (context, state) => const AiAssistantScreen(),
     ),
@@ -273,6 +327,49 @@ final appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/automations',
       builder: (context, state) => const AutomationsScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/analytics',
+      builder: (context, state) => const AnalyticsDashboardScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/backup',
+      builder: (context, state) => const BackupRestoreScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/security',
+      builder: (context, state) => const SecuritySettingsScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/licenses',
+      redirect: (_, __) => '/privacy',
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/privacy',
+      builder: (context, state) => const LegalDocumentScreen(
+        title: LegalDocuments.privacyTitle,
+        updated: LegalDocuments.privacyUpdated,
+        body: LegalDocuments.privacyBody,
+      ),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/terms',
+      builder: (context, state) => const LegalDocumentScreen(
+        title: LegalDocuments.termsTitle,
+        updated: LegalDocuments.termsUpdated,
+        body: LegalDocuments.termsBody,
+      ),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/admin-console',
+      builder: (context, state) => const AdminConsoleScreen(),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,

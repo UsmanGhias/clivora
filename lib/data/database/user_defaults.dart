@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 
 import 'database.dart';
 
@@ -17,7 +18,7 @@ extension UserDefaultsHelpers on AppDatabase {
     return UsersCompanion.insert(
       email: email.trim().toLowerCase(),
       passwordHash: Value(passwordHash),
-      name: name,
+      name: name.trim().isNotEmpty ? name.trim() : email.split('@').first,
       role: Value(role),
       accountType: Value(accountType),
       googleId: Value(googleId),
@@ -64,6 +65,80 @@ extension UserDefaultsHelpers on AppDatabase {
     );
   }
 
+  DateTime _coerceDateTime(Object? value) {
+    if (value == null) return DateTime.now();
+    if (value is DateTime) return value;
+    if (value is int) {
+      if (value > 10000000000) {
+        return DateTime.fromMillisecondsSinceEpoch(value, isUtc: true).toLocal();
+      }
+      return DateTime.fromMillisecondsSinceEpoch(value * 1000, isUtc: true).toLocal();
+    }
+    if (value is String) return DateTime.tryParse(value) ?? DateTime.now();
+    return DateTime.now();
+  }
+
+  bool _coerceBool(Object? value) {
+    if (value == null) return false;
+    if (value is bool) return value;
+    if (value is int) return value != 0;
+    if (value is String) return value == '1' || value.toLowerCase() == 'true';
+    return false;
+  }
+
+  /// Read user via raw SQL — never crashes on legacy NULL columns.
+  Future<User?> rawReadUserById(int id) async {
+    try {
+      final row = await customSelect(
+        '''
+        SELECT id, email, password_hash, name, profile_photo_path, role,
+               account_type, google_id, email_verified, created_at
+        FROM users WHERE id = ?
+        ''',
+        variables: [Variable<int>(id)],
+        readsFrom: {users},
+      ).getSingleOrNull();
+      if (row == null) return null;
+      final data = row.data;
+      return User(
+        id: data['id'] as int,
+        email: (data['email'] as String?)?.trim().toLowerCase() ?? '',
+        passwordHash: (data['password_hash'] as String?) ?? '',
+        name: (data['name'] as String?)?.trim().isNotEmpty == true
+            ? (data['name'] as String).trim()
+            : 'User',
+        profilePhotoPath: data['profile_photo_path'] as String?,
+        role: (data['role'] as String?)?.isNotEmpty == true ? data['role'] as String : 'user',
+        accountType: (data['account_type'] as String?)?.isNotEmpty == true
+            ? data['account_type'] as String
+            : 'freelancer',
+        googleId: data['google_id'] as String?,
+        emailVerified: _coerceBool(data['email_verified']),
+        createdAt: _coerceDateTime(data['created_at']),
+      );
+    } catch (e) {
+      debugPrint('rawReadUserById($id): $e');
+      return null;
+    }
+  }
+
+  /// Find user id by email without Drift row mapping.
+  Future<int?> rawUserIdByEmail(String email) async {
+    final normalized = email.trim().toLowerCase();
+    if (normalized.isEmpty) return null;
+    try {
+      final row = await customSelect(
+        'SELECT id FROM users WHERE lower(trim(email)) = ? LIMIT 1',
+        variables: [Variable<String>(normalized)],
+        readsFrom: {users},
+      ).getSingleOrNull();
+      return row?.read<int>('id');
+    } catch (e) {
+      debugPrint('rawUserIdByEmail($normalized): $e');
+      return null;
+    }
+  }
+
   /// Fix NULL columns in [users] — Drift crashes on read when these are null.
   Future<void> repairAllUsersNulls() async {
     final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -71,12 +146,18 @@ extension UserDefaultsHelpers on AppDatabase {
       await customStatement('''
         UPDATE users SET
           password_hash = COALESCE(password_hash, ''),
-          role = COALESCE(role, 'user'),
-          account_type = COALESCE(NULLIF(account_type, ''), 'freelancer'),
+          name = COALESCE(NULLIF(trim(name), ''), 'User'),
+          role = COALESCE(NULLIF(trim(role), ''), 'user'),
+          account_type = COALESCE(NULLIF(trim(account_type), ''), 'freelancer'),
           email_verified = COALESCE(email_verified, 0),
           created_at = COALESCE(created_at, $nowSec)
       ''');
-    } catch (_) {}
+      await customStatement(
+        "DELETE FROM users WHERE email IS NULL OR trim(email) = ''",
+      );
+    } catch (e) {
+      debugPrint('repairAllUsersNulls: $e');
+    }
   }
 
   /// Fix NULL columns in per-user settings tables (all rows).
@@ -94,28 +175,20 @@ extension UserDefaultsHelpers on AppDatabase {
           business_city = COALESCE(business_city, ''),
           business_postal_code = COALESCE(business_postal_code, ''),
           business_country = COALESCE(business_country, '')
-        WHERE member_since IS NULL
-           OR business_name IS NULL
-           OR business_email IS NULL
-           OR business_phone IS NULL
-           OR owner_name IS NULL
-           OR business_address IS NULL
-           OR business_city IS NULL
-           OR business_postal_code IS NULL
-           OR business_country IS NULL
       ''');
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('repairAllProfileNulls business: $e');
+    }
     try {
       await customStatement('''
         UPDATE invoice_brandings SET
           accent_color = COALESCE(accent_color, '#6C63FF'),
           template_style = COALESCE(template_style, 'classic'),
           show_logo = COALESCE(show_logo, 1)
-        WHERE accent_color IS NULL
-           OR template_style IS NULL
-           OR show_logo IS NULL
       ''');
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('repairAllProfileNulls branding: $e');
+    }
     try {
       await customStatement('''
         UPDATE app_settings_table SET
@@ -123,12 +196,10 @@ extension UserDefaultsHelpers on AppDatabase {
           currency = COALESCE(currency, 'USD'),
           timezone = COALESCE(timezone, 'UTC'),
           subscription_plan = COALESCE(subscription_plan, 'free')
-        WHERE theme_mode IS NULL
-           OR currency IS NULL
-           OR timezone IS NULL
-           OR subscription_plan IS NULL
       ''');
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('repairAllProfileNulls settings: $e');
+    }
   }
 
   /// Run all NULL repairs — call before any Drift read on legacy databases.
@@ -144,13 +215,16 @@ extension UserDefaultsHelpers on AppDatabase {
       await customStatement('''
         UPDATE users SET
           password_hash = COALESCE(password_hash, ''),
-          role = COALESCE(role, 'user'),
-          account_type = COALESCE(NULLIF(account_type, ''), 'freelancer'),
+          name = COALESCE(NULLIF(trim(name), ''), 'User'),
+          role = COALESCE(NULLIF(trim(role), ''), 'user'),
+          account_type = COALESCE(NULLIF(trim(account_type), ''), 'freelancer'),
           email_verified = COALESCE(email_verified, 0),
           created_at = COALESCE(created_at, $nowSec)
         WHERE id = $userId
       ''');
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('repairUserDefaultsNulls users: $e');
+    }
     try {
       await customStatement('''
         UPDATE business_profiles SET
@@ -165,7 +239,9 @@ extension UserDefaultsHelpers on AppDatabase {
           business_country = COALESCE(business_country, '')
         WHERE user_id = $userId
       ''');
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('repairUserDefaultsNulls business: $e');
+    }
     try {
       await customStatement('''
         UPDATE invoice_brandings SET
@@ -174,7 +250,9 @@ extension UserDefaultsHelpers on AppDatabase {
           show_logo = COALESCE(show_logo, 1)
         WHERE user_id = $userId
       ''');
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('repairUserDefaultsNulls branding: $e');
+    }
     try {
       await customStatement('''
         UPDATE app_settings_table SET
@@ -184,7 +262,9 @@ extension UserDefaultsHelpers on AppDatabase {
           subscription_plan = COALESCE(subscription_plan, 'free')
         WHERE user_id = $userId
       ''');
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('repairUserDefaultsNulls settings: $e');
+    }
   }
 
   /// Safe per-user defaults — never throws; used during sign-up.
@@ -194,24 +274,85 @@ extension UserDefaultsHelpers on AppDatabase {
       await into(businessProfiles).insertOnConflictUpdate(
         defaultBusinessProfileCompanion(userId, ownerName: name, email: email),
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('safeSeedUserDefaults business: $e');
+    }
     try {
       await into(invoiceBrandings).insertOnConflictUpdate(
         defaultInvoiceBrandingCompanion(userId),
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('safeSeedUserDefaults branding: $e');
+    }
     try {
       await into(appSettingsTable).insertOnConflictUpdate(
         defaultAppSettingsCompanion(userId),
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('safeSeedUserDefaults settings: $e');
+    }
     await repairUserDefaultsNulls(userId);
   }
 
-  /// Insert user then ensure row is readable by Drift.
+  /// Insert user; recover id if email already exists (corrupt legacy row).
   Future<int> insertUserSafe(UsersCompanion entry) async {
-    final userId = await into(users).insert(entry);
-    await repairUserDefaultsNulls(userId);
-    return userId;
+    try {
+      final userId = await into(users).insert(entry);
+      await repairUserDefaultsNulls(userId);
+      return userId;
+    } catch (e) {
+      final email = entry.email.present ? entry.email.value : null;
+      if (email != null) {
+        final existingId = await rawUserIdByEmail(email);
+        if (existingId != null) {
+          await repairUserDefaultsNulls(existingId);
+          return existingId;
+        }
+      }
+      rethrow;
+    }
+  }
+
+  /// Recover a user row that Drift cannot map (NULL columns in legacy DB).
+  Future<User?> recoverUserByEmail(String email) async {
+    final id = await rawUserIdByEmail(email);
+    if (id == null) return null;
+    await repairUserDefaultsNulls(id);
+    return rawReadUserById(id);
+  }
+
+  /// Read user by email — raw SQL first, never throws.
+  Future<User?> safeGetUserByEmail(String email) async {
+    final normalized = email.trim().toLowerCase();
+    if (normalized.isEmpty) return null;
+    await repairAllDatabaseNulls();
+
+    final id = await rawUserIdByEmail(normalized);
+    if (id == null) return null;
+
+    await repairUserDefaultsNulls(id);
+    final raw = await rawReadUserById(id);
+    if (raw != null) return raw;
+
+    try {
+      return await getUserByEmail(normalized);
+    } catch (e) {
+      debugPrint('safeGetUserByEmail drift fallback: $e');
+      return null;
+    }
+  }
+
+  /// Read user by id — raw SQL first, never throws.
+  Future<User?> safeGetUser(int id) async {
+    await repairUserDefaultsNulls(id);
+    final raw = await rawReadUserById(id);
+    if (raw != null) return raw;
+
+    try {
+      return await getUser(id);
+    } catch (e) {
+      debugPrint('safeGetUser drift fallback: $e');
+      return null;
+    }
   }
 }

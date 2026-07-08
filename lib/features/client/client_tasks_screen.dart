@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/auth/auth_service.dart';
+import '../../core/cloud/client_project_resolver.dart';
 import '../../core/cloud/cloud_notification_repository.dart';
 import '../../core/cloud/cloud_project_repository.dart';
 import '../../core/cloud/supabase_auth_helper.dart';
@@ -133,7 +135,7 @@ class _ClientTasksScreenState extends ConsumerState<ClientTasksScreen> {
     if (!context.mounted) return;
     if (projects.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No shared projects — ask your freelancer to share one first.')),
+        const SnackBar(content: Text('No shared projects. Ask your freelancer to share one first.')),
       );
       return;
     }
@@ -188,23 +190,44 @@ class _ClientTasksScreenState extends ConsumerState<ClientTasksScreen> {
                       }
                       final project = selected;
                       final clientUid = SupabaseAuthHelper.currentUid;
-                      if (project == null || clientUid == null) return;
+                      final clientUser = ref.read(authStateProvider).valueOrNull;
+                      if (project == null || clientUid == null || clientUser == null) return;
 
-                      final freelancerUid = project.cloudProject?.freelancerUid;
+                      final freelancerUid = await resolveFreelancerUidForClientProject(
+                        ref: ref,
+                        project: project,
+                        clientUserId: clientUser.id,
+                      );
                       if (freelancerUid == null || freelancerUid.isEmpty) {
-                        ScaffoldMessenger.of(ctx).showSnackBar(
-                          const SnackBar(content: Text('Could not find freelancer for this project.')),
-                        );
+                        if (ctx.mounted) {
+                          ScaffoldMessenger.of(ctx).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Freelancer not linked yet. Ask them to share this project with your client email.',
+                              ),
+                            ),
+                          );
+                        }
                         return;
                       }
 
-                      await ref.read(cloudClientTaskRepositoryProvider).assignTask(
-                            clientUid: clientUid,
-                            freelancerUid: freelancerUid,
-                            title: title,
-                            description: descCtrl.text.trim(),
-                            projectShareId: project.cloudProject?.shareId,
+                      try {
+                        await ref.read(cloudClientTaskRepositoryProvider).assignTask(
+                              clientUid: clientUid,
+                              freelancerUid: freelancerUid,
+                              title: title,
+                              description: descCtrl.text.trim(),
+                              projectShareId: shareIdForClientProject(project),
+                              clientUser: clientUser,
+                            );
+                      } catch (e) {
+                        if (ctx.mounted) {
+                          ScaffoldMessenger.of(ctx).showSnackBar(
+                            SnackBar(content: Text('Could not send task: $e')),
                           );
+                        }
+                        return;
+                      }
 
                       if (ctx.mounted) {
                         Navigator.pop(ctx);

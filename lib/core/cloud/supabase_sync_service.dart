@@ -38,6 +38,12 @@ class SupabaseSyncService {
   Future<String?> uidForEmail(String email) async {
     final normalized = email.trim().toLowerCase();
     try {
+      final viaRpc = await _db.rpc('uid_for_linked_email', params: {'p_email': normalized});
+      if (viaRpc != null) return viaRpc as String;
+    } catch (e) {
+      debugPrint('Supabase uid_for_linked_email: $e');
+    }
+    try {
       final row = await _db
           .from('profiles')
           .select('id')

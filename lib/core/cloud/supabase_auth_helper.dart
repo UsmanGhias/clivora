@@ -13,11 +13,15 @@ class SupabaseAuthHelper {
     required String email,
     required String password,
     String? name,
+    String? accountType,
   }) async {
     return client.auth.signUp(
       email: email.trim().toLowerCase(),
       password: password,
-      data: {if (name != null && name.isNotEmpty) 'name': name},
+      data: {
+        if (name != null && name.isNotEmpty) 'name': name,
+        if (accountType != null && accountType.isNotEmpty) 'account_type': accountType,
+      },
     );
   }
 
@@ -54,25 +58,82 @@ class SupabaseAuthHelper {
     }
   }
 
+  static Future<Map<String, dynamic>?> fetchOwnProfile() async {
+    final uid = currentUid;
+    if (uid == null) return null;
+    try {
+      return await client
+          .from('profiles')
+          .select('id, email, name, account_type, account_type_locked, role')
+          .eq('id', uid)
+          .maybeSingle();
+    } catch (e) {
+      debugPrint('fetchOwnProfile: $e');
+      return null;
+    }
+  }
+
+  /// Locks freelancer/client role in cloud after first successful auth.
+  static Future<void> finalizeAccountType({
+    required String accountType,
+    String name = '',
+  }) async {
+    try {
+      await client.rpc('finalize_account_type', params: {
+        'p_account_type': accountType,
+        'p_name': name,
+      });
+    } catch (e) {
+      debugPrint('finalize_account_type RPC: $e — falling back to upsert');
+      await upsertProfile(
+        email: currentEmail ?? '',
+        name: name,
+        accountType: accountType,
+        role: accountType == 'admin' ? 'admin' : 'user',
+        forceLock: true,
+      );
+    }
+  }
+
   static Future<void> upsertProfile({
     required String email,
     required String name,
     required String accountType,
     required String role,
+    bool forceLock = false,
   }) async {
     final uid = currentUid;
     if (uid == null) return;
     try {
+      final existing = await fetchOwnProfile();
+      final locked = existing?['account_type_locked'] as bool? ?? false;
+      final lockedType = existing?['account_type'] as String?;
+
+      if (locked && lockedType != null && lockedType.isNotEmpty && lockedType != accountType && !forceLock) {
+        debugPrint('Profile upsert: type locked as $lockedType');
+        return;
+      }
+
       await client.from('profiles').upsert({
         'id': uid,
         'email': email.trim().toLowerCase(),
         'name': name,
         'account_type': accountType,
         'role': role,
+        'account_type_locked': forceLock || locked,
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       });
     } catch (e) {
       debugPrint('Supabase profile upsert: $e');
+    }
+  }
+
+  static Future<String?> resetPasswordForEmail(String email) async {
+    try {
+      await client.auth.resetPasswordForEmail(email.trim().toLowerCase());
+      return null;
+    } catch (e) {
+      return 'Could not send reset email: $e';
     }
   }
 

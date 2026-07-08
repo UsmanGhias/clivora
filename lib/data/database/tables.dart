@@ -67,6 +67,11 @@ class BusinessProfiles extends Table {
   TextColumn get businessCity => text().withDefault(const Constant(''))();
   TextColumn get businessPostalCode => text().withDefault(const Constant(''))();
   TextColumn get businessCountry => text().withDefault(const Constant(''))();
+  TextColumn get skills => text().withDefault(const Constant('[]'))();
+  TextColumn get bio => text().withDefault(const Constant(''))();
+  TextColumn get clientCompany => text().withDefault(const Constant(''))();
+  TextColumn get clientIndustry => text().withDefault(const Constant(''))();
+  TextColumn get clientWebsite => text().withDefault(const Constant(''))();
   DateTimeColumn get memberSince => dateTime().withDefault(currentDateAndTime)();
 
   @override
@@ -226,6 +231,33 @@ class ClientMessages extends Table {
   TextColumn get subject => text().withDefault(const Constant(''))();
   TextColumn get body => text()();
   BoolColumn get isRead => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// File attachments linked to invoices, projects, contracts, customers.
+class FileAttachments extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get ownerUserId => integer().references(Users, #id)();
+  TextColumn get entityType => text()();
+  IntColumn get entityId => integer()();
+  TextColumn get fileName => text()();
+  TextColumn get localPath => text()();
+  TextColumn get mimeType => text().withDefault(const Constant(''))();
+  IntColumn get sizeBytes => integer().withDefault(const Constant(0))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Scheduled reminders and follow-ups.
+class CalendarReminders extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get ownerUserId => integer().references(Users, #id)();
+  TextColumn get title => text()();
+  TextColumn get notes => text().withDefault(const Constant(''))();
+  DateTimeColumn get scheduledAt => dateTime()();
+  TextColumn get kind => text().withDefault(const Constant('reminder'))();
+  IntColumn get linkedEntityId => integer().nullable()();
+  TextColumn get linkedEntityType => text().withDefault(const Constant(''))();
+  BoolColumn get completed => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 

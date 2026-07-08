@@ -50,12 +50,14 @@ class ProfileAvatar extends StatelessWidget {
     this.name,
     this.radius = 24,
     this.onTap,
+    this.showVerified = false,
   });
 
   final String? photoPath;
   final String? name;
   final double radius;
   final VoidCallback? onTap;
+  final bool showVerified;
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +79,27 @@ class ProfileAvatar extends StatelessWidget {
             fontSize: radius * 0.7,
           ),
         ),
+      );
+    }
+
+    if (showVerified) {
+      avatar = Stack(
+        clipBehavior: Clip.none,
+        children: [
+          avatar,
+          Positioned(
+            right: -2,
+            bottom: -2,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.verified, size: radius * 0.55, color: ClivoraColors.primary),
+            ),
+          ),
+        ],
       );
     }
 

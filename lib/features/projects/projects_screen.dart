@@ -51,6 +51,7 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
 
     return ClivoraScaffold(
       title: 'Projects',
+      showMessagesButton: true,
       action: ClivoraIconButton(icon: Icons.add, onPressed: _onAddProject),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -164,7 +165,7 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Text(formatCurrency(p.budget)),
+                            Text(formatCurrency(p.budget, symbol: currencySymbol(p.currency))),
                             const SizedBox(height: 4),
                             IconButton(
                               icon: const Icon(Icons.timer_outlined, size: 20),

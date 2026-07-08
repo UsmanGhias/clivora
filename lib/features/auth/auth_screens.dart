@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_navigation.dart';
+import '../../core/services/referral_service.dart';
 import '../../core/auth/auth_service.dart';
 import '../../core/auth/user_roles.dart';
 import '../../core/theme/clivora_colors.dart';
+import '../../core/utils/user_messages.dart';
 import '../../shared/widgets/clivora_logo.dart';
 import 'widgets/account_type_selector.dart';
 
@@ -36,13 +38,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final expectedClient = _accountType == kAccountClient;
     final actualClient = isClientUser(user);
     if (expectedClient != actualClient) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'This account is registered as ${accountTypeLabel(user)}. Opening your ${accountTypeLabel(user).toLowerCase()} workspace.',
-          ),
-        ),
-      );
+      ClivoraUserMessages.showRoleMismatch(context, actualRole: accountTypeLabel(user));
     }
   }
 
@@ -52,6 +48,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final error = await ref.read(authStateProvider.notifier).signIn(
             email: _emailController.text,
             password: _passwordController.text,
+            loginAsType: _accountType,
           );
       if (!mounted) return;
       if (error != null) {
@@ -81,6 +78,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (error != null) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
         return;
+      }
+      final user = ref.read(authStateProvider).valueOrNull;
+      if (user != null && !isAdminUser(user) && !isGuestUser(user)) {
+        final expectedClient = _accountType == kAccountClient;
+        if (expectedClient != isClientUser(user)) {
+          ClivoraUserMessages.showRoleMismatch(context, actualRole: accountTypeLabel(user));
+        }
       }
       navigateAfterAuth(context, ref);
     } catch (e) {
@@ -231,6 +235,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _referralController = TextEditingController();
   bool _loading = false;
   bool _obscure = true;
   String _accountType = kAccountFreelancer;
@@ -240,6 +245,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _referralController.dispose();
     super.dispose();
   }
 
@@ -256,6 +262,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       if (error != null) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
         return;
+      }
+      if (_referralController.text.trim().isNotEmpty) {
+        await ref.read(referralServiceProvider).applyReferralCode(_referralController.text);
+      }
+      final user = ref.read(authStateProvider).valueOrNull;
+      if (user != null && !isAdminUser(user) && !isGuestUser(user)) {
+        final expectedClient = _accountType == kAccountClient;
+        if (expectedClient != isClientUser(user)) {
+          ClivoraUserMessages.showRoleMismatch(context, actualRole: accountTypeLabel(user));
+        }
       }
       navigateAfterAuth(context, ref);
     } catch (e) {
@@ -280,6 +296,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
         return;
       }
+      final user = ref.read(authStateProvider).valueOrNull;
+      if (user != null && !isAdminUser(user) && !isGuestUser(user)) {
+        final expectedClient = _accountType == kAccountClient;
+        if (expectedClient != isClientUser(user)) {
+          ClivoraUserMessages.showRoleMismatch(context, actualRole: accountTypeLabel(user));
+        }
+      }
       navigateAfterAuth(context, ref);
     } catch (e) {
       if (mounted) {
@@ -302,6 +325,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       if (error != null) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
         return;
+      }
+      if (_referralController.text.trim().isNotEmpty) {
+        await ref.read(referralServiceProvider).applyReferralCode(_referralController.text);
+      }
+      final user = ref.read(authStateProvider).valueOrNull;
+      if (user != null && !isAdminUser(user) && !isGuestUser(user)) {
+        final expectedClient = _accountType == kAccountClient;
+        if (expectedClient != isClientUser(user)) {
+          ClivoraUserMessages.showRoleMismatch(context, actualRole: accountTypeLabel(user));
+        }
       }
       navigateAfterAuth(context, ref);
     } catch (e) {
@@ -368,7 +401,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _referralController,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(
+                labelText: 'REFERRAL CODE (optional)',
+                hintText: 'CLIVORAXXXXXX',
+                prefixIcon: Icon(Icons.card_giftcard_outlined),
+              ),
+            ),
+            const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _loading ? null : _signup,
               child: _loading

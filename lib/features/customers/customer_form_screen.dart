@@ -8,12 +8,15 @@ import '../../core/constants/countries.dart';
 import '../../core/utils/crm_refresh.dart';
 import '../../core/services/automation_service.dart';
 import '../../core/services/client_invite_service.dart';
+import '../../core/constants/plan_limits.dart';
 import '../../core/utils/form_validators.dart';
+import '../../core/utils/plan_limit_dialog.dart';
 import '../../data/database/database.dart';
 import '../../data/database/user_scoped_queries.dart';
 import '../../data/models/invoice_line_item.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/country_picker_field.dart';
+import '../../shared/widgets/entity_activity_timeline.dart';
 import '../../shared/widgets/step_progress_card.dart';
 
 class CustomerFormScreen extends ConsumerStatefulWidget {
@@ -141,6 +144,17 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
           ),
         );
       } else {
+        if (!await ref.read(planLimitServiceProvider).canAddCustomer()) {
+          if (mounted) {
+            final upgrade = await showPlanLimitDialog(
+              context,
+              resource: 'clients',
+              max: PlanLimits.freeMaxClients,
+            );
+            if (upgrade && mounted) context.push('/upgrade');
+          }
+          return;
+        }
         final id = await db.insertCustomer(
           CustomersCompanion.insert(
             ownerUserId: ownerId,
@@ -168,10 +182,19 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
 
       if (mounted) {
         invalidateCrmData(ref, customers: true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(widget.customerId != null ? 'Customer updated' : 'Customer saved')),
-        );
         context.pop();
+        final email = parseStringList(emails).isNotEmpty ? parseStringList(emails).first : '';
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                widget.customerId == null
+                    ? '${_contactController.text.trim()} added${email.isNotEmpty ? ' · invite sent to $email' : ''}'
+                    : '${_contactController.text.trim()} updated',
+              ),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) showFormError(context, 'Could not save customer: $e');
@@ -237,7 +260,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
                         ClivoraTextField(
                           controller: _emailController,
                           label: 'Email',
-                          hint: 'Required — client receives invite',
+                          hint: 'Required. Client receives invite',
                           keyboardType: TextInputType.emailAddress,
                           required: true,
                         ),
@@ -282,6 +305,14 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
                           hint: 'Optional',
                           maxLines: 3,
                         ),
+                        if (widget.customerId != null) ...[
+                          const SizedBox(height: 20),
+                          EntityActivityTimeline(
+                            entityType: 'customer',
+                            entityId: widget.customerId!,
+                            title: 'Client activity',
+                          ),
+                        ],
                       ],
                     ),
                   ),

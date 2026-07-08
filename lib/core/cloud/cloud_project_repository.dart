@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 import '../../data/database/database.dart';
 import '../../data/database/user_scoped_queries.dart';
 import '../../data/providers/database_provider.dart';
+import '../services/cloud_write_guard.dart';
 import 'supabase_auth_helper.dart';
 import 'supabase_sync_service.dart';
 
@@ -73,6 +74,7 @@ class ClientSharedProjectView {
     required this.description,
     required this.status,
     required this.budget,
+    required this.currency,
     required this.deadline,
     required this.isCloudOnly,
     this.localProject,
@@ -84,6 +86,7 @@ class ClientSharedProjectView {
   final String description;
   final String status;
   final double budget;
+  final String currency;
   final DateTime? deadline;
   final bool isCloudOnly;
   final Project? localProject;
@@ -155,17 +158,21 @@ class CloudProjectRepository {
       debugPrint('Cloud project share skipped: no Supabase session');
       return;
     }
-    try {
-      await shareProject(
-            freelancerUid: uid,
-            freelancerEmail: freelancer.email,
-            clientEmail: clientEmail,
-            localProjectId: localProjectId,
-            project: project,
-          );
-    } catch (e) {
-      debugPrint('Cloud project share failed: $e');
-    }
+    await ref.read(cloudWriteGuardProvider).runOrEnqueue(
+          kind: 'project_share',
+          payload: {
+            'projectId': localProjectId,
+            'clientEmail': clientEmail,
+          },
+          action: () => shareProject(
+                freelancerUid: uid,
+                freelancerEmail: freelancer.email,
+                clientEmail: clientEmail,
+                localProjectId: localProjectId,
+                project: project,
+                currency: project.currency.isNotEmpty ? project.currency : 'USD',
+              ),
+        );
   }
 }
 
@@ -174,26 +181,36 @@ List<ClientSharedProjectView> mergeClientProjects({
   required List<CloudSharedProject> cloud,
 }) {
   final views = <ClientSharedProjectView>[];
-  final localNames = <String>{};
+  final matchedShareIds = <String>{};
 
   for (final p in local) {
-    localNames.add(p.name.toLowerCase());
+    CloudSharedProject? match;
+    for (final c in cloud) {
+      if (c.shareId.endsWith('_${p.id}') ||
+          c.projectName.toLowerCase() == p.name.toLowerCase()) {
+        match = c;
+        matchedShareIds.add(c.shareId);
+        break;
+      }
+    }
     views.add(
       ClientSharedProjectView(
-        id: 'local_${p.id}',
+        id: match != null ? 'cloud_${match.shareId}' : 'local_${p.id}',
         name: p.name,
         description: p.description,
         status: p.status,
         budget: p.budget,
+        currency: p.currency.isNotEmpty ? p.currency : (match?.currency ?? 'USD'),
         deadline: p.deadline,
         isCloudOnly: false,
         localProject: p,
+        cloudProject: match,
       ),
     );
   }
 
   for (final c in cloud) {
-    if (localNames.contains(c.projectName.toLowerCase())) continue;
+    if (matchedShareIds.contains(c.shareId)) continue;
     views.add(
       ClientSharedProjectView(
         id: 'cloud_${c.shareId}',
@@ -201,6 +218,7 @@ List<ClientSharedProjectView> mergeClientProjects({
         description: c.description,
         status: c.status,
         budget: c.budget,
+        currency: c.currency.isNotEmpty ? c.currency : 'USD',
         deadline: c.deadline,
         isCloudOnly: true,
         cloudProject: c,

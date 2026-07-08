@@ -2,6 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 
+import '../../data/database/database.dart';
+import '../services/cloud_write_guard.dart';
+import 'cloud_message_repository.dart';
 import 'supabase_auth_helper.dart';
 import 'supabase_sync_service.dart';
 
@@ -60,19 +63,71 @@ class CloudNotificationRepository {
     final fromUid = SupabaseAuthHelper.currentUid;
     if (fromUid == null) return;
 
-    final toUid = await ref.read(supabaseSyncServiceProvider).uidForEmail(toEmail);
-    if (toUid == null) {
-      debugPrint('Notification skipped: no profile for $toEmail');
-      return;
-    }
+    await ref.read(cloudWriteGuardProvider).runOrEnqueue(
+          kind: 'notification',
+          payload: {
+            'toEmail': toEmail,
+            'title': title,
+            'body': body,
+            'kind': kind,
+          },
+          action: () async {
+            final toUid = await ref.read(supabaseSyncServiceProvider).uidForEmail(toEmail);
+            if (toUid == null) {
+              debugPrint('Notification skipped: no linked profile for $toEmail');
+              return;
+            }
+            await _insertToUid(fromUid: fromUid, toUid: toUid, title: title, body: body, kind: kind);
+          },
+        );
+  }
 
-    await _db.from('notifications').insert({
-      'user_uid': toUid,
-      'from_uid': fromUid,
-      'title': title,
-      'body': body,
-      'kind': kind,
-    });
+  Future<void> sendToUid({
+    required String toUid,
+    required String title,
+    required String body,
+    String kind = 'info',
+  }) async {
+    final fromUid = SupabaseAuthHelper.currentUid;
+    if (fromUid == null || toUid.isEmpty) return;
+
+    await ref.read(cloudWriteGuardProvider).runOrEnqueue(
+          kind: 'notification',
+          payload: {
+            'toUid': toUid,
+            'title': title,
+            'body': body,
+            'kind': kind,
+          },
+          action: () => _insertToUid(
+                fromUid: fromUid,
+                toUid: toUid,
+                title: title,
+                body: body,
+                kind: kind,
+              ),
+        );
+  }
+
+  Future<void> _insertToUid({
+    required String fromUid,
+    required String toUid,
+    required String title,
+    required String body,
+    required String kind,
+  }) async {
+    try {
+      await _db.from('notifications').insert({
+        'user_uid': toUid,
+        'from_uid': fromUid,
+        'title': title,
+        'body': body,
+        'kind': kind,
+      });
+    } catch (e) {
+      debugPrint('Notification insert failed: $e');
+      rethrow;
+    }
   }
 
   Stream<List<CloudNotification>> watchForUser(String uid) {
@@ -158,24 +213,38 @@ class CloudClientTaskRepository {
     required String title,
     required String description,
     String? projectShareId,
+    User? clientUser,
   }) async {
-    await _db.from('client_tasks').insert({
-      'client_uid': clientUid,
-      'freelancer_uid': freelancerUid,
-      'title': title,
-      'description': description,
-      if (projectShareId != null) 'project_share_id': projectShareId,
-    });
+    try {
+      await _db.from('client_tasks').insert({
+        'client_uid': clientUid,
+        'freelancer_uid': freelancerUid,
+        'title': title,
+        'description': description,
+        if (projectShareId != null) 'project_share_id': projectShareId,
+      });
+    } catch (e) {
+      debugPrint('client_tasks insert failed: $e');
+      rethrow;
+    }
 
-    final clientEmail = SupabaseAuthHelper.currentEmail;
-    if (clientEmail != null) {
-      final freelancerEmail = await _emailForUid(freelancerUid);
-      if (freelancerEmail != null) {
-        await ref.read(cloudNotificationRepositoryProvider).send(
+    final freelancerEmail = await _emailForUid(freelancerUid);
+    if (freelancerEmail != null) {
+      await ref.read(cloudNotificationRepositoryProvider).sendToUid(
+            toUid: freelancerUid,
+            title: 'New task from client',
+            body: title,
+            kind: 'task',
+          );
+
+      if (clientUser != null) {
+        final taskBody = description.isNotEmpty ? '$title\n\n$description' : title;
+        await ref.read(cloudMessageRepositoryProvider).sendHybrid(
+              fromUser: clientUser,
               toEmail: freelancerEmail,
-              title: 'New task from client',
-              body: title,
-              kind: 'task',
+              subject: '[Task] $title',
+              body: taskBody,
+              projectShareId: projectShareId,
             );
       }
     }

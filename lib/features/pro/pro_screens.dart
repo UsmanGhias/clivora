@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:image_picker/image_picker.dart';
+
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,17 +10,29 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_service.dart';
 import '../../core/constants/pro_pricing.dart';
+import '../../core/services/clivora_ai_enhanced_service.dart';
 import '../../core/services/ai_assistant_service.dart';
 import '../../core/services/automation_service.dart';
+import '../../core/constants/plan_features.dart';
 import '../../core/services/vault_service.dart';
 import '../../core/theme/clivora_colors.dart';
+import '../../core/cloud/cloud_message_repository.dart';
+import '../../core/cloud/cloud_notification_repository.dart';
+import '../../core/utils/contract_content_helper.dart';
 import '../../core/utils/form_validators.dart';
+import '../../core/utils/navigation_helper.dart';
+import '../../core/constants/plan_limits.dart';
+import '../../core/utils/plan_limit_dialog.dart';
+import '../../core/utils/template_utils.dart';
+import '../../data/models/invoice_line_item.dart';
 import '../../data/database/database.dart';
 import '../../data/database/user_scoped_queries.dart';
 import '../../data/providers/app_providers.dart';
+import '../../shared/widgets/clivora_bottom_sheet.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 import '../../shared/widgets/filter_chip_row.dart';
 import '../../shared/widgets/step_progress_card.dart';
+import '../../features/client/client_contract_view.dart';
 
 /// Shared Pro gate banner — CLIVORA style (distinct from generic paywalls).
 class ProGateBanner extends ConsumerWidget {
@@ -62,7 +76,7 @@ class ProGateBanner extends ConsumerWidget {
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: ClivoraColors.navyDark),
               onPressed: () => context.push('/upgrade'),
-              child: Text('Unlock Pro — ${ProPricing.monthlyLabel}/mo'),
+              child: Text('Unlock Pro: ${ProPricing.monthlyLabel}/mo'),
             ),
           ),
         ],
@@ -92,7 +106,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     final ownerId = ref.read(authStateProvider).valueOrNull?.id;
     if (ownerId == null) return;
     final db = ref.read(databaseProvider);
-    final list = await AiAssistantService().generateInsights(db, ownerId);
+    final list = await ref.read(clivoraAiEnhancedProvider).generateInsights(db, ownerId);
     if (mounted) setState(() { _insights = list; _loading = false; });
   }
 
@@ -121,7 +135,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'Smart insights from your local business data — private, offline, and instant.',
+                            'Smart insights from your local business data. Private, offline, and instant.',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ),
@@ -184,7 +198,7 @@ class _InsightCard extends ConsumerWidget {
               ),
               if (insight.route != null)
                 TextButton.icon(
-                  onPressed: () => context.push(insight.route!),
+                  onPressed: () => openInsightRoute(context, ref, insight.route!),
                   icon: const Icon(Icons.arrow_forward, size: 18),
                   label: Text(insight.actionLabel),
                 ),
@@ -288,13 +302,16 @@ class _MessageTemplatesScreenState extends ConsumerState<MessageTemplatesScreen>
   }
 
   Future<void> _showTemplateForm(BuildContext context) async {
-    final isPro = ref.read(isProProvider);
-    if (!isPro) {
-      final count = await ref.read(databaseProvider).countMessageTemplates();
-      if (count >= 3) {
-        if (context.mounted) context.push('/upgrade');
-        return;
+    if (!await ref.read(planLimitServiceProvider).canAddTemplate()) {
+      if (context.mounted) {
+        final upgrade = await showPlanLimitDialog(
+          context,
+          resource: 'templates',
+          max: PlanLimits.freeMaxTemplates,
+        );
+        if (upgrade && context.mounted) context.push('/upgrade');
       }
+      return;
     }
 
     final nameCtrl = TextEditingController();
@@ -330,6 +347,17 @@ class _MessageTemplatesScreenState extends ConsumerState<MessageTemplatesScreen>
                 }
                 final ownerId = ref.read(authStateProvider).valueOrNull?.id;
                 if (ownerId == null) return;
+                if (!await ref.read(planLimitServiceProvider).canAddTemplate()) {
+                  if (context.mounted) {
+                    final upgrade = await showPlanLimitDialog(
+                      context,
+                      resource: 'templates',
+                      max: PlanLimits.freeMaxTemplates,
+                    );
+                    if (upgrade && context.mounted) context.push('/upgrade');
+                  }
+                  return;
+                }
                 final db = ref.read(databaseProvider);
                 await db.insertMessageTemplate(
                   MessageTemplatesCompanion.insert(
@@ -368,7 +396,7 @@ class _MessageTemplatesScreenState extends ConsumerState<MessageTemplatesScreen>
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      for (final v in const ['{{clientName}}', '{{businessName}}', '{{invoiceNumber}}', '{{amount}}'])
+                      for (final v in kTemplateVariableHints)
                         ActionChip(label: Text(v), onPressed: () => insertVar(v)),
                     ],
                   ),
@@ -431,15 +459,40 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
               data: (list) {
                 if (list.isEmpty) {
                   return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.description_outlined, size: 56, color: ClivoraColors.labelGray),
-                        const SizedBox(height: 12),
-                        const Text('No contracts yet'),
-                        const SizedBox(height: 16),
-                        ElevatedButton(onPressed: () => _createContract(context), child: const Text('Create Contract')),
-                      ],
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 72,
+                            height: 72,
+                            decoration: BoxDecoration(
+                              color: ClivoraColors.iconPurple,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Icon(Icons.description_outlined, size: 36, color: ClivoraColors.primaryPurple),
+                          ),
+                          const SizedBox(height: 16),
+                          Text('No contracts yet', style: Theme.of(context).textTheme.titleMedium),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Create agreements linked to your clients and track signatures.',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: ClivoraColors.textSecondary),
+                          ),
+                          const SizedBox(height: 24),
+                          FilledButton.icon(
+                            onPressed: () => _createContract(context),
+                            icon: const Icon(Icons.add, size: 20),
+                            label: const Text('Create Contract'),
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 }
@@ -467,55 +520,131 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
   }
 
   Future<void> _editContract(BuildContext context, Contract contract) async {
-    final contentCtrl = TextEditingController(text: contract.content);
+    final parsed = ContractContentHelper.decode(contract.content);
+    final contentCtrl = TextEditingController(text: parsed.body);
     var status = contract.status;
+    var attachmentPath = parsed.attachmentPath;
     if (!context.mounted) return;
     await showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(contract.title),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<String>(
-                value: status,
-                items: const [
-                  DropdownMenuItem(value: 'draft', child: Text('Draft')),
-                  DropdownMenuItem(value: 'sent', child: Text('Sent')),
-                  DropdownMenuItem(value: 'signed', child: Text('Signed')),
-                  DropdownMenuItem(value: 'cancelled', child: Text('Cancelled')),
-                ],
-                onChanged: (v) => status = v ?? status,
-                decoration: const InputDecoration(labelText: 'Status'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: contentCtrl,
-                maxLines: 8,
-                decoration: const InputDecoration(labelText: 'Agreement terms'),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              await ref.read(databaseProvider).updateContract(
-                    contract.copyWith(
-                      content: contentCtrl.text.trim(),
-                      status: status,
-                      updatedAt: DateTime.now(),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModal) => AlertDialog(
+          title: Text(contract.title),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: status,
+                  items: const [
+                    DropdownMenuItem(value: 'draft', child: Text('Draft')),
+                    DropdownMenuItem(value: 'sent', child: Text('Sent')),
+                    DropdownMenuItem(value: 'signed', child: Text('Signed')),
+                    DropdownMenuItem(value: 'cancelled', child: Text('Cancelled')),
+                  ],
+                  onChanged: (v) => setModal(() => status = v ?? status),
+                  decoration: const InputDecoration(labelText: 'Status'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: contentCtrl,
+                  maxLines: 8,
+                  decoration: const InputDecoration(labelText: 'Agreement terms'),
+                ),
+                const SizedBox(height: 12),
+                if (attachmentPath != null)
+                  ListTile(
+                    leading: const Icon(Icons.attach_file),
+                    title: Text(attachmentPath!.split(Platform.pathSeparator).last),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => setModal(() => attachmentPath = null),
                     ),
-                  );
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            child: const Text('Save'),
+                  ),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final file = await ImagePicker().pickImage(source: ImageSource.gallery);
+                    if (file != null) setModal(() => attachmentPath = file.path);
+                  },
+                  icon: const Icon(Icons.upload_file_outlined),
+                  label: const Text('Attach document'),
+                ),
+              ],
+            ),
           ),
-        ],
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            if (status == 'sent')
+              TextButton(
+                onPressed: () async {
+                  await _shareContractWithClient(ctx, contract, contentCtrl.text.trim(), attachmentPath);
+                  if (ctx.mounted) Navigator.pop(ctx);
+                },
+                child: const Text('Send to client'),
+              ),
+            ElevatedButton(
+              onPressed: () async {
+                final encoded = ContractContentHelper.encode(
+                  body: contentCtrl.text.trim(),
+                  attachmentPath: attachmentPath,
+                  clientSignature: parsed.clientSignature,
+                );
+                await ref.read(databaseProvider).updateContract(
+                      contract.copyWith(
+                        content: encoded,
+                        status: status,
+                        updatedAt: DateTime.now(),
+                      ),
+                    );
+                if (ctx.mounted) Navigator.pop(ctx);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  Future<void> _shareContractWithClient(
+    BuildContext context,
+    Contract contract,
+    String body,
+    String? attachmentPath,
+  ) async {
+    final ownerId = ref.read(authStateProvider).valueOrNull?.id;
+    if (ownerId == null) return;
+    final customer = await ref.read(databaseProvider).getCustomerForUser(ownerId, contract.customerId);
+    if (customer == null) return;
+    final emails = parseStringList(customer.emails);
+    if (emails.isEmpty) {
+      showFormError(context, 'Add an email to this customer first');
+      return;
+    }
+    final fromUser = ref.read(authStateProvider).valueOrNull;
+    if (fromUser == null) return;
+
+    final encoded = ContractContentHelper.encode(body: body, attachmentPath: attachmentPath);
+    await ref.read(databaseProvider).updateContract(
+          contract.copyWith(content: encoded, status: 'sent', updatedAt: DateTime.now()),
+        );
+    await ref.read(cloudMessageRepositoryProvider).sendHybrid(
+          fromUser: fromUser,
+          toEmail: emails.first,
+          subject: '${ClientContractView.contractPrefix} ${contract.title}',
+          body: encoded,
+        );
+    await ref.read(cloudNotificationRepositoryProvider).send(
+          toEmail: emails.first,
+          title: 'Contract ready: ${contract.title}',
+          body: 'Review and sign the agreement in your Client Portal.',
+          kind: 'contract',
+        );
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Contract sent to client')),
+      );
+    }
   }
 
   Future<void> _createContract(BuildContext context) async {
@@ -606,6 +735,24 @@ class AutomationsScreen extends ConsumerWidget {
             enabled: settings.weeklySummary,
             onChanged: ref.read(automationSettingsProvider.notifier).setWeeklySummary,
           ),
+          _AutomationTile(
+            title: 'Task assigned message',
+            subtitle: 'Sends a message when a task is assigned to a client',
+            enabled: settings.taskAssignedMessage,
+            onChanged: ref.read(automationSettingsProvider.notifier).setTaskAssignedMessage,
+          ),
+          _AutomationTile(
+            title: 'Contract signed stage change',
+            subtitle: 'Moves linked project to in progress when contract is signed',
+            enabled: settings.contractSignedStage,
+            onChanged: ref.read(automationSettingsProvider.notifier).setContractSignedStage,
+          ),
+          _AutomationTile(
+            title: 'Inactive client reminder',
+            subtitle: 'Creates follow-up tasks for clients inactive 7+ days',
+            enabled: settings.inactiveClientReminder,
+            onChanged: ref.read(automationSettingsProvider.notifier).setInactiveClientReminder,
+          ),
         ],
       ),
     );
@@ -659,73 +806,132 @@ class StorageScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final filesAsync = ref.watch(vaultFilesProvider);
-    return ClivoraScaffold(
-      title: 'File Vault',
-      showBackButton: true,
-      action: ClivoraIconButton(
-        icon: Icons.add,
-        onPressed: () async {
-          final path = await VaultService.pickAndSave();
-          if (path != null) ref.invalidate(vaultFilesProvider);
-        },
+    final planAsync = ref.watch(vaultPlanProvider);
+
+    return planAsync.when(
+      loading: () => const ClivoraScaffold(
+        title: 'File Vault',
+        showBackButton: true,
+        body: Center(child: CircularProgressIndicator()),
       ),
-      body: filesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('$e')),
-        data: (files) {
-          final total = VaultService.totalBytes(files);
-          return ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Theme.of(context).dividerColor),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('${VaultService.formatSize(total)} stored on device', style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 8),
-                    Text('${files.length} file${files.length == 1 ? '' : 's'} in your vault', style: Theme.of(context).textTheme.bodySmall),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              if (files.isEmpty)
-                const Center(
-                  child: Column(
-                    children: [
-                      Icon(Icons.folder_open_outlined, size: 64, color: ClivoraColors.labelGray),
-                      SizedBox(height: 12),
-                      Text('No files yet', style: TextStyle(fontWeight: FontWeight.w700)),
-                      SizedBox(height: 8),
-                      Text('Tap + to add images and project assets.'),
-                    ],
-                  ),
+      error: (e, _) => ClivoraScaffold(title: 'File Vault', showBackButton: true, body: Center(child: Text('$e'))),
+      data: (plan) {
+        final limit = VaultService.limitBytesForPlan(plan);
+        final isPro = PlanFeatures.isPro(plan);
+        return ClivoraScaffold(
+          title: 'File Vault',
+          showBackButton: true,
+          action: isPro
+              ? ClivoraIconButton(
+                  icon: Icons.add,
+                  onPressed: () async {
+                    final result = await VaultService.pickAndSave(plan: plan);
+                    if (!context.mounted) return;
+                    if (result.isQuota) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Vault full. Upgrade to Pro for 5 GB storage.')),
+                      );
+                    } else if (result.ok) {
+                      ref.invalidate(vaultFilesProvider);
+                    }
+                  },
                 )
-              else
-                ...files.map((f) {
-                  final file = f as File;
-                  return ListTile(
-                    leading: const Icon(Icons.insert_drive_file_outlined),
-                    title: Text(file.path.split(Platform.pathSeparator).last),
-                    subtitle: Text(VaultService.formatSize(file.lengthSync())),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: () async {
-                        await VaultService.deleteFile(file.path);
-                        ref.invalidate(vaultFilesProvider);
-                      },
+              : null,
+          body: filesAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text('$e')),
+            data: (files) {
+              final total = VaultService.totalBytes(files);
+              final chatCount = files.where((f) => VaultService.isChatArchive(f.path)).length;
+              return ListView(
+                padding: const EdgeInsets.all(20),
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Theme.of(context).dividerColor),
                     ),
-                  );
-                }),
-            ],
-          );
-        },
-      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${VaultService.formatSize(total)} of ${VaultService.formatSize(limit)} used',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 10),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: LinearProgressIndicator(
+                            value: limit > 0 ? (total / limit).clamp(0.0, 1.0) : 0,
+                            minHeight: 8,
+                            backgroundColor: ClivoraColors.labelGray.withValues(alpha: 0.15),
+                            color: total > limit * 0.9 ? ClivoraColors.warningOrange : ClivoraColors.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${files.length} file${files.length == 1 ? '' : 's'} · $chatCount from chat (locked)',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        if (!isPro) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            'Free plan includes 100 MB. Chat images are saved automatically. Pro unlocks 5 GB and manual uploads.',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: ClivoraColors.labelGray),
+                          ),
+                          const SizedBox(height: 8),
+                          TextButton(
+                            onPressed: () => context.push('/upgrade'),
+                            child: const Text('Upgrade to Pro'),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  if (files.isEmpty)
+                    const Center(
+                      child: Column(
+                        children: [
+                          Icon(Icons.folder_open_outlined, size: 64, color: ClivoraColors.labelGray),
+                          SizedBox(height: 12),
+                          Text('No files yet', style: TextStyle(fontWeight: FontWeight.w700)),
+                          SizedBox(height: 8),
+                          Text('Images shared in chat appear here automatically.'),
+                        ],
+                      ),
+                    )
+                  else
+                    ...files.map((f) {
+                      final file = f as File;
+                      final locked = VaultService.isChatArchive(file.path);
+                      return ListTile(
+                        leading: Icon(locked ? Icons.chat_bubble_outline : Icons.insert_drive_file_outlined),
+                        title: Text(file.path.split(Platform.pathSeparator).last),
+                        subtitle: Text(
+                          locked
+                              ? '${VaultService.formatSize(file.lengthSync())} · from chat'
+                              : VaultService.formatSize(file.lengthSync()),
+                        ),
+                        trailing: locked
+                            ? const Icon(Icons.lock_outline, size: 18, color: ClivoraColors.labelGray)
+                            : IconButton(
+                                icon: const Icon(Icons.delete_outline),
+                                onPressed: () async {
+                                  await VaultService.deleteFile(file.path);
+                                  ref.invalidate(vaultFilesProvider);
+                                },
+                              ),
+                      );
+                    }),
+                ],
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

@@ -9,24 +9,68 @@ import '../../core/theme/clivora_colors.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/greeting.dart';
 import '../../core/utils/navigation_helper.dart';
+import '../../core/services/admin_management_service.dart';
+import '../../core/services/coach_marks_service.dart';
+import '../../data/database/database.dart';
 import '../../data/providers/app_providers.dart';
+import '../../l10n/app_localizations.dart';
 import '../../shared/widgets/clivora_logo.dart';
+import '../../shared/widgets/coach_mark_overlay.dart';
+import '../../shared/widgets/messages_icon_button.dart';
+import '../../shared/widgets/notification_icon_button.dart';
+import '../../shared/widgets/skeleton_loading.dart';
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  final _scrollController = ScrollController();
+  final _statsKey = GlobalKey();
+  final _quickKey = GlobalKey();
+  final _searchKey = GlobalKey();
+  bool _showCoachMarks = false;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowCoachMarks());
+  }
+
+  Future<void> _maybeShowCoachMarks() async {
+    final userId = ref.read(authStateProvider).valueOrNull?.id;
+    if (userId == null) return;
+    final show = await ref.read(coachMarksServiceProvider).shouldShowForUser(userId);
+    if (!show) return;
+    try {
+      await ref.read(dashboardStatsProvider.future);
+    } catch (_) {}
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    if (mounted) setState(() => _showCoachMarks = true);
+  }
+
+  Future<void> _finishCoachMarks(int userId) async {
+    await ref.read(coachMarksServiceProvider).markDashboardCompleteForUser(userId);
+    if (mounted) setState(() => _showCoachMarks = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final statsAsync = ref.watch(dashboardStatsProvider);
     final profileAsync = ref.watch(businessProfileProvider);
     final authUser = ref.watch(authStateProvider).valueOrNull;
     final projectsAsync = ref.watch(projectsProvider(const ProjectFilter(status: 'in_progress')));
     final customersAsync = ref.watch(customersProvider(null));
-    final notificationsAsync = ref.watch(notificationsProvider);
-    final hasAlerts = notificationsAsync.maybeWhen(
-      data: (list) => list.isNotEmpty,
-      orElse: () => false,
-    );
 
     final ownerName = authUser?.name.isNotEmpty == true
         ? authUser!.name.split(' ').first
@@ -39,13 +83,64 @@ class DashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       body: SafeArea(
-        child: RefreshIndicator(
+        child: _showCoachMarks && authUser != null
+            ? CoachMarkOverlay(
+                scrollController: _scrollController,
+                bottomInset: CoachMarkOverlay.shellBottomInset(context),
+                steps: [
+                  CoachMarkStep(
+                    targetKey: _statsKey,
+                    title: l10n.coachMarkStatsTitle,
+                    body: l10n.coachMarkStatsBody,
+                    padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+                  ),
+                  CoachMarkStep(
+                    targetKey: _quickKey,
+                    title: l10n.coachMarkQuickTitle,
+                    body: l10n.coachMarkQuickBody,
+                    padding: const EdgeInsets.all(6),
+                  ),
+                  CoachMarkStep(
+                    targetKey: _searchKey,
+                    title: l10n.coachMarkSearchTitle,
+                    body: l10n.coachMarkSearchBody,
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                  ),
+                ],
+                nextLabel: l10n.coachMarkNext,
+                doneLabel: l10n.coachMarkDone,
+                skipLabel: 'Skip tour',
+                onComplete: () => _finishCoachMarks(authUser.id),
+                onSkip: () => _finishCoachMarks(authUser.id),
+                child: _dashboardBody(context, l10n, statsAsync, profileAsync, authUser, projectsAsync, customersAsync, ownerName, photoPath, isGuest),
+              )
+            : _dashboardBody(context, l10n, statsAsync, profileAsync, authUser, projectsAsync, customersAsync, ownerName, photoPath, isGuest),
+      ),
+    );
+  }
+
+  Widget _dashboardBody(
+    BuildContext context,
+    AppLocalizations l10n,
+    AsyncValue<DashboardStats> statsAsync,
+    AsyncValue<BusinessProfile> profileAsync,
+    User? authUser,
+    AsyncValue<List<Project>> projectsAsync,
+    AsyncValue<List<Customer>> customersAsync,
+    String ownerName,
+    String? photoPath,
+    bool isGuest,
+  ) {
+    return RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(dashboardStatsProvider);
             ref.invalidate(projectsProvider);
             ref.invalidate(customersProvider);
+            ref.invalidate(notificationsProvider);
+            ref.invalidate(cloudNotificationsProvider);
           },
           child: ListView(
+            controller: _scrollController,
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
             children: [
               Container(
@@ -77,6 +172,7 @@ class DashboardScreen extends ConsumerWidget {
                           photoPath: photoPath,
                           name: ownerName,
                           radius: 22,
+                          showVerified: ref.watch(isProProvider),
                           onTap: () => openFormRoute(context, '/profile'),
                         ),
                         const SizedBox(width: 12),
@@ -92,48 +188,54 @@ class DashboardScreen extends ConsumerWidget {
                             ],
                           ),
                         ),
-                        Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Material(
-                              color: Colors.white.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(12),
-                              child: InkWell(
-                                onTap: () => openFormRoute(context, '/notifications'),
-                                borderRadius: BorderRadius.circular(12),
-                                child: const SizedBox(width: 40, height: 40, child: Icon(Icons.notifications_none, color: Colors.white)),
-                              ),
-                            ),
-                            if (hasAlerts)
-                              Positioned(
-                                right: 6,
-                                top: 6,
-                                child: Container(
-                                  width: 9,
-                                  height: 9,
-                                  decoration: const BoxDecoration(color: ClivoraColors.errorRed, shape: BoxShape.circle),
-                                ),
-                              ),
-                          ],
+                        const SizedBox(width: 8),
+                        const MessagesIconButton(
+                          route: '/freelancer-messages',
+                          iconColor: Colors.white,
+                          useFilledStyle: true,
+                        ),
+                        const SizedBox(width: 8),
+                        const NotificationIconButton(
+                          isClient: false,
+                          iconColor: Colors.white,
+                          useFilledStyle: true,
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Your business command center',
+                      l10n.dashboardGreeting,
                       style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 20),
-              statsAsync.when(
-                loading: () => const _StatsGridPlaceholder(),
-                error: (_, __) => const _StatsGridPlaceholder(),
-                data: (stats) => _StatsGrid(stats: stats, onNavigate: context.go),
+              Container(
+                key: _statsKey,
+                width: double.infinity,
+                child: statsAsync.when(
+                  loading: () => const _StatsGridPlaceholder(),
+                  error: (_, __) => const _StatsGridPlaceholder(),
+                  data: (stats) => _StatsGrid(stats: stats, onNavigate: context.go),
+                ),
               ),
               const SizedBox(height: 24),
-              _QuickActions(ref: ref),
+              Container(
+                key: _quickKey,
+                width: double.infinity,
+                child: _QuickActions(ref: ref, l10n: l10n),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                key: _searchKey,
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => openFormRoute(context, '/search'),
+                  icon: const Icon(Icons.search, size: 18),
+                  label: Text(l10n.searchWorkspace),
+                ),
+              ),
               const SizedBox(height: 24),
               _GetStartedCard(ref: ref),
               const SizedBox(height: 24),
@@ -208,9 +310,7 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
+        );
   }
 }
 
@@ -341,9 +441,10 @@ class _StatCard extends StatelessWidget {
 }
 
 class _QuickActions extends ConsumerWidget {
-  const _QuickActions({required this.ref});
+  const _QuickActions({required this.ref, required this.l10n});
 
   final WidgetRef ref;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context, WidgetRef _) {
@@ -373,10 +474,10 @@ class _QuickActions extends ConsumerWidget {
         );
 
     final actions = [
-      _QuickAction(Icons.person_add_outlined, 'Client', ClivoraColors.iconPurple, ClivoraColors.primaryPurple, () => addCustomer()),
-      _QuickAction(Icons.create_new_folder_outlined, 'Project', ClivoraColors.iconOrange, ClivoraColors.warningOrange, () => addProject()),
-      _QuickAction(Icons.receipt_long_outlined, 'Invoice', ClivoraColors.iconGreen, ClivoraColors.successGreen, () => addInvoice()),
-      _QuickAction(Icons.task_alt_outlined, 'Task', ClivoraColors.iconBlue, Colors.blue, () => openFormRoute(context, '/tasks/new')),
+      _QuickAction(Icons.person_add_outlined, l10n.quickActionClient, ClivoraColors.iconPurple, ClivoraColors.primaryPurple, () => addCustomer()),
+      _QuickAction(Icons.create_new_folder_outlined, l10n.quickActionProject, ClivoraColors.iconOrange, ClivoraColors.warningOrange, () => addProject()),
+      _QuickAction(Icons.receipt_long_outlined, l10n.quickActionInvoice, ClivoraColors.iconGreen, ClivoraColors.successGreen, () => addInvoice()),
+      _QuickAction(Icons.task_alt_outlined, l10n.quickActionTask, ClivoraColors.iconBlue, Colors.blue, () => openFormRoute(context, '/tasks/new')),
     ];
 
     return Row(
@@ -620,7 +721,7 @@ class _StatsGridPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(height: 180, child: Center(child: CircularProgressIndicator()));
+    return const StatsGridSkeleton();
   }
 }
 
@@ -629,6 +730,6 @@ class _SectionCardLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(height: 120, child: Center(child: CircularProgressIndicator()));
+    return const CardSkeleton(height: 100);
   }
 }

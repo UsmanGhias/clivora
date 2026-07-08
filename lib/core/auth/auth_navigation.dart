@@ -4,21 +4,28 @@ import 'package:go_router/go_router.dart';
 
 import 'auth_route_helper.dart';
 import 'auth_service.dart';
+import 'biometric_prompt.dart';
+import '../services/biometric_service.dart';
 
-/// Navigate home after auth, or show a clear error if session did not stick.
-void navigateAfterAuth(BuildContext context, WidgetRef ref) {
+/// Navigate home after auth, optionally prompt biometric save for Pro users.
+Future<void> navigateAfterAuth(BuildContext context, WidgetRef ref) async {
   final user = ref.read(authStateProvider).valueOrNull;
   if (user == null) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(
-          'Sign-in succeeded but session could not start. Please try again or reinstall the app.',
+          'Sign-in did not complete. If you used Google, try again or use email sign-in.',
         ),
       ),
     );
     return;
   }
   context.go(homeRouteForUser(user));
+  ref.read(biometricServiceProvider).markSessionUnlocked();
+  await Future<void>.delayed(const Duration(milliseconds: 400));
+  if (context.mounted) {
+    await maybeShowBiometricSavePrompt(context, ref);
+  }
 }
 
 String? authErrorMessage(Object error) {

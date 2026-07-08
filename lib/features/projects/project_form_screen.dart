@@ -9,14 +9,18 @@ import '../../core/auth/auth_service.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../core/services/tracking_service.dart';
 import '../../data/database/database.dart';
+import '../../core/constants/currencies.dart';
+import '../../core/constants/plan_limits.dart';
 import '../../core/utils/crm_refresh.dart';
+import '../../core/utils/plan_limit_dialog.dart';
 import '../../core/utils/currency_formatter.dart';
+import '../../core/utils/user_messages.dart';
 import '../../data/models/invoice_line_item.dart';
 import '../../data/database/user_scoped_queries.dart';
+import '../../core/constants/plan_limits.dart';
+import '../../core/utils/plan_limit_dialog.dart';
 import '../../data/providers/app_providers.dart';
-import '../../shared/widgets/project_time_tracker.dart';
 import '../../shared/widgets/step_progress_card.dart';
-import '../../shared/widgets/tracking_timeline.dart';
 
 class ProjectFormScreen extends ConsumerStatefulWidget {
   const ProjectFormScreen({super.key, this.projectId});
@@ -37,6 +41,7 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
   String _status = 'not_started';
   String? _previousStatus;
   String _priority = 'medium';
+  String _currency = kDefaultCurrency;
   DateTime? _startDate;
   DateTime? _deadline;
   bool _loading = true;
@@ -59,6 +64,7 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
       _nameController.text = project.name;
       _descriptionController.text = project.description;
       _budgetController.text = project.budget > 0 ? project.budget.toString() : '';
+      _currency = project.currency.isNotEmpty ? project.currency : kDefaultCurrency;
       _selectedCustomerId = project.customerId;
       _status = project.status;
       _previousStatus = project.status;
@@ -106,6 +112,7 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
             customerId: _selectedCustomerId!,
             description: _descriptionController.text.trim(),
             budget: budget,
+            currency: _currency,
             status: _status,
             priority: _priority,
             startDate: Value(_startDate),
@@ -116,6 +123,17 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
         savedId = widget.projectId;
       }
     } else {
+      if (!await ref.read(planLimitServiceProvider).canAddProject()) {
+        if (mounted) {
+          final upgrade = await showPlanLimitDialog(
+            context,
+            resource: 'projects',
+            max: PlanLimits.freeMaxProjects,
+          );
+          if (upgrade && mounted) context.push('/upgrade');
+        }
+        return;
+      }
       savedId = await db.insertProject(
         ProjectsCompanion.insert(
           ownerUserId: ownerId,
@@ -123,6 +141,7 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
           name: _nameController.text.trim(),
           description: Value(_descriptionController.text.trim()),
           budget: Value(budget),
+          currency: Value(_currency),
           status: Value(_status),
           priority: Value(_priority),
           startDate: Value(_startDate),
@@ -166,6 +185,13 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
 
     if (mounted) {
       invalidateCrmData(ref, projects: true);
+      ClivoraUserMessages.showProjectSaved(
+        context,
+        name: _nameController.text.trim(),
+        currency: _currency,
+        budget: budget,
+        isNew: widget.projectId == null,
+      );
       context.pop();
     }
   }
@@ -298,6 +324,16 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
                         children: [
                           ClivoraTextField(controller: _budgetController, label: 'Budget', hint: '0', keyboardType: TextInputType.number),
                           const SizedBox(height: 16),
+                          const ClivoraFieldLabel(label: 'Currency'),
+                          DropdownButtonFormField<String>(
+                            value: _currency,
+                            decoration: const InputDecoration(hintText: 'Select currency'),
+                            items: kSupportedCurrencies
+                                .map((c) => DropdownMenuItem(value: c, child: Text('$c (${currencySymbol(c)})')))
+                                .toList(),
+                            onChanged: (v) => setState(() => _currency = v ?? kDefaultCurrency),
+                          ),
+                          const SizedBox(height: 16),
                           const ClivoraFieldLabel(label: 'Status'),
                           DropdownButtonFormField<String>(
                             value: _status,
@@ -342,19 +378,13 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
                     const SizedBox(height: 20),
                     _LinkedProjectPanel(projectId: widget.projectId!),
                     const SizedBox(height: 20),
-                    ProjectTimeTrackerCard(
-                      projectId: widget.projectId!,
-                      projectName: _nameController.text.trim().isEmpty ? 'Project' : _nameController.text.trim(),
-                    ),
-                    const SizedBox(height: 20),
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Theme.of(context).dividerColor),
+                    OutlinedButton.icon(
+                      onPressed: () => context.push('/projects/${widget.projectId}/time'),
+                      icon: const Icon(Icons.timer_outlined),
+                      label: const Text('Open time tracker'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: TrackingTimeline(entityType: 'project', entityId: widget.projectId!),
                     ),
                   ],
                 ],

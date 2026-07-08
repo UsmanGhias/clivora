@@ -1,5 +1,4 @@
 import 'package:drift/drift.dart' show Value;
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +6,9 @@ import 'package:intl/intl.dart';
 
 import '../../core/auth/auth_service.dart';
 import '../../core/theme/clivora_colors.dart';
+import '../../core/constants/plan_limits.dart';
+import '../../core/utils/plan_limit_dialog.dart';
+import '../../core/services/task_reminder_service.dart';
 import '../../data/database/database.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
@@ -200,7 +202,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
     if (widget.taskId != null) {
       final existing = await db.getTask(widget.taskId!);
       if (existing != null) {
-        await db.updateTask(existing.copyWith(
+        final updated = existing.copyWith(
           title: _titleController.text.trim(),
           description: _descController.text.trim(),
           priority: _priority,
@@ -208,10 +210,23 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
           projectId: Value(_selectedProjectId),
           dueDate: Value(_dueDate),
           updatedAt: DateTime.now(),
-        ));
+        );
+        await db.updateTask(updated);
+        await ref.read(taskReminderServiceProvider).scheduleForTask(updated);
       }
     } else {
-      await db.insertTask(TasksCompanion.insert(
+      if (!await ref.read(planLimitServiceProvider).canAddTaskToProject(_selectedProjectId)) {
+        if (mounted) {
+          final upgrade = await showPlanLimitDialog(
+            context,
+            resource: 'tasks per project',
+            max: PlanLimits.freeMaxTasksPerProject,
+          );
+          if (upgrade && mounted) context.push('/upgrade');
+        }
+        return;
+      }
+      final id = await db.insertTask(TasksCompanion.insert(
         ownerUserId: ref.read(authStateProvider).valueOrNull!.id,
         title: _titleController.text.trim(),
         description: Value(_descController.text.trim()),
@@ -220,6 +235,10 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
         projectId: Value(_selectedProjectId),
         dueDate: Value(_dueDate),
       ));
+      final task = await db.getTask(id);
+      if (task != null) {
+        await ref.read(taskReminderServiceProvider).scheduleForTask(task);
+      }
     }
     if (mounted) context.pop();
   }

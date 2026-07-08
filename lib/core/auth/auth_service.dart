@@ -12,6 +12,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 
+import '../../core/auth/account_type_guard.dart';
 import '../../core/auth/auth_session.dart';
 import '../../core/auth/supabase_auth_errors.dart';
 import '../../core/auth/user_roles.dart';
@@ -21,6 +22,7 @@ import '../../core/constants/admin_config.dart';
 import '../../core/constants/plan_limits.dart';
 import '../../core/services/analytics_service.dart';
 import '../../core/services/automation_service.dart';
+import '../../core/services/project_time_service.dart';
 import '../../data/database/database.dart';
 import '../../data/database/user_defaults.dart';
 import '../../data/database/user_scoped_queries.dart';
@@ -52,6 +54,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
 
   Future<void> _restoreSession() async {
     try {
+      await _db.repairAllDatabaseNulls();
       await SupabaseAuthHelper.refreshSessionIfNeeded();
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getInt(_sessionUserIdKey);
@@ -59,9 +62,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
 
       User? user;
       if (cloudEmail != null) {
-        user = await _db.getUserByEmail(cloudEmail);
+        user = await _db.safeGetUserByEmail(cloudEmail);
       }
-      user ??= userId != null ? await _db.getUser(userId) : null;
+      user ??= userId != null ? await _db.safeGetUser(userId) : null;
 
       if (user == null) {
         await prefs.remove(_sessionUserIdKey);
@@ -73,7 +76,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       final cloudUid = SupabaseAuthHelper.currentUid;
       if (cloudUid != null && user.googleId != cloudUid) {
         await _db.updateUser(user.copyWith(googleId: Value(cloudUid)));
-        user = await _db.getUser(user.id);
+        user = await _db.safeGetUser(user.id);
       }
 
       state = AsyncValue.data(user);
@@ -94,23 +97,19 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
 
   Future<String?> signInAsGuest({String accountType = kAccountFreelancer}) async {
     try {
+      await _db.repairAllDatabaseNulls();
       final previewType = accountType == kAccountClient ? kAccountClient : kAccountFreelancer;
-      var user = await _db.getUserByEmail(kGuestEmail);
-      if (user == null) {
-        final userId = await _db.insertUser(
-          _db.newUserCompanion(
-            email: kGuestEmail,
-            name: 'Guest',
-            passwordHash: '',
-            accountType: previewType,
-          ),
-        );
-        await _db.safeSeedUserDefaults(userId, name: 'Guest');
-        user = await _db.getUser(userId);
-      } else {
-        await _db.updateUser(user.copyWith(accountType: previewType));
-        user = await _db.getUser(user.id);
-      }
+      final guestEmail = 'guest_${DateTime.now().millisecondsSinceEpoch}@clivora.local';
+      final userId = await _db.insertUserSafe(
+        _db.newUserCompanion(
+          email: guestEmail,
+          name: 'Guest',
+          passwordHash: '',
+          accountType: previewType,
+        ),
+      );
+      await _db.safeSeedUserDefaults(userId, name: 'Guest');
+      final user = await _db.safeGetUser(userId);
       if (user == null) return 'Could not start guest session.';
       await _setSession(user.id, skipCloudSync: true);
       _invalidateUserData();
@@ -133,11 +132,20 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     if (password.length < 6) return 'Password must be at least 6 characters';
 
     final isAdmin = kAdminEmails.contains(trimmedEmail);
-    final type = isAdmin
-        ? kAccountAdmin
-        : (accountType == kAccountClient ? kAccountClient : kAccountFreelancer);
+    final type = AccountTypeGuard.normalizedAccountType(
+      isAdmin ? kAccountAdmin : accountType,
+      email: trimmedEmail,
+    );
 
-    if (await _db.getUserByEmail(trimmedEmail) != null) {
+    final localExisting = await _db.safeGetUserByEmail(trimmedEmail);
+    final guardErr = AccountTypeGuard.validateSignUp(
+      email: trimmedEmail,
+      requestedType: type,
+      existingLocal: localExisting,
+    );
+    if (guardErr != null) return guardErr;
+
+    if (localExisting != null) {
       return 'An account with this email already exists. Sign in instead.';
     }
 
@@ -146,6 +154,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         email: trimmedEmail,
         password: password,
         name: name.trim(),
+        accountType: type,
       );
       if (response.user == null) {
         return 'Sign up failed. Check Supabase Auth settings (email provider ON).';
@@ -164,16 +173,20 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       isAdmin: isAdmin,
       cloudUid: SupabaseAuthHelper.currentUid,
       trackSignup: true,
+      finalizeCloudRole: true,
     );
   }
 
   Future<String?> signIn({
     required String email,
     required String password,
+    String? loginAsType,
   }) async {
     final trimmedEmail = email.trim().toLowerCase();
     if (trimmedEmail.isEmpty || !trimmedEmail.contains('@')) return 'Valid email is required';
     if (password.isEmpty) return 'Password is required';
+
+    await _db.repairAllDatabaseNulls();
 
     try {
       await SupabaseAuthHelper.signInWithEmail(email: trimmedEmail, password: password);
@@ -186,18 +199,38 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     final cloudUid = SupabaseAuthHelper.currentUid;
     if (cloudUid == null) return 'Sign in failed: no Supabase session.';
 
-    var user = await _db.getUserByEmail(trimmedEmail);
+    var user = await _db.safeGetUserByEmail(trimmedEmail);
+    user ??= await _db.recoverUserByEmail(trimmedEmail);
     if (user == null) {
       final isAdmin = kAdminEmails.contains(trimmedEmail);
+      final cloudProfile = await SupabaseAuthHelper.fetchOwnProfile();
+      final cloudType = cloudProfile?['account_type'] as String?;
+      final type = isAdmin
+          ? kAccountAdmin
+          : AccountTypeGuard.normalizedAccountType(
+              loginAsType ?? cloudType ?? kAccountFreelancer,
+              email: trimmedEmail,
+            );
+      if (loginAsType != null) {
+        final expectedClient = loginAsType == kAccountClient;
+        final cloudIsClient = cloudType == 'client';
+        if (cloudType != null && expectedClient != cloudIsClient && !isAdmin) {
+          return 'This email is registered as ${cloudIsClient ? 'Client' : 'Freelancer'}. Use the correct sign-in option.';
+        }
+      }
       return _createLocalAccount(
         name: trimmedEmail.split('@').first,
         email: trimmedEmail,
         password: password,
-        accountType: isAdmin ? kAccountAdmin : kAccountFreelancer,
+        accountType: type,
         isAdmin: isAdmin,
         cloudUid: cloudUid,
+        finalizeCloudRole: true,
       );
     }
+
+    final roleErr = AccountTypeGuard.validateSignInRole(user: user, loginAsType: loginAsType);
+    if (roleErr != null) return roleErr;
 
     if (user.passwordHash.isNotEmpty && user.passwordHash != hashPassword(password)) {
       // Supabase auth succeeded — update local hash (user may have reset password in cloud).
@@ -224,13 +257,14 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
 
   Future<String?> signInWithGoogle({String? accountType}) async {
     try {
+      await _db.repairAllDatabaseNulls();
       final googleSignIn = GoogleSignIn(
         serverClientId: kGoogleWebClientId,
         scopes: const ['email', 'profile'],
       );
 
       final googleUser = await googleSignIn.signIn();
-      if (googleUser == null) return null;
+      if (googleUser == null) return 'Sign in cancelled';
 
       final email = googleUser.email.trim().toLowerCase();
       if (email.isEmpty) return 'Google account has no email address.';
@@ -251,33 +285,80 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       if (cloudUid == null) return 'Google sign-in failed: no Supabase session.';
 
       final isAdmin = kAdminEmails.contains(email);
-      final type = isAdmin
-          ? kAccountAdmin
-          : (accountType == kAccountClient ? kAccountClient : kAccountFreelancer);
+      final displayName = googleUser.displayName ?? email.split('@').first;
+      final requestedType = AccountTypeGuard.normalizedAccountType(
+        isAdmin ? kAccountAdmin : (accountType ?? kAccountFreelancer),
+        email: email,
+      );
 
-      var user = await _db.getUserByEmail(email);
+      final ownProfile = await SupabaseAuthHelper.fetchOwnProfile();
+      final cloudType = ownProfile?['account_type'] as String?;
+      final cloudLocked = ownProfile?['account_type_locked'] as bool? ?? false;
+
+      var user = await _db.safeGetUserByEmail(email);
+      user ??= await _db.recoverUserByEmail(email);
+
       if (user == null) {
-        final err = await _createLocalAccount(
-          name: googleUser.displayName ?? email.split('@').first,
+        String type = requestedType;
+        if (cloudLocked && cloudType != null && cloudType.isNotEmpty && !isAdmin) {
+          type = cloudType == kAccountClient ? kAccountClient : kAccountFreelancer;
+          if (accountType != null) {
+            final wantsClient = accountType == kAccountClient;
+            final isClient = type == kAccountClient;
+            if (wantsClient != isClient) {
+              return 'This email is registered as ${isClient ? 'Client' : 'Freelancer'}. Use the correct sign-in option.';
+            }
+          }
+        } else {
+          await SupabaseAuthHelper.finalizeAccountType(
+            accountType: type,
+            name: displayName,
+          );
+        }
+
+        return _createLocalAccount(
+          name: displayName,
           email: email,
           password: '',
           accountType: type,
           isAdmin: isAdmin,
           cloudUid: cloudUid,
           trackSignup: true,
+          finalizeCloudRole: true,
         );
-        return err;
       }
 
-      if (user.googleId != cloudUid) {
-        await _db.updateUser(user.copyWith(googleId: Value(cloudUid)));
+      final roleErr = AccountTypeGuard.validateSignInRole(user: user, loginAsType: accountType);
+      if (roleErr != null) return roleErr;
+
+      final cloudName = (ownProfile?['name'] as String?)?.trim();
+      final syncName = (cloudName != null && cloudName.isNotEmpty) ? cloudName : displayName;
+
+      if (user.googleId != cloudUid || user.name != syncName) {
+        await _db.updateUser(user.copyWith(
+          googleId: Value(cloudUid),
+          name: syncName,
+        ));
       }
-      await _setSession(user.id);
+
+      if (isAdmin) {
+        await _db.updateUser(user.copyWith(role: 'admin', accountType: kAccountAdmin));
+      }
+
+      final sessionUser = await _db.safeGetUser(user.id);
+      if (sessionUser == null) return 'Could not load your profile. Try again.';
+      await _setSession(sessionUser.id);
       _invalidateUserData();
+
+      if (isAdmin) {
+        try {
+          await ref.read(planLimitServiceProvider).setPlan(PlanLimits.proPlan);
+        } catch (_) {}
+      }
       return null;
-    } catch (e) {
-      debugPrint('Google sign-in error: $e');
-      return 'Google sign-in failed: $e';
+    } catch (e, st) {
+      debugPrint('Google sign-in error: $e\n$st');
+      return 'Google sign-in failed. Try again or use email sign-in.';
     }
   }
 
@@ -290,36 +371,63 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     String? cloudUid,
     bool trackSignup = false,
     bool skipCloudSync = false,
+    bool finalizeCloudRole = false,
   }) async {
     try {
-      final existing = await _db.getUserByEmail(email);
-      if (existing != null) {
-        return 'An account with this email already exists. Sign in instead.';
-      }
+      await _db.repairAllDatabaseNulls();
 
-      final userId = await _db.insertUser(
-        _db.newUserCompanion(
-          email: email,
-          name: name,
-          passwordHash: password.isEmpty ? '' : hashPassword(password),
-          role: isAdmin ? 'admin' : 'user',
-          accountType: accountType,
-          googleId: cloudUid ?? SupabaseAuthHelper.currentUid,
-          emailVerified: false,
-        ),
-      );
+      var user = await _db.safeGetUserByEmail(email);
+      user ??= await _db.recoverUserByEmail(email);
+
+      late final int userId;
+      if (user != null) {
+        userId = user.id;
+      } else {
+        userId = await _db.insertUserSafe(
+          _db.newUserCompanion(
+            email: email,
+            name: name.isNotEmpty ? name : email.split('@').first,
+            passwordHash: password.isEmpty ? '' : hashPassword(password),
+            role: isAdmin ? 'admin' : 'user',
+            accountType: accountType,
+            googleId: cloudUid ?? SupabaseAuthHelper.currentUid,
+            emailVerified: false,
+          ),
+        );
+      }
 
       await _db.safeSeedUserDefaults(userId, name: name, email: email);
 
       if (isAdmin) {
-        final adminUser = await _db.getUser(userId);
-        if (adminUser != null) {
-          await _db.updateUser(adminUser.copyWith(role: 'admin', accountType: kAccountAdmin));
+        try {
+          final adminUser = await _db.safeGetUser(userId);
+          if (adminUser != null) {
+            await _db.updateUser(adminUser.copyWith(role: 'admin', accountType: kAccountAdmin));
+          }
+        } catch (e) {
+          debugPrint('Admin role update: $e');
+        }
+      } else if (cloudUid != null) {
+        try {
+          final linked = await _db.safeGetUser(userId);
+          if (linked != null && linked.googleId != cloudUid) {
+            await _db.updateUser(linked.copyWith(googleId: Value(cloudUid)));
+          }
+        } catch (e) {
+          debugPrint('Google id link: $e');
         }
       }
 
-      await _setSession(userId, skipCloudSync: skipCloudSync);
-      _invalidateUserData();
+      final sessionUser = await _db.safeGetUser(userId);
+      if (sessionUser == null) {
+        return 'Could not load your profile. Please try again.';
+      }
+
+      await _setSession(sessionUser.id, skipCloudSync: skipCloudSync, finalizeCloudRole: finalizeCloudRole);
+
+      try {
+        _invalidateUserData();
+      } catch (_) {}
 
       if (isAdmin) {
         try {
@@ -346,7 +454,19 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       return null;
     } catch (e, st) {
       debugPrint('Create local account error: $e\n$st');
-      return 'Could not create account: $e';
+      final recovered = await _db.recoverUserByEmail(email);
+      if (recovered != null) {
+        try {
+          await _setSession(recovered.id, skipCloudSync: skipCloudSync, finalizeCloudRole: finalizeCloudRole);
+          try {
+            _invalidateUserData();
+          } catch (_) {}
+          return null;
+        } catch (retryErr) {
+          debugPrint('Create local account recovery failed: $retryErr');
+        }
+      }
+      return 'Sign-in could not finish. Clear app storage or reinstall, then try again.';
     }
   }
 
@@ -377,10 +497,13 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     ref.invalidate(freelancerMailboxProvider);
     ref.invalidate(unreadMessagesProvider);
     ref.invalidate(freelancerUnreadProvider);
+    ref.invalidate(projectTimeTrackerProvider);
+    ref.invalidate(projectTrackedSecondsMapProvider);
   }
 
-  Future<void> _setSession(int userId, {bool skipCloudSync = false}) async {
-    final user = await _db.getUser(userId);
+  Future<void> _setSession(int userId, {bool skipCloudSync = false, bool finalizeCloudRole = false}) async {
+    await _db.repairUserDefaultsNulls(userId);
+    final user = await _db.safeGetUser(userId);
     if (user == null) {
       throw StateError('Session error: user record missing (id $userId)');
     }
@@ -390,12 +513,23 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     setAuthSession(user);
     if (!skipCloudSync) {
       try {
+        if (finalizeCloudRole) {
+          await SupabaseAuthHelper.finalizeAccountType(
+            accountType: user.accountType,
+            name: user.name,
+          );
+        }
         await SupabaseAuthHelper.upsertProfile(
           email: user.email,
           name: user.name,
           accountType: user.accountType,
           role: user.role,
+          forceLock: finalizeCloudRole,
         );
+      } catch (e) {
+        debugPrint('Cloud profile sync on session: $e');
+      }
+      try {
         await ref.read(supabaseSyncServiceProvider).onUserSignedIn(user);
       } catch (e) {
         debugPrint('Cloud sync on session: $e');

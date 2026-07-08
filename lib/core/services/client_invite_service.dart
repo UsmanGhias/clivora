@@ -7,6 +7,7 @@ import '../auth/auth_service.dart';
 import '../cloud/cloud_message_repository.dart';
 import '../cloud/cloud_notification_repository.dart';
 import '../cloud/supabase_sync_service.dart';
+import 'clivora_email_service.dart';
 
 final clientInviteServiceProvider = Provider<ClientInviteService>((ref) {
   return ClientInviteService(ref);
@@ -50,12 +51,22 @@ class ClientInviteService {
 
     final toUid = await ref.read(supabaseSyncServiceProvider).uidForEmail(email);
     if (toUid != null) {
-      await ref.read(cloudNotificationRepositoryProvider).send(
-            toEmail: email,
+      await ref.read(cloudNotificationRepositoryProvider).sendToUid(
+            toUid: toUid,
             title: 'CLIVORA invitation',
             body: '$businessName invited you as a client. Open Messages to read more.',
             kind: 'invite',
           );
+    }
+
+    // Optional real email — special purpose only (not for every message).
+    final emailErr = await ref.read(clivoraEmailServiceProvider).sendClientInviteEmail(
+          to: email,
+          freelancerName: businessName,
+          clientName: customer.contactPerson,
+        );
+    if (emailErr != null) {
+      throw Exception(emailErr);
     }
   }
 }

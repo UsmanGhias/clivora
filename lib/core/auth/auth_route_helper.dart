@@ -4,6 +4,7 @@ import 'user_roles.dart';
 /// Post-login home route based on account type.
 String homeRouteForUser(User? user) {
   if (user == null) return '/login';
+  if (isSuperAdmin(user)) return '/admin-console';
   if (isClientUser(user)) return '/client-portal';
   return '/dashboard';
 }
@@ -25,6 +26,9 @@ const freelancerExtraRoutes = {
   '/notes',
   '/reports',
   '/calendar',
+  '/analytics',
+  '/backup',
+  '/search',
   '/notifications',
   '/payments',
   '/profile',
@@ -34,6 +38,7 @@ const freelancerExtraRoutes = {
   '/contracts',
   '/automations',
   '/admin',
+  '/admin-console',
   '/team',
   '/storage',
   '/freelancer-messages',
@@ -45,7 +50,11 @@ const clientShellRoutes = {
   '/client-messages',
   '/client-invoices',
   '/client-activity',
+  '/client-contracts',
+  '/client-link-freelancer',
   '/client-account',
+  '/client-tasks',
+  '/notifications',
 };
 
 bool isPublicRoute(String location) {
@@ -99,11 +108,24 @@ String? authRedirect({required String location, required User? user, required bo
     return homeRouteForUser(user);
   }
 
-  if (isClientUser(user) && isFreelancerRoute(path)) {
+  if (isGuestUser(user) && path == '/upgrade') {
+    return '/login';
+  }
+
+  if ((path == '/admin-console' || path == '/admin') && !isAdminUser(user)) {
+    return homeRouteForUser(user);
+  }
+
+  // Shared routes (e.g. /notifications) are in both lists — do not redirect clients away.
+  if (isClientUser(user) && isFreelancerRoute(path) && !isClientRoute(path)) {
     return '/client-portal';
   }
 
-  if (!isClientUser(user) && isClientRoute(path)) {
+  if (isSuperAdmin(user) && path == '/dashboard') {
+    return null;
+  }
+
+  if (!isClientUser(user) && !isAdminUser(user) && isClientRoute(path)) {
     return '/dashboard';
   }
 

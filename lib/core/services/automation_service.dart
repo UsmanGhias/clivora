@@ -3,7 +3,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:drift/drift.dart' show Value;
 
 import '../../core/cloud/cloud_message_repository.dart';
+import '../../core/cloud/cloud_notification_repository.dart';
+import '../../core/services/audit_log_service.dart';
+import '../../core/services/push_notification_service.dart';
+import '../../core/services/tracking_service.dart';
 import '../../core/auth/auth_service.dart';
+import '../../core/utils/template_utils.dart';
 import '../../data/models/invoice_line_item.dart';
 import '../../data/database/user_scoped_queries.dart';
 import '../../data/database/database.dart';
@@ -19,21 +24,33 @@ class AutomationSettings {
     this.overdueFollowUp = true,
     this.customerWelcome = true,
     this.weeklySummary = false,
+    this.taskAssignedMessage = true,
+    this.contractSignedStage = true,
+    this.inactiveClientReminder = true,
   });
 
   final bool overdueFollowUp;
   final bool customerWelcome;
   final bool weeklySummary;
+  final bool taskAssignedMessage;
+  final bool contractSignedStage;
+  final bool inactiveClientReminder;
 
   AutomationSettings copyWith({
     bool? overdueFollowUp,
     bool? customerWelcome,
     bool? weeklySummary,
+    bool? taskAssignedMessage,
+    bool? contractSignedStage,
+    bool? inactiveClientReminder,
   }) {
     return AutomationSettings(
       overdueFollowUp: overdueFollowUp ?? this.overdueFollowUp,
       customerWelcome: customerWelcome ?? this.customerWelcome,
       weeklySummary: weeklySummary ?? this.weeklySummary,
+      taskAssignedMessage: taskAssignedMessage ?? this.taskAssignedMessage,
+      contractSignedStage: contractSignedStage ?? this.contractSignedStage,
+      inactiveClientReminder: inactiveClientReminder ?? this.inactiveClientReminder,
     );
   }
 }
@@ -47,6 +64,10 @@ class AutomationSettingsNotifier extends StateNotifier<AutomationSettings> {
   static const _kWelcome = 'auto_customer_welcome';
   static const _kWeekly = 'auto_weekly_summary';
   static const _kWeeklyLast = 'auto_weekly_summary_last';
+  static const _kTaskMsg = 'auto_task_assigned_message';
+  static const _kContractStage = 'auto_contract_signed_stage';
+  static const _kInactive = 'auto_inactive_client_reminder';
+  static const _kInactiveLast = 'auto_inactive_client_last';
 
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -54,6 +75,9 @@ class AutomationSettingsNotifier extends StateNotifier<AutomationSettings> {
       overdueFollowUp: prefs.getBool(_kOverdue) ?? true,
       customerWelcome: prefs.getBool(_kWelcome) ?? true,
       weeklySummary: prefs.getBool(_kWeekly) ?? false,
+      taskAssignedMessage: prefs.getBool(_kTaskMsg) ?? true,
+      contractSignedStage: prefs.getBool(_kContractStage) ?? true,
+      inactiveClientReminder: prefs.getBool(_kInactive) ?? true,
     );
   }
 
@@ -73,6 +97,24 @@ class AutomationSettingsNotifier extends StateNotifier<AutomationSettings> {
     state = state.copyWith(weeklySummary: value);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_kWeekly, value);
+  }
+
+  Future<void> setTaskAssignedMessage(bool value) async {
+    state = state.copyWith(taskAssignedMessage: value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kTaskMsg, value);
+  }
+
+  Future<void> setContractSignedStage(bool value) async {
+    state = state.copyWith(contractSignedStage: value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kContractStage, value);
+  }
+
+  Future<void> setInactiveClientReminder(bool value) async {
+    state = state.copyWith(inactiveClientReminder: value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kInactive, value);
   }
 }
 
@@ -158,6 +200,18 @@ class AutomationService {
       ),
     );
 
+    final template = await resolveMessageTemplate(
+      db,
+      ownerId,
+      category: 'invoice',
+      nameHint: 'payment',
+      fallbackSubject: 'Invoice {{invoiceNumber}}: payment reminder',
+      fallbackBody:
+          'Hi {{clientName}},\n\nThis is a friendly reminder that invoice {{invoiceNumber}} for {{amount}} is now overdue. Please let us know if you need a copy resent or wish to discuss payment options.\n\nBest regards,\n{{businessName}}',
+    );
+    final subject = await fillTemplateForInvoice(db, ownerId, template.subject, invoice);
+    final body = await fillTemplateForInvoice(db, ownerId, template.body, invoice);
+
     if (invoice.projectId != null) {
       final link = await (db.select(db.projectClientLinks)
             ..where((t) => t.projectId.equals(invoice.projectId!)))
@@ -169,12 +223,17 @@ class AutomationService {
         await ref.read(cloudMessageRepositoryProvider).sendHybrid(
           fromUser: fromUser,
           toEmail: clientEmail,
-          subject: 'Invoice ${invoice.invoiceNumber} is overdue',
-          body:
-              'This is a reminder that invoice ${invoice.invoiceNumber} for ${invoice.currency} ${invoice.total.toStringAsFixed(2)} is now overdue. Please contact us if you need assistance.',
+          subject: subject,
+          body: body,
           localToUserId: link.clientUserId,
           localProjectId: invoice.projectId,
         );
+        await ref.read(cloudNotificationRepositoryProvider).send(
+              toEmail: clientEmail,
+              title: 'Payment reminder: ${invoice.invoiceNumber}',
+              body: subject,
+              kind: 'invoice',
+            );
       }
     }
   }
@@ -205,5 +264,89 @@ class AutomationService {
       ),
     );
     await prefs.setInt(AutomationSettingsNotifier._kWeeklyLast, now.millisecondsSinceEpoch);
+  }
+
+  Future<void> onTaskAssigned(Task task, {String? clientEmail, int? clientUserId}) async {
+    if (!ref.read(automationSettingsProvider).taskAssignedMessage) return;
+    if (clientEmail == null || clientEmail.isEmpty) return;
+    final fromUser = ref.read(authStateProvider).valueOrNull;
+    if (fromUser == null) return;
+
+    await ref.read(cloudMessageRepositoryProvider).sendHybrid(
+          fromUser: fromUser,
+          toEmail: clientEmail,
+          subject: 'New task: ${task.title}',
+          body: task.description.isNotEmpty ? task.description : 'You have a new task assigned.',
+          localToUserId: clientUserId,
+          localProjectId: task.projectId,
+        );
+    await ref.read(cloudNotificationRepositoryProvider).send(
+          toEmail: clientEmail,
+          title: 'Task assigned: ${task.title}',
+          body: task.description.isNotEmpty ? task.description : 'Open Tasks to view details.',
+          kind: 'task',
+        );
+    await ref.read(pushNotificationServiceProvider).notify(
+          title: 'Task assigned',
+          body: task.title,
+          kind: 'task',
+        );
+  }
+
+  Future<void> onContractSigned(Contract contract) async {
+    await ref.read(auditLogServiceProvider).logContractSigned(
+          contractId: contract.id,
+          title: contract.title,
+        );
+    if (!ref.read(automationSettingsProvider).contractSignedStage) return;
+
+    final db = ref.read(databaseProvider);
+    final ownerId = ref.read(authStateProvider).valueOrNull?.id;
+    if (ownerId == null) return;
+
+    final projects = await db.watchProjectsForUser(ownerId).first;
+    final linked = projects.where((p) => p.customerId == contract.customerId && p.status != 'completed').toList();
+    for (final project in linked.take(1)) {
+      await db.updateProject(project.copyWith(status: 'in_progress', updatedAt: DateTime.now()));
+      await ref.read(trackingServiceProvider).logStatusChange(
+            entityType: 'project',
+            entityId: project.id,
+            status: 'in_progress',
+            note: 'Contract "${contract.title}" signed',
+          );
+    }
+  }
+
+  Future<void> runInactiveClientCheckIfDue() async {
+    if (!ref.read(automationSettingsProvider).inactiveClientReminder) return;
+    final ownerId = ref.read(authStateProvider).valueOrNull?.id;
+    if (ownerId == null) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final lastMs = prefs.getInt(AutomationSettingsNotifier._kInactiveLast) ?? 0;
+    if (DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(lastMs)).inDays < 1) return;
+
+    final db = ref.read(databaseProvider);
+    final customers = await db.watchCustomersForUser(ownerId).first;
+    final cutoff = DateTime.now().subtract(const Duration(days: 7));
+
+    for (final customer in customers) {
+      if (customer.updatedAt.isAfter(cutoff)) continue;
+      final existing = await db.watchTasksForUser(ownerId).first;
+      final already = existing.any((t) => t.title.contains(customer.contactPerson) && t.title.contains('inactive'));
+      if (already) continue;
+
+      await db.insertTask(
+        TasksCompanion.insert(
+          ownerUserId: ownerId,
+          title: 'Follow up: ${customer.contactPerson} inactive',
+          description: Value('No activity in 7+ days. Send a check-in message.'),
+          customerId: Value(customer.id),
+          priority: Value('medium'),
+          dueDate: Value(DateTime.now()),
+        ),
+      );
+    }
+    await prefs.setInt(AutomationSettingsNotifier._kInactiveLast, DateTime.now().millisecondsSinceEpoch);
   }
 }

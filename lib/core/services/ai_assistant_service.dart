@@ -9,6 +9,7 @@ class AiInsight {
     required this.actionLabel,
     required this.category,
     this.route,
+    this.copyable = false,
   });
 
   final String title;
@@ -16,6 +17,7 @@ class AiInsight {
   final String actionLabel;
   final String category;
   final String? route;
+  final bool copyable;
 }
 
 /// Local smart insights generated from your business data — no cloud AI required.
@@ -26,22 +28,24 @@ class AiAssistantService {
     final customers = await db.watchCustomersForUser(ownerUserId).first;
     final projects = await db.watchProjectsForUser(ownerUserId).first;
     final tasks = await db.watchTasksForUser(ownerUserId).first;
+    final expenses = await db.watchExpensesForUser(ownerUserId).first;
     final profile = await db.watchBusinessProfileForUser(ownerUserId).first;
+    final settings = await db.watchAppSettingsForUser(ownerUserId).first;
+    final currency = settings.currency.isNotEmpty ? settings.currency : 'USD';
 
     final overdue = invoices.where((i) => i.status == 'overdue').toList();
     final outstanding = invoices.where((i) => i.status == 'sent' || i.status == 'overdue');
     final outstandingTotal = outstanding.fold<double>(0, (s, i) => s + i.total);
     final paidTotal = invoices.where((i) => i.status == 'paid').fold<double>(0, (s, i) => s + i.total);
+    final expenseTotal = expenses.fold<double>(0, (s, e) => s + e.amount);
 
     if (overdue.isNotEmpty) {
       final inv = overdue.first;
-      final customer = await db.getCustomerForUser(ownerUserId, inv.customerId);
-      final body = fillTemplate(
+      final body = await fillTemplateForInvoice(
+        db,
+        ownerUserId,
         'Hi {{clientName}},\n\nThis is a friendly reminder that invoice {{invoiceNumber}} for {{amount}} is now overdue. Please let us know if you need a copy resent or wish to discuss payment options.\n\nBest regards,\n{{businessName}}',
-        clientName: customer?.contactPerson ?? customer?.company ?? 'there',
-        businessName: profile.ownerName.isNotEmpty ? profile.ownerName : profile.businessName,
-        invoiceNumber: inv.invoiceNumber,
-        amount: '${inv.currency} ${inv.total.toStringAsFixed(2)}',
+        inv,
       );
       insights.add(AiInsight(
         title: 'Follow up on ${overdue.length} overdue invoice${overdue.length > 1 ? 's' : ''}',
@@ -49,13 +53,14 @@ class AiAssistantService {
         actionLabel: 'View invoices',
         category: 'Follow-up',
         route: '/invoices',
+        copyable: true,
       ));
     }
 
     if (outstandingTotal > 0) {
       insights.add(AiInsight(
-        title: 'Outstanding balance: ${_formatMoney(outstandingTotal)}',
-        body: 'You have ${outstanding.length} unpaid invoice${outstanding.length > 1 ? 's' : ''} totalling ${_formatMoney(outstandingTotal)}. Consider sending a payment reminder this week to improve cash flow.',
+        title: 'Outstanding balance: ${_formatMoney(outstandingTotal, currency)}',
+        body: 'You have ${outstanding.length} unpaid invoice${outstanding.length > 1 ? 's' : ''} totalling ${_formatMoney(outstandingTotal, currency)}. Consider sending a payment reminder this week to improve cash flow.',
         actionLabel: 'View outstanding',
         category: 'Finance',
         route: '/invoices?filter=outstanding',
@@ -63,9 +68,10 @@ class AiAssistantService {
     }
 
     if (paidTotal > 0 && customers.isNotEmpty) {
+      final margin = paidTotal - expenseTotal;
       insights.add(AiInsight(
         title: 'Revenue snapshot',
-        body: 'Total collected: ${_formatMoney(paidTotal)} across ${customers.length} client${customers.length > 1 ? 's' : ''}. Your average per client is ${_formatMoney(paidTotal / customers.length)}.',
+        body: 'Collected: ${_formatMoney(paidTotal, currency)} · Expenses: ${_formatMoney(expenseTotal, currency)} · Net: ${_formatMoney(margin, currency)} across ${customers.length} client${customers.length > 1 ? 's' : ''}.',
         actionLabel: 'Open reports',
         category: 'Analytics',
         route: '/reports',
@@ -94,6 +100,17 @@ class AiAssistantService {
       ));
     }
 
+    final draftInvoices = invoices.where((i) => i.status == 'draft').length;
+    if (draftInvoices > 0) {
+      insights.add(AiInsight(
+        title: '$draftInvoices draft invoice${draftInvoices > 1 ? 's' : ''} ready to send',
+        body: 'Finalize and send drafts to accelerate payments. Use your saved templates for consistent, professional client communication.',
+        actionLabel: 'Open invoices',
+        category: 'Billing',
+        route: '/invoices',
+      ));
+    }
+
     if (customers.isEmpty) {
       insights.add(AiInsight(
         title: 'Get started with your first client',
@@ -101,6 +118,14 @@ class AiAssistantService {
         actionLabel: 'Add client',
         category: 'Getting started',
         route: '/customers/new',
+      ));
+    } else if (profile.businessName.isEmpty) {
+      insights.add(AiInsight(
+        title: 'Complete your business profile',
+        body: 'Add your business name and logo to unlock branded invoices and professional contracts for ${profile.ownerName.isNotEmpty ? profile.ownerName : 'your studio'}.',
+        actionLabel: 'Edit profile',
+        category: 'Branding',
+        route: '/profile',
       ));
     }
 
@@ -117,5 +142,5 @@ class AiAssistantService {
     return insights;
   }
 
-  String _formatMoney(double amount) => 'USD ${amount.toStringAsFixed(0)}';
+  String _formatMoney(double amount, String currency) => '$currency ${amount.toStringAsFixed(0)}';
 }

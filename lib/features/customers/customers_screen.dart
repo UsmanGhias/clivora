@@ -65,6 +65,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
 
     return ClivoraScaffold(
       title: 'Customers',
+      showMessagesButton: true,
       action: ClivoraIconButton(icon: Icons.add, onPressed: _onAddCustomer),
       body: Column(
         children: [
