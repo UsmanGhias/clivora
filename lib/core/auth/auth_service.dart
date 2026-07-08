@@ -583,6 +583,14 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     );
     return null;
   }
+
+  Future<String?> resetPasswordForEmail(String email) async {
+    final trimmed = email.trim().toLowerCase();
+    if (trimmed.isEmpty || !trimmed.contains('@')) {
+      return 'Enter a valid email address';
+    }
+    return SupabaseAuthHelper.resetPasswordForEmail(trimmed);
+  }
 }
 
 Future<String> _persistImage(String sourcePath, String prefix) async {
