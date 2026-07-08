@@ -1,8 +1,23 @@
 # Supabase configuration for CLIVORA v2.6.6
 
-Apply these in the Supabase dashboard for project `jtzjwgovqczlccyeujhq`.
+Project: `jtzjwgovqczlccyeujhq` (Clivora, ap-southeast-2)
 
-## Auth URL configuration
+## Applied via Supabase MCP (2026-07-08)
+
+| Item | Status |
+|------|--------|
+| `subscriptions` + `profiles.subscription_plan` | Applied |
+| `referral_codes` + `referral_redemptions` + `credit_referral_on_purchase` | Applied |
+| `team_invites` + RLS + realtime | Applied |
+| `send-clivora-email` edge function (branded Resend templates) | Deployed ACTIVE |
+| `verify-play-purchase` edge function | Deployed ACTIVE |
+| Referral RPC execute locked to `service_role` | Applied |
+
+**Root cause of client invite email failure:** `send-clivora-email` returned **404** (function was never deployed). It is now live.
+
+## Auth URL configuration (manual in Dashboard)
+
+Supabase MCP cannot change Auth Site URL. Set in **Authentication → URL Configuration**:
 
 | Setting | Value |
 |---------|--------|
@@ -10,30 +25,46 @@ Apply these in the Supabase dashboard for project `jtzjwgovqczlccyeujhq`.
 | **Redirect URLs** | `https://clivora.codcrafters.org/auth/reset-password` |
 | | `https://clivora.codcrafters.org/**` |
 
-Password reset emails must not use `http://localhost:3000`. The app sends `redirectTo: https://clivora.codcrafters.org/auth/reset-password` from `supabase_auth_helper.dart`.
+The mobile app sends `redirectTo: https://clivora.codcrafters.org/auth/reset-password` from `supabase_auth_helper.dart`.
+
+The web callback page lives at `web/app/auth/reset-password/page.tsx`.
 
 ## Edge Function secrets
 
-Set on **Project Settings → Edge Functions → Secrets**:
+Confirm in **Project Settings → Edge Functions → Secrets**:
 
 ```
 RESEND_API_KEY=REDACTED_RESEND_KEY
 RESEND_FROM=CLIVORA <onboarding@resend.dev>
 ```
 
-Redeploy the function after updating secrets:
+Optional for Play billing verify:
 
-```bash
-supabase functions deploy send-clivora-email --project-ref jtzjwgovqczlccyeujhq
+```
+GOOGLE_PLAY_SERVICE_ACCOUNT_JSON={...}
 ```
 
-## SQL migrations
+## Branded email types
 
-Run in the SQL Editor (in order if not already applied):
+`send-clivora-email` renders CLIVORA-branded HTML for:
 
-- `supabase/migrations/014_team_invites.sql` — team invite accept/decline flow
+| Purpose | Template |
+|---------|----------|
+| `client_invite` | Invite with Play Store CTA (pass `freelancerName`, `clientName`) |
+| `password_reset` | Branded reset notice |
+| `admin_notice` | Admin alert with dashboard link |
+
+Purple `#6C3CE1`, navy header, CODCrafters footer.
+
+## Web admin (`web/`)
+
+Monorepo includes Next.js admin matching `clivora.codcrafters.org/admin`:
+
+- Deploy `web/` to Vercel as `clivora-web`
+- Set `ADMIN_SYNC_KEY` to match Flutter `ADMIN_SYNC_KEY` dart-define
 
 ## Data privacy
 
-- RLS policies on `notifications`, `client_tasks`, `team_invites`, and `project_shares` restrict rows to owning users.
-- Do not commit service role keys to the repo.
+- RLS enabled on all user tables
+- Team invites scoped to owner/invitee email only
+- Referral credit RPC restricted to `service_role`
