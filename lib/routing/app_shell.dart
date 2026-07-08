@@ -4,7 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../core/auth/auth_service.dart';
 import '../core/auth/user_roles.dart';
-import '../core/theme/clivora_colors.dart';
+import '../core/theme/clivora_tokens.dart';
+import '../core/theme/theme_context.dart';
 import '../core/utils/exit_dialog.dart';
 import '../data/providers/app_providers.dart';
 import '../shared/widgets/offline_status_bar.dart';
@@ -43,12 +44,9 @@ class AppShell extends ConsumerWidget {
     final user = ref.watch(authStateProvider).valueOrNull;
     final isClient = isClientUser(user);
     final tabs = isClient ? _clientTabs : _freelancerTabs;
-    final accent = isClient ? ClivoraColors.clientAccent : ClivoraColors.primary;
-    final navBackground = isClient
-        ? const Color(0xFF334155)
-        : (Theme.of(context).brightness == Brightness.light
-            ? ClivoraColors.navyDark
-            : ClivoraColors.darkSurface);
+    final semantic = context.clivoraColors;
+    final accent = semantic.brand;
+    final navBackground = semantic.navBar;
     final location = GoRouterState.of(context).uri.toString();
     final currentIndex = _indexFromLocation(location, tabs);
     final badgeCount = ref.watch(unreadBadgeCountProvider);
@@ -67,7 +65,12 @@ class AppShell extends ConsumerWidget {
             const OfflineStatusBar(),
             const SyncFailureBanner(),
             Container(
-              margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              margin: const EdgeInsets.fromLTRB(
+                ClivoraSpacing.lg,
+                0,
+                ClivoraSpacing.lg,
+                ClivoraSpacing.md,
+              ),
               decoration: BoxDecoration(
                 color: navBackground,
                 borderRadius: BorderRadius.circular(28),
@@ -82,7 +85,10 @@ class AppShell extends ConsumerWidget {
               child: SafeArea(
                 top: false,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 10,
+                    horizontal: ClivoraSpacing.xs,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
@@ -91,6 +97,8 @@ class AppShell extends ConsumerWidget {
                           item: tabs[i],
                           selected: currentIndex == i,
                           accent: accent,
+                          selectedLabelColor: semantic.navBarSelected,
+                          errorColor: semantic.error,
                           badgeCount: tabs[i].badgeTab ? badgeCount : 0,
                           onTap: () => context.go(tabs[i].path),
                         ),
@@ -121,6 +129,8 @@ class _BottomNavItem extends StatelessWidget {
     required this.item,
     required this.selected,
     required this.accent,
+    required this.selectedLabelColor,
+    required this.errorColor,
     required this.badgeCount,
     required this.onTap,
   });
@@ -128,12 +138,14 @@ class _BottomNavItem extends StatelessWidget {
   final _NavItem item;
   final bool selected;
   final Color accent;
+  final Color selectedLabelColor;
+  final Color errorColor;
   final int badgeCount;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? accent : Colors.white54;
+    final color = selected ? selectedLabelColor : Colors.white54;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -161,7 +173,7 @@ class _BottomNavItem extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                       constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                       decoration: BoxDecoration(
-                        color: ClivoraColors.errorRed,
+                        color: errorColor,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(

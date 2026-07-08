@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/theme/clivora_colors.dart';
+import '../../core/theme/clivora_tokens.dart';
+import '../../core/theme/theme_context.dart';
 import 'messages_icon_button.dart';
 
 class ClivoraScaffold extends StatelessWidget {
@@ -13,7 +14,7 @@ class ClivoraScaffold extends StatelessWidget {
     this.showBackButton = false,
     this.showMessagesButton = false,
     this.messagesRoute = '/freelancer-messages',
-    this.padding = const EdgeInsets.symmetric(horizontal: 20),
+    this.padding,
     this.floatingActionButton,
   });
 
@@ -23,11 +24,15 @@ class ClivoraScaffold extends StatelessWidget {
   final bool showBackButton;
   final bool showMessagesButton;
   final String messagesRoute;
-  final EdgeInsets padding;
+  final EdgeInsets? padding;
   final Widget? floatingActionButton;
 
   @override
   Widget build(BuildContext context) {
+    final layout = context.clivoraLayout;
+    final screenPadding = padding ??
+        EdgeInsets.symmetric(horizontal: layout.screenPadding);
+
     return Scaffold(
       floatingActionButton: floatingActionButton,
       body: SafeArea(
@@ -35,33 +40,34 @@ class ClivoraScaffold extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: padding,
+              padding: screenPadding,
               child: Row(
                 children: [
-                  if (showBackButton)
+                  if (showBackButton) ...[
                     IconButton(
                       onPressed: () => context.pop(),
                       icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Theme.of(context).cardColor,
-                      ),
                     ),
-                  if (showBackButton) const SizedBox(width: 8),
+                    const SizedBox(width: ClivoraSpacing.sm),
+                  ],
                   Expanded(
-                    child: Text(title, style: Theme.of(context).textTheme.headlineLarge),
+                    child: Text(
+                      title,
+                      style: Theme.of(context).textTheme.headlineLarge,
+                    ),
                   ),
                   if (showMessagesButton) ...[
                     MessagesIconButton(route: messagesRoute),
-                    if (action != null) const SizedBox(width: 8),
+                    if (action != null) const SizedBox(width: ClivoraSpacing.sm),
                   ],
                   if (action != null) action!,
                 ],
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: ClivoraSpacing.sm),
             Expanded(
               child: Padding(
-                padding: padding,
+                padding: screenPadding,
                 child: body,
               ),
             ),
@@ -84,20 +90,9 @@ class ClivoraIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Theme.of(context).brightness == Brightness.light
-          ? ClivoraColors.chipBackground
-          : ClivoraColors.darkBorder,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(14),
-        child: SizedBox(
-          width: 44,
-          height: 44,
-          child: Icon(icon, size: 22),
-        ),
-      ),
+    return IconButton(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 22),
     );
   }
 }
