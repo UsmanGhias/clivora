@@ -23,6 +23,7 @@ import '../../core/constants/plan_limits.dart';
 import '../../core/services/analytics_service.dart';
 import '../../core/services/automation_service.dart';
 import '../../core/services/project_time_service.dart';
+import '../../core/services/referral_service.dart';
 import '../../data/database/database.dart';
 import '../../data/database/user_defaults.dart';
 import '../../data/database/user_scoped_queries.dart';
@@ -533,6 +534,11 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         await ref.read(supabaseSyncServiceProvider).onUserSignedIn(user);
       } catch (e) {
         debugPrint('Cloud sync on session: $e');
+      }
+      try {
+        await ref.read(referralServiceProvider).syncCodeToCloud();
+      } catch (e) {
+        debugPrint('Referral sync on session: $e');
       }
     }
   }

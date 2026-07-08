@@ -37,13 +37,28 @@ Create **two separate monthly subscriptions**:
 2. Add Gmail accounts you use for testing (your phone Google account).
 3. Test purchases will not charge real money.
 
-## 5. Service credentials (optional, for server verify)
+## 5. Server verification (implemented)
 
-If you add server-side receipt validation later:
+The app calls Supabase Edge Function `verify-play-purchase` before activating Pro locally.
+
+### Supabase secrets
+
+1. Deploy `supabase/functions/verify-play-purchase`.
+2. Set secret `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` to the full service account JSON string.
+3. Run migration `012_subscriptions.sql` and `013_referrals.sql`.
+
+### Play Console
 
 1. **Setup** → **API access** → Link a Google Cloud project.
 2. Create a **service account** with Play Developer API access.
-3. Download JSON key (keep secret — do not commit to git).
+3. Download JSON key (keep secret — store only in Supabase secrets).
+
+### Client flow
+
+1. User completes Google Play purchase.
+2. App sends `productId` + `purchaseToken` to edge function with user JWT.
+3. Server verifies via Play Developer API and upserts `subscriptions` row.
+4. App activates Pro only when verification returns `active: true`.
 
 ## 6. What to send when ready
 
@@ -53,7 +68,7 @@ Reply with:
 - [ ] Confirmation both subscription IDs are **Active**
 - [ ] Testing Gmail address(es) added as license testers
 - [ ] Play Console app link / internal testing opt-in link
-- [ ] (Optional) Service account JSON path if using backend verify
+- [ ] (Required for server verify) `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` set in Supabase
 
 ## 7. App-side product IDs (already in code)
 
@@ -75,7 +90,7 @@ clivora_pro_client_monthly
 
 - Each user gets a code like `CLIVORA1A2B3C`.
 - Share via **Hub → Refer & earn** or **Account → Refer & earn**.
-- When a referred user subscribes, referrer earns **7 bonus Pro days** (stored locally; cloud sync can be added later).
+- When a referred user subscribes, referrer earns **7 bonus Pro days** via Supabase RPC `credit_referral_on_purchase`.
 
 ## 10. Pricing shown in app
 

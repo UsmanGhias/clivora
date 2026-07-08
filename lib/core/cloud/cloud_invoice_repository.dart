@@ -49,8 +49,12 @@ class CloudInvoiceShare {
   final String paymentNote;
   final DateTime? clientPaidAt;
   final DateTime? updatedAt;
+  final DateTime? expiresAt;
 
   bool get canClientPay => InvoiceStatuses.canClientPay(status);
+
+  bool get isExpired =>
+      expiresAt != null && DateTime.now().isAfter(expiresAt!.toLocal());
 
   factory CloudInvoiceShare.fromRow(Map<String, dynamic> row) {
     return CloudInvoiceShare(
@@ -69,6 +73,7 @@ class CloudInvoiceShare {
       paymentNote: row['payment_note'] as String? ?? '',
       clientPaidAt: row['client_paid_at'] != null ? DateTime.tryParse(row['client_paid_at'] as String) : null,
       updatedAt: row['updated_at'] != null ? DateTime.tryParse(row['updated_at'] as String) : null,
+      expiresAt: row['expires_at'] != null ? DateTime.tryParse(row['expires_at'] as String) : null,
     );
   }
 }
@@ -121,6 +126,7 @@ class CloudInvoiceRepository {
     required String uid,
   }) async {
     try {
+      final expiresAt = DateTime.now().toUtc().add(const Duration(days: 90));
       await _db.from('invoice_shares').upsert({
         'share_id': shareId,
         'freelancer_uid': uid,
@@ -134,6 +140,7 @@ class CloudInvoiceRepository {
         'total': invoice.total,
         'currency': invoice.currency,
         if (invoice.dueDate != null) 'due_date': invoice.dueDate!.toUtc().toIso8601String(),
+        'expires_at': expiresAt.toIso8601String(),
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       });
 
@@ -167,7 +174,11 @@ class CloudInvoiceRepository {
   }
 
   List<CloudInvoiceShare> _visibleToClient(List<CloudInvoiceShare> list) {
-    return list.where((i) => i.status != 'draft').toList()
+    final now = DateTime.now();
+    return list
+        .where((i) => i.status != 'draft')
+        .where((i) => i.expiresAt == null || i.expiresAt!.isAfter(now))
+        .toList()
       ..sort((a, b) => (b.updatedAt ?? DateTime(2000)).compareTo(a.updatedAt ?? DateTime(2000)));
   }
 
