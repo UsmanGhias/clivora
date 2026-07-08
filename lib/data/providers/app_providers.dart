@@ -13,6 +13,7 @@ import '../../core/cloud/cloud_project_repository.dart';
 import '../../core/cloud/supabase_auth_helper.dart';
 import '../../core/services/admin_management_service.dart';
 import '../../core/services/client_pdf_quota_service.dart';
+import '../../core/cloud/supabase_auth_helper.dart';
 import '../../core/constants/plan_limits.dart';
 import '../../core/constants/plan_features.dart';
 import '../../core/utils/duration_formatter.dart';
@@ -353,8 +354,33 @@ class PlanLimitService {
 final isProProvider = Provider<bool>((ref) {
   final user = ref.watch(authStateProvider).valueOrNull;
   if (isAdminUser(user)) return true;
+  final serverSub = ref.watch(serverSubscriptionProvider).valueOrNull;
+  if (serverSub == true) return true;
   final plan = ref.watch(subscriptionPlanProvider).valueOrNull;
   return PlanFeatures.isPro(plan);
+});
+
+/// Server-verified subscription from Supabase (when online).
+final serverSubscriptionProvider = FutureProvider<bool>((ref) async {
+  final uid = SupabaseAuthHelper.currentUid;
+  if (uid == null) return false;
+  try {
+    final row = await SupabaseAuthHelper.client
+        .from('subscriptions')
+        .select('status, expires_at')
+        .eq('user_id', uid)
+        .eq('status', 'active')
+        .order('expires_at', ascending: false)
+        .limit(1)
+        .maybeSingle();
+    if (row == null) return false;
+    final expires = row['expires_at'] as String?;
+    if (expires == null) return true;
+    final exp = DateTime.tryParse(expires);
+    return exp != null && exp.isAfter(DateTime.now());
+  } catch (_) {
+    return false;
+  }
 });
 
 final subscriptionPlanProvider = StreamProvider<String>((ref) {

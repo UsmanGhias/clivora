@@ -7,6 +7,8 @@ import '../auth/user_roles.dart';
 import '../constants/billing_products.dart';
 import '../constants/plan_limits.dart';
 import '../constants/pro_pricing.dart';
+import 'analytics_service.dart';
+import 'play_billing_verify_service.dart';
 import 'referral_service.dart';
 import 'subscription_manager.dart';
 import '../../data/providers/app_providers.dart';
@@ -27,7 +29,6 @@ class BillingService {
 
   Future<bool> isAvailable() => _iap.isAvailable();
 
-  /// Billing is open to all signed-in users when Play Billing is available.
   bool get isBillingOpenToUser {
     final user = ref.read(authStateProvider).valueOrNull;
     return user != null && !isGuestUser(user);
@@ -100,8 +101,33 @@ class BillingService {
           continue;
         }
 
-        await SubscriptionManager.activatePro(productId: purchase.productID);
+        final verify = await ref.read(playBillingVerifyServiceProvider).verifyPurchase(purchase);
+        if (verify == null || !verify.active) {
+          debugPrint('Play purchase not verified — Pro not activated');
+          if (purchase.pendingCompletePurchase) {
+            await _iap.completePurchase(purchase);
+          }
+          continue;
+        }
+
+        final period = verify.expiresAt != null
+            ? verify.expiresAt!.difference(DateTime.now())
+            : const Duration(days: 30);
+
+        await SubscriptionManager.activatePro(
+          productId: purchase.productID,
+          period: period.isNegative ? const Duration(days: 30) : period,
+        );
         await ref.read(planLimitServiceProvider).setPlan(PlanLimits.proPlan);
+        ref.invalidate(serverSubscriptionProvider);
+
+        if (user != null) {
+          await ref.read(analyticsServiceProvider).trackProActivation(
+                email: user.email,
+                name: user.name,
+              );
+        }
+
         await _applyReferralBonusIfAny();
 
         if (purchase.pendingCompletePurchase) {
@@ -109,6 +135,7 @@ class BillingService {
         }
       } else if (purchase.status == PurchaseStatus.error) {
         await SubscriptionManager.startGracePeriod();
+        await ref.read(planLimitServiceProvider).setPlan(PlanLimits.proPlan);
       }
     }
   }
@@ -117,13 +144,8 @@ class BillingService {
     final referral = ref.read(referralServiceProvider);
     final applied = await referral.appliedReferralCode();
     if (applied == null) return;
-    final referrerId = referral.userIdFromCode(applied);
-    if (referrerId != null) {
-      await referral.recordSuccessfulReferral(referrerId);
-      await SubscriptionManager.extendPro(days: ReferralService.bonusDaysPerReferral);
-    }
+    await referral.creditReferrerOnVerifiedPurchase(applied);
   }
 }
 
-/// Legacy alias for older call sites.
 const kProMonthlyProductId = BillingProducts.freelancerProMonthly;

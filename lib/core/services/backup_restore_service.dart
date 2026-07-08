@@ -1,3 +1,4 @@
+import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -12,6 +13,7 @@ import '../constants/plan_limits.dart';
 import '../../data/database/database.dart';
 import '../../data/database/user_scoped_queries.dart';
 import '../../data/providers/app_providers.dart';
+import 'last_login_service.dart';
 
 final backupRestoreServiceProvider = Provider<BackupRestoreService>((ref) {
   return BackupRestoreService(ref);
@@ -59,13 +61,49 @@ class BackupRestoreService {
     return payload;
   }
 
-  Future<void> shareExport() async {
+  Future<void> shareExport({String? password}) async {
     final data = await exportWorkspace();
+    var content = jsonEncode(data);
+    if (password != null && password.isNotEmpty) {
+      content = jsonEncode({
+        'encrypted': true,
+        'payload': _encrypt(content, password),
+      });
+    }
     final dir = await getTemporaryDirectory();
     final file = File(p.join(dir.path, 'clivora_backup_${DateTime.now().millisecondsSinceEpoch}.json'));
-    await file.writeAsString(jsonEncode(data));
+    await file.writeAsString(content);
+    await BackupMetaService.recordExport(content.length);
     await Share.shareXFiles([XFile(file.path)], text: 'CLIVORA workspace backup');
   }
+
+  Map<String, dynamic> decodeImportFile(String raw, {String? password}) {
+    final parsed = jsonDecode(raw) as Map<String, dynamic>;
+    if (parsed['encrypted'] == true) {
+      if (password == null || password.isEmpty) {
+        throw FormatException('This backup is password-protected');
+      }
+      final decrypted = _decrypt(parsed['payload'] as String, password);
+      return jsonDecode(decrypted) as Map<String, dynamic>;
+    }
+    return parsed;
+  }
+
+  String _encrypt(String plain, String password) {
+    final key = sha256.convert(utf8.encode(password)).bytes;
+    final bytes = utf8.encode(plain);
+    final out = List<int>.generate(bytes.length, (i) => bytes[i] ^ key[i % key.length]);
+    return base64Encode(out);
+  }
+
+  String _decrypt(String encoded, String password) {
+    final key = sha256.convert(utf8.encode(password)).bytes;
+    final bytes = base64Decode(encoded);
+    final out = List<int>.generate(bytes.length, (i) => bytes[i] ^ key[i % key.length]);
+    return utf8.decode(out);
+  }
+
+  Future<void> shareExportLegacy() async => shareExport();
 
   void validateBackup(Map<String, dynamic> data, {required int currentUserId}) {
     final version = data['schemaVersion'] ?? data['version'];
