@@ -9,7 +9,7 @@ cp -a "$ROOT/." "$TMP/"
 cd "$TMP"
 git init -b main
 git add .
-git commit -m "CLIVORA web admin v2.6.6 — admin dashboard, reset password, sync API"
+git commit -m "CLIVORA web admin v2.7.0 — admin dashboard, reset password, sync API"
 REMOTE="${CLIVORA_WEB_REMOTE:-https://github.com/UsmanGhias/clivora-web.git}"
 git remote add origin "$REMOTE"
 if ! git push -u origin main; then
