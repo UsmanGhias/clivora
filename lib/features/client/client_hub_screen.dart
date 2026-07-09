@@ -13,13 +13,13 @@ class ClientHubScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isPlus = ref.watch(isProPlusProvider);
+    final isPro = ref.watch(isProProvider);
 
     return ClivoraScaffold(
-      title: 'Hub',
-      showBackButton: false,
+      title: 'Client Hub',
+      showBackButton: true,
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(4, 4, 4, 32),
+        padding: const EdgeInsets.fromLTRB(4, 8, 4, 32),
         children: [
           TweenAnimationBuilder<double>(
             tween: Tween(begin: 0, end: 1),
@@ -30,7 +30,8 @@ class ClientHubScreen extends ConsumerWidget {
               child: Transform.translate(offset: Offset(0, 10 * (1 - t)), child: child),
             ),
             child: Container(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+              margin: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
@@ -55,7 +56,7 @@ class ClientHubScreen extends ConsumerWidget {
                     'Quotes, payments, contracts, and Connect — everything your freelancer shares with you.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.white.withValues(alpha: 0.85),
-                          height: 1.35,
+                          height: 1.4,
                         ),
                   ),
                 ],
@@ -63,22 +64,19 @@ class ClientHubScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 22),
-          Text(
-            'MONEY',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  letterSpacing: 1.1,
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
-                ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text('Money', style: Theme.of(context).textTheme.titleMedium),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           GridView.count(
-            crossAxisCount: 3,
+            crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 4,
-            crossAxisSpacing: 4,
-            childAspectRatio: 0.95,
+            mainAxisSpacing: 14,
+            crossAxisSpacing: 14,
+            childAspectRatio: 1.28,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             children: [
               ToolGridTile(
                 icon: Icons.request_quote_outlined,
@@ -117,23 +115,20 @@ class ClientHubScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 18),
-          Text(
-            'WORK TOGETHER',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  letterSpacing: 1.1,
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
-                ),
+          const SizedBox(height: 22),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text('Work together', style: Theme.of(context).textTheme.titleMedium),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           GridView.count(
-            crossAxisCount: 3,
+            crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 4,
-            crossAxisSpacing: 4,
-            childAspectRatio: 0.95,
+            mainAxisSpacing: 14,
+            crossAxisSpacing: 14,
+            childAspectRatio: 1.28,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             children: [
               ToolGridTile(
                 icon: Icons.description_outlined,
@@ -165,12 +160,12 @@ class ClientHubScreen extends ConsumerWidget {
               ),
               ToolGridTile(
                 icon: Icons.person_add_alt_1_outlined,
-                label: 'Link',
+                label: 'Link freelancer',
                 iconBackground: ClivoraColors.iconGreen,
                 iconColor: ClivoraColors.successGreen,
                 onTap: () => context.push('/client-link-freelancer'),
               ),
-              if (isPlus)
+              if (isPro)
                 ToolGridTile(
                   icon: Icons.hub_outlined,
                   label: 'Connect',

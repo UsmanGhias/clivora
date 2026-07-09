@@ -360,6 +360,8 @@ const _clientProFeatures = [
   'Unlimited invoice downloads',
   'Verified client badge',
   'Biometric app lock',
+  'CLIVORA Connect: publish about + post jobs',
+  'Connect with freelancers (anonymous until accept)',
   'Advanced activity timeline',
   'Priority notifications',
   'Leave project reviews',
@@ -367,7 +369,6 @@ const _clientProFeatures = [
 
 const _clientPlusFeatures = [
   'Everything in Client Pro',
-  'CLIVORA Connect: post needs anonymously',
   'Priority support',
   'Branded portal experience',
   'Faster invoice & contract exports',

@@ -132,23 +132,27 @@ abstract final class ClivoraTheme {
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
-        filled: false,
-        fillColor: Colors.transparent,
-        border: UnderlineInputBorder(
-          borderSide: BorderSide(color: cardBorder.withValues(alpha: 0.7)),
+        filled: true,
+        fillColor: inputFill,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(ClivoraRadii.sm + 2),
+          borderSide: BorderSide.none,
         ),
-        enabledBorder: UnderlineInputBorder(
-          borderSide: BorderSide(color: cardBorder.withValues(alpha: 0.7)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(ClivoraRadii.sm + 2),
+          borderSide: BorderSide.none,
         ),
-        focusedBorder: UnderlineInputBorder(
-          borderSide: BorderSide(color: colorScheme.primary, width: 1.6),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(ClivoraRadii.sm + 2),
+          borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
         ),
-        errorBorder: UnderlineInputBorder(
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(ClivoraRadii.sm + 2),
           borderSide: BorderSide(color: colorScheme.error, width: 1),
         ),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 2,
-          vertical: 12,
+          horizontal: ClivoraSpacing.lg,
+          vertical: 14,
         ),
         hintStyle: GoogleFonts.inter(color: inputHint),
         labelStyle: GoogleFonts.inter(
@@ -299,11 +303,15 @@ abstract final class ClivoraTheme {
       ),
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
-          backgroundColor: Colors.transparent,
+          backgroundColor: iconButtonBg,
           foregroundColor: colorScheme.onSurface,
           minimumSize: Size(layout.minTouchTarget, layout.minTouchTarget),
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          shape: const CircleBorder(),
+          // Keep soft chrome, but leave breathing room so adjacent icons don't merge.
+          padding: const EdgeInsets.all(10),
+          tapTargetSize: MaterialTapTargetSize.padded,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(ClivoraRadii.sm + 2),
+          ),
         ),
       ),
       switchTheme: SwitchThemeData(

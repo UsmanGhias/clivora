@@ -469,7 +469,12 @@ class _QuickActions extends ConsumerWidget {
           onTap: a.onTap,
           child: Column(
             children: [
-              Icon(a.icon, color: a.color, size: 28),
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(color: a.bg, borderRadius: BorderRadius.circular(16)),
+                child: Icon(a.icon, color: a.color),
+              ),
               const SizedBox(height: 8),
               Text(a.label, style: Theme.of(context).textTheme.bodySmall),
             ],

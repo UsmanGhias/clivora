@@ -187,45 +187,48 @@ class MoreScreen extends ConsumerWidget {
             const SizedBox(height: 24),
             const SectionHeader(title: 'CLIVORA Connect'),
             Material(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(14),
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(18),
               child: InkWell(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(18),
                 onTap: () {
                   if (context.mounted) context.push('/upgrade');
                 },
                 child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    gradient: LinearGradient(
-                      colors: [
-                        ClivoraColors.navyDark,
-                        const Color(0xFF0F766E).withValues(alpha: 0.9),
-                      ],
-                    ),
+                    borderRadius: BorderRadius.circular(18),
+                    color: ClivoraColors.navyDark,
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.hub_outlined, color: Colors.white, size: 22),
-                      const SizedBox(width: 10),
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Icon(Icons.hub_outlined, color: Colors.white),
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Unlock Connect Marketplace',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
+                              'Unlock Connect',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
                             ),
+                            const SizedBox(height: 4),
                             Text(
-                              'Anonymous until accept · ${ProPricing.plusMonthlyLabel}/mo',
-                              style: const TextStyle(color: Colors.white70, fontSize: 11),
+                              'Pro Plus bottom tab · ${ProPricing.plusMonthlyLabel}/mo',
+                              style: const TextStyle(color: Colors.white70, fontSize: 12),
                             ),
                           ],
                         ),
                       ),
-                      const Icon(Icons.chevron_right, color: Colors.white, size: 18),
+                      const Icon(Icons.chevron_right, color: Colors.white),
                     ],
                   ),
                 ),
@@ -244,12 +247,12 @@ class MoreScreen extends ConsumerWidget {
             child: const SectionHeader(title: 'Money & catalog'),
           ),
           GridView.count(
-            crossAxisCount: 3,
+            crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 4,
-            crossAxisSpacing: 4,
-            childAspectRatio: 0.95,
+            mainAxisSpacing: 14,
+            crossAxisSpacing: 14,
+            childAspectRatio: 1.28,
             children: [
               if (isPlus)
                 ToolGridTile(icon: Icons.view_kanban_outlined, label: 'Work', iconBackground: ClivoraColors.iconIndigo, iconColor: Colors.indigo, onTap: () => context.go('/projects')),
@@ -270,12 +273,12 @@ class MoreScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           const SectionHeader(title: 'Business Tools'),
           GridView.count(
-            crossAxisCount: 3,
+            crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 4,
-            crossAxisSpacing: 4,
-            childAspectRatio: 0.95,
+            mainAxisSpacing: 14,
+            crossAxisSpacing: 14,
+            childAspectRatio: 1.28,
             children: [
               if (!isPlus)
                 ToolGridTile(icon: Icons.view_kanban_outlined, label: 'Work', iconBackground: ClivoraColors.iconIndigo, iconColor: Colors.indigo, onTap: () => context.go('/projects')),
@@ -300,9 +303,9 @@ class MoreScreen extends ConsumerWidget {
             crossAxisCount: 3,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 4,
-            crossAxisSpacing: 4,
-            childAspectRatio: 0.95,
+            mainAxisSpacing: 14,
+            crossAxisSpacing: 14,
+            childAspectRatio: 0.82,
             children: [
               ToolGridTile(icon: Icons.cloud_outlined, label: 'File Vault', iconBackground: ClivoraColors.iconBlue, iconColor: Colors.blue, onTap: () async {
                 if (!PlanFeatures.fileVault(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'File Vault')) return;
