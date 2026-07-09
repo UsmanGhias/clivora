@@ -31,12 +31,14 @@ The web callback page lives at `web/app/auth/reset-password/page.tsx`.
 
 ## Edge Function secrets
 
-Confirm in **Project Settings → Edge Functions → Secrets**:
+Confirm in **Project Settings → Edge Functions → Secrets** (never commit these values):
 
 ```
-RESEND_API_KEY=re_FWZnh89b_FWDyETLyrPNELR61ZgkdGu4v
+RESEND_API_KEY=<your-resend-api-key>
 RESEND_FROM=CLIVORA <onboarding@resend.dev>
 ```
+
+For production delivery to any recipient, verify your domain in Resend and set `RESEND_FROM` to an address on that domain (e.g. `CLIVORA <noreply@codcrafters.org>`).
 
 Optional for Play billing verify:
 

@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/auth/auth_service.dart';
 import '../../core/auth/user_roles.dart';
@@ -66,15 +67,32 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
     _load();
   }
 
+  static const _prefsKey = 'clivora_theme_mode';
+
   final Ref ref;
 
   Future<void> _load() async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getString(_prefsKey);
+      if (stored == 'dark') {
+        if (!mounted) return;
+        state = ThemeMode.dark;
+        return;
+      }
+      if (stored == 'light') {
+        if (!mounted) return;
+        state = ThemeMode.light;
+        return;
+      }
+
       final userId = ref.read(authStateProvider).valueOrNull?.id;
       if (userId == null) return;
       final settings = await ref.read(databaseProvider).watchAppSettingsForUser(userId).first;
       if (!mounted) return;
-      state = settings.themeMode == 'dark' ? ThemeMode.dark : ThemeMode.light;
+      final mode = settings.themeMode == 'dark' ? ThemeMode.dark : ThemeMode.light;
+      state = mode;
+      await prefs.setString(_prefsKey, mode == ThemeMode.dark ? 'dark' : 'light');
     } catch (_) {
       if (!mounted) return;
       state = ThemeMode.light;
@@ -82,9 +100,12 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
+    state = mode;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefsKey, mode == ThemeMode.dark ? 'dark' : 'light');
+
     final userId = ref.read(authStateProvider).valueOrNull?.id;
     if (userId == null) return;
-    state = mode;
     await ref.read(databaseProvider).saveAppSettingsForUser(
           userId,
           AppSettingsTableCompanion(

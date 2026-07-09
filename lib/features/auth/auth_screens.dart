@@ -100,30 +100,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  Future<void> _forgotPassword() async {
-    final email = _emailController.text.trim();
-    if (email.isEmpty || !email.contains('@')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter your email above, then tap Forgot password')),
-      );
-      return;
-    }
-    setState(() => _loading = true);
-    try {
-      final error = await ref.read(authStateProvider.notifier).resetPasswordForEmail(email);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            error ?? 'Password reset email sent. Check your inbox for $email',
-          ),
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
   Future<void> _googleSignIn() async {
     setState(() => _loading = true);
     try {
@@ -193,13 +169,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
                   onPressed: () => setState(() => _obscure = !_obscure),
                 ),
-              ),
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: _loading ? null : _forgotPassword,
-                child: const Text('Forgot password?'),
               ),
             ),
             const SizedBox(height: 12),

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/database/database.dart';
@@ -59,23 +60,14 @@ class ClientInviteService {
           );
     }
 
-    // Optional real email — never block saving the client if email fails.
+    // Optional external email — in-app message is the primary delivery path.
     final emailErr = await ref.read(clivoraEmailServiceProvider).sendClientInviteEmail(
           to: email,
           freelancerName: businessName,
           clientName: customer.contactPerson,
         );
     if (emailErr != null) {
-      throw ClientInviteEmailException(emailErr);
+      debugPrint('Client invite email skipped (in-app sent): $emailErr');
     }
   }
-}
-
-/// Client saved locally; only the optional invite email failed.
-class ClientInviteEmailException implements Exception {
-  ClientInviteEmailException(this.message);
-  final String message;
-
-  @override
-  String toString() => message;
 }

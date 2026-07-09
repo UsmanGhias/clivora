@@ -354,7 +354,7 @@ abstract final class ClivoraTheme {
         : Colors.white;
     final secondary = brightness == Brightness.light
         ? ClivoraColors.textSecondary
-        : ClivoraColors.labelGray;
+        : const Color(0xFFCBD5E1);
 
     return TextTheme(
       headlineLarge: GoogleFonts.inter(
@@ -384,7 +384,7 @@ abstract final class ClivoraTheme {
         fontSize: 11,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.8,
-        color: ClivoraColors.labelGray,
+        color: brightness == Brightness.light ? ClivoraColors.labelGray : const Color(0xFF94A3B8),
       ),
     );
   }
