@@ -202,7 +202,7 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                   ),
                   _PlanCard(
                     title: 'Free',
-                    price: 'Rs 0',
+                    price: r'$0',
                     subtitle: 'Start free',
                     features: freeFeatures,
                     selected: !isPro,

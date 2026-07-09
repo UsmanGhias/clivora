@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/auth/auth_service.dart';
 import '../../core/auth/user_roles.dart';
+import '../../core/constants/pro_pricing.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../core/utils/form_validators.dart';
 import '../../data/database/database.dart';
@@ -207,7 +208,7 @@ class _ClientAccountScreenState extends ConsumerState<ClientAccountScreen> {
                 child: ListTile(
                   leading: const Icon(Icons.workspace_premium, color: ClivoraColors.clientAccent),
                   title: const Text('Upgrade to Client Pro', style: TextStyle(fontWeight: FontWeight.w700)),
-                  subtitle: const Text('Rs 2,000/mo · unlimited contracts & PDFs'),
+                  subtitle: Text('${ProPricing.monthlyLabel}/mo · unlimited contracts & PDFs'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.push('/upgrade'),
                 ),
@@ -238,6 +239,21 @@ class _ClientAccountScreenState extends ConsumerState<ClientAccountScreen> {
               icon: Icons.person_outline,
               label: 'Edit full profile',
               onTap: () => context.push('/profile'),
+            ),
+            _QuickLinkTile(
+              icon: Icons.apps_outlined,
+              label: 'Client Hub',
+              onTap: () => context.push('/client-hub'),
+            ),
+            _QuickLinkTile(
+              icon: Icons.request_quote_outlined,
+              label: 'Quotes',
+              onTap: () => context.push('/client-quotes'),
+            ),
+            _QuickLinkTile(
+              icon: Icons.timeline_outlined,
+              label: 'Updates',
+              onTap: () => context.push('/client-activity'),
             ),
             _QuickLinkTile(
               icon: Icons.folder_shared_outlined,

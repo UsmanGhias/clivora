@@ -148,7 +148,7 @@ export function buildStats(
     signups,
     proActivations,
     auditCount: auditEvents.length,
-    estimatedMrrPkr: proActivations * 2000,
+    estimatedMrrUsd: proActivations * 9,
     events: generalEvents.slice(0, 150),
     auditEvents: auditEvents.slice(0, 100),
     profiles: profiles.slice(0, 100),

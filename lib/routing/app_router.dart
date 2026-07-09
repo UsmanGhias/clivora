@@ -13,6 +13,12 @@ import '../features/client/client_portal_screen.dart';
 import '../features/client/client_activity_screen.dart';
 import '../features/client/client_tasks_screen.dart';
 import '../features/client/client_account_screen.dart';
+import '../features/client/client_hub_screen.dart';
+import '../features/client/client_quotes_screen.dart';
+import '../features/client/client_payments_screen.dart';
+import '../features/client/client_credits_screen.dart';
+import '../features/client/client_recurring_screen.dart';
+import '../features/client/client_files_screen.dart';
 import '../features/team/team_screen.dart';
 import '../features/team/team_invites_screen.dart';
 import '../features/customers/customer_form_screen.dart';
@@ -400,6 +406,31 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
+
+      path: '/client-hub',
+      builder: (context, state) => const ClientHubScreen(),
+    ),
+    GoRoute(
+      path: '/client-quotes',
+      builder: (context, state) => const ClientQuotesScreen(),
+    ),
+    GoRoute(
+      path: '/client-payments',
+      builder: (context, state) => const ClientPaymentsScreen(),
+    ),
+    GoRoute(
+      path: '/client-credits',
+      builder: (context, state) => const ClientCreditsScreen(),
+    ),
+    GoRoute(
+      path: '/client-recurring',
+      builder: (context, state) => const ClientRecurringScreen(),
+    ),
+    GoRoute(
+      path: '/client-files',
+      builder: (context, state) => const ClientFilesScreen(),
+    ),
+    GoRoute(
       path: '/products',
       builder: (context, state) => const ProductsScreen(),
     ),

@@ -85,7 +85,7 @@ export function Pricing() {
                 </div>
                 <div className="mt-4 flex items-baseline gap-1">
                   <span className="text-5xl font-extrabold text-white">
-                    Rs 0
+                    $0
                   </span>
                   <span className="text-white/50">/month</span>
                 </div>

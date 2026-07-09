@@ -18,7 +18,7 @@ const floatingStats = [
     icon: TrendingUp,
     label: "Revenue",
     value: "245K",
-    prefix: "Rs ",
+    prefix: "$",
     color: "text-success",
     dot: "bg-success",
   },

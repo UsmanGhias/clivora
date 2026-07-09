@@ -8,8 +8,8 @@ import {
   CLIVORA_NAVY,
   CLIVORA_PURPLE,
   OFFICIAL_EMAIL,
-  PRO_PLUS_PRICE_PKR,
-  PRO_PRICE_PKR,
+  PRO_PLUS_PRICE_USD,
+  PRO_PRICE_USD,
 } from "@/lib/admin-auth";
 
 type Plan = "pro" | "pro_plus";
@@ -29,7 +29,7 @@ export default function ProCheckout() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
 
-  const amount = plan === "pro_plus" ? PRO_PLUS_PRICE_PKR : PRO_PRICE_PKR;
+  const amount = plan === "pro_plus" ? PRO_PLUS_PRICE_USD : PRO_PRICE_USD;
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
 
   async function onSubmit(e: FormEvent) {
@@ -42,8 +42,8 @@ export default function ProCheckout() {
         full_name: fullName.trim(),
         account_type: accountType,
         plan,
-        amount_pkr: amount,
-        currency: "PKR",
+        amount_usd: amount,
+        currency: "USD",
         country,
         payment_method: paymentMethod,
         payment_reference: paymentReference.trim(),
@@ -68,7 +68,7 @@ export default function ProCheckout() {
           <p style={bodyText}>
             Thanks {fullName || "there"}. We received your{" "}
             <strong style={{ color: "#0f172a" }}>{plan === "pro_plus" ? "Pro Plus" : "Pro"}</strong> request for{" "}
-            <strong style={{ color: "#0f172a" }}>Rs {amount.toLocaleString()}</strong>.
+            <strong style={{ color: "#0f172a" }}>${amount}</strong>.
           </p>
           <p style={bodyText}>
             <strong style={{ color: "#0f172a" }}>Android app users:</strong> subscribe inside the CLIVORA app via
@@ -98,13 +98,13 @@ export default function ProCheckout() {
           <PlanOption
             active={plan === "pro"}
             title="Pro"
-            price={`Rs ${PRO_PRICE_PKR.toLocaleString()}/mo`}
+            price={`$${PRO_PRICE_USD}/mo`}
             onClick={() => setPlan("pro")}
           />
           <PlanOption
             active={plan === "pro_plus"}
             title="Pro Plus"
-            price={`Rs ${PRO_PLUS_PRICE_PKR.toLocaleString()}/mo`}
+            price={`$${PRO_PLUS_PRICE_USD}/mo`}
             badge="Best value"
             onClick={() => setPlan("pro_plus")}
           />
@@ -113,7 +113,7 @@ export default function ProCheckout() {
         <div style={infoBox}>
           <strong style={{ color: "#0f172a", display: "block", marginBottom: 4 }}>How to pay</strong>
           <ol style={{ margin: "8px 0 0", paddingLeft: 18, color: "#334155", lineHeight: 1.55 }}>
-            <li>Send Rs {amount.toLocaleString()} via JazzCash, EasyPaisa, bank transfer, or international wire.</li>
+            <li>Send ${amount} via JazzCash, EasyPaisa, bank transfer, or international wire.</li>
             <li>Use your CLIVORA email as the payment note or reference.</li>
             <li>Paste the transaction ID below and submit.</li>
             <li>We activate Pro or Pro Plus after verification (usually same day).</li>
@@ -175,7 +175,7 @@ export default function ProCheckout() {
             disabled={busy}
             style={{ ...primaryBtn, width: "100%", border: "none", cursor: busy ? "wait" : "pointer" }}
           >
-            {busy ? "Submitting…" : `Submit payment for Rs ${amount.toLocaleString()}`}
+            {busy ? "Submitting…" : `Submit payment for $${amount}`}
           </button>
         </form>
       </div>

@@ -7,7 +7,7 @@ export const site = {
     "CLIVORA is your all-in-one Business Operating System for freelancers, consultants, and small agencies. Manage clients, track projects, send branded PDF invoices, and monitor revenue from your phone.",
   url: "https://clivora.codcrafters.org",
   appPackage: "org.codcrafters.clivora",
-  appVersion: "2.7.1",
+  appVersion: "2.9.0",
   company: {
     name: "CODCrafters",
     url: "https://codcrafters.org",
@@ -16,13 +16,15 @@ export const site = {
     legalEmail: "iusmanghias@gmail.com",
   },
   pricing: {
-    proMonthlyPkr: 2000,
-    proMonthlyLabel: "Rs 2,000",
-    proPlusMonthlyPkr: 5000,
-    proPlusMonthlyLabel: "Rs 5,000",
-    billingNote: "Billed monthly. Cancel anytime.",
+    proMonthlyUsd: 9,
+    proMonthlyLabel: "$9",
+    proPlusMonthlyUsd: 19,
+    proPlusMonthlyLabel: "$19",
+    proListLabel: "$14",
+    proPlusListLabel: "$29",
+    billingNote: "Billed monthly via Google Play. Cancel anytime.",
     earlyAccessNote:
-      "Start free, then upgrade to Pro or Pro Plus from the website checkout when you need unlimited tools.",
+      "Start free, then upgrade to Pro ($9/mo) or Pro Plus ($19/mo) when you need unlimited tools and Connect.",
   },
   freeLimits: {
     clients: 3,

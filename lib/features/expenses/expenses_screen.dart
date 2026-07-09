@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/auth/auth_service.dart';
+import '../../core/services/billable_to_invoice_service.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../data/database/database.dart';
@@ -142,9 +143,47 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                         subtitle: Text(
                           '${expense.category[0].toUpperCase()}${expense.category.substring(1)} · ${DateFormat('MMM d').format(expense.expenseDate)}',
                         ),
-                        trailing: Text(
-                          formatCurrency(expense.amount),
-                          style: const TextStyle(fontWeight: FontWeight.w700, color: ClivoraColors.errorRed),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (expense.isBillable && !expense.isInvoiced)
+                              IconButton(
+                                tooltip: 'Bill to invoice',
+                                icon: const Icon(Icons.receipt_long_outlined, size: 20),
+                                onPressed: () async {
+                                  final projectId = expense.projectId;
+                                  final customerId = expense.customerId;
+                                  if (projectId == null || customerId == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Set project + client on the expense, then bill'),
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  try {
+                                    final id = await ref.read(billableToInvoiceServiceProvider).createFromProject(
+                                          projectId: projectId,
+                                          customerId: customerId,
+                                        );
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Draft invoice #$id created')),
+                                      );
+                                      context.push('/invoices/$id/edit');
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+                                    }
+                                  }
+                                },
+                              ),
+                            Text(
+                              formatCurrency(expense.amount),
+                              style: const TextStyle(fontWeight: FontWeight.w700, color: ClivoraColors.errorRed),
+                            ),
+                          ],
                         ),
                       ),
                     );
