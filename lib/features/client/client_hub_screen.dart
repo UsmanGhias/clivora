@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
+import '../../shared/widgets/tool_grid_tile.dart';
 
 /// Client tools hub — parity with freelancer Hub for collaboration surfaces.
 class ClientHubScreen extends ConsumerWidget {
@@ -13,13 +14,12 @@ class ClientHubScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isPlus = ref.watch(isProPlusProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return ClivoraScaffold(
-      title: 'Client Hub',
-      showBackButton: true,
+      title: 'Hub',
+      showBackButton: false,
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+        padding: const EdgeInsets.fromLTRB(4, 4, 4, 32),
         children: [
           TweenAnimationBuilder<double>(
             tween: Tween(begin: 0, end: 1),
@@ -30,7 +30,7 @@ class ClientHubScreen extends ConsumerWidget {
               child: Transform.translate(offset: Offset(0, 10 * (1 - t)), child: child),
             ),
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
@@ -55,99 +55,141 @@ class ClientHubScreen extends ConsumerWidget {
                     'Quotes, payments, contracts, and Connect — everything your freelancer shares with you.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.white.withValues(alpha: 0.85),
-                          height: 1.4,
+                          height: 1.35,
                         ),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 20),
-          Text('Money', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 10),
-          _HubGrid(
-            isDark: isDark,
-            tiles: [
-              _HubTile(Icons.request_quote_outlined, 'Quotes', () => context.push('/client-quotes')),
-              _HubTile(Icons.payments_outlined, 'Payments', () => context.push('/client-payments')),
-              _HubTile(Icons.account_balance_wallet_outlined, 'Credits', () => context.push('/client-credits')),
-              _HubTile(Icons.autorenew, 'Recurring', () => context.push('/client-recurring')),
-              _HubTile(Icons.receipt_long_outlined, 'Invoices', () => context.go('/client-invoices')),
+          const SizedBox(height: 22),
+          Text(
+            'MONEY',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  letterSpacing: 1.1,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
+                ),
+          ),
+          const SizedBox(height: 8),
+          GridView.count(
+            crossAxisCount: 3,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 4,
+            crossAxisSpacing: 4,
+            childAspectRatio: 0.95,
+            children: [
+              ToolGridTile(
+                icon: Icons.request_quote_outlined,
+                label: 'Quotes',
+                iconBackground: ClivoraColors.iconTeal,
+                iconColor: ClivoraColors.clientAccent,
+                onTap: () => context.push('/client-quotes'),
+              ),
+              ToolGridTile(
+                icon: Icons.payments_outlined,
+                label: 'Payments',
+                iconBackground: ClivoraColors.iconGreen,
+                iconColor: ClivoraColors.successGreen,
+                onTap: () => context.push('/client-payments'),
+              ),
+              ToolGridTile(
+                icon: Icons.account_balance_wallet_outlined,
+                label: 'Credits',
+                iconBackground: ClivoraColors.iconYellow,
+                iconColor: ClivoraColors.accent,
+                onTap: () => context.push('/client-credits'),
+              ),
+              ToolGridTile(
+                icon: Icons.autorenew,
+                label: 'Recurring',
+                iconBackground: ClivoraColors.iconPurple,
+                iconColor: ClivoraColors.primaryPurple,
+                onTap: () => context.push('/client-recurring'),
+              ),
+              ToolGridTile(
+                icon: Icons.receipt_long_outlined,
+                label: 'Invoices',
+                iconBackground: ClivoraColors.iconTeal,
+                iconColor: ClivoraColors.clientAccent,
+                onTap: () => context.go('/client-invoices'),
+              ),
             ],
           ),
-          const SizedBox(height: 20),
-          Text('Work together', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 10),
-          _HubGrid(
-            isDark: isDark,
-            tiles: [
-              _HubTile(Icons.description_outlined, 'Contracts', () => context.push('/client-contracts')),
-              _HubTile(Icons.add_task_outlined, 'Tasks', () => context.push('/client-tasks')),
-              _HubTile(Icons.folder_open_outlined, 'Files', () => context.push('/client-files')),
-              _HubTile(Icons.timeline_outlined, 'Updates', () => context.push('/client-activity')),
-              _HubTile(Icons.person_add_alt_1_outlined, 'Link freelancer', () => context.push('/client-link-freelancer')),
+          const SizedBox(height: 18),
+          Text(
+            'WORK TOGETHER',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  letterSpacing: 1.1,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
+                ),
+          ),
+          const SizedBox(height: 8),
+          GridView.count(
+            crossAxisCount: 3,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 4,
+            crossAxisSpacing: 4,
+            childAspectRatio: 0.95,
+            children: [
+              ToolGridTile(
+                icon: Icons.description_outlined,
+                label: 'Contracts',
+                iconBackground: ClivoraColors.iconPurple,
+                iconColor: ClivoraColors.primaryPurple,
+                onTap: () => context.push('/client-contracts'),
+              ),
+              ToolGridTile(
+                icon: Icons.add_task_outlined,
+                label: 'Tasks',
+                iconBackground: ClivoraColors.iconOrange,
+                iconColor: ClivoraColors.warningOrange,
+                onTap: () => context.push('/client-tasks'),
+              ),
+              ToolGridTile(
+                icon: Icons.folder_open_outlined,
+                label: 'Files',
+                iconBackground: ClivoraColors.iconBlue,
+                iconColor: Colors.blue,
+                onTap: () => context.push('/client-files'),
+              ),
+              ToolGridTile(
+                icon: Icons.timeline_outlined,
+                label: 'Updates',
+                iconBackground: ClivoraColors.iconTeal,
+                iconColor: ClivoraColors.clientAccent,
+                onTap: () => context.push('/client-activity'),
+              ),
+              ToolGridTile(
+                icon: Icons.person_add_alt_1_outlined,
+                label: 'Link',
+                iconBackground: ClivoraColors.iconGreen,
+                iconColor: ClivoraColors.successGreen,
+                onTap: () => context.push('/client-link-freelancer'),
+              ),
               if (isPlus)
-                _HubTile(Icons.hub_outlined, 'Connect', () => context.go('/connect'))
+                ToolGridTile(
+                  icon: Icons.hub_outlined,
+                  label: 'Connect',
+                  iconBackground: ClivoraColors.iconTeal,
+                  iconColor: ClivoraColors.primary,
+                  onTap: () => context.go('/connect'),
+                )
               else
-                _HubTile(Icons.workspace_premium_outlined, 'Upgrade', () => context.push('/upgrade')),
+                ToolGridTile(
+                  icon: Icons.workspace_premium_outlined,
+                  label: 'Upgrade',
+                  iconBackground: ClivoraColors.iconYellow,
+                  iconColor: ClivoraColors.accent,
+                  onTap: () => context.push('/upgrade'),
+                ),
             ],
           ),
         ],
       ),
-    );
-  }
-}
-
-class _HubTile {
-  const _HubTile(this.icon, this.label, this.onTap);
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-}
-
-class _HubGrid extends StatelessWidget {
-  const _HubGrid({required this.tiles, required this.isDark});
-  final List<_HubTile> tiles;
-  final bool isDark;
-
-  @override
-  Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 1.35,
-      children: [
-        for (final t in tiles)
-          Material(
-            color: isDark ? ClivoraColors.navyDark.withValues(alpha: 0.55) : Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(16),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: t.onTap,
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isDark ? ClivoraColors.darkBorder : ClivoraColors.borderLight,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(t.icon, color: ClivoraColors.clientAccent),
-                    const SizedBox(height: 10),
-                    Text(t.label, style: const TextStyle(fontWeight: FontWeight.w700)),
-                  ],
-                ),
-              ),
-            ),
-          ),
-      ],
     );
   }
 }

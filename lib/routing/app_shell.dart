@@ -52,7 +52,7 @@ class AppShell extends ConsumerWidget {
     _NavItem('/client-messages', Icons.mail_outline, Icons.mail_rounded, 'Messages'),
     _NavItem('/client-invoices', Icons.receipt_long_outlined, Icons.receipt_long, 'Invoices'),
     _NavItem('/client-activity', Icons.notifications_outlined, Icons.notifications_rounded, 'Updates', badgeTab: true),
-    _NavItem('/client-account', Icons.person_outline, Icons.person, 'Account'),
+    _NavItem('/client-hub', Icons.apps_outlined, Icons.apps, 'Hub'),
   ];
 
   static const _clientPlusTabs = [
@@ -60,7 +60,7 @@ class AppShell extends ConsumerWidget {
     _NavItem('/client-messages', Icons.mail_outline, Icons.mail_rounded, 'Messages'),
     _NavItem('/connect', Icons.hub_outlined, Icons.hub, 'Connect', connectBadge: true),
     _NavItem('/client-invoices', Icons.receipt_long_outlined, Icons.receipt_long, 'Invoices'),
-    _NavItem('/client-account', Icons.person_outline, Icons.person, 'Account'),
+    _NavItem('/client-hub', Icons.apps_outlined, Icons.apps, 'Hub'),
   ];
 
   int _indexFromLocation(String location, List<_NavItem> tabs) {

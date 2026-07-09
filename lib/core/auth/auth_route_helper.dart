@@ -47,8 +47,6 @@ const freelancerExtraRoutes = {
   '/products',
   '/quotes',
   '/recurring-invoices',
-  '/vendors',
-  '/purchase-orders',
   '/credits',
 };
 
