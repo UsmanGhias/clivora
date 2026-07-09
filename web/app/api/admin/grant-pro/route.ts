@@ -42,19 +42,21 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const target = String(body.email ?? "").trim().toLowerCase();
     const revoke = Boolean(body.revoke);
+    const requested = String(body.plan ?? "pro").toLowerCase();
+    const plan = revoke ? "free" : requested === "pro_plus" ? "pro_plus" : "pro";
     if (!target.includes("@")) {
       return NextResponse.json({ error: "Valid email required" }, { status: 400 });
     }
 
     const { data, error } = await userClient.rpc("grant_pro_by_email", {
       p_email: target,
-      p_plan: revoke ? "free" : "pro",
+      p_plan: plan,
     });
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ ok: true, result: data ?? null, plan: revoke ? "free" : "pro" });
+    return NextResponse.json({ ok: true, result: data ?? null, plan });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Failed" }, { status: 500 });
   }

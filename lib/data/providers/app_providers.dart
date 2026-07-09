@@ -391,9 +391,17 @@ final isProProvider = Provider<bool>((ref) {
   final serverSub = ref.watch(serverSubscriptionProvider).valueOrNull;
   if (serverSub == true) return true;
   final cloudPlan = ref.watch(cloudSubscriptionPlanProvider).valueOrNull;
-  if (cloudPlan == PlanLimits.proPlan) return true;
+  if (cloudPlan == PlanLimits.proPlan || cloudPlan == PlanLimits.proPlusPlan) return true;
   final plan = ref.watch(subscriptionPlanProvider).valueOrNull;
   return PlanFeatures.isPro(plan);
+});
+
+/// True when cloud/local plan is Pro Plus.
+final isProPlusProvider = Provider<bool>((ref) {
+  final cloudPlan = ref.watch(cloudSubscriptionPlanProvider).valueOrNull;
+  if (cloudPlan == PlanLimits.proPlusPlan) return true;
+  final plan = ref.watch(subscriptionPlanProvider).valueOrNull;
+  return PlanFeatures.isProPlus(plan);
 });
 
 /// Supabase profiles.subscription_plan (admin grants, server truth when online).

@@ -2,6 +2,7 @@
 abstract final class PlanLimits {
   static const freePlan = 'free';
   static const proPlan = 'pro';
+  static const proPlusPlan = 'pro_plus';
   static const starterPlan = 'starter';
   static const professionalPlan = 'professional';
   static const agencyPlan = 'agency';
@@ -19,6 +20,10 @@ abstract final class PlanLimits {
   // Pro tier
   static const proStorageBytes = 5 * 1024 * 1024 * 1024; // 5 GB
   static const proMaxEmailsPerMonth = 500;
+
+  // Pro Plus tier
+  static const proPlusStorageBytes = 25 * 1024 * 1024 * 1024; // 25 GB
+  static const proPlusMaxEmailsPerMonth = 3000;
 
   // Client free caps
   static const freeMaxClientContracts = 2;

@@ -4,8 +4,11 @@ import 'plan_limits.dart';
 abstract final class PlanFeatures {
   static bool isPro(String? plan) =>
       plan == PlanLimits.proPlan ||
+      plan == PlanLimits.proPlusPlan ||
       plan == PlanLimits.professionalPlan ||
       plan == PlanLimits.agencyPlan;
+
+  static bool isProPlus(String? plan) => plan == PlanLimits.proPlusPlan;
 
   // ── Shared free tier ──────────────────────────────────────────────
   static bool chatTextMessages(String? plan) => true;
@@ -13,11 +16,24 @@ abstract final class PlanFeatures {
   static bool notificationsCenter(String? plan) => true;
   static bool coachMarks(String? plan) => true;
 
-  static int fileVaultLimitBytes(String? plan) =>
-      isPro(plan) ? PlanLimits.proStorageBytes : PlanLimits.freeStorageBytes;
+  static int fileVaultLimitBytes(String? plan) {
+    if (isProPlus(plan)) return PlanLimits.proPlusStorageBytes;
+    if (isPro(plan)) return PlanLimits.proStorageBytes;
+    return PlanLimits.freeStorageBytes;
+  }
 
-  static int emailLimitPerMonth(String? plan) =>
-      isPro(plan) ? PlanLimits.proMaxEmailsPerMonth : PlanLimits.freeMaxEmailsPerMonth;
+  static int emailLimitPerMonth(String? plan) {
+    if (isProPlus(plan)) return PlanLimits.proPlusMaxEmailsPerMonth;
+    if (isPro(plan)) return PlanLimits.proMaxEmailsPerMonth;
+    return PlanLimits.freeMaxEmailsPerMonth;
+  }
+
+  /// Pro Plus exclusives
+  static bool whiteLabelInvoices(String? plan) => isProPlus(plan);
+  static bool prioritySupportPlus(String? plan) => isProPlus(plan);
+  static bool unlimitedTeamSeats(String? plan) => isProPlus(plan);
+  static bool advancedMilestoneAutomation(String? plan) => isProPlus(plan);
+  static bool clientBrandedPortal(String? plan) => isProPlus(plan);
 
   // ── Freelancer free ───────────────────────────────────────────────
   static bool freelancerGlobalSearch(String? plan) => isPro(plan);

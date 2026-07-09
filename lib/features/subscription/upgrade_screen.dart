@@ -1,21 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth/auth_service.dart';
 import '../../core/auth/user_roles.dart';
-import '../../core/constants/billing_products.dart';
+import '../../core/constants/admin_config.dart';
 import '../../core/constants/plan_limits.dart';
 import '../../core/constants/pro_pricing.dart';
-import '../../core/services/billing_service.dart';
 import '../../core/services/referral_service.dart';
-import '../../core/services/subscription_manager.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_logo.dart';
 
-/// Free vs Pro — separate Google Play subscriptions for freelancers and clients.
+/// Free vs Pro vs Pro Plus — checkout opens the CLIVORA website.
 class UpgradeScreen extends ConsumerStatefulWidget {
   const UpgradeScreen({super.key});
 
@@ -25,43 +23,22 @@ class UpgradeScreen extends ConsumerStatefulWidget {
 
 class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
   bool _loading = false;
-  List<ProductDetails> _products = [];
 
-  @override
-  void initState() {
-    super.initState();
-    _loadProducts();
-  }
-
-  Future<void> _loadProducts() async {
-    final products = await ref.read(billingServiceProvider).loadProducts();
-    if (mounted) setState(() => _products = products);
-  }
-
-  Future<void> _purchase() async {
+  Future<void> _openCheckout({required String plan}) async {
     setState(() => _loading = true);
     try {
-      final ok = await ref.read(billingServiceProvider).purchaseProForCurrentUser();
+      final user = ref.read(authStateProvider).valueOrNull;
+      final uri = Uri.parse(kProCheckoutUrl).replace(queryParameters: {
+        'plan': plan,
+        if (user?.email != null) 'email': user!.email,
+        if (user != null) 'type': isClientUser(user) ? 'client' : 'freelancer',
+        if (user?.name != null && user!.name.isNotEmpty) 'name': user.name,
+      });
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!ok && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Could not start purchase. Ensure the subscription is active in Google Play Console.',
-            ),
-          ),
+          SnackBar(content: Text('Open $kProCheckoutUrl in your browser to subscribe')),
         );
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _restore() async {
-    setState(() => _loading = true);
-    try {
-      await ref.read(billingServiceProvider).restorePurchases();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Restore requested')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -73,15 +50,13 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
     final user = ref.watch(authStateProvider).valueOrNull;
     final isClient = isClientUser(user);
     final isPro = ref.watch(isProProvider);
-    final billing = ref.watch(billingServiceProvider);
-    final livePrice = billing.displayPriceForUser();
-    final productId = billing.productIdForCurrentUser();
-    final expiresAsync = ref.watch(proExpiresAtProvider);
+    final isPlus = ref.watch(isProPlusProvider);
     final referralAsync = ref.watch(referralStatsProvider);
+    final scheme = Theme.of(context).colorScheme;
 
     final freeFeatures = isClient ? _clientFreeFeatures : _freelancerFreeFeatures;
     final proFeatures = isClient ? _clientProFeatures : _freelancerProFeatures;
-    final planTitle = isClient ? ProPricing.clientTitle : ProPricing.freelancerTitle;
+    final plusFeatures = isClient ? _clientPlusFeatures : _freelancerPlusFeatures;
 
     return Scaffold(
       body: SafeArea(
@@ -99,58 +74,68 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: ClivoraColors.warningOrange.withValues(alpha: 0.15),
+                      color: ClivoraColors.accent.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      'LIMITED OFFER · ${ProPricing.offerBadge}',
+                      'PRO PLUS · ${ProPricing.plusOfferBadge}'.toUpperCase(),
                       style: const TextStyle(
-                        color: ClivoraColors.warningOrange,
+                        color: ClivoraColors.accent,
                         fontWeight: FontWeight.w800,
                         fontSize: 11,
                         letterSpacing: 0.5,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   Text(
-                    planTitle,
+                    isPlus
+                        ? 'You are on Pro Plus'
+                        : isPro
+                            ? 'Upgrade to Pro Plus'
+                            : 'Grow with CLIVORA Pro',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    isClient
-                        ? 'Unlock contracts, PDF downloads, and priority updates on the client portal.'
-                        : 'Unlimited clients, AI, workflows, analytics, and everything to grow your freelance business.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.45),
+                    'Pay once on our secure website for Pakistan and worldwide. '
+                    'Admin activates your plan after payment confirmation.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          height: 1.45,
+                          color: scheme.onSurfaceVariant,
+                        ),
                   ),
-                  const SizedBox(height: 20),
-                  _PriceHero(
-                    listPrice: ProPricing.listPriceLabel,
-                    offerPrice: livePrice != ProPricing.monthlyLabel ? livePrice : ProPricing.monthlyLabel,
-                    isPro: isPro,
-                  ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
                   _PlanCard(
                     title: 'Free',
                     price: 'Rs 0',
-                    subtitle: 'Get started',
+                    subtitle: 'Start free',
                     features: freeFeatures,
                     selected: !isPro,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   _PlanCard(
-                    title: planTitle,
-                    price: '$livePrice/mo',
-                    subtitle: ProPricing.billingNote,
+                    title: isClient ? ProPricing.clientTitle : ProPricing.freelancerTitle,
+                    price: '${ProPricing.monthlyLabel}/mo',
+                    subtitle: 'Core Pro tools',
                     features: proFeatures,
-                    selected: isPro,
+                    selected: isPro && !isPlus,
                     highlight: true,
+                  ),
+                  const SizedBox(height: 12),
+                  _PlanCard(
+                    title: ProPricing.plusTitle,
+                    price: '${ProPricing.plusMonthlyLabel}/mo',
+                    subtitle: '${ProPricing.plusUsdApprox} · ${ProPricing.plusOfferBadge}',
+                    features: plusFeatures,
+                    selected: isPlus,
+                    highlight: true,
+                    premium: true,
                   ),
                   const SizedBox(height: 16),
                   referralAsync.when(
@@ -165,65 +150,50 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Product ID: $productId\n'
-                    '${_products.isEmpty ? "Products not loaded from Play yet — configure in Play Console." : "Google Play price: $livePrice"}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.45),
-                  ),
-                  expiresAsync.when(
-                    loading: () => const SizedBox.shrink(),
-                    error: (_, __) => const SizedBox.shrink(),
-                    data: (expires) {
-                      if (expires == null || !isPro) return const SizedBox.shrink();
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          'Pro active until ${expires.toLocal().toString().split(' ').first}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: ClivoraColors.successGreen),
-                        ),
-                      );
-                    },
+                    'Checkout: clivora.codcrafters.org/pro\n'
+                    'Supports JazzCash, EasyPaisa, bank transfer (PK), and international wire.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.45, color: scheme.onSurfaceVariant),
                   ),
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
               child: Column(
                 children: [
-                  if (!isPro && billing.isBillingOpenToUser)
+                  if (!isPlus)
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _loading ? null : _purchase,
+                      child: FilledButton(
+                        onPressed: _loading ? null : () => _openCheckout(plan: 'pro_plus'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: ClivoraColors.primary,
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
                         child: _loading
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                              )
-                            : Text('Subscribe — $livePrice/mo'),
+                            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : Text(isPro ? 'Upgrade to Pro Plus — ${ProPricing.plusMonthlyLabel}' : 'Get Pro Plus — ${ProPricing.plusMonthlyLabel}/mo'),
                       ),
-                    )
-                  else if (!isPro)
+                    ),
+                  if (!isPro) ...[
+                    const SizedBox(height: 8),
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton(
-                        onPressed: null,
-                        child: const Text('Sign in to subscribe'),
-                      ),
-                    )
-                  else
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () => context.pop(),
-                        child: const Text('You\'re on Pro'),
+                        onPressed: _loading ? null : () => _openCheckout(plan: 'pro'),
+                        child: Text('Get Pro — ${ProPricing.monthlyLabel}/mo'),
                       ),
                     ),
-                  if (billing.isBillingOpenToUser) ...[
-                    const SizedBox(height: 8),
-                    TextButton(onPressed: _loading ? null : _restore, child: const Text('Restore purchases')),
                   ],
+                  if (isPlus)
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () => context.pop(),
+                        child: const Text("You're on Pro Plus"),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -247,13 +217,23 @@ const _freelancerProFeatures = [
   'Unlimited clients, projects & invoices',
   'Verified profile badge',
   'Biometric app lock',
-  'Built-in CLIVORA AI (on-device)',
-  'Custom workflows & automations',
+  'Milestones + dispute tools',
+  'AI assistant & automations',
   'Advanced analytics',
   '5 GB file vault',
-  'Data export & team tools',
-  'Calendar & global search',
+  'Team collaboration',
   '500 emails / month',
+];
+
+const _freelancerPlusFeatures = [
+  'Everything in Pro',
+  '25 GB vault + 3,000 emails / month',
+  'Priority support channel',
+  'White-label invoice branding',
+  'Unlimited team seats',
+  'Milestone automation boosts',
+  'Client branded portal extras',
+  'First access to new Pro tools',
 ];
 
 const _clientFreeFeatures = [
@@ -271,62 +251,80 @@ const _clientProFeatures = [
   'Biometric app lock',
   'Advanced activity timeline',
   'Priority notifications',
-  'Data export',
-  'Full client portal access',
+  'Leave project reviews',
 ];
 
-class _PriceHero extends StatelessWidget {
-  const _PriceHero({required this.listPrice, required this.offerPrice, required this.isPro});
+const _clientPlusFeatures = [
+  'Everything in Client Pro',
+  'Priority support',
+  'Branded portal experience',
+  'Faster invoice & contract exports',
+  'Early access to client tools',
+];
 
-  final String listPrice;
-  final String offerPrice;
-  final bool isPro;
+class _PlanCard extends StatelessWidget {
+  const _PlanCard({
+    required this.title,
+    required this.price,
+    required this.subtitle,
+    required this.features,
+    required this.selected,
+    this.highlight = false,
+    this.premium = false,
+  });
+
+  final String title;
+  final String price;
+  final String subtitle;
+  final List<String> features;
+  final bool selected;
+  final bool highlight;
+  final bool premium;
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final borderColor = selected
+        ? (premium ? ClivoraColors.accent : ClivoraColors.primary)
+        : scheme.outlineVariant;
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: ClivoraColors.brandGradient,
-        borderRadius: BorderRadius.circular(20),
+        color: premium && selected
+            ? ClivoraColors.accent.withValues(alpha: 0.08)
+            : highlight && selected
+                ? ClivoraColors.primary.withValues(alpha: 0.08)
+                : scheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor, width: selected ? 2 : 1),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (!isPro) ...[
-                  Text(
-                    listPrice,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.65),
-                      decoration: TextDecoration.lineThrough,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(
+                child: Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+              ),
+              Text(price, style: TextStyle(fontWeight: FontWeight.w800, color: premium ? ClivoraColors.accent : ClivoraColors.primary)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(subtitle, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
+          const SizedBox(height: 10),
+          ...features.map(
+            (f) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.check_circle, size: 16, color: premium ? ClivoraColors.accent : ClivoraColors.primary),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(f, style: const TextStyle(fontSize: 13, height: 1.3))),
                 ],
-                Text(
-                  isPro ? 'Active' : offerPrice,
-                  style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w800),
-                ),
-                Text(
-                  isPro ? 'Thank you for supporting CLIVORA' : 'per month · ${ProPricing.offerPercentOff}% off',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
-                ),
-              ],
+              ),
             ),
           ),
-          if (!isPro)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Text('BEST VALUE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11)),
-            ),
         ],
       ),
     );
@@ -341,99 +339,38 @@ class _ReferralTeaser extends StatelessWidget {
     required this.onTap,
   });
 
-  final String? code;
+  final String code;
   final int referrals;
   final int bonusDays;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.card_giftcard, color: ClivoraColors.primary),
-        title: const Text('Refer friends', style: TextStyle(fontWeight: FontWeight.w700)),
-        subtitle: Text(
-          code != null
-              ? 'Your code: $code · $referrals referrals · $bonusDays bonus days earned'
-              : 'Earn bonus Pro days when friends subscribe',
-        ),
-        trailing: const Icon(Icons.chevron_right),
+    return Material(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
         onTap: onTap,
-      ),
-    );
-  }
-}
-
-class _PlanCard extends StatelessWidget {
-  const _PlanCard({
-    required this.title,
-    required this.price,
-    required this.subtitle,
-    required this.features,
-    required this.selected,
-    this.highlight = false,
-  });
-
-  final String title;
-  final String price;
-  final String subtitle;
-  final List<String> features;
-  final bool selected;
-  final bool highlight;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: selected ? ClivoraColors.primary : Theme.of(context).dividerColor,
-          width: selected ? 2 : 1,
-        ),
-        color: highlight ? ClivoraColors.primary.withValues(alpha: 0.06) : Theme.of(context).cardColor,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
             children: [
-              Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
-              const Spacer(),
-              if (selected) const Icon(Icons.check_circle, color: ClivoraColors.primary, size: 22),
+              const Icon(Icons.card_giftcard_outlined, color: ClivoraColors.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  code.isEmpty
+                      ? 'Invite friends for bonus Pro days'
+                      : 'Code $code · $referrals referrals · $bonusDays bonus days',
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                ),
+              ),
+              const Icon(Icons.chevron_right),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(price, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-          Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
-          const SizedBox(height: 12),
-          for (final f in features)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.check, size: 16, color: highlight ? ClivoraColors.primary : ClivoraColors.textSecondary),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(f, style: Theme.of(context).textTheme.bodySmall)),
-                ],
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
 }
-
-final proExpiresAtProvider = FutureProvider<DateTime?>((ref) {
-  return SubscriptionManager.proExpiresAt();
-});
-
-final referralStatsProvider = FutureProvider<({String? code, int count, int bonusDays})>((ref) async {
-  final referral = ref.read(referralServiceProvider);
-  return (
-    code: await referral.myCode(),
-    count: await referral.referralCount(),
-    bonusDays: await referral.bonusDaysEarned(),
-  );
-});

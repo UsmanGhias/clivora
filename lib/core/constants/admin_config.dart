@@ -23,3 +23,6 @@ const kAdminSyncKey = String.fromEnvironment('ADMIN_SYNC_KEY', defaultValue: '')
 
 /// Web admin dashboard.
 const kAdminPanelUrl = '$kClivoraWebBaseUrl/admin';
+
+/// Web Pro / Pro Plus checkout (Pakistan + worldwide).
+const kProCheckoutUrl = '$kClivoraWebBaseUrl/pro';
