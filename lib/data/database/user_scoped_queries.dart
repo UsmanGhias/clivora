@@ -357,6 +357,57 @@ extension UserScopedQueries on AppDatabase {
         .getSingleOrNull();
   }
 
+  // ——— Milestones ———
+  Stream<List<ProjectMilestone>> watchMilestonesForProject(int ownerUserId, int projectId) {
+    return (select(projectMilestones)
+          ..where((t) => t.ownerUserId.equals(ownerUserId) & t.projectId.equals(projectId))
+          ..orderBy([(t) => OrderingTerm.asc(t.sortOrder), (t) => OrderingTerm.asc(t.id)]))
+        .watch();
+  }
+
+  Stream<List<ProjectMilestone>> watchMilestonesForOwner(int ownerUserId) {
+    return (select(projectMilestones)
+          ..where((t) => t.ownerUserId.equals(ownerUserId))
+          ..orderBy([(t) => OrderingTerm.desc(t.updatedAt)]))
+        .watch();
+  }
+
+  Future<ProjectMilestone?> getMilestoneForUser(int ownerUserId, int milestoneId) {
+    return (select(projectMilestones)
+          ..where((t) => t.ownerUserId.equals(ownerUserId) & t.id.equals(milestoneId)))
+        .getSingleOrNull();
+  }
+
+  // ——— Reviews ———
+  Stream<List<ProjectReview>> watchReviewsForOwner(int ownerUserId) {
+    return (select(projectReviews)
+          ..where((t) => t.ownerUserId.equals(ownerUserId))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .watch();
+  }
+
+  Stream<List<ProjectReview>> watchReviewsForProject(int ownerUserId, int projectId) {
+    return (select(projectReviews)
+          ..where((t) => t.ownerUserId.equals(ownerUserId) & t.projectId.equals(projectId))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .watch();
+  }
+
+  // ——— Disputes ———
+  Stream<List<InvoiceDispute>> watchDisputesForOwner(int ownerUserId) {
+    return (select(invoiceDisputes)
+          ..where((t) => t.ownerUserId.equals(ownerUserId))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .watch();
+  }
+
+  Stream<List<InvoiceDispute>> watchDisputesForInvoice(int ownerUserId, int invoiceId) {
+    return (select(invoiceDisputes)
+          ..where((t) => t.ownerUserId.equals(ownerUserId) & t.invoiceId.equals(invoiceId))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .watch();
+  }
+
   // ——— Tracking ———
   Stream<List<TrackingEvent>> watchTrackingEventsForUser({
     required int ownerUserId,

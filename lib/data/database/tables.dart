@@ -270,3 +270,47 @@ class TeamMembers extends Table {
   TextColumn get role => text().withDefault(const Constant('member'))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
+
+/// Project payment milestones (Upwork-style deliverable checkpoints).
+class ProjectMilestones extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get ownerUserId => integer().references(Users, #id)();
+  IntColumn get projectId => integer().references(Projects, #id)();
+  TextColumn get title => text()();
+  TextColumn get description => text().withDefault(const Constant(''))();
+  RealColumn get amount => real().withDefault(const Constant(0))();
+  TextColumn get currency => text().withDefault(const Constant('USD'))();
+  TextColumn get status => text().withDefault(const Constant('pending'))();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+  DateTimeColumn get dueDate => dateTime().nullable()();
+  IntColumn get invoiceId => integer().nullable().references(Invoices, #id)();
+  DateTimeColumn get completedAt => dateTime().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Post-project client feedback (1–5 stars).
+class ProjectReviews extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get ownerUserId => integer().references(Users, #id)();
+  IntColumn get projectId => integer().references(Projects, #id)();
+  IntColumn get customerId => integer().nullable().references(Customers, #id)();
+  TextColumn get clientEmail => text().withDefault(const Constant(''))();
+  IntColumn get rating => integer().withDefault(const Constant(5))();
+  TextColumn get comment => text().withDefault(const Constant(''))();
+  BoolColumn get fromClient => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Invoice dispute notes (client raise / freelancer resolve).
+class InvoiceDisputes extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get ownerUserId => integer().references(Users, #id)();
+  IntColumn get invoiceId => integer().references(Invoices, #id)();
+  TextColumn get reason => text()();
+  TextColumn get status => text().withDefault(const Constant('open'))();
+  TextColumn get resolution => text().withDefault(const Constant(''))();
+  TextColumn get raisedByEmail => text().withDefault(const Constant(''))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get resolvedAt => dateTime().nullable()();
+}

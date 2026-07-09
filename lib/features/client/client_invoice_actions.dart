@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/auth/auth_service.dart';
 import '../../core/cloud/cloud_invoice_repository.dart';
+import '../../core/constants/invoice_statuses.dart';
 import '../../core/services/client_invoice_helper.dart';
+import '../../core/services/dispute_service.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../data/database/database.dart';
@@ -88,6 +89,61 @@ Future<void> showClientInvoiceActions(
               icon: const Icon(Icons.picture_as_pdf_outlined),
               label: const Text('View branded PDF'),
             ),
+            if (status != InvoiceStatuses.disputed &&
+                status != InvoiceStatuses.paid &&
+                status != InvoiceStatuses.canceled &&
+                status != InvoiceStatuses.draft) ...[
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final reasonCtrl = TextEditingController();
+                  final ok = await showDialog<bool>(
+                    context: ctx,
+                    builder: (dCtx) => AlertDialog(
+                      title: const Text('Raise dispute'),
+                      content: TextField(
+                        controller: reasonCtrl,
+                        maxLines: 4,
+                        decoration: const InputDecoration(
+                          labelText: 'What is wrong with this invoice?',
+                          hintText: 'Amount, deliverable, or billing issue…',
+                        ),
+                      ),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(dCtx, false), child: const Text('Cancel')),
+                        FilledButton(onPressed: () => Navigator.pop(dCtx, true), child: const Text('Submit')),
+                      ],
+                    ),
+                  );
+                  if (ok != true) return;
+                  final client = ref.read(authStateProvider).valueOrNull;
+                  String? err;
+                  if (share != null && client != null) {
+                    err = await ref.read(disputeServiceProvider).raiseDisputeOnCloudShare(
+                          share: share,
+                          reason: reasonCtrl.text,
+                          raisedByEmail: client.email,
+                        );
+                  } else if (invoice != null && client != null) {
+                    err = await ref.read(disputeServiceProvider).raiseDispute(
+                          invoice: invoice,
+                          reason: reasonCtrl.text,
+                          raisedByEmail: client.email,
+                        );
+                  }
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(err ?? 'Dispute submitted. Your freelancer was notified.')),
+                    );
+                  }
+                  ref.invalidate(clientCloudInvoicesProvider);
+                  ref.invalidate(clientInvoicesProvider);
+                },
+                icon: const Icon(Icons.gavel_outlined),
+                label: const Text('Raise dispute'),
+              ),
+            ],
             if (canPay) ...[
               const SizedBox(height: 24),
               Text('Confirm payment', style: Theme.of(ctx).textTheme.titleMedium),

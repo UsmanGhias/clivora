@@ -161,18 +161,25 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
                           ],
                         ),
                         isThreeLine: true,
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(formatCurrency(p.budget, symbol: currencySymbol(p.currency))),
-                            const SizedBox(height: 4),
-                            IconButton(
-                              icon: const Icon(Icons.timer_outlined, size: 20),
-                              tooltip: 'Track time',
-                              onPressed: () => openFormRoute(context, '/projects/${p.id}/edit'),
-                            ),
+                        trailing: PopupMenuButton<String>(
+                          onSelected: (v) {
+                            if (v == 'milestones') context.push('/projects/${p.id}/milestones');
+                            if (v == 'time') context.push('/projects/${p.id}/time');
+                            if (v == 'edit') openFormRoute(context, '/projects/${p.id}/edit');
+                          },
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(value: 'milestones', child: Text('Milestones')),
+                            PopupMenuItem(value: 'time', child: Text('Track time')),
+                            PopupMenuItem(value: 'edit', child: Text('Edit')),
                           ],
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(formatCurrency(p.budget, symbol: currencySymbol(p.currency))),
+                              Icon(Icons.more_horiz, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            ],
+                          ),
                         ),
                       ),
                     );

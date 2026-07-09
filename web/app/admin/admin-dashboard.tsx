@@ -91,8 +91,38 @@ export default function AdminDashboard({ adminEmails }: Props) {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [emailsThisMonth, setEmailsThisMonth] = useState(0);
   const [search, setSearch] = useState("");
+  const [actionEmail, setActionEmail] = useState("");
+  const [actionMsg, setActionMsg] = useState("");
+  const [actionBusy, setActionBusy] = useState(false);
 
   const supabase = createBrowserSupabaseClient();
+
+  async function runAdminAction(path: "/api/admin/grant-pro" | "/api/admin/grant-admin", body: Record<string, unknown>) {
+    setActionBusy(true);
+    setActionMsg("");
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Session expired. Sign in again.");
+      const res = await fetch(path, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Action failed");
+      setActionMsg(path.includes("grant-admin") ? `Admin granted to ${body.email}` : body.revoke ? `Pro revoked for ${body.email}` : `Pro granted to ${body.email}`);
+      setActionEmail("");
+      await loadDashboard();
+    } catch (err) {
+      setActionMsg(err instanceof Error ? err.message : "Action failed");
+    } finally {
+      setActionBusy(false);
+    }
+  }
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
@@ -384,6 +414,50 @@ export default function AdminDashboard({ adminEmails }: Props) {
           <StatCard label="Est. MRR (PKR)" value={`Rs ${stats.mrr.toLocaleString()}`} />
         </div>
 
+        <Panel title="Admin Controls">
+          <p style={{ color: "#64748b", fontSize: "0.9rem", marginTop: 0 }}>
+            Grant Pro or Admin access by email. User must already have a CLIVORA account.
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+            <input
+              type="email"
+              placeholder="user@email.com"
+              value={actionEmail}
+              onChange={(e) => setActionEmail(e.target.value)}
+              style={{ ...inputStyle, maxWidth: 320, marginBottom: 0 }}
+            />
+            <button
+              type="button"
+              disabled={actionBusy || !actionEmail.includes("@")}
+              onClick={() => runAdminAction("/api/admin/grant-pro", { email: actionEmail.trim().toLowerCase(), revoke: false })}
+              style={{ ...secondaryBtn, background: CLIVORA_PURPLE }}
+            >
+              Grant Pro
+            </button>
+            <button
+              type="button"
+              disabled={actionBusy || !actionEmail.includes("@")}
+              onClick={() => runAdminAction("/api/admin/grant-pro", { email: actionEmail.trim().toLowerCase(), revoke: true })}
+              style={secondaryBtn}
+            >
+              Revoke Pro
+            </button>
+            <button
+              type="button"
+              disabled={actionBusy || !actionEmail.includes("@")}
+              onClick={() => runAdminAction("/api/admin/grant-admin", { email: actionEmail.trim().toLowerCase() })}
+              style={secondaryBtn}
+            >
+              Grant Admin
+            </button>
+          </div>
+          {actionMsg && (
+            <p style={{ marginTop: 12, fontSize: "0.9rem", color: actionMsg.toLowerCase().includes("fail") || actionMsg.toLowerCase().includes("error") || actionMsg.toLowerCase().includes("not") ? "#dc2626" : "#059669" }}>
+              {actionMsg}
+            </p>
+          )}
+        </Panel>
+
         <Panel title="Cloud Profiles">
           <input
             type="search"
@@ -393,7 +467,7 @@ export default function AdminDashboard({ adminEmails }: Props) {
             style={{ ...inputStyle, maxWidth: 280, marginBottom: 16 }}
           />
           <Table
-            headers={["Name", "Email", "Type", "Plan", "Updated"]}
+            headers={["Name", "Email", "Type", "Plan", "Updated", "Actions"]}
             rows={
               filteredProfiles.length
                 ? filteredProfiles.map((p) => [
@@ -404,8 +478,17 @@ export default function AdminDashboard({ adminEmails }: Props) {
                       : badge(p.account_type, "default"),
                     p.subscription_plan === "pro" ? badge("Pro", "pro") : badge("Free", "free"),
                     formatDate(p.updated_at),
+                    <div key={p.id} style={{ display: "flex", gap: 6 }}>
+                      <button
+                        type="button"
+                        style={{ ...secondaryBtn, padding: "4px 8px", fontSize: "0.75rem" }}
+                        onClick={() => runAdminAction("/api/admin/grant-pro", { email: p.email, revoke: p.subscription_plan === "pro" })}
+                      >
+                        {p.subscription_plan === "pro" ? "Revoke Pro" : "Grant Pro"}
+                      </button>
+                    </div>,
                   ])
-                : [["No Supabase profiles yet", "", "", "", ""]]
+                : [["No Supabase profiles yet", "", "", "", "", ""]]
             }
           />
         </Panel>
@@ -463,7 +546,7 @@ export default function AdminDashboard({ adminEmails }: Props) {
       </main>
 
       <footer style={{ textAlign: "center", color: "#64748b", fontSize: "0.8rem", padding: 32 }}>
-        CLIVORA by CodCrafters · Admin panel v2.6.6
+        CLIVORA by CodCrafters · Admin panel v2.7.0
       </footer>
     </div>
   );

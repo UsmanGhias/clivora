@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/auth/auth_service.dart';
 import '../../core/cloud/cloud_project_repository.dart';
+import '../../core/services/review_service.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/duration_formatter.dart';
 import '../../core/utils/navigation_helper.dart';
-import '../../data/providers/app_providers.dart';
 import 'client_portal_screen.dart' show ClientTrackingKey, clientProjectSecondsProvider;
 
 /// Opens project detail sheet with live tracked seconds.
@@ -26,13 +27,14 @@ Future<void> openClientProjectDetail(
     );
   }
   if (context.mounted) {
-    await showClientProjectDetail(context, project: view, trackedSeconds: seconds);
+    await showClientProjectDetail(context, ref, project: view, trackedSeconds: seconds);
   }
 }
 
 /// Full project detail for clients — tap any shared project card.
 Future<void> showClientProjectDetail(
-  BuildContext context, {
+  BuildContext context,
+  WidgetRef ref, {
   required ClientSharedProjectView project,
   required int trackedSeconds,
 }) async {
@@ -138,8 +140,81 @@ Future<void> showClientProjectDetail(
                 ],
               ),
             ),
+            if (project.localProject != null) ...[
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final rating = await _pickRating(ctx);
+                  if (rating == null) return;
+                  final commentCtrl = TextEditingController();
+                  final ok = await showDialog<bool>(
+                    context: ctx,
+                    builder: (dCtx) => AlertDialog(
+                      title: const Text('Leave a review'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('$rating / 5 stars'),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: commentCtrl,
+                            maxLines: 3,
+                            decoration: const InputDecoration(labelText: 'Feedback (optional)'),
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(dCtx, false), child: const Text('Cancel')),
+                        FilledButton(onPressed: () => Navigator.pop(dCtx, true), child: const Text('Submit')),
+                      ],
+                    ),
+                  );
+                  if (ok != true) return;
+                  final client = ref.read(authStateProvider).valueOrNull;
+                  final local = project.localProject!;
+                  final err = await ref.read(reviewServiceProvider).submitClientReview(
+                        projectId: local.id,
+                        ownerUserId: local.ownerUserId,
+                        rating: rating,
+                        comment: commentCtrl.text,
+                        customerId: local.customerId,
+                        clientEmail: client?.email ?? '',
+                      );
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(err ?? 'Thanks! Your review was submitted.')),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.star_outline),
+                label: const Text('Leave a review'),
+              ),
+            ],
           ],
         ],
+      ),
+    ),
+  );
+}
+
+Future<int?> _pickRating(BuildContext context) async {
+  return showDialog<int>(
+    context: context,
+    builder: (ctx) => SimpleDialog(
+      title: const Text('Rate this project'),
+      children: List.generate(
+        5,
+        (i) => SimpleDialogOption(
+          onPressed: () => Navigator.pop(ctx, i + 1),
+          child: Row(
+            children: [
+              ...List.generate(i + 1, (_) => const Icon(Icons.star, color: ClivoraColors.accent, size: 20)),
+              const SizedBox(width: 8),
+              Text('${i + 1} star${i == 0 ? '' : 's'}'),
+            ],
+          ),
+        ),
       ),
     ),
   );
