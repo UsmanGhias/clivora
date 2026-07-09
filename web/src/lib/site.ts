@@ -7,7 +7,7 @@ export const site = {
     "CLIVORA is your all-in-one Business Operating System for freelancers, consultants, and small agencies. Manage clients, track projects, send branded PDF invoices, and monitor revenue from your phone.",
   url: "https://clivora.codcrafters.org",
   appPackage: "org.codcrafters.clivora",
-  appVersion: "2.9.0",
+  appVersion: "2.9.1",
   company: {
     name: "CODCrafters",
     url: "https://codcrafters.org",

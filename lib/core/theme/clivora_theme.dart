@@ -132,27 +132,23 @@ abstract final class ClivoraTheme {
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: inputFill,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(ClivoraRadii.sm + 2),
-          borderSide: BorderSide.none,
+        filled: false,
+        fillColor: Colors.transparent,
+        border: UnderlineInputBorder(
+          borderSide: BorderSide(color: cardBorder.withValues(alpha: 0.7)),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(ClivoraRadii.sm + 2),
-          borderSide: BorderSide.none,
+        enabledBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: cardBorder.withValues(alpha: 0.7)),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(ClivoraRadii.sm + 2),
-          borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
+        focusedBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: colorScheme.primary, width: 1.6),
         ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(ClivoraRadii.sm + 2),
+        errorBorder: UnderlineInputBorder(
           borderSide: BorderSide(color: colorScheme.error, width: 1),
         ),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: ClivoraSpacing.lg,
-          vertical: 14,
+          horizontal: 2,
+          vertical: 12,
         ),
         hintStyle: GoogleFonts.inter(color: inputHint),
         labelStyle: GoogleFonts.inter(
@@ -303,12 +299,11 @@ abstract final class ClivoraTheme {
       ),
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
-          backgroundColor: iconButtonBg,
+          backgroundColor: Colors.transparent,
           foregroundColor: colorScheme.onSurface,
           minimumSize: Size(layout.minTouchTarget, layout.minTouchTarget),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(ClivoraRadii.sm + 2),
-          ),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          shape: const CircleBorder(),
         ),
       ),
       switchTheme: SwitchThemeData(

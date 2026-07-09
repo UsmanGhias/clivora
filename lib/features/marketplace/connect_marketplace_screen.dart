@@ -86,15 +86,16 @@ class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScr
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return ClivoraScaffold(
-      title: 'CLIVORA Connect',
-      showBackButton: true,
+      title: 'Connect',
+      showBackButton: false,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       action: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
-            tooltip: 'My listing',
-            onPressed: () => context.push('/connect/listing'),
-            icon: const Icon(Icons.badge_outlined),
+            tooltip: isClient ? 'Post a need' : 'My listing',
+            onPressed: () => context.push(isClient ? '/connect/need' : '/connect/listing'),
+            icon: Icon(isClient ? Icons.add_circle_outline : Icons.badge_outlined),
           ),
           IconButton(
             tooltip: 'Refresh',
@@ -109,57 +110,55 @@ class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScr
               children: [
                 TweenAnimationBuilder<double>(
                   tween: Tween(begin: 0, end: 1),
-                  duration: const Duration(milliseconds: 520),
+                  duration: const Duration(milliseconds: 420),
                   curve: Curves.easeOutCubic,
                   builder: (context, t, child) => Opacity(
                     opacity: t,
                     child: Transform.translate(
-                      offset: Offset(0, 12 * (1 - t)),
+                      offset: Offset(0, 8 * (1 - t)),
                       child: child,
                     ),
                   ),
                   child: Container(
-                    margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                    padding: const EdgeInsets.all(14),
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
                         colors: [
                           ClivoraColors.navyDark,
-                          ClivoraColors.navyDark.withValues(alpha: 0.92),
-                          const Color(0xFF0F766E).withValues(alpha: 0.85),
+                          const Color(0xFF0F766E).withValues(alpha: 0.88),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        Text(
-                          'CLIVORA Connect',
-                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                color: Colors.white.withValues(alpha: 0.85),
-                                letterSpacing: 0.6,
-                                fontWeight: FontWeight.w700,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Skills first · identity later',
+                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w800,
+                                    ),
                               ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Skills first. Identity later.',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800,
+                              const SizedBox(height: 2),
+                              Text(
+                                'Anonymous browse · private contact · emails unlock on accept',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Colors.white.withValues(alpha: 0.8),
+                                      fontSize: 11,
+                                    ),
                               ),
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Browse anonymously. Contact requests stay private until both sides accept. Then emails unlock and you work inside CLIVORA.',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.white.withValues(alpha: 0.85),
-                                height: 1.4,
-                              ),
-                        ),
+                        Icon(Icons.hub_outlined, color: Colors.white.withValues(alpha: 0.85), size: 22),
                       ],
                     ),
                   ),
@@ -168,6 +167,7 @@ class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScr
                   controller: _tabs,
                   labelColor: scheme.primary,
                   unselectedLabelColor: scheme.onSurface.withValues(alpha: 0.55),
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 8),
                   tabs: [
                     Tab(text: isClient ? 'Talent' : 'Browse'),
                     Tab(text: isClient ? 'My needs' : 'Open needs'),
@@ -371,26 +371,36 @@ class _TalentTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final onSurface = Theme.of(context).colorScheme.onSurface;
+    final scheme = Theme.of(context).colorScheme;
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
       children: [
         TextField(
           controller: skillCtrl,
           decoration: InputDecoration(
-            hintText: 'Filter by skill (e.g. Flutter, SEO)',
-            suffixIcon: IconButton(icon: const Icon(Icons.search), onPressed: onSearch),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            hintText: 'Filter by skill',
+            isDense: true,
+            filled: false,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+            suffixIcon: IconButton(icon: const Icon(Icons.search, size: 20), onPressed: onSearch),
+            border: const UnderlineInputBorder(),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: onSurface.withValues(alpha: 0.18)),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: scheme.primary, width: 1.5),
+            ),
           ),
           onSubmitted: (_) => onSearch(),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         if (freelancers.isEmpty)
           Padding(
-            padding: const EdgeInsets.only(top: 40),
+            padding: const EdgeInsets.only(top: 36),
             child: Column(
               children: [
-                Icon(Icons.person_search_outlined, size: 48, color: onSurface.withValues(alpha: 0.35)),
-                const SizedBox(height: 12),
+                Icon(Icons.person_search_outlined, size: 40, color: onSurface.withValues(alpha: 0.35)),
+                const SizedBox(height: 10),
                 Text(
                   'No listed freelancers yet. Be the first from My listing.',
                   textAlign: TextAlign.center,
@@ -403,105 +413,111 @@ class _TalentTab extends StatelessWidget {
           final index = entry.key;
           final row = entry.value;
           final skills = (row['skills'] as List?)?.map((e) => e.toString()).toList() ?? [];
+          final title = row['display_title'] as String? ?? 'Freelancer';
+          final rate = _usdBand(row['rate_band'] as String?);
           return TweenAnimationBuilder<double>(
             key: ValueKey(row['id'] ?? index),
             tween: Tween(begin: 0, end: 1),
-            duration: Duration(milliseconds: 320 + (index.clamp(0, 6) * 40)),
+            duration: Duration(milliseconds: 260 + (index.clamp(0, 8) * 28)),
             curve: Curves.easeOutCubic,
             builder: (context, t, child) => Opacity(
               opacity: t,
-              child: Transform.translate(offset: Offset(0, 10 * (1 - t)), child: child),
+              child: Transform.translate(offset: Offset(0, 6 * (1 - t)), child: child),
             ),
-            child: Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: isDark ? ClivoraColors.navyDark.withValues(alpha: 0.55) : Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? ClivoraColors.darkBorder : ClivoraColors.borderLight,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: ClivoraColors.primary.withValues(alpha: 0.15),
-                      child: Text(
-                        (row['display_title'] as String? ?? 'F').isNotEmpty
-                            ? (row['display_title'] as String).characters.first.toUpperCase()
-                            : 'F',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => onContact(row),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: isDark ? ClivoraColors.darkBorder : ClivoraColors.borderLight,
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  row['display_title'] as String? ?? 'Freelancer',
-                                  style: const TextStyle(fontWeight: FontWeight.w700),
-                                ),
-                              ),
-                              if (row['is_verified'] == true) ...[
-                                const SizedBox(width: 6),
-                                const Icon(Icons.verified, color: Color(0xFF0F766E), size: 18),
-                              ],
-                            ],
-                          ),
-                          Text(
-                            row['headline'] as String? ?? '',
-                            style: TextStyle(color: onSurface.withValues(alpha: 0.65), fontSize: 13),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  row['bio'] as String? ?? '',
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: onSurface.withValues(alpha: 0.8), height: 1.35),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    Chip(
-                      label: Text(row['rate_band'] as String? ?? 'negotiable'),
-                      visualDensity: VisualDensity.compact,
-                      backgroundColor: ClivoraColors.iconTeal,
-                    ),
-                    ...skills.take(4).map(
-                          (s) => Chip(label: Text(s), visualDensity: VisualDensity.compact),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title.isNotEmpty ? title.characters.first.toUpperCase() : 'F',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 18,
+                          color: scheme.primary,
                         ),
-                  ],
-                ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton.icon(
-                    onPressed: () => onContact(row),
-                    icon: const Icon(Icons.handshake_outlined),
-                    label: const Text('Request contact'),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                                  ),
+                                ),
+                                if (row['is_verified'] == true)
+                                  const Icon(Icons.verified, color: Color(0xFF0F766E), size: 15),
+                              ],
+                            ),
+                            if ((row['headline'] as String?)?.isNotEmpty == true)
+                              Text(
+                                row['headline'] as String,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(color: onSurface.withValues(alpha: 0.62), fontSize: 12),
+                              ),
+                            const SizedBox(height: 4),
+                            Text(
+                              [
+                                rate,
+                                ...skills.take(3),
+                              ].where((s) => s.trim().isNotEmpty).join(' · '),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: scheme.primary.withValues(alpha: 0.9),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(Icons.chevron_right, size: 18, color: onSurface.withValues(alpha: 0.35)),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
             ),
           );
         }),
       ],
     );
   }
+}
+
+String _usdBand(String? raw) {
+  if (raw == null || raw.trim().isEmpty) return 'negotiable';
+  var s = raw.trim();
+  s = s.replaceAll(RegExp(r'Rs\.?\s*', caseSensitive: false), r'$');
+  s = s.replaceAll('₹', r'$');
+  s = s.replaceAll(RegExp(r'\bINR\b', caseSensitive: false), 'USD');
+  if (!s.contains(r'$') && !s.toLowerCase().contains('negotiable') && RegExp(r'\d').hasMatch(s)) {
+    s = '\$$s';
+  }
+  return s;
 }
 
 class _NeedsTab extends StatelessWidget {
@@ -522,21 +538,29 @@ class _NeedsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final onSurface = Theme.of(context).colorScheme.onSurface;
+    final scheme = Theme.of(context).colorScheme;
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
       children: [
         if (isClient)
           Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: OutlinedButton.icon(
-              onPressed: onCreate,
-              icon: const Icon(Icons.add),
-              label: const Text('Post a need (anonymous)'),
+            padding: const EdgeInsets.only(bottom: 8),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onCreate,
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Post a need'),
+                style: OutlinedButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                ),
+              ),
             ),
           ),
         if (needs.isEmpty)
           Padding(
-            padding: const EdgeInsets.only(top: 40),
+            padding: const EdgeInsets.only(top: 36),
             child: Text(
               isClient ? 'No open needs yet. Post your first brief.' : 'No open needs yet.',
               textAlign: TextAlign.center,
@@ -545,40 +569,74 @@ class _NeedsTab extends StatelessWidget {
           ),
         ...needs.map((row) {
           final skills = (row['skills'] as List?)?.map((e) => e.toString()).toList() ?? [];
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? ClivoraColors.darkBorder : ClivoraColors.borderLight,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  row['title'] as String? ?? 'Need',
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-                ),
-                const SizedBox(height: 6),
-                Text(row['summary'] as String? ?? '', style: TextStyle(height: 1.35, color: onSurface.withValues(alpha: 0.8))),
-                const SizedBox(height: 8),
-                Text(
-                  'Budget: ${row['budget_band'] ?? 'negotiable'} · ${skills.take(3).join(', ')}',
-                  style: TextStyle(fontSize: 12, color: onSurface.withValues(alpha: 0.6)),
-                ),
-                if (!isClient)
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton.icon(
-                      onPressed: () => onContact(row),
-                      icon: const Icon(Icons.send_outlined),
-                      label: const Text('Pitch anonymously'),
+          final budget = _usdBand(row['budget_band'] as String?);
+          return Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: isClient ? null : () => onContact(row),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isDark ? ClivoraColors.darkBorder : ClivoraColors.borderLight,
                     ),
                   ),
-              ],
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.work_outline, size: 18, color: scheme.primary),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            row['title'] as String? ?? 'Need',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                          ),
+                          if ((row['summary'] as String?)?.isNotEmpty == true)
+                            Text(
+                              row['summary'] as String,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 12, height: 1.3, color: onSurface.withValues(alpha: 0.72)),
+                            ),
+                          const SizedBox(height: 4),
+                          Text(
+                            [
+                              budget,
+                              ...skills.take(3),
+                            ].where((s) => s.trim().isNotEmpty).join(' · '),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: scheme.primary.withValues(alpha: 0.9),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (!isClient)
+                      TextButton(
+                        onPressed: () => onContact(row),
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                        child: const Text('Pitch'),
+                      ),
+                  ],
+                ),
+              ),
             ),
           );
         }),

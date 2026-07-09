@@ -60,8 +60,6 @@ import '../features/tasks/tasks_screen.dart';
 import '../features/products/products_screen.dart';
 import '../features/quotes/quotes_screen.dart';
 import '../features/invoices/recurring_invoices_screen.dart';
-import '../features/vendors/vendors_screen.dart';
-import '../features/purchase_orders/purchase_orders_screen.dart';
 import '../features/credits/credits_screen.dart';
 import 'app_shell.dart';
 import 'auth_refresh.dart';
@@ -197,6 +195,11 @@ final appRouter = GoRouter(
           path: '/connect',
           pageBuilder: (context, state) =>
               const NoTransitionPage(child: ConnectMarketplaceScreen()),
+        ),
+        GoRoute(
+          path: '/client-hub',
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: ClientHubScreen()),
         ),
       ],
     ),
@@ -405,12 +408,6 @@ final appRouter = GoRouter(
       builder: (context, state) => const ConnectNeedScreen(),
     ),
     GoRoute(
-      parentNavigatorKey: _rootNavigatorKey,
-
-      path: '/client-hub',
-      builder: (context, state) => const ClientHubScreen(),
-    ),
-    GoRoute(
       path: '/client-quotes',
       builder: (context, state) => const ClientQuotesScreen(),
     ),
@@ -447,12 +444,12 @@ final appRouter = GoRouter(
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/vendors',
-      builder: (context, state) => const VendorsScreen(),
+      redirect: (_, __) => '/more',
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/purchase-orders',
-      builder: (context, state) => const PurchaseOrdersScreen(),
+      redirect: (_, __) => '/more',
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,

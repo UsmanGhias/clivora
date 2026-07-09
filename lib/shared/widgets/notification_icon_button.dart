@@ -27,26 +27,16 @@ class NotificationIconButton extends ConsumerWidget {
 
     final icon = Icon(Icons.notifications_none_rounded, color: color, size: 22);
 
-    final button = useFilledStyle
-        ? Material(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(12),
-            child: InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(12),
-              child: SizedBox(width: 44, height: 44, child: Center(child: icon)),
-            ),
-          )
-        : IconButton(
-            onPressed: onTap,
-            icon: icon,
-            style: IconButton.styleFrom(
-              minimumSize: const Size(44, 44),
-              backgroundColor: Theme.of(context).brightness == Brightness.light
-                  ? ClivoraColors.chipBackground
-                  : ClivoraColors.darkBorder,
-            ),
-          );
+    final button = IconButton(
+      onPressed: onTap,
+      icon: icon,
+      style: IconButton.styleFrom(
+        backgroundColor: Colors.transparent,
+        foregroundColor: color,
+        minimumSize: const Size(44, 44),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+    );
 
     return Material(
       color: Colors.transparent,
