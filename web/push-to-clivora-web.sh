@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Push this web/ directory to github.com/UsmanGhias/clivora-web
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 TMP="${TMPDIR:-/tmp}/clivora-web-push-$$"
@@ -7,15 +6,13 @@ rm -rf "$TMP"
 mkdir -p "$TMP"
 cp -a "$ROOT/." "$TMP/"
 cd "$TMP"
+rm -rf .git node_modules .next
 git init -b main
+git config user.name "UsmanGhias"
+git config user.email "iusmanghias@gmail.com"
 git add .
-git commit -m "CLIVORA web admin v2.7.0 — admin dashboard, reset password, sync API"
+git commit -m "CLIVORA web sync"
 REMOTE="${CLIVORA_WEB_REMOTE:-https://github.com/UsmanGhias/clivora-web.git}"
 git remote add origin "$REMOTE"
-if ! git push -u origin main; then
-  echo ""
-  echo "Push failed. If using Cursor Cloud Agent, grant Cursor GitHub app access to UsmanGhias/clivora-web."
-  echo "Or mirror from: git pull https://github.com/UsmanGhias/clivora clivora-web-sync"
-  exit 1
-fi
+git push -u origin main --force
 echo "Pushed to $REMOTE"

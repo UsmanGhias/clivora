@@ -1,80 +1,51 @@
-# CLIVORA Web — Admin Dashboard
+# CLIVORA Web
 
-Next.js 14 App Router project for [clivora.codcrafters.org](https://clivora.codcrafters.org). Powers the production admin console, mobile app admin sync API, and Supabase password-reset callback.
+Marketing website for [CLIVORA](https://codcrafters.org)  -  the Business Operating System for freelancers and agencies, developed by **CODCrafters**.
 
-## Routes
+**Live site:** [codcrafters.org](https://codcrafters.org)
 
-| Path | Purpose |
-|------|---------|
-| `/` | Marketing landing with link to admin |
-| `/admin` | Supabase auth login + live stats (profiles, subscriptions, email_send_log, clivora_events) |
-| `/auth/reset-password` | Supabase password reset redirect from the Flutter app |
-| `POST /api/admin/sync` | Flutter app analytics sync (`X-Admin-Sync-Key` header) |
+## Pages
 
-## Local development
+| Page | URL | Purpose |
+|------|-----|---------|
+| Home | `/` | Marketing landing page |
+| Privacy Policy | `/privacy` | **Required for Google Play Console** |
+| Terms of Service | `/terms` | App terms and subscription info |
+| Cookie Policy | `/cookies` | Website cookie disclosure |
+| Data Safety | `/data-safety` | Play Console Data Safety reference |
+| Delete Account | `/delete-account` | **Required for Google Play account deletion** |
+| Support & FAQ | `/support` | Help center |
+| About | `/about` | About CODCrafters |
+| Contact | `/contact` | Support and business contact |
+
+### Google Play Console URLs
+
+Use these when submitting CLIVORA to Google Play:
+
+- **Privacy Policy:** `https://codcrafters.org/privacy`
+- **Account deletion:** `https://codcrafters.org/delete-account`
+- **Website:** `https://codcrafters.org`
+- **Support email:** `iusmanghias@gmail.com`
+
+## Tech Stack
+
+- Next.js 15 · React 19 · TypeScript · Tailwind CSS 3 · Framer Motion
+
+## Development
 
 ```bash
-cd web
 npm install
-# Create .env.local with the variables listed below
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+## Deploy on Vercel
 
-## Vercel deployment
+1. Import repo at [vercel.com/new](https://vercel.com/new)
+2. Set custom domain to `codcrafters.org`
+3. Deploy  -  no environment variables required
 
-Deploy the `web/` directory as the Vercel project root (or set **Root Directory** to `web` in a monorepo).
+## Company
 
-### Required environment variables
+**CODCrafters**  -  [codcrafters.org](https://codcrafters.org)
 
-| Variable | Description |
-|----------|-------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (server-only; used by `/api/admin/sync`) |
-| `ADMIN_SYNC_KEY` | Shared secret for Flutter `X-Admin-Sync-Key` header. Set at build: `--dart-define=ADMIN_SYNC_KEY=...` |
-| `ADMIN_EMAILS` | Comma-separated admin emails allowed to sign in (e.g. `admin@codcrafters.org,usmanghias1@gmail.com`) |
-
-### Supabase Auth redirect URL
-
-Add this under **Authentication → URL Configuration → Redirect URLs**:
-
-```
-https://clivora.codcrafters.org/auth/reset-password
-```
-
-## Flutter integration
-
-From `lib/core/constants/admin_config.dart`:
-
-- `kClivoraWebBaseUrl` → `https://clivora.codcrafters.org`
-- `kPasswordResetRedirectUrl` → `/auth/reset-password`
-- `kAdminApiBaseUrl/api/admin/sync` → analytics POST endpoint
-- `ADMIN_SYNC_KEY` must match Vercel env var
-
-## Admin sync API
-
-```http
-POST /api/admin/sync
-Content-Type: application/json
-X-Admin-Sync-Key: <ADMIN_SYNC_KEY>
-
-{
-  "eventType": "signup",
-  "userEmail": "user@example.com",
-  "userName": "Jane",
-  "plan": "free",
-  "amount": 0,
-  "payload": "{}",
-  "createdAt": "2026-07-08T12:00:00.000Z",
-  "source": "clivora_app"
-}
-```
-
-Events are stored in Supabase `clivora_events`.
-
-## Branding
-
-- Purple: `#6C3CE1`
-- Navy: `#0F172A`
+CLIVORA © 2026 CODCrafters. All rights reserved.
