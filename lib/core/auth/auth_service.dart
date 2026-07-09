@@ -252,7 +252,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
 
     if (isAdmin) {
       try {
-        await ref.read(planLimitServiceProvider).setPlan(PlanLimits.proPlan);
+        await ref.read(planLimitServiceProvider).setPlan(PlanLimits.proPlusPlan);
       } catch (_) {}
     }
     return null;
@@ -362,7 +362,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
 
       if (isAdmin) {
         try {
-          await ref.read(planLimitServiceProvider).setPlan(PlanLimits.proPlan);
+          await ref.read(planLimitServiceProvider).setPlan(PlanLimits.proPlusPlan);
         } catch (_) {}
       }
       return null;
@@ -445,7 +445,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
 
       if (isAdmin) {
         try {
-          await ref.read(planLimitServiceProvider).setPlan(PlanLimits.proPlan);
+          await ref.read(planLimitServiceProvider).setPlan(PlanLimits.proPlusPlan);
         } catch (_) {}
       }
 
@@ -575,10 +575,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         if (restored) {
           _invalidateUserData();
         } else {
-          // Quiet auto-backup when online and workspace has data
           final remind = await ref.read(cloudCrmBackupServiceProvider).shouldRemindBackup();
           if (!remind) {
-            // still refresh timestamp window; skip upload spam
+            // Recent backup exists — quiet auto-upload to keep cloud fresh
+            try {
+              await ref.read(cloudCrmBackupServiceProvider).uploadCurrentWorkspace();
+            } catch (_) {}
           }
         }
       } catch (e) {

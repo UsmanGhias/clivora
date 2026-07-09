@@ -396,8 +396,10 @@ final isProProvider = Provider<bool>((ref) {
   return PlanFeatures.isPro(plan);
 });
 
-/// True when cloud/local plan is Pro Plus.
+/// True when cloud/local plan is Pro Plus (admins always have Plus).
 final isProPlusProvider = Provider<bool>((ref) {
+  final user = ref.watch(authStateProvider).valueOrNull;
+  if (isAdminUser(user)) return true;
   final cloudPlan = ref.watch(cloudSubscriptionPlanProvider).valueOrNull;
   if (cloudPlan == PlanLimits.proPlusPlan) return true;
   final plan = ref.watch(subscriptionPlanProvider).valueOrNull;

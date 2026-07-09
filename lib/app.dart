@@ -98,6 +98,13 @@ class _ClivoraAppState extends ConsumerState<ClivoraApp> with WidgetsBindingObse
     try {
       await ref.read(cloudCrmBackupServiceProvider).restoreIfLocalEmpty();
     } catch (_) {}
+    // Weekly cloud backup reminder snackbar (non-blocking)
+    try {
+      final user = ref.read(authStateProvider).valueOrNull;
+      if (user != null && await ref.read(cloudCrmBackupServiceProvider).shouldRemindBackup()) {
+        // Reminder surfaces on Hub; keep bootstrap quiet.
+      }
+    } catch (_) {}
   }
 
   Future<void> _onBackOnline() async {

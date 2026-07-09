@@ -67,8 +67,34 @@ type PaymentRequest = {
   notes?: string;
 };
 
+type ConnectProfile = {
+  id: string;
+  user_id: string;
+  display_title: string;
+  headline?: string;
+  skills?: string[];
+  rate_band?: string;
+  is_listed: boolean;
+  is_verified: boolean;
+  moderation_status: string;
+  account_type?: string;
+  updated_at?: string;
+};
+
+type ConnectNeed = {
+  id: string;
+  client_user_id: string;
+  title: string;
+  summary?: string;
+  skills?: string[];
+  budget_band?: string;
+  is_open: boolean;
+  moderation_status: string;
+  created_at?: string;
+};
+
 const EMPTY = "N/A";
-const ADMIN_VERSION = "v2.7.1";
+const ADMIN_VERSION = "v2.7.2";
 
 function formatAuditAction(eventType: string): string {
   return eventType.replace(/^audit_/, "").replace(/_/g, " ");
@@ -147,6 +173,9 @@ export default function AdminPage() {
   const [actionMsg, setActionMsg] = useState("");
   const [actionBusy, setActionBusy] = useState(false);
   const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([]);
+  const [connectProfiles, setConnectProfiles] = useState<ConnectProfile[]>([]);
+  const [connectNeeds, setConnectNeeds] = useState<ConnectNeed[]>([]);
+  const [connectBusy, setConnectBusy] = useState(false);
 
   const loadStats = useCallback(async () => {
     setLoading(true);
@@ -180,6 +209,29 @@ export default function AdminPage() {
       if (!res.ok) return;
       const data = (await res.json()) as { requests?: PaymentRequest[] };
       setPaymentRequests(Array.isArray(data.requests) ? data.requests : []);
+    } catch {
+      /* optional panel */
+    }
+  }, [email, password]);
+
+  const loadConnect = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/marketplace", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "list",
+          adminEmail: email,
+          adminPassword: password,
+        }),
+      });
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        profiles?: ConnectProfile[];
+        needs?: ConnectNeed[];
+      };
+      setConnectProfiles(Array.isArray(data.profiles) ? data.profiles : []);
+      setConnectNeeds(Array.isArray(data.needs) ? data.needs : []);
     } catch {
       /* optional panel */
     }
@@ -274,11 +326,36 @@ export default function AdminPage() {
     }
   }, []);
 
+  async function runConnectAction(body: Record<string, unknown>) {
+    setConnectBusy(true);
+    setActionMsg("");
+    try {
+      const auth = adminAuthBody();
+      if (!auth.adminEmail || !auth.adminPassword) {
+        throw new Error("Session expired. Sign out and sign in again.");
+      }
+      const res = await fetch("/api/admin/marketplace", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...body, ...auth }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Connect action failed");
+      setActionMsg(`Connect: ${String(body.action)} ok`);
+      await loadConnect();
+    } catch (e) {
+      setActionMsg(e instanceof Error ? e.message : "Connect action failed");
+    } finally {
+      setConnectBusy(false);
+    }
+  }
+
   useEffect(() => {
     if (!loggedIn) return;
     loadStats();
     loadPayments();
-  }, [loggedIn, loadStats, loadPayments]);
+    loadConnect();
+  }, [loggedIn, loadStats, loadPayments, loadConnect]);
 
   function login() {
     const normalized = email.trim().toLowerCase();
@@ -622,20 +699,163 @@ export default function AdminPage() {
         )}
 
         {tab === "marketplace" && (
-          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3">
-            <h2 className="font-semibold text-slate-900">CLIVORA Connect moderation</h2>
-            <p className="text-sm text-slate-600">
-              Pro Plus marketplace listings and need posts. Approve or hide from Supabase Table Editor for now:
-              <code className="mx-1 text-xs bg-slate-100 px-1 rounded">connect_profiles</code>
-              and
-              <code className="mx-1 text-xs bg-slate-100 px-1 rounded">connect_need_posts</code>
-              (<code className="text-xs">moderation_status</code> = approved | hidden).
-            </p>
-            <ul className="text-sm text-slate-700 list-disc pl-5 space-y-1">
-              <li>Anonymous until mutual accept on Connect requests</li>
-              <li>Only Pro Plus users can list or browse</li>
-              <li>Price: Rs 5,000 / month</li>
-            </ul>
+          <div className="space-y-5">
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-2">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                  <h2 className="font-semibold text-slate-900">CLIVORA Connect moderation</h2>
+                  <p className="text-sm text-slate-600 mt-1">
+                    Approve, verify, or hide Pro Plus listings and need posts. Anonymous until mutual accept · Rs{" "}
+                    {PRO_PLUS_PRICE_PKR.toLocaleString()}/mo.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={connectBusy}
+                  onClick={() => loadConnect()}
+                  className="text-sm bg-slate-900 text-white px-3 py-1.5 rounded-lg disabled:opacity-50"
+                >
+                  Refresh
+                </button>
+              </div>
+            </div>
+
+            <TableShell title="Freelancer listings" count={connectProfiles.length}>
+              {connectProfiles.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-slate-50 border-b border-slate-200">
+                      <tr>
+                        <th className={thClass}>Title</th>
+                        <th className={thClass}>Rate</th>
+                        <th className={thClass}>Status</th>
+                        <th className={thClass}>Listed</th>
+                        <th className={thClass}>Verified</th>
+                        <th className={thClass}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {connectProfiles.map((p) => (
+                        <tr key={p.id} className="hover:bg-slate-50">
+                          <td className={`${tdClass} font-medium`}>
+                            <div>{p.display_title || EMPTY}</div>
+                            <div className="text-xs text-slate-500 mt-0.5">{p.headline || EMPTY}</div>
+                          </td>
+                          <td className={tdClass}>{p.rate_band || EMPTY}</td>
+                          <td className={tdClass}>
+                            <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700">
+                              {p.moderation_status}
+                            </span>
+                          </td>
+                          <td className={tdClass}>{p.is_listed ? "Yes" : "No"}</td>
+                          <td className={tdClass}>{p.is_verified ? "Yes" : "No"}</td>
+                          <td className={tdClass}>
+                            <div className="flex flex-wrap gap-1">
+                              <button
+                                type="button"
+                                disabled={connectBusy}
+                                onClick={() =>
+                                  runConnectAction({
+                                    action: "approve",
+                                    table: "connect_profiles",
+                                    id: p.id,
+                                    verify: true,
+                                  })
+                                }
+                                className="text-xs bg-teal-600 text-white px-2 py-1 rounded"
+                              >
+                                Approve + verify
+                              </button>
+                              <button
+                                type="button"
+                                disabled={connectBusy}
+                                onClick={() =>
+                                  runConnectAction({
+                                    action: "hide",
+                                    table: "connect_profiles",
+                                    id: p.id,
+                                  })
+                                }
+                                className="text-xs bg-slate-700 text-white px-2 py-1 rounded"
+                              >
+                                Hide
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="px-5 py-10 text-center text-slate-500 text-sm">No Connect listings yet.</p>
+              )}
+            </TableShell>
+
+            <TableShell title="Need posts" count={connectNeeds.length}>
+              {connectNeeds.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-slate-50 border-b border-slate-200">
+                      <tr>
+                        <th className={thClass}>Title</th>
+                        <th className={thClass}>Budget</th>
+                        <th className={thClass}>Status</th>
+                        <th className={thClass}>Open</th>
+                        <th className={thClass}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {connectNeeds.map((n) => (
+                        <tr key={n.id} className="hover:bg-slate-50">
+                          <td className={`${tdClass} font-medium`}>
+                            <div>{n.title || EMPTY}</div>
+                            <div className="text-xs text-slate-500 mt-0.5 line-clamp-2">{n.summary || EMPTY}</div>
+                          </td>
+                          <td className={tdClass}>{n.budget_band || EMPTY}</td>
+                          <td className={tdClass}>{n.moderation_status}</td>
+                          <td className={tdClass}>{n.is_open ? "Yes" : "No"}</td>
+                          <td className={tdClass}>
+                            <div className="flex flex-wrap gap-1">
+                              <button
+                                type="button"
+                                disabled={connectBusy}
+                                onClick={() =>
+                                  runConnectAction({
+                                    action: "approve",
+                                    table: "connect_need_posts",
+                                    id: n.id,
+                                  })
+                                }
+                                className="text-xs bg-teal-600 text-white px-2 py-1 rounded"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                type="button"
+                                disabled={connectBusy}
+                                onClick={() =>
+                                  runConnectAction({
+                                    action: "hide",
+                                    table: "connect_need_posts",
+                                    id: n.id,
+                                  })
+                                }
+                                className="text-xs bg-slate-700 text-white px-2 py-1 rounded"
+                              >
+                                Hide
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="px-5 py-10 text-center text-slate-500 text-sm">No need posts yet.</p>
+              )}
+            </TableShell>
           </div>
         )}
 

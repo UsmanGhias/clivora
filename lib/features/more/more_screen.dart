@@ -25,6 +25,7 @@ import '../../shared/widgets/step_progress_card.dart';
 import '../../shared/widgets/tool_grid_tile.dart';
 import '../../core/services/analytics_export_service.dart';
 import '../../core/services/app_update_service.dart';
+import '../../core/services/cloud_crm_backup_service.dart';
 
 class MoreScreen extends ConsumerWidget {
   const MoreScreen({super.key});
@@ -38,7 +39,9 @@ class MoreScreen extends ConsumerWidget {
 
     final planAsync = ref.watch(subscriptionPlanProvider);
     final isPro = ref.watch(isProProvider);
+    final isPlus = ref.watch(isProPlusProvider);
     final plan = planAsync.valueOrNull;
+    final backupRemindAsync = ref.watch(cloudBackupReminderProvider);
 
     return ClivoraScaffold(
       title: 'Workspace',
@@ -52,9 +55,9 @@ class MoreScreen extends ConsumerWidget {
             data: (profile) => _ProfileCard(
               profile: profile,
               photoPath: authUser?.profilePhotoPath ?? profile.ownerPhotoPath,
-              planLabel: planAsync.valueOrNull == 'pro_plus'
+              planLabel: isPlus
                   ? 'Pro Plus'
-                  : planAsync.valueOrNull == 'pro'
+                  : isPro
                       ? 'Pro'
                       : 'Free',
               onEdit: () => openFormRoute(context, '/profile'),
@@ -66,6 +69,56 @@ class MoreScreen extends ConsumerWidget {
             error: (_, __) => const SizedBox.shrink(),
             data: (stats) => _StatsBar(stats: stats),
           ),
+          if (backupRemindAsync.valueOrNull == true) ...[
+            const SizedBox(height: 16),
+            Material(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => context.push('/backup'),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? ClivoraColors.darkBorder
+                          : ClivoraColors.borderLight,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: ClivoraColors.iconGreen,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.cloud_upload_outlined, color: ClivoraColors.successGreen),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Cloud backup recommended', style: TextStyle(fontWeight: FontWeight.w700)),
+                            SizedBox(height: 2),
+                            Text(
+                              'Protect clients & invoices before reinstall or device change.',
+                              style: TextStyle(fontSize: 12, height: 1.35),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
           const SectionHeader(title: 'CLIVORA Connect'),
           Material(
@@ -74,12 +127,7 @@ class MoreScreen extends ConsumerWidget {
             child: InkWell(
               borderRadius: BorderRadius.circular(18),
               onTap: () async {
-                if (!PlanFeatures.connectMarketplace(plan) &&
-                    !await requireProFeature(
-                      context,
-                      isPro: isPro,
-                      featureName: 'CLIVORA Connect (Pro Plus)',
-                    )) {
+                if (!isPlus) {
                   if (context.mounted) context.push('/upgrade');
                   return;
                 }
@@ -89,15 +137,11 @@ class MoreScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(18),
+                  color: ClivoraColors.navyDark,
                   border: Border.all(
                     color: Theme.of(context).brightness == Brightness.dark
                         ? ClivoraColors.darkBorder
-                        : ClivoraColors.borderLight,
-                  ),
-                  gradient: LinearGradient(
-                    colors: Theme.of(context).brightness == Brightness.dark
-                        ? [const Color(0xFF134E4A), const Color(0xFF1E293B)]
-                        : [const Color(0xFF0F766E), ClivoraColors.navyDark],
+                        : Colors.transparent,
                   ),
                 ),
                 child: Row(
@@ -106,7 +150,7 @@ class MoreScreen extends ConsumerWidget {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
+                        color: Colors.white.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Icon(Icons.hub_outlined, color: Colors.white),
@@ -122,7 +166,7 @@ class MoreScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            PlanFeatures.connectMarketplace(plan)
+                            isPlus
                                 ? 'Anonymous until accept · Pro Plus'
                                 : 'Pro Plus only · Rs 5,000/mo',
                             style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12),
@@ -146,8 +190,8 @@ class MoreScreen extends ConsumerWidget {
             crossAxisSpacing: 12,
             childAspectRatio: 1.3,
             children: [
-              ToolGridTile(icon: Icons.hub_outlined, label: 'Connect', iconBackground: ClivoraColors.iconTeal, iconColor: ClivoraColors.primary, badge: PlanFeatures.connectMarketplace(plan) ? null : 'Plus', onTap: () async {
-                if (!PlanFeatures.connectMarketplace(plan)) {
+              ToolGridTile(icon: Icons.hub_outlined, label: 'Connect', iconBackground: ClivoraColors.iconTeal, iconColor: ClivoraColors.primary, badge: isPlus ? null : 'Plus', onTap: () async {
+                if (!isPlus) {
                   if (context.mounted) context.push('/upgrade');
                   return;
                 }
@@ -248,8 +292,12 @@ class MoreScreen extends ConsumerWidget {
           ),
           _SettingsTile(
             icon: Icons.diamond_outlined,
-            label: isPro ? 'Manage Pro' : 'Upgrade to Pro',
-            subtitle: isPro ? 'Active subscription' : 'Rs 2,000/mo · offer from Rs 2,800',
+            label: isPlus ? 'Manage Pro Plus' : isPro ? 'Manage Pro' : 'Upgrade to Pro',
+            subtitle: isPlus
+                ? 'Pro Plus active · Connect unlocked'
+                : isPro
+                    ? 'Active subscription'
+                    : 'Pro Rs 2,000 · Plus Rs 5,000',
             onTap: () => context.push('/upgrade'),
           ),
           const SizedBox(height: 24),
@@ -526,19 +574,8 @@ class _ProfileCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF0F172A), Color(0xFF134E4A)],
-        ),
+        color: ClivoraColors.navyDark,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -615,21 +652,38 @@ class _StatsBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Theme.of(context).dividerColor),
+        border: Border.all(
+          color: isDark ? ClivoraColors.darkBorder : Theme.of(context).dividerColor,
+        ),
       ),
       child: Row(
         children: [
           _StatCol('${stats.customers}', 'Customers'),
+          _StatDivider(),
           _StatCol('${stats.activeProjects}', 'Active'),
+          _StatDivider(),
           _StatCol(formatCurrency(stats.outstanding), 'Due'),
+          _StatDivider(),
           _StatCol(formatCurrency(stats.revenue), 'Earned'),
         ],
       ),
+    );
+  }
+}
+
+class _StatDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 36,
+      color: Theme.of(context).dividerColor.withValues(alpha: 0.6),
     );
   }
 }

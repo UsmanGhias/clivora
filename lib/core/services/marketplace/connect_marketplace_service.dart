@@ -1,10 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:drift/drift.dart' show Value;
 
 import '../../auth/auth_service.dart';
 import '../../auth/user_roles.dart';
 import '../../constants/plan_features.dart';
+import '../../../data/database/database.dart';
+import '../../../data/database/user_scoped_queries.dart';
+import '../../../data/models/invoice_line_item.dart';
 import '../../../data/providers/app_providers.dart';
 
 final connectMarketplaceServiceProvider = Provider<ConnectMarketplaceService>((ref) {
@@ -171,6 +175,47 @@ class ConnectMarketplaceService {
       if (accept) 'revealed_at': DateTime.now().toIso8601String(),
       'updated_at': DateTime.now().toIso8601String(),
     }).eq('id', requestId).eq('to_user_id', uid);
+
+    if (accept) {
+      await logConnectEvent('connect_request_accepted', payload: {'request_id': requestId});
+    }
+  }
+
+  /// After mutual accept: create a local CRM customer from revealed partner identity.
+  Future<int?> linkAcceptedPartnerToWorkspace(Map<String, dynamic> request) async {
+    final myUid = currentUserId;
+    if (myUid == null) return null;
+    final incoming = request['to_user_id'] == myUid;
+    final name = (incoming ? request['from_name'] : request['to_name']) as String? ?? 'Connect partner';
+    final email = (incoming ? request['from_email'] : request['to_email']) as String? ?? '';
+    if (email.trim().isEmpty) return null;
+
+    final ownerId = ref.read(authStateProvider).valueOrNull?.id;
+    if (ownerId == null) return null;
+
+    final db = ref.read(databaseProvider);
+    final existing = await db.watchCustomersForUser(ownerId).first;
+    final needle = email.trim().toLowerCase();
+    final match = existing.where((c) {
+      return parseStringList(c.emails).any((e) => e.trim().toLowerCase() == needle);
+    }).toList();
+    if (match.isNotEmpty) return match.first.id;
+
+    final id = await db.insertCustomer(
+      CustomersCompanion.insert(
+        ownerUserId: ownerId,
+        contactPerson: name.trim().isEmpty ? email.split('@').first : name.trim(),
+        emails: Value(encodeStringList([email.trim()])),
+        notes: const Value('Added from CLIVORA Connect after mutual accept.'),
+      ),
+    );
+    await logConnectEvent('connect_workspace_linked', payload: {
+      'customer_email': email,
+      'customer_id': id,
+    });
+    ref.invalidate(customersProvider);
+    ref.invalidate(dashboardStatsProvider);
+    return id;
   }
 
   Future<void> logConnectEvent(String type, {Map<String, dynamic>? payload}) async {

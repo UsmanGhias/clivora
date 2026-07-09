@@ -14,6 +14,12 @@ final cloudCrmBackupServiceProvider = Provider<CloudCrmBackupService>((ref) {
   return CloudCrmBackupService(ref);
 });
 
+/// True when cloud CRM backup is overdue (never backed up or older than 7 days).
+final cloudBackupReminderProvider = FutureProvider<bool>((ref) async {
+  ref.watch(authStateProvider);
+  return ref.read(cloudCrmBackupServiceProvider).shouldRemindBackup();
+});
+
 /// Uploads / restores CRM JSON to Supabase so reinstall + sign-in can recover data.
 class CloudCrmBackupService {
   CloudCrmBackupService(this.ref);
