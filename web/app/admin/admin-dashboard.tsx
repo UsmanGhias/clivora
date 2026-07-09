@@ -97,6 +97,20 @@ export default function AdminDashboard({ adminEmails }: Props) {
 
   const supabase = createBrowserSupabaseClient();
 
+  const [paymentRequests, setPaymentRequests] = useState<
+    Array<{
+      id: string;
+      email: string;
+      full_name: string;
+      plan: string;
+      amount_pkr: number;
+      payment_method: string;
+      payment_reference: string;
+      status: string;
+      created_at: string;
+    }>
+  >([]);
+
   async function runAdminAction(path: "/api/admin/grant-pro" | "/api/admin/grant-admin", body: Record<string, unknown>) {
     setActionBusy(true);
     setActionMsg("");
@@ -114,7 +128,13 @@ export default function AdminDashboard({ adminEmails }: Props) {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Action failed");
-      setActionMsg(path.includes("grant-admin") ? `Admin granted to ${body.email}` : body.revoke ? `Pro revoked for ${body.email}` : `Pro granted to ${body.email}`);
+      setActionMsg(
+        path.includes("grant-admin")
+          ? `Admin granted to ${body.email}`
+          : body.revoke
+            ? `Pro revoked for ${body.email}`
+            : `${body.plan === "pro_plus" ? "Pro Plus" : "Pro"} granted to ${body.email}`
+      );
       setActionEmail("");
       await loadDashboard();
     } catch (err) {
@@ -133,7 +153,7 @@ export default function AdminDashboard({ adminEmails }: Props) {
       monthStart.setDate(1);
       monthStart.setHours(0, 0, 0, 0);
 
-      const [profilesRes, eventsRes, subsRes, emailRes] = await Promise.all([
+      const [profilesRes, eventsRes, subsRes, emailRes, paymentsRes] = await Promise.all([
         supabase
           .from("profiles")
           .select("id,email,name,account_type,role,subscription_plan,updated_at")
@@ -153,6 +173,11 @@ export default function AdminDashboard({ adminEmails }: Props) {
           .from("email_send_log")
           .select("id", { count: "exact", head: true })
           .gte("sent_at", monthStart.toISOString()),
+        supabase
+          .from("pro_payment_requests")
+          .select("id,email,full_name,plan,amount_pkr,payment_method,payment_reference,status,created_at")
+          .order("created_at", { ascending: false })
+          .limit(100),
       ]);
 
       if (profilesRes.error) throw profilesRes.error;
@@ -164,6 +189,9 @@ export default function AdminDashboard({ adminEmails }: Props) {
       setEvents((eventsRes.data ?? []) as ClivoraEvent[]);
       setSubscriptions((subsRes.data ?? []) as Subscription[]);
       setEmailsThisMonth(emailRes.count ?? 0);
+      if (!paymentsRes.error) {
+        setPaymentRequests((paymentsRes.data ?? []) as typeof paymentRequests);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load dashboard data");
     } finally {
@@ -429,10 +457,18 @@ export default function AdminDashboard({ adminEmails }: Props) {
             <button
               type="button"
               disabled={actionBusy || !actionEmail.includes("@")}
-              onClick={() => runAdminAction("/api/admin/grant-pro", { email: actionEmail.trim().toLowerCase(), revoke: false })}
+              onClick={() => runAdminAction("/api/admin/grant-pro", { email: actionEmail.trim().toLowerCase(), revoke: false, plan: "pro" })}
               style={{ ...secondaryBtn, background: CLIVORA_PURPLE }}
             >
               Grant Pro
+            </button>
+            <button
+              type="button"
+              disabled={actionBusy || !actionEmail.includes("@")}
+              onClick={() => runAdminAction("/api/admin/grant-pro", { email: actionEmail.trim().toLowerCase(), revoke: false, plan: "pro_plus" })}
+              style={{ ...secondaryBtn, background: "#b45309" }}
+            >
+              Grant Pro Plus
             </button>
             <button
               type="button"
@@ -476,19 +512,82 @@ export default function AdminDashboard({ adminEmails }: Props) {
                     p.account_type === "admin" || p.role === "admin"
                       ? badge("Admin", "admin")
                       : badge(p.account_type, "default"),
-                    p.subscription_plan === "pro" ? badge("Pro", "pro") : badge("Free", "free"),
+                    p.subscription_plan === "pro_plus"
+                      ? badge("Pro Plus", "pro")
+                      : p.subscription_plan === "pro"
+                        ? badge("Pro", "pro")
+                        : badge("Free", "free"),
                     formatDate(p.updated_at),
-                    <div key={p.id} style={{ display: "flex", gap: 6 }}>
+                    <div key={p.id} style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       <button
                         type="button"
                         style={{ ...secondaryBtn, padding: "4px 8px", fontSize: "0.75rem" }}
-                        onClick={() => runAdminAction("/api/admin/grant-pro", { email: p.email, revoke: p.subscription_plan === "pro" })}
+                        onClick={() => runAdminAction("/api/admin/grant-pro", { email: p.email, revoke: false, plan: "pro" })}
                       >
-                        {p.subscription_plan === "pro" ? "Revoke Pro" : "Grant Pro"}
+                        Pro
                       </button>
+                      <button
+                        type="button"
+                        style={{ ...secondaryBtn, padding: "4px 8px", fontSize: "0.75rem", background: "#b45309" }}
+                        onClick={() => runAdminAction("/api/admin/grant-pro", { email: p.email, revoke: false, plan: "pro_plus" })}
+                      >
+                        Plus
+                      </button>
+                      {(p.subscription_plan === "pro" || p.subscription_plan === "pro_plus") && (
+                        <button
+                          type="button"
+                          style={{ ...secondaryBtn, padding: "4px 8px", fontSize: "0.75rem" }}
+                          onClick={() => runAdminAction("/api/admin/grant-pro", { email: p.email, revoke: true })}
+                        >
+                          Revoke
+                        </button>
+                      )}
                     </div>,
                   ])
                 : [["No Supabase profiles yet", "", "", "", "", ""]]
+            }
+          />
+        </Panel>
+
+        <Panel title="Pro payment requests">
+          <p style={{ color: "#64748b", fontSize: "0.9rem", marginTop: 0 }}>
+            From <a href="/pro">/pro</a> checkout. Approve by granting Pro / Pro Plus after verifying the transfer.
+          </p>
+          <Table
+            headers={["Name", "Email", "Plan", "Amount", "Method", "Reference", "Status", "Date", "Action"]}
+            rows={
+              paymentRequests.length
+                ? paymentRequests.map((r) => [
+                    r.full_name || "—",
+                    r.email,
+                    r.plan === "pro_plus" ? "Pro Plus" : "Pro",
+                    `Rs ${r.amount_pkr}`,
+                    r.payment_method,
+                    r.payment_reference || "—",
+                    r.status,
+                    formatDate(r.created_at),
+                    r.status === "pending" ? (
+                      <button
+                        key={r.id}
+                        type="button"
+                        style={{ ...secondaryBtn, padding: "4px 8px", fontSize: "0.75rem", background: CLIVORA_PURPLE }}
+                        onClick={async () => {
+                          await runAdminAction("/api/admin/grant-pro", {
+                            email: r.email,
+                            revoke: false,
+                            plan: r.plan === "pro_plus" ? "pro_plus" : "pro",
+                          });
+                          await supabase.from("pro_payment_requests").update({ status: "approved", reviewed_at: new Date().toISOString() }).eq("id", r.id);
+                          await loadDashboard();
+                        }}
+                      >
+                        Approve + grant
+                      </button>
+                    ) : (
+                      "—"
+                    ),
+                  ])
+                : [["No payment requests yet", "", "", "", "", "", "", "", ""]]
             }
           />
         </Panel>
@@ -546,7 +645,7 @@ export default function AdminDashboard({ adminEmails }: Props) {
       </main>
 
       <footer style={{ textAlign: "center", color: "#64748b", fontSize: "0.8rem", padding: 32 }}>
-        CLIVORA by CodCrafters · Admin panel v2.7.0
+        CLIVORA by CodCrafters · Admin panel v2.7.1
       </footer>
     </div>
   );

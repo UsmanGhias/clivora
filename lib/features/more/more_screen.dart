@@ -54,7 +54,11 @@ class MoreScreen extends ConsumerWidget {
             data: (profile) => _ProfileCard(
               profile: profile,
               photoPath: authUser?.profilePhotoPath ?? profile.ownerPhotoPath,
-              planLabel: planAsync.valueOrNull == 'pro' ? 'Pro' : 'Free',
+              planLabel: planAsync.valueOrNull == 'pro_plus'
+                  ? 'Pro Plus'
+                  : planAsync.valueOrNull == 'pro'
+                      ? 'Pro'
+                      : 'Free',
               onEdit: () => openFormRoute(context, '/profile'),
             ),
           ),

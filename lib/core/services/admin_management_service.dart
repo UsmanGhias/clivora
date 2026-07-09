@@ -74,7 +74,11 @@ class AdminManagementService {
     return null;
   }
 
-  Future<String?> grantProByEmail(String email, {bool revoke = false}) async {
+  Future<String?> grantProByEmail(
+    String email, {
+    bool revoke = false,
+    String plan = PlanLimits.proPlan,
+  }) async {
     final user = ref.read(authStateProvider).valueOrNull;
     if (!isSuperAdmin(user)) return 'Only the super admin can change Pro plans.';
 
@@ -86,10 +90,14 @@ class AdminManagementService {
       return 'No CLIVORA account found for $normalized.';
     }
 
+    final targetPlan = revoke
+        ? PlanLimits.freePlan
+        : (plan == PlanLimits.proPlusPlan ? PlanLimits.proPlusPlan : PlanLimits.proPlan);
+
     try {
       await ref.read(supabaseClientProvider).rpc('grant_pro_by_email', params: {
         'p_email': normalized,
-        'p_plan': revoke ? 'free' : 'pro',
+        'p_plan': targetPlan,
       });
     } catch (e) {
       return 'Could not update cloud Pro plan: $e';
@@ -97,10 +105,7 @@ class AdminManagementService {
 
     final local = await ref.read(databaseProvider).getUserByEmail(normalized);
     if (local != null) {
-      await ref.read(planLimitServiceProvider).setPlanForUser(
-            local.id,
-            revoke ? PlanLimits.freePlan : PlanLimits.proPlan,
-          );
+      await ref.read(planLimitServiceProvider).setPlanForUser(local.id, targetPlan);
     }
 
     return null;

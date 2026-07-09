@@ -13,6 +13,26 @@ final referralServiceProvider = Provider<ReferralService>((ref) {
   return ReferralService(ref);
 });
 
+class ReferralStats {
+  const ReferralStats({
+    required this.code,
+    required this.count,
+    required this.bonusDays,
+  });
+
+  final String code;
+  final int count;
+  final int bonusDays;
+}
+
+final referralStatsProvider = FutureProvider<ReferralStats>((ref) async {
+  final service = ref.watch(referralServiceProvider);
+  final code = await service.myCode() ?? '';
+  final count = await service.referralCount();
+  final bonusDays = await service.bonusDaysEarned();
+  return ReferralStats(code: code, count: count, bonusDays: bonusDays);
+});
+
 /// Referral program — share code, earn bonus Pro days when friends subscribe.
 class ReferralService {
   ReferralService(this.ref);
