@@ -80,6 +80,7 @@ Future<void> previewClientInvoiceFromShare(
     taxRate: 0,
     discount: 0,
     total: share.total,
+    amountPaid: share.status == 'paid' ? share.total : 0,
     currency: share.currency,
     lineItems: encodeLineItems([
       InvoiceLineItem(description: 'Invoice ${share.invoiceNumber}', quantity: 1, unitPrice: share.total),
