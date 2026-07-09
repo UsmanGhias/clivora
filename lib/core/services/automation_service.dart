@@ -6,6 +6,7 @@ import '../../core/cloud/cloud_message_repository.dart';
 import '../../core/cloud/cloud_notification_repository.dart';
 import '../../core/services/audit_log_service.dart';
 import '../../core/services/push_notification_service.dart';
+import '../../core/services/recurring_invoice_service.dart';
 import '../../core/services/tracking_service.dart';
 import '../../core/auth/auth_service.dart';
 import '../../core/utils/template_utils.dart';
@@ -238,7 +239,15 @@ class AutomationService {
     }
   }
 
+  /// Generates due recurring invoices and surfaces upcoming reminders.
+  Future<void> processRecurringInvoices() async {
+    try {
+      await ref.read(recurringInvoiceServiceProvider).processDue();
+    } catch (_) {}
+  }
+
   Future<void> runWeeklySummaryIfDue() async {
+    await processRecurringInvoices();
     if (!ref.read(automationSettingsProvider).weeklySummary) return;
     final ownerId = ref.read(authStateProvider).valueOrNull?.id;
     if (ownerId == null) return;

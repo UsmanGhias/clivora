@@ -14,7 +14,6 @@ import '../../core/cloud/cloud_project_repository.dart';
 import '../../core/cloud/supabase_auth_helper.dart';
 import '../../core/services/admin_management_service.dart';
 import '../../core/services/client_pdf_quota_service.dart';
-import '../../core/cloud/supabase_auth_helper.dart';
 import '../../core/constants/plan_limits.dart';
 import '../../core/constants/plan_features.dart';
 import '../../core/utils/duration_formatter.dart';
@@ -706,6 +705,7 @@ final reportsProvider = FutureProvider<ReportData>((ref) async {
     return const ReportData(
       revenue: 0, outstanding: 0, monthlyExpenses: 0, totalExpenses: 0,
       profit: 0, monthlyProfit: 0, customers: 0, projects: 0, pendingTasks: 0,
+      agingCurrent: 0, aging30: 0, aging60: 0, aging90: 0, taxCollected: 0,
     );
   }
   final db = ref.watch(databaseProvider);
@@ -718,6 +718,29 @@ final reportsProvider = FutureProvider<ReportData>((ref) async {
   final customers = await db.countCustomersForUser(ownerId);
   final projects = await db.countProjectsForUser(ownerId);
   final pendingTasks = await db.countPendingTasksForUser(ownerId);
+
+  final invoices = await db.watchInvoicesForUser(ownerId).first;
+  var agingCurrent = 0.0, aging30 = 0.0, aging60 = 0.0, aging90 = 0.0, taxCollected = 0.0;
+  for (final inv in invoices) {
+    if (inv.status == 'paid') {
+      taxCollected += inv.subtotal * (inv.taxRate / 100);
+      continue;
+    }
+    if (inv.status != 'sent' && inv.status != 'overdue') continue;
+    final balance = (inv.total - inv.amountPaid).clamp(0, double.infinity);
+    final due = inv.dueDate ?? inv.issueDate;
+    final days = now.difference(due).inDays;
+    if (days <= 0) {
+      agingCurrent += balance;
+    } else if (days <= 30) {
+      aging30 += balance;
+    } else if (days <= 60) {
+      aging60 += balance;
+    } else {
+      aging90 += balance;
+    }
+  }
+
   return ReportData(
     revenue: paid,
     outstanding: outstanding,
@@ -728,6 +751,11 @@ final reportsProvider = FutureProvider<ReportData>((ref) async {
     customers: customers,
     projects: projects,
     pendingTasks: pendingTasks,
+    agingCurrent: agingCurrent,
+    aging30: aging30,
+    aging60: aging60,
+    aging90: aging90,
+    taxCollected: taxCollected,
   );
 });
 
@@ -742,6 +770,11 @@ class ReportData {
     required this.customers,
     required this.projects,
     required this.pendingTasks,
+    this.agingCurrent = 0,
+    this.aging30 = 0,
+    this.aging60 = 0,
+    this.aging90 = 0,
+    this.taxCollected = 0,
   });
 
   final double revenue;
@@ -753,6 +786,11 @@ class ReportData {
   final int customers;
   final int projects;
   final int pendingTasks;
+  final double agingCurrent;
+  final double aging30;
+  final double aging60;
+  final double aging90;
+  final double taxCollected;
 }
 
 // Notifications
@@ -921,3 +959,62 @@ class CalendarEvent {
   final String type;
   final Color color;
 }
+
+final productsProvider = StreamProvider<List<Product>>((ref) {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchProductsForUser(ownerId);
+});
+
+final quotesProvider = StreamProvider.family<List<Quote>, String?>((ref, status) {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchQuotesForUser(ownerId, status: status);
+});
+
+final recurringInvoicesProvider = StreamProvider<List<RecurringInvoice>>((ref) {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchRecurringInvoicesForUser(ownerId);
+});
+
+final vendorsProvider = StreamProvider<List<Vendor>>((ref) {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchVendorsForUser(ownerId);
+});
+
+final purchaseOrdersProvider = StreamProvider<List<PurchaseOrder>>((ref) {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchPurchaseOrdersForUser(ownerId);
+});
+
+final creditsProvider = StreamProvider<List<Credit>>((ref) {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchCreditsForUser(ownerId);
+});
+
+final invoicePaymentsProvider = StreamProvider<List<InvoicePayment>>((ref) {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchPaymentsForUser(ownerId);
+});
+
+/// 30-day revenue series for dashboard sparkline (paid invoice totals by day).
+final revenueSparklineProvider = FutureProvider<List<double>>((ref) async {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return List.filled(30, 0);
+  final invoices = await ref.read(databaseProvider).watchInvoicesForUser(ownerId).first;
+  final now = DateTime.now();
+  final start = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 29));
+  final series = List<double>.filled(30, 0);
+  for (final inv in invoices) {
+    if (inv.status != 'paid') continue;
+    final day = DateTime(inv.updatedAt.year, inv.updatedAt.month, inv.updatedAt.day);
+    final idx = day.difference(start).inDays;
+    if (idx >= 0 && idx < 30) series[idx] += inv.total;
+  }
+  return series;
+});

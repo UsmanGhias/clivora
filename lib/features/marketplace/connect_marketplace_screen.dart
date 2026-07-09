@@ -107,32 +107,61 @@ class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScr
           ? const _ProPlusGate()
           : Column(
               children: [
-                Container(
-                  margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: ClivoraColors.navyDark,
-                    borderRadius: BorderRadius.circular(16),
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: 1),
+                  duration: const Duration(milliseconds: 520),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, t, child) => Opacity(
+                    opacity: t,
+                    child: Transform.translate(
+                      offset: Offset(0, 12 * (1 - t)),
+                      child: child,
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Skills first. Identity later.',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
-                            ),
+                  child: Container(
+                    margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          ClivoraColors.navyDark,
+                          ClivoraColors.navyDark.withValues(alpha: 0.92),
+                          const Color(0xFF0F766E).withValues(alpha: 0.85),
+                        ],
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Browse anonymously. Contact requests stay private until both sides accept. Then emails unlock and you work inside CLIVORA.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.white.withValues(alpha: 0.85),
-                              height: 1.4,
-                            ),
-                      ),
-                    ],
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'CLIVORA Connect',
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                color: Colors.white.withValues(alpha: 0.85),
+                                letterSpacing: 0.6,
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Skills first. Identity later.',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                              ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Browse anonymously. Contact requests stay private until both sides accept. Then emails unlock and you work inside CLIVORA.',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Colors.white.withValues(alpha: 0.85),
+                                height: 1.4,
+                              ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 TabBar(
@@ -370,13 +399,24 @@ class _TalentTab extends StatelessWidget {
               ],
             ),
           ),
-        ...freelancers.map((row) {
+        ...freelancers.asMap().entries.map((entry) {
+          final index = entry.key;
+          final row = entry.value;
           final skills = (row['skills'] as List?)?.map((e) => e.toString()).toList() ?? [];
-          return Container(
+          return TweenAnimationBuilder<double>(
+            key: ValueKey(row['id'] ?? index),
+            tween: Tween(begin: 0, end: 1),
+            duration: Duration(milliseconds: 320 + (index.clamp(0, 6) * 40)),
+            curve: Curves.easeOutCubic,
+            builder: (context, t, child) => Opacity(
+              opacity: t,
+              child: Transform.translate(offset: Offset(0, 10 * (1 - t)), child: child),
+            ),
+            child: Container(
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
+              color: isDark ? ClivoraColors.navyDark.withValues(alpha: 0.55) : Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isDark ? ClivoraColors.darkBorder : ClivoraColors.borderLight,
@@ -455,6 +495,7 @@ class _TalentTab extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
             ),
           );
         }),

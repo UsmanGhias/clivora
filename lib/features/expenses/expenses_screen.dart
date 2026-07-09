@@ -176,6 +176,8 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
   String _category = 'other';
   String _paymentMethod = 'cash';
   DateTime _date = DateTime.now();
+  int? _vendorId;
+  bool _isBillable = false;
   bool _loading = true;
 
   @override
@@ -198,6 +200,8 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
       _category = expense.category;
       _paymentMethod = expense.paymentMethod;
       _date = expense.expenseDate;
+      _vendorId = expense.vendorId;
+      _isBillable = expense.isBillable;
     }
     if (mounted) setState(() => _loading = false);
   }
@@ -231,6 +235,8 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
           category: _category,
           paymentMethod: _paymentMethod,
           vendor: _vendorController.text.trim(),
+          vendorId: Value(_vendorId),
+          isBillable: _isBillable,
           notes: _notesController.text.trim(),
           expenseDate: _date,
         ));
@@ -243,6 +249,8 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
         category: Value(_category),
         paymentMethod: Value(_paymentMethod),
         vendor: Value(_vendorController.text.trim()),
+        vendorId: Value(_vendorId),
+        isBillable: Value(_isBillable),
         notes: Value(_notesController.text.trim()),
         expenseDate: Value(_date),
       ));
@@ -301,9 +309,47 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
             onChanged: (v) => setState(() => _paymentMethod = v ?? 'cash'),
           ),
           const SizedBox(height: 16),
+          ref.watch(vendorsProvider).when(
+            loading: () => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
+            data: (vendors) {
+              if (vendors.isEmpty) {
+                return TextField(
+                  controller: _vendorController,
+                  decoration: const InputDecoration(labelText: 'VENDOR', hintText: 'Optional'),
+                );
+              }
+              return DropdownButtonFormField<int?>(
+                initialValue: _vendorId,
+                decoration: const InputDecoration(labelText: 'VENDOR'),
+                items: [
+                  const DropdownMenuItem<int?>(value: null, child: Text('None / custom')),
+                  ...vendors.map((v) => DropdownMenuItem(value: v.id, child: Text(v.name))),
+                ],
+                onChanged: (id) {
+                  setState(() {
+                    _vendorId = id;
+                    if (id != null) {
+                      final v = vendors.firstWhere((e) => e.id == id);
+                      _vendorController.text = v.name;
+                    }
+                  });
+                },
+              );
+            },
+          ),
+          const SizedBox(height: 8),
           TextField(
             controller: _vendorController,
-            decoration: const InputDecoration(labelText: 'VENDOR', hintText: 'Optional'),
+            decoration: const InputDecoration(labelText: 'VENDOR NAME', hintText: 'Optional free text'),
+          ),
+          const SizedBox(height: 8),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Billable to client'),
+            subtitle: const Text('Include when converting project work to an invoice'),
+            value: _isBillable,
+            onChanged: (v) => setState(() => _isBillable = v),
           ),
           const SizedBox(height: 16),
           TextField(
