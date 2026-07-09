@@ -132,6 +132,9 @@ serve(async (req) => {
   const active = expiryMs > Date.now() && playData.paymentState !== 0;
   const expiresAt = expiryMs > 0 ? new Date(expiryMs).toISOString() : null;
   const status = active ? "active" : "expired";
+  const isPlus =
+    productId.includes("pro_plus") || productId.includes("plus");
+  const plan = active ? (isPlus ? "pro_plus" : "pro") : "free";
 
   const admin = createClient(supabaseUrl, serviceKey);
   await admin.from("subscriptions").upsert(
@@ -148,13 +151,13 @@ serve(async (req) => {
     { onConflict: "purchase_token" },
   );
 
-  await admin.from("profiles").update({ subscription_plan: active ? "pro" : "free" }).eq(
+  await admin.from("profiles").update({ subscription_plan: plan }).eq(
     "id",
     userData.user.id,
   );
 
   return new Response(
-    JSON.stringify({ active, expiresAt, productId, verified: true, status }),
+    JSON.stringify({ active, expiresAt, productId, verified: true, status, plan }),
     { status: 200, headers: { "Content-Type": "application/json" } },
   );
 });

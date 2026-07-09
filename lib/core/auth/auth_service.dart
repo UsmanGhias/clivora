@@ -35,9 +35,30 @@ const _sessionUserIdKey = 'clivora_user_id';
 const kGoogleWebClientId =
     '976757530869-ap3ea6t2noq56o46tfokgdp6haj6ioqj.apps.googleusercontent.com';
 
-String hashPassword(String password) {
-  final bytes = utf8.encode(password);
-  return sha256.convert(bytes).toString();
+/// Salted SHA-256 password hash. Format: `v2:<saltHex>:<hashHex>`.
+/// Legacy unsalted hex hashes are still accepted and upgraded on next successful login.
+String hashPassword(String password, {String? saltHex}) {
+  final salt = saltHex ??
+      sha256
+          .convert(utf8.encode('${DateTime.now().microsecondsSinceEpoch}:${password.hashCode}'))
+          .toString()
+          .substring(0, 32);
+  final digest = sha256.convert(utf8.encode('$salt::$password')).toString();
+  return 'v2:$salt:$digest';
+}
+
+bool verifyPassword(String password, String stored) {
+  if (stored.isEmpty) return false;
+  if (stored.startsWith('v2:')) {
+    final parts = stored.split(':');
+    if (parts.length != 3) return false;
+    final salt = parts[1];
+    final expected = parts[2];
+    final actual = sha256.convert(utf8.encode('$salt::$password')).toString();
+    return actual == expected;
+  }
+  // Legacy unsalted SHA-256
+  return sha256.convert(utf8.encode(password)).toString() == stored;
 }
 
 final authStateProvider = StateNotifierProvider<AuthNotifier, AsyncValue<User?>>((ref) {
@@ -234,9 +255,14 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     final roleErr = AccountTypeGuard.validateSignInRole(user: user, loginAsType: loginAsType);
     if (roleErr != null) return roleErr;
 
-    if (user.passwordHash.isNotEmpty && user.passwordHash != hashPassword(password)) {
+    if (user.passwordHash.isNotEmpty && !verifyPassword(password, user.passwordHash)) {
       // Supabase auth succeeded — update local hash (user may have reset password in cloud).
       await _db.updateUser(user.copyWith(passwordHash: hashPassword(password), googleId: Value(cloudUid)));
+    } else if (user.passwordHash.isNotEmpty &&
+        verifyPassword(password, user.passwordHash) &&
+        !user.passwordHash.startsWith('v2:')) {
+      // Upgrade legacy unsalted hash to salted v2.
+      await _db.updateUser(user.copyWith(passwordHash: hashPassword(password)));
     } else if (user.googleId != cloudUid) {
       await _db.updateUser(user.copyWith(googleId: Value(cloudUid)));
     }

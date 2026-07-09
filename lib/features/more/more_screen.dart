@@ -44,7 +44,7 @@ class MoreScreen extends ConsumerWidget {
     final backupRemindAsync = ref.watch(cloudBackupReminderProvider);
 
     return ClivoraScaffold(
-      title: 'Workspace',
+      title: 'Hub',
       showMessagesButton: true,
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
@@ -190,13 +190,6 @@ class MoreScreen extends ConsumerWidget {
             crossAxisSpacing: 12,
             childAspectRatio: 1.3,
             children: [
-              ToolGridTile(icon: Icons.hub_outlined, label: 'Connect', iconBackground: ClivoraColors.iconTeal, iconColor: ClivoraColors.primary, badge: isPlus ? null : 'Plus', onTap: () async {
-                if (!isPlus) {
-                  if (context.mounted) context.push('/upgrade');
-                  return;
-                }
-                if (context.mounted) context.push('/connect');
-              }),
               ToolGridTile(icon: Icons.receipt_long_outlined, label: 'Invoices', iconBackground: ClivoraColors.iconPurple, iconColor: ClivoraColors.primaryPurple, onTap: () => context.go('/invoices')),
               ToolGridTile(icon: Icons.task_alt_outlined, label: 'Tasks', iconBackground: ClivoraColors.iconOrange, iconColor: ClivoraColors.warningOrange, onTap: () => context.push('/tasks')),
               ToolGridTile(icon: Icons.calendar_today_outlined, label: 'Calendar', iconBackground: ClivoraColors.iconGreen, iconColor: ClivoraColors.successGreen, onTap: () async {
@@ -294,10 +287,10 @@ class MoreScreen extends ConsumerWidget {
             icon: Icons.diamond_outlined,
             label: isPlus ? 'Manage Pro Plus' : isPro ? 'Manage Pro' : 'Upgrade to Pro',
             subtitle: isPlus
-                ? 'Pro Plus active · Connect unlocked'
+                ? 'Pro Plus · Cancel in Google Play'
                 : isPro
-                    ? 'Active subscription'
-                    : 'Pro Rs 2,000 · Plus Rs 5,000',
+                    ? 'Active · Cancel in Google Play'
+                    : 'Pro & Plus via Google Play Billing',
             onTap: () => context.push('/upgrade'),
           ),
           const SizedBox(height: 24),

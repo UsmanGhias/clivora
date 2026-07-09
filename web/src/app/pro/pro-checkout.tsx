@@ -64,12 +64,16 @@ export default function ProCheckout() {
       <main style={pageWrap}>
         <div style={card}>
           <div style={logo}>C</div>
-          <h1 style={heading}>Payment request received</h1>
+          <h1 style={heading}>Request received</h1>
           <p style={bodyText}>
             Thanks {fullName || "there"}. We received your{" "}
             <strong style={{ color: "#0f172a" }}>{plan === "pro_plus" ? "Pro Plus" : "Pro"}</strong> request for{" "}
-            <strong style={{ color: "#0f172a" }}>Rs {amount.toLocaleString()}</strong>. After we verify your transfer,
-            access is activated on your CLIVORA account ({email}).
+            <strong style={{ color: "#0f172a" }}>Rs {amount.toLocaleString()}</strong>.
+          </p>
+          <p style={bodyText}>
+            <strong style={{ color: "#0f172a" }}>Android app users:</strong> subscribe inside the CLIVORA app via
+            Google Play Billing (Play policy). This web form is for website visitors and admin-assisted grants only —
+            it is not linked from the Play-distributed app.
           </p>
           <Link href="/" style={primaryBtn}>
             Back to CLIVORA
@@ -83,10 +87,11 @@ export default function ProCheckout() {
     <main style={pageWrap}>
       <div style={{ ...card, maxWidth: 720 }}>
         <div style={logo}>C</div>
-        <h1 style={heading}>CLIVORA Pro checkout</h1>
+        <h1 style={heading}>CLIVORA Pro (web)</h1>
         <p style={{ ...bodyText, marginTop: 0 }}>
-          Pay from Pakistan or anywhere in the world. Submit your payment details below. An admin activates your plan
-          from the dashboard.
+          This page is for website visitors and admin-assisted grants.{" "}
+          <strong style={{ color: "#0f172a" }}>Android app users must subscribe inside the CLIVORA app via Google Play Billing</strong>{" "}
+          (Google Play payments policy). The Play app does not open this checkout.
         </p>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>

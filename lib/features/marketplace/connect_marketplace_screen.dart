@@ -27,6 +27,7 @@ class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScr
   List<Map<String, dynamic>> _freelancers = [];
   List<Map<String, dynamic>> _needs = [];
   List<Map<String, dynamic>> _requests = [];
+  String _inboxFilter = 'all'; // all | pending | accepted | declined
 
   @override
   void initState() {
@@ -139,8 +140,8 @@ class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScr
                   labelColor: scheme.primary,
                   unselectedLabelColor: scheme.onSurface.withValues(alpha: 0.55),
                   tabs: [
-                    Tab(text: isClient ? 'Talent' : 'Talent'),
-                    Tab(text: isClient ? 'Needs' : 'Needs'),
+                    Tab(text: isClient ? 'Talent' : 'Browse'),
+                    Tab(text: isClient ? 'My needs' : 'Open needs'),
                     Tab(text: 'Inbox (${_requests.length})'),
                   ],
                 ),
@@ -152,7 +153,9 @@ class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScr
                 Expanded(
                   child: _loading
                       ? const Center(child: CircularProgressIndicator())
-                      : TabBarView(
+                      : RefreshIndicator(
+                          onRefresh: _reload,
+                          child: TabBarView(
                           controller: _tabs,
                           children: [
                             _TalentTab(
@@ -172,6 +175,8 @@ class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScr
                             _InboxTab(
                               requests: _requests,
                               myUid: ref.read(connectMarketplaceServiceProvider).currentUserId,
+                              filter: _inboxFilter,
+                              onFilterChanged: (f) => setState(() => _inboxFilter = f),
                               onAccept: (id) async {
                                 await ref
                                     .read(connectMarketplaceServiceProvider)
@@ -214,6 +219,7 @@ class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScr
                             ),
                           ],
                         ),
+                      ),
                 ),
               ],
             ),
@@ -544,6 +550,8 @@ class _InboxTab extends StatelessWidget {
   const _InboxTab({
     required this.requests,
     required this.myUid,
+    required this.filter,
+    required this.onFilterChanged,
     required this.onAccept,
     required this.onDecline,
     required this.onLinkWorkspace,
@@ -551,74 +559,104 @@ class _InboxTab extends StatelessWidget {
 
   final List<Map<String, dynamic>> requests;
   final String? myUid;
+  final String filter;
+  final ValueChanged<String> onFilterChanged;
   final Future<void> Function(String id) onAccept;
   final Future<void> Function(String id) onDecline;
   final Future<void> Function(Map<String, dynamic> row) onLinkWorkspace;
 
   @override
   Widget build(BuildContext context) {
+    final filtered = filter == 'all'
+        ? requests
+        : requests.where((r) => (r['status'] as String? ?? 'pending') == filter).toList();
     if (requests.isEmpty) {
       return const Center(child: Text('No Connect requests yet.'));
     }
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: requests.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemBuilder: (context, i) {
-        final r = requests[i];
-        final incoming = r['to_user_id'] == myUid;
-        final status = r['status'] as String? ?? 'pending';
-        final accepted = status == 'accepted';
-        return Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDark ? ClivoraColors.darkBorder : ClivoraColors.borderLight,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: Row(
             children: [
-              Text(
-                incoming ? 'Incoming request' : 'Sent request',
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 6),
-              Text(r['message'] as String? ?? ''),
-              const SizedBox(height: 8),
-              Text('Status: $status', style: Theme.of(context).textTheme.bodySmall),
-              if (accepted) ...[
-                const SizedBox(height: 8),
-                Text(
-                  'Identity unlocked\n'
-                  '${incoming ? r['from_name'] : r['to_name'] ?? 'Partner'}\n'
-                  '${incoming ? r['from_email'] : r['to_email'] ?? ''}',
-                  style: const TextStyle(fontWeight: FontWeight.w600, height: 1.35),
-                ),
-                const SizedBox(height: 8),
-                FilledButton.tonalIcon(
-                  onPressed: () => onLinkWorkspace(r),
-                  icon: const Icon(Icons.person_add_alt_1_outlined),
-                  label: const Text('Add to workspace'),
-                ),
-              ],
-              if (incoming && status == 'pending')
-                Row(
-                  children: [
-                    TextButton(onPressed: () => onDecline(r['id'] as String), child: const Text('Decline')),
-                    FilledButton(
-                      onPressed: () => onAccept(r['id'] as String),
-                      child: const Text('Accept & reveal'),
-                    ),
-                  ],
+              for (final f in const ['all', 'pending', 'accepted', 'declined'])
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(f[0].toUpperCase() + f.substring(1)),
+                    selected: filter == f,
+                    onSelected: (_) => onFilterChanged(f),
+                  ),
                 ),
             ],
           ),
-        );
-      },
+        ),
+        Expanded(
+          child: filtered.isEmpty
+              ? const Center(child: Text('No requests in this filter.'))
+              : ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: filtered.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, i) {
+                    final r = filtered[i];
+                    final incoming = r['to_user_id'] == myUid;
+                    final status = r['status'] as String? ?? 'pending';
+                    final accepted = status == 'accepted';
+                    return Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isDark ? ClivoraColors.darkBorder : ClivoraColors.borderLight,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            incoming ? 'Incoming request' : 'Sent request',
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(r['message'] as String? ?? ''),
+                          const SizedBox(height: 8),
+                          Text('Status: $status', style: Theme.of(context).textTheme.bodySmall),
+                          if (accepted) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'Identity unlocked\n'
+                              '${incoming ? r['from_name'] : r['to_name'] ?? 'Partner'}\n'
+                              '${incoming ? r['from_email'] : r['to_email'] ?? ''}',
+                              style: const TextStyle(fontWeight: FontWeight.w600, height: 1.35),
+                            ),
+                            const SizedBox(height: 8),
+                            FilledButton.tonalIcon(
+                              onPressed: () => onLinkWorkspace(r),
+                              icon: const Icon(Icons.person_add_alt_1_outlined),
+                              label: const Text('Add to workspace'),
+                            ),
+                          ],
+                          if (incoming && status == 'pending')
+                            Row(
+                              children: [
+                                TextButton(onPressed: () => onDecline(r['id'] as String), child: const Text('Decline')),
+                                FilledButton(
+                                  onPressed: () => onAccept(r['id'] as String),
+                                  child: const Text('Accept & reveal'),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 }

@@ -58,7 +58,18 @@ class _ClivoraAppState extends ConsumerState<ClivoraApp> with WidgetsBindingObse
     } else if (state == AppLifecycleState.resumed && _wasPaused) {
       _wasPaused = false;
       _handleResumeUnlock();
+      _syncPlanOnResume();
     }
+  }
+
+  Future<void> _syncPlanOnResume() async {
+    try {
+      final plan = await SubscriptionManager.effectivePlan();
+      await ref.read(planLimitServiceProvider).setPlan(plan);
+      ref.invalidate(cloudSubscriptionPlanProvider);
+      ref.invalidate(serverSubscriptionProvider);
+      ref.invalidate(subscriptionPlanProvider);
+    } catch (_) {}
   }
 
   Future<void> _handleResumeUnlock() async {
