@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../auth/auth_service.dart';
 import '../auth/user_roles.dart';
 import '../constants/billing_products.dart';
-import '../constants/plan_limits.dart';
 import '../constants/pro_pricing.dart';
 import 'analytics_service.dart';
 import 'play_billing_verify_service.dart';
@@ -17,15 +17,14 @@ final billingServiceProvider = Provider<BillingService>((ref) {
   return BillingService(ref);
 });
 
-/// Google Play Billing — separate Pro subscriptions for freelancers and clients.
+/// Google Play Billing — Pro and Pro Plus monthly subscriptions (no external web checkout in-app).
 class BillingService {
   BillingService(this.ref);
 
   final Ref ref;
   final InAppPurchase _iap = InAppPurchase.instance;
 
-  ProductDetails? _freelancerProduct;
-  ProductDetails? _clientProduct;
+  final Map<String, ProductDetails> _products = {};
 
   Future<bool> isAvailable() => _iap.isAvailable();
 
@@ -34,10 +33,15 @@ class BillingService {
     return user != null && !isGuestUser(user);
   }
 
-  String productIdForCurrentUser() {
+  String _accountType() {
     final user = ref.read(authStateProvider).valueOrNull;
-    final type = isClientUser(user) ? 'client' : 'freelancer';
-    return BillingProducts.forAccountType(type);
+    return isClientUser(user) ? 'client' : 'freelancer';
+  }
+
+  String productIdForCurrentUser({required bool plus}) {
+    return plus
+        ? BillingProducts.plusForAccountType(_accountType())
+        : BillingProducts.proForAccountType(_accountType());
   }
 
   Future<List<ProductDetails>> loadProducts() async {
@@ -47,53 +51,61 @@ class BillingService {
       debugPrint('Billing query error: ${response.error}');
     }
     for (final p in response.productDetails) {
-      if (p.id == BillingProducts.freelancerProMonthly) _freelancerProduct = p;
-      if (p.id == BillingProducts.clientProMonthly) _clientProduct = p;
+      _products[p.id] = p;
     }
     return response.productDetails;
   }
 
-  ProductDetails? productForUser() {
-    final user = ref.read(authStateProvider).valueOrNull;
-    if (isClientUser(user)) return _clientProduct;
-    return _freelancerProduct;
+  ProductDetails? productForUser({required bool plus}) {
+    return _products[productIdForCurrentUser(plus: plus)];
   }
 
-  String displayPriceForUser() {
-    final product = productForUser();
+  String displayPriceForUser({required bool plus}) {
+    final product = productForUser(plus: plus);
     if (product != null) return product.price;
-    return ProPricing.monthlyLabel;
+    return plus ? ProPricing.plusMonthlyLabel : ProPricing.monthlyLabel;
   }
 
-  Future<bool> purchaseProForCurrentUser() async {
+  Future<bool> purchasePlan({required bool plus}) async {
     if (!isBillingOpenToUser) return false;
-    final products = await loadProducts();
-    if (products.isEmpty) return false;
-
-    final product = productForUser();
-    if (product == null) return false;
-
+    await loadProducts();
+    final product = productForUser(plus: plus);
+    if (product == null) {
+      debugPrint('Play product missing: ${productIdForCurrentUser(plus: plus)}');
+      return false;
+    }
     final param = PurchaseParam(productDetails: product);
     return _iap.buyNonConsumable(purchaseParam: param);
   }
+
+  Future<bool> purchaseProForCurrentUser() => purchasePlan(plus: false);
+
+  Future<bool> purchaseProPlusForCurrentUser() => purchasePlan(plus: true);
 
   Future<void> restorePurchases() async {
     if (!isBillingOpenToUser) return;
     await _iap.restorePurchases();
   }
 
+  /// Opens Google Play subscription management (cancel / change payment).
+  Future<bool> openManageSubscription() async {
+    final sku = await SubscriptionManager.activeProductId();
+    final uri = BillingProducts.manageSubscriptionUri(sku: sku);
+    return launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
   Future<void> handlePurchaseUpdates(List<PurchaseDetails> purchases) async {
     for (final purchase in purchases) {
-      final isValidProduct = purchase.productID == BillingProducts.freelancerProMonthly ||
-          purchase.productID == BillingProducts.clientProMonthly;
-
-      if (!isValidProduct) continue;
+      if (!BillingProducts.isProProduct(purchase.productID)) continue;
 
       if (purchase.status == PurchaseStatus.purchased || purchase.status == PurchaseStatus.restored) {
         final user = ref.read(authStateProvider).valueOrNull;
-        final expectedId = productIdForCurrentUser();
+        final expectedPro = productIdForCurrentUser(plus: false);
+        final expectedPlus = productIdForCurrentUser(plus: true);
 
-        if (user != null && purchase.productID != expectedId) {
+        if (user != null &&
+            purchase.productID != expectedPro &&
+            purchase.productID != expectedPlus) {
           debugPrint('Purchase product ${purchase.productID} does not match account type');
           if (purchase.pendingCompletePurchase) {
             await _iap.completePurchase(purchase);
@@ -103,7 +115,7 @@ class BillingService {
 
         final verify = await ref.read(playBillingVerifyServiceProvider).verifyPurchase(purchase);
         if (verify == null || !verify.active) {
-          debugPrint('Play purchase not verified — Pro not activated');
+          debugPrint('Play purchase not verified — plan not activated');
           if (purchase.pendingCompletePurchase) {
             await _iap.completePurchase(purchase);
           }
@@ -118,8 +130,12 @@ class BillingService {
           productId: purchase.productID,
           period: period.isNegative ? const Duration(days: 30) : period,
         );
-        await ref.read(planLimitServiceProvider).setPlan(PlanLimits.proPlan);
+
+        final plan = BillingProducts.planForProduct(purchase.productID);
+        await ref.read(planLimitServiceProvider).setPlan(plan);
         ref.invalidate(serverSubscriptionProvider);
+        ref.invalidate(cloudSubscriptionPlanProvider);
+        ref.invalidate(subscriptionPlanProvider);
 
         if (user != null) {
           await ref.read(analyticsServiceProvider).trackProActivation(
@@ -134,8 +150,7 @@ class BillingService {
           await _iap.completePurchase(purchase);
         }
       } else if (purchase.status == PurchaseStatus.error) {
-        await SubscriptionManager.startGracePeriod();
-        await ref.read(planLimitServiceProvider).setPlan(PlanLimits.proPlan);
+        debugPrint('Purchase error: ${purchase.error}');
       }
     }
   }

@@ -7,7 +7,7 @@ abstract final class ProPricing {
   static const offerPricePkr = 2000;
   static const monthlyPkr = offerPricePkr;
   static const monthlyLabel = 'Rs 2,000';
-  static const billingNote = 'Pay securely on clivora.codcrafters.org · Cancel anytime';
+  static const billingNote = 'Subscribe via Google Play · Cancel anytime in Play subscriptions';
 
   static const offerBadge = 'Save Rs 800';
   static const offerPercentOff = 29;
