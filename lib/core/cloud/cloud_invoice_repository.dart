@@ -182,6 +182,16 @@ class CloudInvoiceRepository {
       ..sort((a, b) => (b.updatedAt ?? DateTime(2000)).compareTo(a.updatedAt ?? DateTime(2000)));
   }
 
+  Future<void> updateShareStatus({
+    required String shareId,
+    required String status,
+  }) async {
+    await _db.from('invoice_shares').update({
+      'status': status,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('share_id', shareId);
+  }
+
   Future<void> confirmPaymentByClient({
     required CloudInvoiceShare share,
     required User client,

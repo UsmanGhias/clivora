@@ -33,6 +33,9 @@ part 'database.g.dart';
     TeamMembers,
     FileAttachments,
     CalendarReminders,
+    ProjectMilestones,
+    ProjectReviews,
+    InvoiceDisputes,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -41,7 +44,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   bool _databaseRepaired = false;
 
@@ -120,6 +123,11 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(businessProfiles, businessProfiles.clientCompany);
             await m.addColumn(businessProfiles, businessProfiles.clientIndustry);
             await m.addColumn(businessProfiles, businessProfiles.clientWebsite);
+          }
+          if (from < 16) {
+            await m.createTable(projectMilestones);
+            await m.createTable(projectReviews);
+            await m.createTable(invoiceDisputes);
           }
         },
       );

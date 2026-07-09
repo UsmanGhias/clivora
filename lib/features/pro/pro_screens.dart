@@ -14,6 +14,7 @@ import '../../core/services/clivora_ai_enhanced_service.dart';
 import '../../core/services/ai_assistant_service.dart';
 import '../../core/services/automation_service.dart';
 import '../../core/constants/plan_features.dart';
+import '../../core/services/contract_pdf_service.dart';
 import '../../core/services/vault_service.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../core/cloud/cloud_message_repository.dart';
@@ -505,7 +506,17 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                       child: ListTile(
                         title: Text(c.title),
                         subtitle: Text(c.status.toUpperCase()),
-                        trailing: const Icon(Icons.chevron_right),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              tooltip: 'PDF',
+                              icon: const Icon(Icons.picture_as_pdf_outlined),
+                              onPressed: () => _exportContractPdf(c),
+                            ),
+                            const Icon(Icons.chevron_right),
+                          ],
+                        ),
                         onTap: () => _editContract(context, c),
                       ),
                     );
@@ -517,6 +528,15 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _exportContractPdf(Contract contract) async {
+    final ownerId = ref.read(authStateProvider).valueOrNull?.id;
+    if (ownerId == null) return;
+    final customer = await ref.read(databaseProvider).getCustomerForUser(ownerId, contract.customerId);
+    final business = await ref.read(databaseProvider).watchBusinessProfileForUser(ownerId).first;
+    if (customer == null || !mounted) return;
+    await ContractPdfService.sharePdf(contract: contract, customer: customer, business: business);
   }
 
   Future<void> _editContract(BuildContext context, Contract contract) async {

@@ -106,9 +106,39 @@ class InvoicePdfService {
                 child: _totals(invoice, accent),
               ),
               pw.Spacer(),
+              pw.Container(
+                width: double.infinity,
+                padding: const pw.EdgeInsets.all(12),
+                decoration: pw.BoxDecoration(
+                  color: PdfColor.fromInt(0xFFF8FAFC),
+                  borderRadius: pw.BorderRadius.circular(8),
+                  border: pw.Border.all(color: PdfColors.grey300),
+                ),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('Payment & notes', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: accent)),
+                    pw.SizedBox(height: 4),
+                    pw.Text(
+                      'Please pay by the due date. Reference invoice ${invoice.invoiceNumber} with your transfer.',
+                      style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+                    ),
+                    if (business.businessAddress.isNotEmpty)
+                      pw.Text(business.businessAddress, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                    if (business.businessCity.isNotEmpty || business.businessCountry.isNotEmpty)
+                      pw.Text(
+                        [business.businessCity, business.businessPostalCode, business.businessCountry]
+                            .where((s) => s.isNotEmpty)
+                            .join(', '),
+                        style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+                      ),
+                  ],
+                ),
+              ),
+              pw.SizedBox(height: 12),
               pw.Text(
-                'Thank you for your business.',
-                style: pw.TextStyle(color: PdfColors.grey700, fontSize: 10),
+                'Thank you for your business · Powered by CLIVORA',
+                style: pw.TextStyle(color: PdfColors.grey700, fontSize: 9),
               ),
             ],
           );

@@ -46,6 +46,7 @@ class MoreScreen extends ConsumerWidget {
       title: 'Workspace',
       showMessagesButton: true,
       body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
         children: [
           profileAsync.when(
             loading: () => const SizedBox(height: 140),
@@ -86,6 +87,8 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(icon: Icons.forum_outlined, label: 'Messages', iconBackground: ClivoraColors.iconTeal, iconColor: ClivoraColors.primary, onTap: () => context.go('/freelancer-messages')),
               ToolGridTile(icon: Icons.payment_outlined, label: 'Payments', iconBackground: ClivoraColors.iconTeal, iconColor: Colors.teal, onTap: () => context.push('/payments')),
               ToolGridTile(icon: Icons.notifications_outlined, label: 'Follow-ups', iconBackground: ClivoraColors.iconRed, iconColor: ClivoraColors.errorRed, onTap: () => context.push('/notifications')),
+              ToolGridTile(icon: Icons.flag_outlined, label: 'Milestones', iconBackground: ClivoraColors.iconIndigo, iconColor: Colors.indigo, onTap: () => context.push('/projects')),
+              ToolGridTile(icon: Icons.star_outline, label: 'Reviews', iconBackground: ClivoraColors.iconYellow, iconColor: ClivoraColors.accent, onTap: () => context.push('/reviews')),
             ],
           ),
           const SizedBox(height: 16),

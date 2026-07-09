@@ -24,8 +24,10 @@ import '../features/invoices/invoices_screen.dart';
 import '../features/more/more_screen.dart';
 import '../features/notes/notes_screen.dart';
 import '../features/projects/project_time_tracker_screen.dart';
+import '../features/projects/project_milestones_screen.dart';
 import '../features/projects/project_form_screen.dart';
 import '../features/projects/projects_screen.dart';
+import '../features/reviews/reviews_screen.dart';
 import '../features/analytics/analytics_dashboard_screen.dart';
 import '../features/calendar/calendar_screen.dart';
 import '../features/settings/backup_restore_screen.dart';
@@ -211,6 +213,19 @@ final appRouter = GoRouter(
         final id = int.parse(state.pathParameters['id']!);
         return ProjectTimeTrackerScreen(projectId: id);
       },
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/projects/:id/milestones',
+      builder: (context, state) {
+        final id = int.parse(state.pathParameters['id']!);
+        return ProjectMilestonesScreen(projectId: id);
+      },
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/reviews',
+      builder: (context, state) => const ReviewsScreen(),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
