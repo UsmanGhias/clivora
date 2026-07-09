@@ -29,7 +29,7 @@ const roadmapItems = [
     icon: RefreshCw,
     title: "Google Play Billing",
     description:
-      "Pro subscriptions at Rs 2,000/month with secure Play Store payments.",
+      "Pro subscriptions at $9/month · Pro Plus at $19/month with secure Play Store payments.",
     phase: "Next",
     color: "text-teal-400",
     bg: "bg-teal-500/10",

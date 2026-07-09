@@ -74,6 +74,8 @@ Future<void> showClientProjectDetail(
             ],
           ),
           const SizedBox(height: 20),
+          _ProjectPipeline(status: project.status),
+          const SizedBox(height: 16),
           if (project.budget > 0)
             _DetailRow(
               icon: Icons.payments_outlined,
@@ -246,6 +248,65 @@ class _DetailRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Visual status pipeline for client project detail (Atrium-inspired UX).
+class _ProjectPipeline extends StatelessWidget {
+  const _ProjectPipeline({required this.status});
+  final String status;
+
+  static const _stages = ['not_started', 'in_progress', 'review', 'completed'];
+
+  int get _index {
+    final s = status.toLowerCase();
+    if (s.contains('complete') || s == 'done') return 3;
+    if (s.contains('review')) return 2;
+    if (s.contains('progress') || s == 'active') return 1;
+    return 0;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final idx = _index;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Progress', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            for (var i = 0; i < _stages.length; i++) ...[
+              Expanded(
+                child: Column(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 280),
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: i <= idx ? ClivoraColors.clientAccent : ClivoraColors.borderLight,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      _stages[i].replaceAll('_', ' '),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: i == idx ? FontWeight.w800 : FontWeight.w500,
+                        color: i <= idx ? ClivoraColors.clientAccent : ClivoraColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (i < _stages.length - 1) const SizedBox(width: 4),
+            ],
+          ],
+        ),
+      ],
     );
   }
 }

@@ -33,7 +33,7 @@ Future<bool> requireProFeature(
     builder: (ctx) => AlertDialog(
       title: Text('$featureName ($planName)'),
       content: Text(
-        '$featureName requires $planName (Rs 2,000/mo, limited offer from Rs 2,800). '
+        '$featureName requires $planName (\$9/mo, limited offer from \$14). '
         'Subscribe securely through Google Play.',
       ),
       actions: [

@@ -87,6 +87,19 @@ class ClientPortalScreen extends ConsumerWidget {
                     ],
                   ),
                   const SizedBox(height: 16),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.tonalIcon(
+                      onPressed: () => openFormRoute(context, '/client-hub'),
+                      icon: const Icon(Icons.apps_outlined),
+                      label: const Text('Open Client Hub'),
+                      style: FilledButton.styleFrom(
+                        foregroundColor: ClivoraColors.clientAccent,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(

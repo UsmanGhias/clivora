@@ -13,6 +13,7 @@ import '../../core/auth/user_roles.dart';
 import '../../core/utils/admin_helper.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../core/constants/plan_features.dart';
+import '../../core/constants/pro_pricing.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../data/database/database.dart';
@@ -211,18 +212,18 @@ class MoreScreen extends ConsumerWidget {
                         child: const Icon(Icons.hub_outlined, color: Colors.white),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            const Text(
                               'Unlock Connect',
                               style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
                             ),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Text(
-                              'Pro Plus bottom tab · Rs 5,000/mo',
-                              style: TextStyle(color: Colors.white70, fontSize: 12),
+                              'Pro Plus bottom tab · ${ProPricing.plusMonthlyLabel}/mo',
+                              style: const TextStyle(color: Colors.white70, fontSize: 12),
                             ),
                           ],
                         ),

@@ -19,7 +19,7 @@ class _ConnectListingScreenState extends ConsumerState<ConnectListingScreen> {
   final _bio = TextEditingController();
   final _skills = TextEditingController();
   final _location = TextEditingController();
-  String _rate = 'Rs 2k-5k / project';
+  String _rate = '\$200–500 / project';
   String _availability = 'available';
   bool _listed = true;
   bool _busy = false;
@@ -93,10 +93,10 @@ class _ConnectListingScreenState extends ConsumerState<ConnectListingScreen> {
                   value: _rate,
                   decoration: const InputDecoration(labelText: 'Rate band'),
                   items: const [
-                    DropdownMenuItem(value: 'Rs 1k-2k / project', child: Text('Rs 1k-2k / project')),
-                    DropdownMenuItem(value: 'Rs 2k-5k / project', child: Text('Rs 2k-5k / project')),
-                    DropdownMenuItem(value: 'Rs 5k-15k / project', child: Text('Rs 5k-15k / project')),
-                    DropdownMenuItem(value: 'Rs 15k+ / project', child: Text('Rs 15k+ / project')),
+                    DropdownMenuItem(value: '\$100–200 / project', child: Text('\$100–200 / project')),
+                    DropdownMenuItem(value: '\$200–500 / project', child: Text('\$200–500 / project')),
+                    DropdownMenuItem(value: '\$500–1,500 / project', child: Text('\$500–1,500 / project')),
+                    DropdownMenuItem(value: '\$1,500+ / project', child: Text('\$1,500+ / project')),
                     DropdownMenuItem(value: 'negotiable', child: Text('Negotiable')),
                   ],
                   onChanged: (v) => setState(() => _rate = v ?? _rate),

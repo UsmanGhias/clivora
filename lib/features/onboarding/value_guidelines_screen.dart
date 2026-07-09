@@ -232,7 +232,7 @@ class _ProPricingCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Pro plan · About \$7 USD',
+                  'Pro plan · ${ProPricing.monthlyLabel}/mo · Plus ${ProPricing.plusMonthlyLabel}/mo',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.9),
                     fontSize: compact ? 12 : 13,

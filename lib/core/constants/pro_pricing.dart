@@ -1,24 +1,37 @@
 abstract final class ProPricing {
-  /// Strikethrough list price shown in-app.
-  static const listPricePkr = 2800;
-  static const listPriceLabel = 'Rs 2,800';
+  /// Strikethrough list price shown in-app (USD).
+  static const listPriceUsd = 14;
+  static const listPriceLabel = '\$14';
 
   /// Standard Pro offer.
-  static const offerPricePkr = 2000;
-  static const monthlyPkr = offerPricePkr;
-  static const monthlyLabel = 'Rs 2,000';
+  static const offerPriceUsd = 9;
+  static const monthlyUsd = offerPriceUsd;
+  static const monthlyLabel = '\$9';
   static const billingNote = 'Subscribe via Google Play · Cancel anytime in Play subscriptions';
 
-  static const offerBadge = 'Save Rs 800';
-  static const offerPercentOff = 29;
+  static const offerBadge = 'Save \$5';
+  static const offerPercentOff = 36;
 
   /// Pro Plus - flagship plan with CLIVORA Connect.
-  static const plusListPricePkr = 6500;
-  static const plusListPriceLabel = 'Rs 6,500';
-  static const plusPricePkr = 5000;
-  static const plusMonthlyLabel = 'Rs 5,000';
+  static const plusListPriceUsd = 29;
+  static const plusListPriceLabel = '\$29';
+  static const plusPriceUsd = 19;
+  static const plusMonthlyLabel = '\$19';
   static const plusOfferBadge = 'Connect included';
-  static const plusUsdApprox = 'About \$18 USD';
+
+  /// Legacy aliases kept so older call sites compile during migration.
+  @Deprecated('Use listPriceUsd')
+  static const listPricePkr = listPriceUsd;
+  @Deprecated('Use offerPriceUsd')
+  static const offerPricePkr = offerPriceUsd;
+  @Deprecated('Use monthlyUsd')
+  static const monthlyPkr = monthlyUsd;
+  @Deprecated('Use plusListPriceUsd')
+  static const plusListPricePkr = plusListPriceUsd;
+  @Deprecated('Use plusPriceUsd')
+  static const plusPricePkr = plusPriceUsd;
+  @Deprecated('Removed — prices are USD')
+  static const plusUsdApprox = plusMonthlyLabel;
 
   static const freelancerTitle = 'Freelancer Pro';
   static const clientTitle = 'Client Pro';
@@ -28,6 +41,6 @@ abstract final class ProPricing {
   static const playStoreUrl =
       'https://play.google.com/store/apps/details?id=$playStorePackage';
 
-  /// Web checkout (Pakistan + worldwide bank/JazzCash/EasyPaisa/card instructions).
+  /// Web checkout (bank / JazzCash / EasyPaisa / international wire instructions).
   static const webProCheckoutUrl = 'https://clivora.codcrafters.org/pro';
 }

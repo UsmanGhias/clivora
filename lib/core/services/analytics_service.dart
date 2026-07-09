@@ -76,7 +76,7 @@ class AnalyticsService {
         email: email,
         name: name,
         plan: 'pro',
-        amount: ProPricing.monthlyPkr.toDouble(),
+        amount: ProPricing.monthlyUsd.toDouble(),
       );
 }
 
@@ -85,7 +85,7 @@ final adminStatsProvider = FutureProvider<AdminStats>((ref) async {
   final users = await db.getAllUsers();
   final signups = await db.countAnalyticsByEvent('signup');
   final proCount = await db.countProUsers();
-  final revenue = proCount * ProPricing.monthlyPkr;
+  final revenue = proCount * ProPricing.monthlyUsd;
   return AdminStats(
     totalUsers: users.length,
     signups: signups,

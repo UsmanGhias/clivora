@@ -91,7 +91,7 @@ export function adminStats() {
     signups,
     proActivations,
     auditCount: auditEvents.length,
-    estimatedMrrPkr: proActivations * 2000,
+    estimatedMrrUsd: proActivations * 9,
     events: generalEvents.slice(0, 100),
     auditEvents: auditEvents.slice(0, 50),
   };

@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     }
 
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/pro_payment_requests?select=id,email,full_name,plan,amount_pkr,payment_method,payment_reference,status,created_at,country,account_type,notes&order=created_at.desc&limit=100`,
+      `${SUPABASE_URL}/rest/v1/pro_payment_requests?select=id,email,full_name,plan,amount_pkr,amount_usd,currency,payment_method,payment_reference,status,created_at,country,account_type,notes&order=created_at.desc&limit=100`,
       {
         headers: {
           apikey: key,

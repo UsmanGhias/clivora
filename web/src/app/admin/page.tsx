@@ -7,8 +7,8 @@ import {
   ADMIN_SESSION_FLAG,
   ADMIN_SESSION_PASS,
   PANEL_PASSWORD,
-  PRO_PLUS_PRICE_PKR,
-  PRO_PRICE_PKR,
+  PRO_PLUS_PRICE_USD,
+  PRO_PRICE_USD,
   SYNC_KEY,
 } from "@/lib/admin-auth";
 
@@ -43,7 +43,7 @@ type Stats = {
   signups: number;
   proActivations: number;
   auditCount: number;
-  estimatedMrrPkr: number;
+  estimatedMrrUsd: number;
   events: AdminEvent[];
   auditEvents: AdminEvent[];
   profiles?: AdminProfile[];
@@ -57,7 +57,9 @@ type PaymentRequest = {
   email: string;
   full_name: string;
   plan: string;
-  amount_pkr: number;
+  amount_pkr?: number;
+  amount_usd?: number;
+  currency?: string;
   payment_method: string;
   payment_reference: string;
   status: string;
@@ -502,9 +504,9 @@ export default function AdminPage() {
               <StatCard label="Pro users" value={stats?.proProfiles ?? EMPTY} />
               <StatCard label="Audit events" value={stats?.auditCount ?? EMPTY} />
               <StatCard
-                label="Est. MRR (PKR)"
-                value={stats ? `Rs ${stats.estimatedMrrPkr.toLocaleString()}` : EMPTY}
-                sub={`Rs ${PRO_PRICE_PKR.toLocaleString()} / Pro · Rs ${PRO_PLUS_PRICE_PKR.toLocaleString()} / Plus`}
+                label="Est. MRR (USD)"
+                value={stats ? `$${stats.estimatedMrrUsd}` : EMPTY}
+                sub={`$${PRO_PRICE_USD} / Pro · $${PRO_PLUS_PRICE_USD} / Plus`}
               />
             </div>
 
@@ -653,7 +655,10 @@ export default function AdminPage() {
                           <div className="text-xs text-slate-500">{r.full_name || EMPTY}</div>
                         </td>
                         <td className={tdClass}>{r.plan}</td>
-                        <td className={tdClass}>Rs {(r.amount_pkr ?? 0).toLocaleString()}</td>
+                        <td className={tdClass}>
+                          ${(r.amount_usd ?? r.amount_pkr ?? 0).toLocaleString()}
+                          {r.currency ? ` ${r.currency}` : ""}
+                        </td>
                         <td className={tdClass}>
                           <div>{r.payment_method}</div>
                           <div className="text-xs text-slate-500 font-mono">{r.payment_reference}</div>
@@ -706,7 +711,7 @@ export default function AdminPage() {
                   <h2 className="font-semibold text-slate-900">CLIVORA Connect moderation</h2>
                   <p className="text-sm text-slate-600 mt-1">
                     Approve, verify, or hide Pro Plus listings and need posts. Anonymous until mutual accept · Rs{" "}
-                    {PRO_PLUS_PRICE_PKR.toLocaleString()}/mo.
+                    {PRO_PLUS_PRICE_USD.toLocaleString()}/mo.
                   </p>
                 </div>
                 <button

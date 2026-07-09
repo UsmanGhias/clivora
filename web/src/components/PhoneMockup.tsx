@@ -43,12 +43,12 @@ export function PhoneMockup() {
                 <div className="mb-4 grid grid-cols-2 gap-2">
                   <div className="rounded-2xl bg-brand-gradient p-3">
                     <p className="text-[9px] text-white/70">Paid Revenue</p>
-                    <p className="text-sm font-bold text-white">Rs 245,000</p>
+                    <p className="text-sm font-bold text-white">$12,450</p>
                     <p className="text-[9px] text-teal-200">+12.5%</p>
                   </div>
                   <div className="rounded-2xl bg-warning/10 p-3">
                     <p className="text-[9px] text-white/50">Outstanding</p>
-                    <p className="text-sm font-bold text-warning">Rs 32,000</p>
+                    <p className="text-sm font-bold text-warning">$1,840</p>
                     <p className="text-[9px] text-white/40">4 invoices</p>
                   </div>
                 </div>

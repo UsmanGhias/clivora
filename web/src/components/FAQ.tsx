@@ -21,7 +21,7 @@ const faqs = [
   },
   {
     q: "How much will Pro cost?",
-    a: "Pro will be Rs 2,000/month via Google Play Billing. It unlocks unlimited usage, contracts, workflows, and 5 GB File Vault storage.",
+    a: "Pro is $9/month via Google Play Billing. It unlocks unlimited usage, contracts, workflows, and 5 GB File Vault storage.",
   },
   {
     q: "Can I export branded PDF invoices?",

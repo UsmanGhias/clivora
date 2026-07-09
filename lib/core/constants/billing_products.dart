@@ -1,15 +1,15 @@
 /// Google Play product IDs — create matching subscriptions in Play Console.
 abstract final class BillingProducts {
-  /// Freelancer Pro monthly subscription (Rs 2,000).
+  /// Freelancer Pro monthly subscription ($9).
   static const freelancerProMonthly = 'clivora_pro_freelancer_monthly';
 
-  /// Client Pro monthly subscription (Rs 2,000).
+  /// Client Pro monthly subscription ($9).
   static const clientProMonthly = 'clivora_pro_client_monthly';
 
-  /// Freelancer Pro Plus monthly (Rs 5,000) — includes CLIVORA Connect.
+  /// Freelancer Pro Plus monthly ($19) — includes CLIVORA Connect.
   static const freelancerProPlusMonthly = 'clivora_pro_plus_freelancer_monthly';
 
-  /// Client Pro Plus monthly (Rs 5,000) — includes CLIVORA Connect.
+  /// Client Pro Plus monthly ($19) — includes CLIVORA Connect.
   static const clientProPlusMonthly = 'clivora_pro_plus_client_monthly';
 
   static const all = {

@@ -10,7 +10,7 @@ const dashboardFeatures = [
     title: "Revenue at a Glance",
     description:
       "See total revenue, outstanding payments, and month-over-month growth instantly.",
-    metric: "Rs 245,000",
+    metric: "$12,450",
     change: "+12.5%",
     positive: true,
   },
@@ -26,7 +26,7 @@ const dashboardFeatures = [
     title: "Financial Health",
     description:
       "Net profit, expenses, and cash flow metrics help you make informed decisions.",
-    metric: "Rs 182,000",
+    metric: "$9,200",
     change: "Net Profit",
     positive: true,
   },
@@ -112,7 +112,7 @@ export function DashboardPreview() {
                       <span className="text-xs">Total Revenue</span>
                     </div>
                     <p className="mt-2 text-2xl font-bold text-white">
-                      Rs 245,000
+                      $12,450
                     </p>
                     <div className="mt-1 flex items-center gap-1 text-xs text-success">
                       <ArrowUpRight className="h-3 w-3" />
@@ -125,7 +125,7 @@ export function DashboardPreview() {
                       <span className="text-xs">Outstanding</span>
                     </div>
                     <p className="mt-2 text-2xl font-bold text-warning">
-                      Rs 32,000
+                      $1,840
                     </p>
                     <p className="mt-1 text-xs text-white/40">4 invoices pending</p>
                   </div>

@@ -283,7 +283,7 @@ class _OverviewTab extends StatelessWidget {
                 _MetricCard(label: 'Local users', value: '${s.totalUsers}'),
                 _MetricCard(label: 'Sign-ups', value: '${s.signups}'),
                 _MetricCard(label: 'Pro users', value: '${s.proUsers}'),
-                _MetricCard(label: 'MRR (PKR)', value: 'Rs ${s.monthlyRevenue}'),
+                _MetricCard(label: 'MRR (USD)', value: '\$${s.monthlyRevenue}'),
               ],
             ),
           ),

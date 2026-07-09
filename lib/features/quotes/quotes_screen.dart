@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 
 import '../../core/auth/auth_service.dart';
 import '../../core/services/invoice_pdf_service.dart';
+import '../../core/cloud/cloud_quote_repository.dart';
+import '../../core/cloud/supabase_sync_service.dart';
 import '../../core/services/quote_service.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../core/utils/currency_formatter.dart';
@@ -169,8 +171,33 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
   }
 
   Future<void> _setStatus(Quote q, String status) async {
-    await ref.read(databaseProvider).updateQuote(q.copyWith(status: status, updatedAt: DateTime.now()));
+    final updated = q.copyWith(status: status, updatedAt: DateTime.now());
+    await ref.read(databaseProvider).updateQuote(updated);
     ref.invalidate(quotesProvider);
+    if (status == 'sent' || status == 'accepted') {
+      await _syncQuoteToClient(updated);
+    }
+  }
+
+  Future<void> _syncQuoteToClient(Quote q) async {
+    try {
+      final ownerId = ref.read(authStateProvider).valueOrNull?.id;
+      final freelancer = ref.read(authStateProvider).valueOrNull;
+      if (ownerId == null || freelancer == null) return;
+      final customer = await ref.read(databaseProvider).getCustomerForUser(ownerId, q.customerId);
+      if (customer == null) return;
+      final emails = parseStringList(customer.emails);
+      if (emails.isEmpty) return;
+      final clientUid = await ref.read(supabaseSyncServiceProvider).uidForEmail(emails.first);
+      await ref.read(cloudQuoteRepositoryProvider).syncQuoteToClient(
+            freelancer: freelancer,
+            quote: q,
+            clientEmail: emails.first,
+            clientUid: clientUid,
+          );
+    } catch (e) {
+      // Best-effort cloud sync
+    }
   }
 
   Future<void> _shareQuotePdf(Quote q) async {
@@ -216,7 +243,11 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
         branding: branding,
         documentLabel: 'QUOTE',
       );
-      if (q.status == 'draft') await _setStatus(q, 'sent');
+      if (q.status == 'draft') {
+        await _setStatus(q, 'sent');
+      } else {
+        await _syncQuoteToClient(q.copyWith(status: 'sent'));
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('PDF error: $e')));
