@@ -33,6 +33,24 @@ type EmailBody = {
   wrapBrand?: boolean;
 };
 
+function parseResendError(raw: string): { message: string; status: number } {
+  try {
+    const parsed = JSON.parse(raw);
+    const message = String(parsed.message ?? parsed.error ?? raw);
+    const lower = message.toLowerCase();
+    if (lower.includes("only send testing emails") || lower.includes("verify a domain")) {
+      return {
+        message:
+          "Resend sandbox: verify a domain and use a matching from address to email any recipient. In-app delivery still works.",
+        status: 422,
+      };
+    }
+    return { message, status: 502 };
+  } catch {
+    return { message: raw.slice(0, 240), status: 502 };
+  }
+}
+
 serve(async (req) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
@@ -44,7 +62,7 @@ serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
   if (!resendKey) {
-    return new Response(JSON.stringify({ error: "Email not configured (RESEND_API_KEY)" }), { status: 503 });
+    return new Response(JSON.stringify({ error: "Email not configured" }), { status: 503 });
   }
 
   const authHeader = req.headers.get("Authorization");
@@ -108,7 +126,8 @@ serve(async (req) => {
     });
     if (!res.ok) {
       const errText = await res.text();
-      return new Response(JSON.stringify({ error: errText }), { status: 500 });
+      const parsed = parseResendError(errText);
+      return new Response(JSON.stringify({ error: parsed.message }), { status: parsed.status });
     }
 
     if (adminClient) {

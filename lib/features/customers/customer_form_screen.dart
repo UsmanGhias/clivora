@@ -173,25 +173,10 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
         final created = await db.getCustomerForUser(ownerId, id);
         if (created != null) {
           await ref.read(automationServiceProvider).onCustomerCreated(created);
-          try {
-            await ref.read(clientInviteServiceProvider).inviteClient(
-                  customer: created,
-                  clientEmail: email,
-                );
-          } on ClientInviteEmailException catch (e) {
-            if (mounted) {
-              invalidateCrmData(ref, customers: true);
-              context.pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${_contactController.text.trim()} saved. Invite email could not be sent: ${e.message}',
-                  ),
-                ),
+          await ref.read(clientInviteServiceProvider).inviteClient(
+                customer: created,
+                clientEmail: email,
               );
-              return;
-            }
-          }
         }
       }
 
@@ -204,7 +189,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
             SnackBar(
               content: Text(
                 widget.customerId == null
-                    ? '${_contactController.text.trim()} added${email.isNotEmpty ? ' · invite sent to $email' : ''}'
+                    ? '${_contactController.text.trim()} added${email.isNotEmpty ? ' · in-app invite sent to $email' : ''}'
                     : '${_contactController.text.trim()} updated',
               ),
             ),

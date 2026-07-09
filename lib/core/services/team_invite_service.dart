@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../auth/auth_service.dart';
 import 'clivora_email_service.dart';
+import '../cloud/cloud_message_repository.dart';
 import '../cloud/cloud_notification_repository.dart';
 import '../cloud/cloud_project_repository.dart';
 import '../cloud/supabase_auth_helper.dart';
@@ -123,6 +124,22 @@ class TeamInviteService {
           ),
         );
 
+    final subject = '${owner.name} invited you to their CLIVORA team';
+    final body = projectName.isNotEmpty
+        ? 'Hi ${name.trim()},\n\n'
+            '${owner.name} invited you to collaborate on $projectName as $role.\n\n'
+            'Open CLIVORA, sign in with $inviteeEmail, and accept the invite from Team or Notifications.'
+        : 'Hi ${name.trim()},\n\n'
+            '${owner.name} invited you to join their CLIVORA team as $role.\n\n'
+            'Open CLIVORA and sign in with $inviteeEmail to accept.';
+
+    await ref.read(cloudMessageRepositoryProvider).sendHybrid(
+          fromUser: owner,
+          toEmail: inviteeEmail,
+          subject: subject,
+          body: body,
+        );
+
     final toUid = await ref.read(supabaseSyncServiceProvider).uidForEmail(inviteeEmail);
     if (toUid != null) {
       await ref.read(cloudNotificationRepositoryProvider).sendToUid(
@@ -143,10 +160,11 @@ class TeamInviteService {
           projectName: projectName,
         );
     if (emailErr != null) {
-      debugPrint('Team invite email failed (invite saved): $emailErr');
+      debugPrint('Team invite email skipped (in-app sent): $emailErr');
+      return 'Invite sent via in-app message to $inviteeEmail';
     }
 
-    return null;
+    return 'Invite sent to $inviteeEmail';
   }
 
   Stream<List<TeamInvite>> watchPendingForCurrentUser() {

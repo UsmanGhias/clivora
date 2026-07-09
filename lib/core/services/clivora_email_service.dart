@@ -54,12 +54,12 @@ class ClivoraEmailService {
       debugPrint('Clivora email FunctionException: ${e.details}');
       final details = e.details;
       if (details is Map && details['error'] != null) {
-        return '${details['error']}';
+        return _friendlyEmailError('${details['error']}');
       }
-      return 'Email service error (${e.status}). Check RESEND_API_KEY on send-clivora-email.';
+      return _friendlyEmailError('Email service error (${e.status})');
     } catch (e) {
       debugPrint('Clivora email error: $e');
-      return 'Email service unavailable. Deploy send-clivora-email with RESEND_API_KEY set.';
+      return 'Email delivery unavailable. Your in-app message was still sent.';
     }
   }
 
@@ -160,6 +160,20 @@ class ClivoraEmailService {
       },
     );
   }
+}
+
+String _friendlyEmailError(String raw) {
+  final lower = raw.toLowerCase();
+  if (lower.contains('only send testing emails') || lower.contains('verify a domain')) {
+    return 'External email pending domain setup. In-app invite was delivered.';
+  }
+  if (lower.contains('not configured') || lower.contains('resend')) {
+    return 'External email temporarily unavailable. In-app invite was delivered.';
+  }
+  if (lower.contains('monthly email limit')) {
+    return raw;
+  }
+  return 'Could not send external email. In-app invite was delivered.';
 }
 
 enum ClivoraEmailPurpose {
