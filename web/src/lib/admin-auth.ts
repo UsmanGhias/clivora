@@ -12,7 +12,7 @@ export const SYNC_KEY = process.env.ADMIN_SYNC_KEY ?? "ClivoraSync2026!";
 export const CLIVORA_PURPLE = "#6C3CE1";
 export const CLIVORA_NAVY = "#0F172A";
 export const PRO_PRICE_PKR = 2000;
-export const PRO_PLUS_PRICE_PKR = 3500;
+export const PRO_PLUS_PRICE_PKR = 5000;
 
 export const ADMIN_SESSION_FLAG = "clivora_admin";
 export const ADMIN_SESSION_EMAIL = "clivora_admin_email";

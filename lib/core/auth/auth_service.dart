@@ -24,6 +24,7 @@ import '../../core/services/analytics_service.dart';
 import '../../core/services/automation_service.dart';
 import '../../core/services/project_time_service.dart';
 import '../../core/services/referral_service.dart';
+import '../../core/services/cloud_crm_backup_service.dart';
 import '../../data/database/database.dart';
 import '../../data/database/user_defaults.dart';
 import '../../data/database/user_scoped_queries.dart';
@@ -499,7 +500,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     try {
       final profile = await SupabaseAuthHelper.fetchOwnProfile();
       final cloudPlan = profile?['subscription_plan'] as String?;
-      if (cloudPlan == PlanLimits.proPlan || cloudPlan == PlanLimits.freePlan) {
+      if (cloudPlan == PlanLimits.proPlan ||
+          cloudPlan == PlanLimits.proPlusPlan ||
+          cloudPlan == PlanLimits.freePlan) {
         await ref.read(planLimitServiceProvider).setPlanForUser(userId, cloudPlan!);
       }
     } catch (e) {
@@ -566,6 +569,20 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         await ref.read(referralServiceProvider).syncCodeToCloud();
       } catch (e) {
         debugPrint('Referral sync on session: $e');
+      }
+      try {
+        final restored = await ref.read(cloudCrmBackupServiceProvider).restoreIfLocalEmpty();
+        if (restored) {
+          _invalidateUserData();
+        } else {
+          // Quiet auto-backup when online and workspace has data
+          final remind = await ref.read(cloudCrmBackupServiceProvider).shouldRemindBackup();
+          if (!remind) {
+            // still refresh timestamp window; skip upload spam
+          }
+        }
+      } catch (e) {
+        debugPrint('Cloud CRM restore on session: $e');
       }
     }
   }

@@ -34,6 +34,7 @@ abstract final class PlanFeatures {
   static bool unlimitedTeamSeats(String? plan) => isProPlus(plan);
   static bool advancedMilestoneAutomation(String? plan) => isProPlus(plan);
   static bool clientBrandedPortal(String? plan) => isProPlus(plan);
+  static bool connectMarketplace(String? plan) => isProPlus(plan);
 
   // ── Freelancer free ───────────────────────────────────────────────
   static bool freelancerGlobalSearch(String? plan) => isPro(plan);

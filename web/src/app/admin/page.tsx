@@ -50,7 +50,7 @@ type Stats = {
   source?: string;
 };
 
-type Tab = "overview" | "users" | "payments" | "audit" | "events";
+type Tab = "overview" | "users" | "payments" | "marketplace" | "audit" | "events";
 
 type PaymentRequest = {
   id: string;
@@ -362,6 +362,7 @@ export default function AdminPage() {
     { id: "overview", label: "Overview" },
     { id: "users", label: `Users (${profiles.length})` },
     { id: "payments", label: `Payments (${paymentRequests.length})` },
+    { id: "marketplace", label: "Connect" },
     { id: "audit", label: `Audit (${auditEvents.length})` },
     { id: "events", label: `Events (${events.length})` },
   ];
@@ -618,6 +619,24 @@ export default function AdminPage() {
               </p>
             )}
           </TableShell>
+        )}
+
+        {tab === "marketplace" && (
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3">
+            <h2 className="font-semibold text-slate-900">CLIVORA Connect moderation</h2>
+            <p className="text-sm text-slate-600">
+              Pro Plus marketplace listings and need posts. Approve or hide from Supabase Table Editor for now:
+              <code className="mx-1 text-xs bg-slate-100 px-1 rounded">connect_profiles</code>
+              and
+              <code className="mx-1 text-xs bg-slate-100 px-1 rounded">connect_need_posts</code>
+              (<code className="text-xs">moderation_status</code> = approved | hidden).
+            </p>
+            <ul className="text-sm text-slate-700 list-disc pl-5 space-y-1">
+              <li>Anonymous until mutual accept on Connect requests</li>
+              <li>Only Pro Plus users can list or browse</li>
+              <li>Price: Rs 5,000 / month</li>
+            </ul>
+          </div>
         )}
 
         {tab === "users" && (
