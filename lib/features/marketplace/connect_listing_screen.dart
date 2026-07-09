@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/auth/auth_service.dart';
+import '../../core/auth/user_roles.dart';
 import '../../core/services/marketplace/connect_marketplace_service.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
@@ -57,41 +59,65 @@ class _ConnectListingScreenState extends ConsumerState<ConnectListingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isPlus = ref.watch(isProPlusProvider);
+    final user = ref.watch(authStateProvider).valueOrNull;
+    final isClient = isClientUser(user);
+    final hasAccess = isClient ? ref.watch(isProProvider) : ref.watch(isProPlusProvider);
 
     return ClivoraScaffold(
-      title: 'My Connect listing',
+      title: isClient ? 'My about listing' : 'My Connect listing',
       showBackButton: true,
-      body: !isPlus
+      body: !hasAccess
           ? Center(
               child: FilledButton(
                 onPressed: () => context.push('/upgrade'),
-                child: const Text('Upgrade to Pro Plus'),
+                child: Text(isClient ? 'Upgrade to Client Pro' : 'Upgrade to Pro Plus'),
               ),
             )
           : ListView(
               padding: const EdgeInsets.all(20),
               children: [
                 Text(
-                  'Show skills and rate band only. Your email stays hidden until someone accepts your Connect request.',
+                  isClient
+                      ? 'Publish your company about so freelancers can discover you. Email stays hidden until you accept a Connect request. You can also post jobs from Connect.'
+                      : 'Show skills and rate band only. Your email stays hidden until someone accepts your Connect request.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
                 ),
                 const SizedBox(height: 16),
-                TextField(controller: _title, decoration: const InputDecoration(labelText: 'Public title (not your real name)')),
+                TextField(
+                  controller: _title,
+                  decoration: InputDecoration(
+                    labelText: isClient
+                        ? 'Public company / project title'
+                        : 'Public title (not your real name)',
+                  ),
+                ),
                 const SizedBox(height: 12),
                 TextField(controller: _headline, decoration: const InputDecoration(labelText: 'Headline')),
                 const SizedBox(height: 12),
-                TextField(controller: _bio, maxLines: 4, decoration: const InputDecoration(labelText: 'Bio')),
+                TextField(
+                  controller: _bio,
+                  maxLines: 4,
+                  decoration: InputDecoration(labelText: isClient ? 'About' : 'Bio'),
+                ),
                 const SizedBox(height: 12),
-                TextField(controller: _skills, decoration: const InputDecoration(labelText: 'Skills (comma separated)')),
+                TextField(
+                  controller: _skills,
+                  decoration: InputDecoration(
+                    labelText: isClient
+                        ? 'Looking for (skills, comma separated)'
+                        : 'Skills (comma separated)',
+                  ),
+                ),
                 const SizedBox(height: 12),
                 TextField(controller: _location, decoration: const InputDecoration(labelText: 'Location label (optional)')),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   value: _rate,
-                  decoration: const InputDecoration(labelText: 'Rate band'),
+                  decoration: InputDecoration(
+                    labelText: isClient ? 'Typical budget band' : 'Rate band',
+                  ),
                   items: const [
                     DropdownMenuItem(value: '\$100–200 / project', child: Text('\$100–200 / project')),
                     DropdownMenuItem(value: '\$200–500 / project', child: Text('\$200–500 / project')),
@@ -104,17 +130,28 @@ class _ConnectListingScreenState extends ConsumerState<ConnectListingScreen> {
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   value: _availability,
-                  decoration: const InputDecoration(labelText: 'Availability'),
-                  items: const [
-                    DropdownMenuItem(value: 'available', child: Text('Available')),
-                    DropdownMenuItem(value: 'limited', child: Text('Limited')),
-                    DropdownMenuItem(value: 'booked', child: Text('Booked')),
+                  decoration: InputDecoration(
+                    labelText: isClient ? 'Hiring status' : 'Availability',
+                  ),
+                  items: [
+                    DropdownMenuItem(
+                      value: 'available',
+                      child: Text(isClient ? 'Open to hire' : 'Available'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'limited',
+                      child: Text(isClient ? 'Selective' : 'Limited'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'booked',
+                      child: Text(isClient ? 'Not hiring now' : 'Booked'),
+                    ),
                   ],
                   onChanged: (v) => setState(() => _availability = v ?? _availability),
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('List me on Connect'),
+                  title: Text(isClient ? 'List my about on Connect' : 'List me on Connect'),
                   value: _listed,
                   onChanged: (v) => setState(() => _listed = v),
                 ),

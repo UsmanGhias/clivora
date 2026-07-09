@@ -26,16 +26,25 @@ class MessagesIconButton extends ConsumerWidget {
 
     final icon = Icon(Icons.mail_outline_rounded, color: color, size: 22);
 
-    final button = IconButton(
-      onPressed: () => openFormRoute(context, route),
-      icon: icon,
-      style: IconButton.styleFrom(
-        backgroundColor: Colors.transparent,
-        foregroundColor: color,
-        minimumSize: const Size(40, 40),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-    );
+    final button = useFilledStyle
+        ? Material(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: () => openFormRoute(context, route),
+              borderRadius: BorderRadius.circular(12),
+              child: SizedBox(width: 40, height: 40, child: icon),
+            ),
+          )
+        : IconButton(
+            onPressed: () => openFormRoute(context, route),
+            icon: icon,
+            style: IconButton.styleFrom(
+              backgroundColor: Theme.of(context).brightness == Brightness.light
+                  ? ClivoraColors.chipBackground
+                  : ClivoraColors.darkBorder,
+            ),
+          );
 
     return Stack(
       clipBehavior: Clip.none,

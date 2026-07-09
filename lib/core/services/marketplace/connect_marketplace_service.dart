@@ -29,12 +29,32 @@ class ConnectMarketplaceService {
 
   String? get currentUserId => client?.auth.currentUser?.id;
 
-  bool get hasProPlus {
-    final plan = ref.read(subscriptionPlanProvider).valueOrNull;
-    return PlanFeatures.isProPlus(plan) || ref.read(isProPlusProvider);
+  bool get hasConnectAccess {
+    final user = ref.read(authStateProvider).valueOrNull;
+    final isClient = isClientUser(user);
+    if (isClient) {
+      return ref.read(isProProvider) || PlanFeatures.isPro(ref.read(subscriptionPlanProvider).valueOrNull);
+    }
+    return ref.read(isProPlusProvider) ||
+        PlanFeatures.isProPlus(ref.read(subscriptionPlanProvider).valueOrNull);
   }
 
+  /// Legacy alias — prefer [hasConnectAccess].
+  bool get hasProPlus => hasConnectAccess;
+
   Future<List<Map<String, dynamic>>> browseFreelancers({String? skill}) async {
+    return _browseProfiles(accountType: 'freelancer', skill: skill);
+  }
+
+  /// Client Pro about/listings so freelancers can discover & connect.
+  Future<List<Map<String, dynamic>>> browseClients({String? skill}) async {
+    return _browseProfiles(accountType: 'client', skill: skill);
+  }
+
+  Future<List<Map<String, dynamic>>> _browseProfiles({
+    required String accountType,
+    String? skill,
+  }) async {
     final c = client;
     if (c == null) return [];
     final rows = await c
@@ -42,7 +62,7 @@ class ConnectMarketplaceService {
         .select(
           'id,user_id,display_title,headline,bio,skills,rate_band,availability,location_label,is_verified,account_type',
         )
-        .eq('account_type', 'freelancer')
+        .eq('account_type', accountType)
         .eq('is_listed', true)
         .eq('moderation_status', 'approved')
         .order('updated_at', ascending: false)
@@ -52,7 +72,11 @@ class ConnectMarketplaceService {
     final needle = skill.trim().toLowerCase();
     return list.where((r) {
       final skills = (r['skills'] as List?)?.map((e) => e.toString().toLowerCase()) ?? [];
-      return skills.any((s) => s.contains(needle));
+      final title = (r['display_title'] as String? ?? '').toLowerCase();
+      final headline = (r['headline'] as String? ?? '').toLowerCase();
+      return skills.any((s) => s.contains(needle)) ||
+          title.contains(needle) ||
+          headline.contains(needle);
     }).toList();
   }
 
@@ -89,7 +113,14 @@ class ConnectMarketplaceService {
     final c = client;
     final uid = c?.auth.currentUser?.id;
     if (c == null || uid == null) throw StateError('Sign in required');
-    if (!hasProPlus) throw StateError('CLIVORA Connect requires Pro Plus');
+    if (!hasConnectAccess) {
+      final user = ref.read(authStateProvider).valueOrNull;
+      throw StateError(
+        isClientUser(user)
+            ? 'CLIVORA Connect requires Client Pro'
+            : 'CLIVORA Connect requires Pro Plus',
+      );
+    }
 
     final user = ref.read(authStateProvider).valueOrNull;
     final accountType = isClientUser(user) ? 'client' : 'freelancer';
@@ -118,7 +149,7 @@ class ConnectMarketplaceService {
     final c = client;
     final uid = c?.auth.currentUser?.id;
     if (c == null || uid == null) throw StateError('Sign in required');
-    if (!hasProPlus) throw StateError('CLIVORA Connect requires Pro Plus');
+    if (!hasConnectAccess) throw StateError('CLIVORA Connect requires Client Pro');
 
     await c.from('connect_need_posts').insert({
       'client_user_id': uid,
@@ -139,7 +170,14 @@ class ConnectMarketplaceService {
     final c = client;
     final uid = c?.auth.currentUser?.id;
     if (c == null || uid == null) throw StateError('Sign in required');
-    if (!hasProPlus) throw StateError('CLIVORA Connect requires Pro Plus');
+    if (!hasConnectAccess) {
+      final user = ref.read(authStateProvider).valueOrNull;
+      throw StateError(
+        isClientUser(user)
+            ? 'CLIVORA Connect requires Client Pro'
+            : 'CLIVORA Connect requires Pro Plus',
+      );
+    }
     if (toUserId == uid) throw StateError('Cannot contact yourself');
 
     await c.from('connect_requests').insert({

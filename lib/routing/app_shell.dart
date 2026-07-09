@@ -15,8 +15,11 @@ import '../shared/widgets/sync_failure_banner.dart';
 /// Pending Connect inbox count for Pro Plus bottom-nav badge.
 final connectPendingBadgeProvider = FutureProvider<int>((ref) async {
   ref.watch(authStateProvider);
-  final isPlus = ref.watch(isProPlusProvider);
-  if (!isPlus) return 0;
+  final user = ref.watch(authStateProvider).valueOrNull;
+  final isClient = isClientUser(user);
+  // Freelancer Connect = Pro Plus; Client Connect = Client Pro (or Plus).
+  final allowed = isClient ? ref.watch(isProProvider) : ref.watch(isProPlusProvider);
+  if (!allowed) return 0;
   try {
     final rows = await ref.read(connectMarketplaceServiceProvider).myRequests();
     final uid = ref.read(connectMarketplaceServiceProvider).currentUserId;
@@ -47,20 +50,22 @@ class AppShell extends ConsumerWidget {
     _NavItem('/more', Icons.apps_outlined, Icons.apps, 'Hub'),
   ];
 
+  /// Free client: keep Account (profile/login) on the bar — Hub lives inside Account.
   static const _clientBaseTabs = [
     _NavItem('/client-portal', Icons.home_outlined, Icons.home_rounded, 'Home'),
     _NavItem('/client-messages', Icons.mail_outline, Icons.mail_rounded, 'Messages'),
     _NavItem('/client-invoices', Icons.receipt_long_outlined, Icons.receipt_long, 'Invoices'),
     _NavItem('/client-activity', Icons.notifications_outlined, Icons.notifications_rounded, 'Updates', badgeTab: true),
-    _NavItem('/client-hub', Icons.apps_outlined, Icons.apps, 'Hub'),
+    _NavItem('/client-account', Icons.person_outline, Icons.person, 'Account'),
   ];
 
-  static const _clientPlusTabs = [
+  /// Client Pro / Pro Plus: Connect tab (parity with freelancer Plus) + Account.
+  static const _clientProTabs = [
     _NavItem('/client-portal', Icons.home_outlined, Icons.home_rounded, 'Home'),
     _NavItem('/client-messages', Icons.mail_outline, Icons.mail_rounded, 'Messages'),
     _NavItem('/connect', Icons.hub_outlined, Icons.hub, 'Connect', connectBadge: true),
     _NavItem('/client-invoices', Icons.receipt_long_outlined, Icons.receipt_long, 'Invoices'),
-    _NavItem('/client-hub', Icons.apps_outlined, Icons.apps, 'Hub'),
+    _NavItem('/client-account', Icons.person_outline, Icons.person, 'Account'),
   ];
 
   int _indexFromLocation(String location, List<_NavItem> tabs) {
@@ -84,8 +89,9 @@ class AppShell extends ConsumerWidget {
     final user = ref.watch(authStateProvider).valueOrNull;
     final isClient = isClientUser(user);
     final isPlus = ref.watch(isProPlusProvider);
+    final isPro = ref.watch(isProProvider);
     final tabs = isClient
-        ? (isPlus ? _clientPlusTabs : _clientBaseTabs)
+        ? (isPro ? _clientProTabs : _clientBaseTabs)
         : (isPlus ? _freelancerPlusTabs : _freelancerBaseTabs);
     final semantic = context.clivoraColors;
     final accent = semantic.brand;

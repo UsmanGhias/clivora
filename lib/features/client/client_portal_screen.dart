@@ -96,7 +96,7 @@ class ClientPortalScreen extends ConsumerWidget {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: ClivoraColors.clientAccent,
                         side: const BorderSide(color: ClivoraColors.clientAccent),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                     ),
                   ),
@@ -185,10 +185,12 @@ class _ClientWelcomeHeader extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            '${timeBasedGreeting()}, $firstName',
-            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+            timeBasedGreeting(),
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 12),
+          ),
+          Text(
+            firstName,
+            style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           Text(
@@ -500,7 +502,15 @@ class _ClientProjectCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.folder_open_rounded, color: ClivoraColors.clientAccent, size: 26),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: ClivoraColors.clientAccentLight,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.folder_open_rounded, color: ClivoraColors.clientAccent),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

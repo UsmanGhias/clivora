@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/clivora_colors.dart';
 
+/// Hub / tools tile with clear separation so adjacent tiles never visually merge.
 class ToolGridTile extends StatelessWidget {
   const ToolGridTile({
     super.key,
@@ -23,21 +24,41 @@ class ToolGridTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Material(
-      color: Colors.transparent,
+      color: Theme.of(context).cardColor,
+      borderRadius: BorderRadius.circular(18),
+      elevation: 0,
+      shadowColor: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: isDark
+                  ? ClivoraColors.darkBorder.withValues(alpha: 0.9)
+                  : ClivoraColors.borderLight.withValues(alpha: 0.95),
+              width: 1,
+            ),
+          ),
           child: Stack(
-            clipBehavior: Clip.none,
             children: [
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(icon, color: iconColor, size: 26),
-                  const SizedBox(height: 8),
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: iconBackground,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, color: iconColor, size: 22),
+                  ),
+                  const SizedBox(height: 10),
                   Text(
                     label,
                     textAlign: TextAlign.center,
@@ -52,8 +73,8 @@ class ToolGridTile extends StatelessWidget {
               ),
               if (badge != null)
                 Positioned(
-                  right: 4,
-                  top: -2,
+                  right: 0,
+                  top: 0,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
@@ -62,7 +83,11 @@ class ToolGridTile extends StatelessWidget {
                     ),
                     child: Text(
                       badge!,
-                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),

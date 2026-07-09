@@ -30,19 +30,19 @@ class _ConnectNeedScreenState extends ConsumerState<ConnectNeedScreen> {
   @override
   Widget build(BuildContext context) {
     return ClivoraScaffold(
-      title: 'Post a need',
+      title: 'Post a job',
       showBackButton: true,
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           Text(
-            'Clients stay anonymous until a freelancer is accepted. Describe the work, not your company email.',
+            'Stay anonymous until you accept a freelancer. Describe the work — not your company email.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
           ),
           const SizedBox(height: 16),
-          TextField(controller: _title, decoration: const InputDecoration(labelText: 'Need title')),
+          TextField(controller: _title, decoration: const InputDecoration(labelText: 'Job title')),
           const SizedBox(height: 12),
           TextField(controller: _summary, maxLines: 4, decoration: const InputDecoration(labelText: 'Summary')),
           const SizedBox(height: 12),
@@ -63,7 +63,7 @@ class _ConnectNeedScreenState extends ConsumerState<ConnectNeedScreen> {
           const SizedBox(height: 20),
           FilledButton(
             onPressed: _busy ? null : _save,
-            child: Text(_busy ? 'Posting…' : 'Publish need'),
+            child: Text(_busy ? 'Posting…' : 'Publish job'),
           ),
         ],
       ),
@@ -81,7 +81,7 @@ class _ConnectNeedScreenState extends ConsumerState<ConnectNeedScreen> {
             budgetBand: _budget,
           );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Need posted')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Job posted')));
         context.pop();
       }
     } catch (e) {
