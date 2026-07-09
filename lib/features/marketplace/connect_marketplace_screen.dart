@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_service.dart';
 import '../../core/auth/user_roles.dart';
-import '../../core/constants/plan_features.dart';
 import '../../core/constants/pro_pricing.dart';
 import '../../core/services/marketplace/connect_marketplace_service.dart';
 import '../../core/theme/clivora_colors.dart';
@@ -44,8 +43,7 @@ class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScr
   }
 
   Future<void> _reload() async {
-    final isPlus = PlanFeatures.isProPlus(ref.read(subscriptionPlanProvider).valueOrNull) ||
-        ref.read(isProPlusProvider);
+    final isPlus = ref.read(isProPlusProvider);
     if (!isPlus) {
       setState(() {
         _loading = false;
@@ -80,8 +78,7 @@ class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScr
 
   @override
   Widget build(BuildContext context) {
-    final plan = ref.watch(subscriptionPlanProvider).valueOrNull;
-    final isPlus = PlanFeatures.isProPlus(plan) || ref.watch(isProPlusProvider);
+    final isPlus = ref.watch(isProPlusProvider);
     final user = ref.watch(authStateProvider).valueOrNull;
     final isClient = isClientUser(user);
     final scheme = Theme.of(context).colorScheme;
@@ -106,18 +103,14 @@ class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScr
         ],
       ),
       body: !isPlus
-          ? _ProPlusGate(isDark: isDark)
+          ? const _ProPlusGate()
           : Column(
               children: [
                 Container(
                   margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: isDark
-                          ? [const Color(0xFF1E293B), const Color(0xFF0F766E)]
-                          : [ClivoraColors.navyDark, const Color(0xFF0F766E)],
-                    ),
+                    color: ClivoraColors.navyDark,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
@@ -147,7 +140,7 @@ class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScr
                   unselectedLabelColor: scheme.onSurface.withValues(alpha: 0.55),
                   tabs: [
                     Tab(text: isClient ? 'Talent' : 'Talent'),
-                    Tab(text: isClient ? 'My needs' : 'Needs'),
+                    Tab(text: isClient ? 'Needs' : 'Needs'),
                     Tab(text: 'Inbox (${_requests.length})'),
                   ],
                 ),
@@ -167,23 +160,56 @@ class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScr
                               skillCtrl: _skillCtrl,
                               onSearch: _reload,
                               onContact: (row) => _contactProfile(row),
+                              isDark: isDark,
                             ),
                             _NeedsTab(
                               needs: _needs,
                               isClient: isClient,
                               onCreate: () => context.push('/connect/need'),
                               onContact: (row) => _contactNeed(row),
+                              isDark: isDark,
                             ),
                             _InboxTab(
                               requests: _requests,
                               myUid: ref.read(connectMarketplaceServiceProvider).currentUserId,
                               onAccept: (id) async {
-                                await ref.read(connectMarketplaceServiceProvider).respondToRequest(id, accept: true);
+                                await ref
+                                    .read(connectMarketplaceServiceProvider)
+                                    .respondToRequest(id, accept: true);
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Accepted. Identity unlocked — add them to your workspace.'),
+                                  ),
+                                );
                                 await _reload();
                               },
                               onDecline: (id) async {
-                                await ref.read(connectMarketplaceServiceProvider).respondToRequest(id, accept: false);
+                                await ref
+                                    .read(connectMarketplaceServiceProvider)
+                                    .respondToRequest(id, accept: false);
                                 await _reload();
+                              },
+                              onLinkWorkspace: (row) async {
+                                try {
+                                  final id = await ref
+                                      .read(connectMarketplaceServiceProvider)
+                                      .linkAcceptedPartnerToWorkspace(row);
+                                  if (!mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        id == null
+                                            ? 'Could not link partner (missing email).'
+                                            : 'Added to Clients. Open workspace to start work.',
+                                      ),
+                                    ),
+                                  );
+                                  if (id != null && mounted) context.push('/customers');
+                                } catch (e) {
+                                  if (!mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+                                }
                               },
                             ),
                           ],
@@ -226,6 +252,7 @@ class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScr
             targetNeedId: row['id'] as String?,
             message: message,
           );
+      await ref.read(connectMarketplaceServiceProvider).logConnectEvent('connect_need_pitch_sent');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Pitch sent anonymously.')),
@@ -260,8 +287,7 @@ class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScr
 }
 
 class _ProPlusGate extends StatelessWidget {
-  const _ProPlusGate({required this.isDark});
-  final bool isDark;
+  const _ProPlusGate();
 
   @override
   Widget build(BuildContext context) {
@@ -298,12 +324,14 @@ class _TalentTab extends StatelessWidget {
     required this.skillCtrl,
     required this.onSearch,
     required this.onContact,
+    required this.isDark,
   });
 
   final List<Map<String, dynamic>> freelancers;
   final TextEditingController skillCtrl;
   final VoidCallback onSearch;
   final void Function(Map<String, dynamic>) onContact;
+  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
@@ -324,70 +352,103 @@ class _TalentTab extends StatelessWidget {
         if (freelancers.isEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 40),
-            child: Text('No listed freelancers yet. Be the first from My listing.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: onSurface.withValues(alpha: 0.6))),
+            child: Column(
+              children: [
+                Icon(Icons.person_search_outlined, size: 48, color: onSurface.withValues(alpha: 0.35)),
+                const SizedBox(height: 12),
+                Text(
+                  'No listed freelancers yet. Be the first from My listing.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: onSurface.withValues(alpha: 0.6)),
+                ),
+              ],
+            ),
           ),
         ...freelancers.map((row) {
           final skills = (row['skills'] as List?)?.map((e) => e.toString()).toList() ?? [];
-          return Card(
+          return Container(
             margin: const EdgeInsets.only(bottom: 12),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: ClivoraColors.primary.withValues(alpha: 0.15),
-                        child: Text(
-                          (row['display_title'] as String? ?? 'F').isNotEmpty
-                              ? (row['display_title'] as String).characters.first.toUpperCase()
-                              : 'F',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(row['display_title'] as String? ?? 'Freelancer',
-                                style: const TextStyle(fontWeight: FontWeight.w700)),
-                            Text(row['headline'] as String? ?? '',
-                                style: TextStyle(color: onSurface.withValues(alpha: 0.65), fontSize: 13)),
-                          ],
-                        ),
-                      ),
-                      if (row['is_verified'] == true)
-                        const Icon(Icons.verified, color: Colors.teal, size: 18),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(row['bio'] as String? ?? '',
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: onSurface.withValues(alpha: 0.8), height: 1.35)),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      Chip(label: Text(row['rate_band'] as String? ?? 'negotiable'), visualDensity: VisualDensity.compact),
-                      ...skills.take(4).map((s) => Chip(label: Text(s), visualDensity: VisualDensity.compact)),
-                    ],
-                  ),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton.icon(
-                      onPressed: () => onContact(row),
-                      icon: const Icon(Icons.handshake_outlined),
-                      label: const Text('Request contact'),
-                    ),
-                  ),
-                ],
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? ClivoraColors.darkBorder : ClivoraColors.borderLight,
               ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: ClivoraColors.primary.withValues(alpha: 0.15),
+                      child: Text(
+                        (row['display_title'] as String? ?? 'F').isNotEmpty
+                            ? (row['display_title'] as String).characters.first.toUpperCase()
+                            : 'F',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  row['display_title'] as String? ?? 'Freelancer',
+                                  style: const TextStyle(fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                              if (row['is_verified'] == true) ...[
+                                const SizedBox(width: 6),
+                                const Icon(Icons.verified, color: Color(0xFF0F766E), size: 18),
+                              ],
+                            ],
+                          ),
+                          Text(
+                            row['headline'] as String? ?? '',
+                            style: TextStyle(color: onSurface.withValues(alpha: 0.65), fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  row['bio'] as String? ?? '',
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: onSurface.withValues(alpha: 0.8), height: 1.35),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    Chip(
+                      label: Text(row['rate_band'] as String? ?? 'negotiable'),
+                      visualDensity: VisualDensity.compact,
+                      backgroundColor: ClivoraColors.iconTeal,
+                    ),
+                    ...skills.take(4).map(
+                          (s) => Chip(label: Text(s), visualDensity: VisualDensity.compact),
+                        ),
+                  ],
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () => onContact(row),
+                    icon: const Icon(Icons.handshake_outlined),
+                    label: const Text('Request contact'),
+                  ),
+                ),
+              ],
             ),
           );
         }),
@@ -402,15 +463,18 @@ class _NeedsTab extends StatelessWidget {
     required this.isClient,
     required this.onCreate,
     required this.onContact,
+    required this.isDark,
   });
 
   final List<Map<String, dynamic>> needs;
   final bool isClient;
   final VoidCallback onCreate;
   final void Function(Map<String, dynamic>) onContact;
+  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -424,32 +488,50 @@ class _NeedsTab extends StatelessWidget {
             ),
           ),
         if (needs.isEmpty)
-          const Padding(
-            padding: EdgeInsets.only(top: 40),
-            child: Text('No open needs yet.', textAlign: TextAlign.center),
+          Padding(
+            padding: const EdgeInsets.only(top: 40),
+            child: Text(
+              isClient ? 'No open needs yet. Post your first brief.' : 'No open needs yet.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: onSurface.withValues(alpha: 0.6)),
+            ),
           ),
         ...needs.map((row) {
           final skills = (row['skills'] as List?)?.map((e) => e.toString()).toList() ?? [];
-          return Card(
+          return Container(
             margin: const EdgeInsets.only(bottom: 12),
-            child: ListTile(
-              title: Text(row['title'] as String? ?? 'Need', style: const TextStyle(fontWeight: FontWeight.w700)),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 4),
-                  Text(row['summary'] as String? ?? ''),
-                  const SizedBox(height: 6),
-                  Text('Budget: ${row['budget_band'] ?? 'negotiable'} · ${skills.take(3).join(', ')}'),
-                ],
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? ClivoraColors.darkBorder : ClivoraColors.borderLight,
               ),
-              isThreeLine: true,
-              trailing: isClient
-                  ? null
-                  : IconButton(
-                      icon: const Icon(Icons.send_outlined),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  row['title'] as String? ?? 'Need',
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                ),
+                const SizedBox(height: 6),
+                Text(row['summary'] as String? ?? '', style: TextStyle(height: 1.35, color: onSurface.withValues(alpha: 0.8))),
+                const SizedBox(height: 8),
+                Text(
+                  'Budget: ${row['budget_band'] ?? 'negotiable'} · ${skills.take(3).join(', ')}',
+                  style: TextStyle(fontSize: 12, color: onSurface.withValues(alpha: 0.6)),
+                ),
+                if (!isClient)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
                       onPressed: () => onContact(row),
+                      icon: const Icon(Icons.send_outlined),
+                      label: const Text('Pitch anonymously'),
                     ),
+                  ),
+              ],
             ),
           );
         }),
@@ -464,18 +546,21 @@ class _InboxTab extends StatelessWidget {
     required this.myUid,
     required this.onAccept,
     required this.onDecline,
+    required this.onLinkWorkspace,
   });
 
   final List<Map<String, dynamic>> requests;
   final String? myUid;
   final Future<void> Function(String id) onAccept;
   final Future<void> Function(String id) onDecline;
+  final Future<void> Function(Map<String, dynamic> row) onLinkWorkspace;
 
   @override
   Widget build(BuildContext context) {
     if (requests.isEmpty) {
       return const Center(child: Text('No Connect requests yet.'));
     }
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: requests.length,
@@ -485,38 +570,52 @@ class _InboxTab extends StatelessWidget {
         final incoming = r['to_user_id'] == myUid;
         final status = r['status'] as String? ?? 'pending';
         final accepted = status == 'accepted';
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  incoming ? 'Incoming request' : 'Sent request',
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 6),
-                Text(r['message'] as String? ?? ''),
-                const SizedBox(height: 8),
-                Text('Status: $status', style: Theme.of(context).textTheme.bodySmall),
-                if (accepted) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    'Identity unlocked\n'
-                    '${incoming ? r['from_name'] : r['to_name'] ?? 'Partner'}\n'
-                    '${incoming ? r['from_email'] : r['to_email'] ?? ''}',
-                    style: const TextStyle(fontWeight: FontWeight.w600, height: 1.35),
-                  ),
-                ],
-                if (incoming && status == 'pending')
-                  Row(
-                    children: [
-                      TextButton(onPressed: () => onDecline(r['id'] as String), child: const Text('Decline')),
-                      FilledButton(onPressed: () => onAccept(r['id'] as String), child: const Text('Accept & reveal')),
-                    ],
-                  ),
-              ],
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark ? ClivoraColors.darkBorder : ClivoraColors.borderLight,
             ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                incoming ? 'Incoming request' : 'Sent request',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 6),
+              Text(r['message'] as String? ?? ''),
+              const SizedBox(height: 8),
+              Text('Status: $status', style: Theme.of(context).textTheme.bodySmall),
+              if (accepted) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Identity unlocked\n'
+                  '${incoming ? r['from_name'] : r['to_name'] ?? 'Partner'}\n'
+                  '${incoming ? r['from_email'] : r['to_email'] ?? ''}',
+                  style: const TextStyle(fontWeight: FontWeight.w600, height: 1.35),
+                ),
+                const SizedBox(height: 8),
+                FilledButton.tonalIcon(
+                  onPressed: () => onLinkWorkspace(r),
+                  icon: const Icon(Icons.person_add_alt_1_outlined),
+                  label: const Text('Add to workspace'),
+                ),
+              ],
+              if (incoming && status == 'pending')
+                Row(
+                  children: [
+                    TextButton(onPressed: () => onDecline(r['id'] as String), child: const Text('Decline')),
+                    FilledButton(
+                      onPressed: () => onAccept(r['id'] as String),
+                      child: const Text('Accept & reveal'),
+                    ),
+                  ],
+                ),
+            ],
           ),
         );
       },

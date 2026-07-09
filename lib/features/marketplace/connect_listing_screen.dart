@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/constants/plan_features.dart';
 import '../../core/services/marketplace/connect_marketplace_service.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
@@ -58,8 +57,7 @@ class _ConnectListingScreenState extends ConsumerState<ConnectListingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isPlus = PlanFeatures.isProPlus(ref.watch(subscriptionPlanProvider).valueOrNull) ||
-        ref.watch(isProPlusProvider);
+    final isPlus = ref.watch(isProPlusProvider);
 
     return ClivoraScaffold(
       title: 'My Connect listing',
