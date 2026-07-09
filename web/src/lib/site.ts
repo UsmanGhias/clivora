@@ -18,8 +18,8 @@ export const site = {
   pricing: {
     proMonthlyPkr: 2000,
     proMonthlyLabel: "Rs 2,000",
-    proPlusMonthlyPkr: 3500,
-    proPlusMonthlyLabel: "Rs 3,500",
+    proPlusMonthlyPkr: 5000,
+    proPlusMonthlyLabel: "Rs 5,000",
     billingNote: "Billed monthly. Cancel anytime.",
     earlyAccessNote:
       "Start free, then upgrade to Pro or Pro Plus from the website checkout when you need unlimited tools.",

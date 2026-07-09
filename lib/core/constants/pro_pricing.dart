@@ -12,13 +12,13 @@ abstract final class ProPricing {
   static const offerBadge = 'Save Rs 800';
   static const offerPercentOff = 29;
 
-  /// Pro Plus — flagship plan.
-  static const plusListPricePkr = 5000;
-  static const plusListPriceLabel = 'Rs 5,000';
-  static const plusPricePkr = 3500;
-  static const plusMonthlyLabel = 'Rs 3,500';
-  static const plusOfferBadge = 'Best value';
-  static const plusUsdApprox = 'About \$12 USD';
+  /// Pro Plus - flagship plan with CLIVORA Connect.
+  static const plusListPricePkr = 6500;
+  static const plusListPriceLabel = 'Rs 6,500';
+  static const plusPricePkr = 5000;
+  static const plusMonthlyLabel = 'Rs 5,000';
+  static const plusOfferBadge = 'Connect included';
+  static const plusUsdApprox = 'About \$18 USD';
 
   static const freelancerTitle = 'Freelancer Pro';
   static const clientTitle = 'Client Pro';

@@ -1,0 +1,95 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../core/services/marketplace/connect_marketplace_service.dart';
+import '../../shared/widgets/clivora_scaffold.dart';
+
+class ConnectNeedScreen extends ConsumerStatefulWidget {
+  const ConnectNeedScreen({super.key});
+
+  @override
+  ConsumerState<ConnectNeedScreen> createState() => _ConnectNeedScreenState();
+}
+
+class _ConnectNeedScreenState extends ConsumerState<ConnectNeedScreen> {
+  final _title = TextEditingController();
+  final _summary = TextEditingController();
+  final _skills = TextEditingController();
+  String _budget = 'Rs 5k-15k';
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _summary.dispose();
+    _skills.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ClivoraScaffold(
+      title: 'Post a need',
+      showBackButton: true,
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          Text(
+            'Clients stay anonymous until a freelancer is accepted. Describe the work, not your company email.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+          ),
+          const SizedBox(height: 16),
+          TextField(controller: _title, decoration: const InputDecoration(labelText: 'Need title')),
+          const SizedBox(height: 12),
+          TextField(controller: _summary, maxLines: 4, decoration: const InputDecoration(labelText: 'Summary')),
+          const SizedBox(height: 12),
+          TextField(controller: _skills, decoration: const InputDecoration(labelText: 'Skills needed (comma separated)')),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: _budget,
+            decoration: const InputDecoration(labelText: 'Budget band'),
+            items: const [
+              DropdownMenuItem(value: 'Under Rs 5k', child: Text('Under Rs 5k')),
+              DropdownMenuItem(value: 'Rs 5k-15k', child: Text('Rs 5k-15k')),
+              DropdownMenuItem(value: 'Rs 15k-50k', child: Text('Rs 15k-50k')),
+              DropdownMenuItem(value: 'Rs 50k+', child: Text('Rs 50k+')),
+              DropdownMenuItem(value: 'negotiable', child: Text('Negotiable')),
+            ],
+            onChanged: (v) => setState(() => _budget = v ?? _budget),
+          ),
+          const SizedBox(height: 20),
+          FilledButton(
+            onPressed: _busy ? null : _save,
+            child: Text(_busy ? 'Posting…' : 'Publish need'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _save() async {
+    setState(() => _busy = true);
+    try {
+      final skills = _skills.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      await ref.read(connectMarketplaceServiceProvider).createNeedPost(
+            title: _title.text,
+            summary: _summary.text,
+            skills: skills,
+            budgetBand: _budget,
+          );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Need posted')));
+        context.pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+}

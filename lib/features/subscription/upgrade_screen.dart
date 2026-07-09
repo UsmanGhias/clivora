@@ -173,7 +173,7 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                         ),
                         child: _loading
                             ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                            : Text(isPro ? 'Upgrade to Pro Plus — ${ProPricing.plusMonthlyLabel}' : 'Get Pro Plus — ${ProPricing.plusMonthlyLabel}/mo'),
+                            : Text(isPro ? 'Upgrade to Pro Plus · ${ProPricing.plusMonthlyLabel}' : 'Get Pro Plus · ${ProPricing.plusMonthlyLabel}/mo'),
                       ),
                     ),
                   if (!isPro) ...[
@@ -227,13 +227,13 @@ const _freelancerProFeatures = [
 
 const _freelancerPlusFeatures = [
   'Everything in Pro',
+  'CLIVORA Connect marketplace (anonymous until accept)',
   '25 GB vault + 3,000 emails / month',
   'Priority support channel',
   'White-label invoice branding',
   'Unlimited team seats',
   'Milestone automation boosts',
   'Client branded portal extras',
-  'First access to new Pro tools',
 ];
 
 const _clientFreeFeatures = [
@@ -256,10 +256,10 @@ const _clientProFeatures = [
 
 const _clientPlusFeatures = [
   'Everything in Client Pro',
+  'CLIVORA Connect: post needs anonymously',
   'Priority support',
   'Branded portal experience',
   'Faster invoice & contract exports',
-  'Early access to client tools',
 ];
 
 class _PlanCard extends StatelessWidget {

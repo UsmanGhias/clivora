@@ -31,6 +31,9 @@ import '../features/reviews/reviews_screen.dart';
 import '../features/analytics/analytics_dashboard_screen.dart';
 import '../features/calendar/calendar_screen.dart';
 import '../features/settings/backup_restore_screen.dart';
+import '../features/marketplace/connect_marketplace_screen.dart';
+import '../features/marketplace/connect_listing_screen.dart';
+import '../features/marketplace/connect_need_screen.dart';
 import '../features/settings/legal_document_screen.dart';
 import '../features/settings/security_settings_screen.dart';
 import '../core/constants/legal_documents.dart';
@@ -373,6 +376,21 @@ final appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/backup',
       builder: (context, state) => const BackupRestoreScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/connect',
+      builder: (context, state) => const ConnectMarketplaceScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/connect/listing',
+      builder: (context, state) => const ConnectListingScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/connect/need',
+      builder: (context, state) => const ConnectNeedScreen(),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,

@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
 import 'core/auth/auth_service.dart';
+import 'core/services/app_update_service.dart';
+import 'core/services/cloud_crm_backup_service.dart';
 import 'core/services/admin_sync_service.dart';
 import 'core/services/automation_service.dart';
 import 'core/services/billing_service.dart';
@@ -90,6 +92,12 @@ class _ClivoraAppState extends ConsumerState<ClivoraApp> with WidgetsBindingObse
     await ref.read(contractSyncServiceProvider).reconcileSignedContracts();
     ref.read(adminSyncServiceProvider).syncPendingEvents();
     await ref.read(taskReminderServiceProvider).syncAllForCurrentUser();
+    try {
+      await ref.read(appUpdateServiceProvider).checkForUpdate();
+    } catch (_) {}
+    try {
+      await ref.read(cloudCrmBackupServiceProvider).restoreIfLocalEmpty();
+    } catch (_) {}
   }
 
   Future<void> _onBackOnline() async {

@@ -7,14 +7,11 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/services/locale_service.dart';
 import '../../core/auth/auth_service.dart';
-import '../../l10n/app_localizations.dart';
 import '../../core/services/app_engagement_service.dart';
 import '../../core/auth/user_roles.dart';
 import '../../core/utils/admin_helper.dart';
 import '../../core/theme/clivora_colors.dart';
-import '../../core/constants/plan_limits.dart';
 import '../../core/constants/plan_features.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/currency_formatter.dart';
@@ -27,6 +24,7 @@ import '../../shared/widgets/clivora_logo.dart';
 import '../../shared/widgets/step_progress_card.dart';
 import '../../shared/widgets/tool_grid_tile.dart';
 import '../../core/services/analytics_export_service.dart';
+import '../../core/services/app_update_service.dart';
 
 class MoreScreen extends ConsumerWidget {
   const MoreScreen({super.key});
@@ -69,6 +67,76 @@ class MoreScreen extends ConsumerWidget {
             data: (stats) => _StatsBar(stats: stats),
           ),
           const SizedBox(height: 24),
+          const SectionHeader(title: 'CLIVORA Connect'),
+          Material(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(18),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: () async {
+                if (!PlanFeatures.connectMarketplace(plan) &&
+                    !await requireProFeature(
+                      context,
+                      isPro: isPro,
+                      featureName: 'CLIVORA Connect (Pro Plus)',
+                    )) {
+                  if (context.mounted) context.push('/upgrade');
+                  return;
+                }
+                if (context.mounted) context.push('/connect');
+              },
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? ClivoraColors.darkBorder
+                        : ClivoraColors.borderLight,
+                  ),
+                  gradient: LinearGradient(
+                    colors: Theme.of(context).brightness == Brightness.dark
+                        ? [const Color(0xFF134E4A), const Color(0xFF1E293B)]
+                        : [const Color(0xFF0F766E), ClivoraColors.navyDark],
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(Icons.hub_outlined, color: Colors.white),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Connect Marketplace',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            PlanFeatures.connectMarketplace(plan)
+                                ? 'Anonymous until accept · Pro Plus'
+                                : 'Pro Plus only · Rs 5,000/mo',
+                            style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right, color: Colors.white),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
           const SectionHeader(title: 'Business Tools'),
           GridView.count(
             crossAxisCount: 2,
@@ -78,6 +146,13 @@ class MoreScreen extends ConsumerWidget {
             crossAxisSpacing: 12,
             childAspectRatio: 1.3,
             children: [
+              ToolGridTile(icon: Icons.hub_outlined, label: 'Connect', iconBackground: ClivoraColors.iconTeal, iconColor: ClivoraColors.primary, badge: PlanFeatures.connectMarketplace(plan) ? null : 'Plus', onTap: () async {
+                if (!PlanFeatures.connectMarketplace(plan)) {
+                  if (context.mounted) context.push('/upgrade');
+                  return;
+                }
+                if (context.mounted) context.push('/connect');
+              }),
               ToolGridTile(icon: Icons.receipt_long_outlined, label: 'Invoices', iconBackground: ClivoraColors.iconPurple, iconColor: ClivoraColors.primaryPurple, onTap: () => context.go('/invoices')),
               ToolGridTile(icon: Icons.task_alt_outlined, label: 'Tasks', iconBackground: ClivoraColors.iconOrange, iconColor: ClivoraColors.warningOrange, onTap: () => context.push('/tasks')),
               ToolGridTile(icon: Icons.calendar_today_outlined, label: 'Calendar', iconBackground: ClivoraColors.iconGreen, iconColor: ClivoraColors.successGreen, onTap: () async {
@@ -226,6 +301,21 @@ class MoreScreen extends ConsumerWidget {
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 12),
+          _SettingsTile(
+            icon: Icons.system_update_outlined,
+            label: 'Check for app update',
+            subtitle: 'Install from Play without losing data',
+            onTap: () async {
+              try {
+                await ref.read(appUpdateServiceProvider).checkForUpdate(forceStoreFallback: true);
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+                }
+              }
+            },
           ),
         ],
       ),
@@ -436,8 +526,19 @@ class _ProfileCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: ClivoraColors.navyDark,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF0F172A), Color(0xFF134E4A)],
+        ),
         borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
