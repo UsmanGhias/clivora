@@ -201,6 +201,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   data: (stats) => _StatsGrid(stats: stats, onNavigate: context.go),
                 ),
               ),
+              const SizedBox(height: 12),
+              const _RevenueSparklineCard(),
               const TodayOverdueCard(),
               const SizedBox(height: 8),
               Container(
@@ -692,6 +694,77 @@ class _CustomerTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _RevenueSparklineCard extends ConsumerWidget {
+  const _RevenueSparklineCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final seriesAsync = ref.watch(revenueSparklineProvider);
+    return seriesAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (series) {
+        final max = series.fold<double>(0, (m, v) => v > m ? v : m);
+        final total = series.fold<double>(0, (s, v) => s + v);
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? ClivoraColors.darkBorder
+                  : ClivoraColors.borderLight,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text('Paid revenue · 30 days', style: TextStyle(fontWeight: FontWeight.w700)),
+                  ),
+                  Text(
+                    formatCurrency(total),
+                    style: const TextStyle(fontWeight: FontWeight.w800, color: ClivoraColors.primary),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 48,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    for (final v in series)
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 1),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 350),
+                            height: max <= 0 ? 4 : (8 + (v / max) * 40),
+                            decoration: BoxDecoration(
+                              color: v > 0
+                                  ? ClivoraColors.primary.withValues(alpha: 0.85)
+                                  : ClivoraColors.borderLight,
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

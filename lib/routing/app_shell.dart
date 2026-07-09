@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/auth/auth_service.dart';
 import '../core/auth/user_roles.dart';
+import '../core/services/marketplace/connect_marketplace_service.dart';
 import '../core/theme/clivora_tokens.dart';
 import '../core/theme/theme_context.dart';
 import '../core/utils/exit_dialog.dart';
@@ -11,12 +12,26 @@ import '../data/providers/app_providers.dart';
 import '../shared/widgets/offline_status_bar.dart';
 import '../shared/widgets/sync_failure_banner.dart';
 
+/// Pending Connect inbox count for Pro Plus bottom-nav badge.
+final connectPendingBadgeProvider = FutureProvider<int>((ref) async {
+  ref.watch(authStateProvider);
+  final isPlus = ref.watch(isProPlusProvider);
+  if (!isPlus) return 0;
+  try {
+    final rows = await ref.read(connectMarketplaceServiceProvider).myRequests();
+    final uid = ref.read(connectMarketplaceServiceProvider).currentUserId;
+    return rows.where((r) => r['status'] == 'pending' && r['to_user_id'] == uid).length;
+  } catch (_) {
+    return 0;
+  }
+});
+
 class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.child});
 
   final Widget child;
 
-  static const _freelancerTabs = [
+  static const _freelancerBaseTabs = [
     _NavItem('/dashboard', Icons.space_dashboard_outlined, Icons.space_dashboard, 'Home'),
     _NavItem('/customers', Icons.groups_outlined, Icons.groups, 'Clients'),
     _NavItem('/projects', Icons.view_kanban_outlined, Icons.view_kanban, 'Work'),
@@ -24,7 +39,15 @@ class AppShell extends ConsumerWidget {
     _NavItem('/more', Icons.hub_outlined, Icons.hub, 'Hub'),
   ];
 
-  static const _clientTabs = [
+  static const _freelancerPlusTabs = [
+    _NavItem('/dashboard', Icons.space_dashboard_outlined, Icons.space_dashboard, 'Home'),
+    _NavItem('/customers', Icons.groups_outlined, Icons.groups, 'Clients'),
+    _NavItem('/connect', Icons.hub_outlined, Icons.hub, 'Connect', connectBadge: true),
+    _NavItem('/invoices', Icons.payments_outlined, Icons.payments, 'Billing'),
+    _NavItem('/more', Icons.apps_outlined, Icons.apps, 'Hub'),
+  ];
+
+  static const _clientBaseTabs = [
     _NavItem('/client-portal', Icons.home_outlined, Icons.home_rounded, 'Home'),
     _NavItem('/client-messages', Icons.mail_outline, Icons.mail_rounded, 'Messages'),
     _NavItem('/client-invoices', Icons.receipt_long_outlined, Icons.receipt_long, 'Invoices'),
@@ -32,24 +55,45 @@ class AppShell extends ConsumerWidget {
     _NavItem('/client-account', Icons.person_outline, Icons.person, 'Account'),
   ];
 
+  static const _clientPlusTabs = [
+    _NavItem('/client-portal', Icons.home_outlined, Icons.home_rounded, 'Home'),
+    _NavItem('/client-messages', Icons.mail_outline, Icons.mail_rounded, 'Messages'),
+    _NavItem('/connect', Icons.hub_outlined, Icons.hub, 'Connect', connectBadge: true),
+    _NavItem('/client-invoices', Icons.receipt_long_outlined, Icons.receipt_long, 'Invoices'),
+    _NavItem('/client-account', Icons.person_outline, Icons.person, 'Account'),
+  ];
+
   int _indexFromLocation(String location, List<_NavItem> tabs) {
+    // Prefer longest path match so /connect/listing highlights Connect.
+    var best = 0;
+    var bestLen = -1;
     for (var i = 0; i < tabs.length; i++) {
-      if (location.startsWith(tabs[i].path)) return i;
+      final p = tabs[i].path;
+      if (location == p || location.startsWith('$p/')) {
+        if (p.length > bestLen) {
+          best = i;
+          bestLen = p.length;
+        }
+      }
     }
-    return 0;
+    return best;
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authStateProvider).valueOrNull;
     final isClient = isClientUser(user);
-    final tabs = isClient ? _clientTabs : _freelancerTabs;
+    final isPlus = ref.watch(isProPlusProvider);
+    final tabs = isClient
+        ? (isPlus ? _clientPlusTabs : _clientBaseTabs)
+        : (isPlus ? _freelancerPlusTabs : _freelancerBaseTabs);
     final semantic = context.clivoraColors;
     final accent = semantic.brand;
     final navBackground = semantic.navBar;
     final location = GoRouterState.of(context).uri.toString();
     final currentIndex = _indexFromLocation(location, tabs);
     final badgeCount = ref.watch(unreadBadgeCountProvider);
+    final connectBadge = ref.watch(connectPendingBadgeProvider).valueOrNull ?? 0;
 
     return PopScope(
       canPop: false,
@@ -99,7 +143,9 @@ class AppShell extends ConsumerWidget {
                           accent: accent,
                           selectedLabelColor: semantic.navBarSelected,
                           errorColor: semantic.error,
-                          badgeCount: tabs[i].badgeTab ? badgeCount : 0,
+                          badgeCount: tabs[i].badgeTab
+                              ? badgeCount
+                              : (tabs[i].connectBadge ? connectBadge : 0),
                           onTap: () => context.go(tabs[i].path),
                         ),
                     ],
@@ -115,13 +161,21 @@ class AppShell extends ConsumerWidget {
 }
 
 class _NavItem {
-  const _NavItem(this.path, this.icon, this.activeIcon, this.label, {this.badgeTab = false});
+  const _NavItem(
+    this.path,
+    this.icon,
+    this.activeIcon,
+    this.label, {
+    this.badgeTab = false,
+    this.connectBadge = false,
+  });
 
   final String path;
   final IconData icon;
   final IconData activeIcon;
   final String label;
   final bool badgeTab;
+  final bool connectBadge;
 }
 
 class _BottomNavItem extends StatelessWidget {

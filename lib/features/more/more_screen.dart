@@ -25,10 +25,73 @@ import '../../shared/widgets/step_progress_card.dart';
 import '../../shared/widgets/tool_grid_tile.dart';
 import '../../core/services/analytics_export_service.dart';
 import '../../core/services/app_update_service.dart';
+import '../../core/services/billable_to_invoice_service.dart';
 import '../../core/services/cloud_crm_backup_service.dart';
 
 class MoreScreen extends ConsumerWidget {
   const MoreScreen({super.key});
+
+  Future<void> _billProjectToInvoice(BuildContext context, WidgetRef ref) async {
+    final projects = await ref.read(projectsProvider(const ProjectFilter()).future);
+    final active = projects.where((p) => p.status == 'in_progress' || p.status == 'completed').toList();
+    if (active.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No projects available to bill')),
+        );
+      }
+      return;
+    }
+    var projectId = active.first.id;
+    final rateCtrl = TextEditingController(text: '0');
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: const Text('Bill project to invoice'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<int>(
+                value: projectId,
+                decoration: const InputDecoration(labelText: 'Project'),
+                items: active.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))).toList(),
+                onChanged: (v) => setLocal(() => projectId = v ?? projectId),
+              ),
+              TextField(
+                controller: rateCtrl,
+                decoration: const InputDecoration(labelText: 'Hourly rate (optional)'),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Create draft')),
+          ],
+        ),
+      ),
+    );
+    if (ok != true) return;
+    final project = active.firstWhere((p) => p.id == projectId);
+    try {
+      final id = await ref.read(billableToInvoiceServiceProvider).createFromProject(
+            projectId: project.id,
+            customerId: project.customerId,
+            hourlyRate: double.tryParse(rateCtrl.text.trim()) ?? 0,
+          );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Draft invoice #$id created')),
+        );
+        context.push('/invoices/$id/edit');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -119,66 +182,94 @@ class MoreScreen extends ConsumerWidget {
               ),
             ),
           ],
-          const SizedBox(height: 24),
-          const SectionHeader(title: 'CLIVORA Connect'),
-          Material(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(18),
-            child: InkWell(
+          if (!isPlus) ...[
+            const SizedBox(height: 24),
+            const SectionHeader(title: 'CLIVORA Connect'),
+            Material(
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(18),
-              onTap: () async {
-                if (!isPlus) {
+              child: InkWell(
+                borderRadius: BorderRadius.circular(18),
+                onTap: () {
                   if (context.mounted) context.push('/upgrade');
-                  return;
-                }
-                if (context.mounted) context.push('/connect');
-              },
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  color: ClivoraColors.navyDark,
-                  border: Border.all(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? ClivoraColors.darkBorder
-                        : Colors.transparent,
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    color: ClivoraColors.navyDark,
                   ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(14),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Icon(Icons.hub_outlined, color: Colors.white),
                       ),
-                      child: const Icon(Icons.hub_outlined, color: Colors.white),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Connect Marketplace',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            isPlus
-                                ? 'Anonymous until accept · Pro Plus'
-                                : 'Pro Plus only · Rs 5,000/mo',
-                            style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12),
-                          ),
-                        ],
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Unlock Connect',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'Pro Plus bottom tab · Rs 5,000/mo',
+                              style: TextStyle(color: Colors.white70, fontSize: 12),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const Icon(Icons.chevron_right, color: Colors.white),
-                  ],
+                      const Icon(Icons.chevron_right, color: Colors.white),
+                    ],
+                  ),
                 ),
               ),
             ),
+          ],
+          const SizedBox(height: 24),
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: 1),
+            duration: const Duration(milliseconds: 450),
+            curve: Curves.easeOutCubic,
+            builder: (context, t, child) => Opacity(
+              opacity: t,
+              child: Transform.translate(offset: Offset(0, 8 * (1 - t)), child: child),
+            ),
+            child: const SectionHeader(title: 'Money & catalog'),
+          ),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 1.3,
+            children: [
+              if (isPlus)
+                ToolGridTile(icon: Icons.view_kanban_outlined, label: 'Work', iconBackground: ClivoraColors.iconIndigo, iconColor: Colors.indigo, onTap: () => context.go('/projects')),
+              ToolGridTile(icon: Icons.request_quote_outlined, label: 'Quotes', iconBackground: ClivoraColors.iconTeal, iconColor: ClivoraColors.primary, onTap: () => context.push('/quotes')),
+              ToolGridTile(icon: Icons.inventory_2_outlined, label: 'Catalog', iconBackground: ClivoraColors.iconPurple, iconColor: ClivoraColors.primaryPurple, onTap: () => context.push('/products')),
+              ToolGridTile(icon: Icons.autorenew, label: 'Recurring', iconBackground: ClivoraColors.iconGreen, iconColor: ClivoraColors.successGreen, onTap: () => context.push('/recurring-invoices')),
+              ToolGridTile(icon: Icons.storefront_outlined, label: 'Vendors', iconBackground: ClivoraColors.iconOrange, iconColor: ClivoraColors.warningOrange, onTap: () => context.push('/vendors')),
+              ToolGridTile(icon: Icons.shopping_bag_outlined, label: 'POs', iconBackground: ClivoraColors.iconBlue, iconColor: Colors.blue, onTap: () => context.push('/purchase-orders')),
+              ToolGridTile(icon: Icons.account_balance_wallet_outlined, label: 'Credits', iconBackground: ClivoraColors.iconYellow, iconColor: ClivoraColors.accent, onTap: () => context.push('/credits')),
+              ToolGridTile(icon: Icons.receipt_long_outlined, label: 'Invoices', iconBackground: ClivoraColors.iconPurple, iconColor: ClivoraColors.primaryPurple, onTap: () => context.go('/invoices')),
+              ToolGridTile(
+                icon: Icons.playlist_add_check_outlined,
+                label: 'Bill → Invoice',
+                iconBackground: ClivoraColors.iconGreen,
+                iconColor: ClivoraColors.successGreen,
+                onTap: () => _billProjectToInvoice(context, ref),
+              ),
+            ],
           ),
           const SizedBox(height: 24),
           const SectionHeader(title: 'Business Tools'),
@@ -190,7 +281,8 @@ class MoreScreen extends ConsumerWidget {
             crossAxisSpacing: 12,
             childAspectRatio: 1.3,
             children: [
-              ToolGridTile(icon: Icons.receipt_long_outlined, label: 'Invoices', iconBackground: ClivoraColors.iconPurple, iconColor: ClivoraColors.primaryPurple, onTap: () => context.go('/invoices')),
+              if (!isPlus)
+                ToolGridTile(icon: Icons.view_kanban_outlined, label: 'Work', iconBackground: ClivoraColors.iconIndigo, iconColor: Colors.indigo, onTap: () => context.go('/projects')),
               ToolGridTile(icon: Icons.task_alt_outlined, label: 'Tasks', iconBackground: ClivoraColors.iconOrange, iconColor: ClivoraColors.warningOrange, onTap: () => context.push('/tasks')),
               ToolGridTile(icon: Icons.calendar_today_outlined, label: 'Calendar', iconBackground: ClivoraColors.iconGreen, iconColor: ClivoraColors.successGreen, onTap: () async {
                 if (!PlanFeatures.calendarView(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'Calendar', isClient: false)) return;

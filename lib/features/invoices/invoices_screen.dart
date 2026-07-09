@@ -8,6 +8,7 @@ import '../../core/services/sync_outbox_service.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../core/utils/currency_formatter.dart';
+import '../../data/database/database.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 import '../../shared/widgets/clivora_bottom_sheet.dart';
@@ -85,7 +86,14 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
             selected: _status,
             onSelected: (v) => setState(() => _status = v),
           ),
-          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () => context.push('/recurring-invoices'),
+              icon: const Icon(Icons.autorenew, size: 18),
+              label: const Text('Recurring'),
+            ),
+          ),
           monthlyCountAsync.when(
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
@@ -156,11 +164,24 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
                         ),
                         leading: Icon(Icons.receipt_long, color: _statusColor(inv.status)),
                         title: Text(inv.invoiceNumber, style: const TextStyle(fontWeight: FontWeight.w600)),
-                        subtitle: Text(_statusLabel(inv.status)),
+                        subtitle: Text(_invoiceSubtitle(inv)),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(formatCurrency(inv.total, symbol: currencySymbol(inv.currency))),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(formatCurrency(inv.total, symbol: currencySymbol(inv.currency))),
+                                if (inv.amountPaid > 0 && inv.status != 'paid')
+                                  Text(
+                                    'Paid ${formatCurrency(inv.amountPaid, symbol: currencySymbol(inv.currency))}',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: ClivoraColors.successGreen,
+                                        ),
+                                  ),
+                              ],
+                            ),
                             PopupMenuButton<String>(
                               icon: const Icon(Icons.more_vert, size: 20),
                               onSelected: (action) {
@@ -204,5 +225,16 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
 
   String _statusLabel(String status) {
     return status[0].toUpperCase() + status.substring(1);
+  }
+
+  String _invoiceSubtitle(Invoice inv) {
+    final status = _statusLabel(inv.status);
+    if (inv.status == 'paid' || inv.status == 'draft') return status;
+    final due = inv.dueDate ?? inv.issueDate;
+    final days = DateTime.now().difference(due).inDays;
+    if (days <= 0) return '$status · Current';
+    if (days <= 30) return '$status · ${days}d (1–30)';
+    if (days <= 60) return '$status · ${days}d (31–60)';
+    return '$status · ${days}d (60+)';
   }
 }

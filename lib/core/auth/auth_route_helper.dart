@@ -18,6 +18,7 @@ const freelancerShellRoutes = {
   '/projects',
   '/invoices',
   '/more',
+  '/connect',
 };
 
 const freelancerExtraRoutes = {
@@ -43,6 +44,12 @@ const freelancerExtraRoutes = {
   '/team-invites',
   '/storage',
   '/freelancer-messages',
+  '/products',
+  '/quotes',
+  '/recurring-invoices',
+  '/vendors',
+  '/purchase-orders',
+  '/credits',
 };
 
 /// Routes only clients may access.
@@ -60,6 +67,7 @@ const clientShellRoutes = {
   '/upgrade',
   '/referral',
   '/team-invites',
+  '/connect',
 };
 
 bool isPublicRoute(String location) {

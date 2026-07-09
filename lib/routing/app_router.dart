@@ -51,6 +51,12 @@ import '../features/pro/pro_screens.dart';
 import '../features/subscription/upgrade_screen.dart';
 import '../features/subscription/referral_screen.dart';
 import '../features/tasks/tasks_screen.dart';
+import '../features/products/products_screen.dart';
+import '../features/quotes/quotes_screen.dart';
+import '../features/invoices/recurring_invoices_screen.dart';
+import '../features/vendors/vendors_screen.dart';
+import '../features/purchase_orders/purchase_orders_screen.dart';
+import '../features/credits/credits_screen.dart';
 import 'app_shell.dart';
 import 'auth_refresh.dart';
 
@@ -180,6 +186,11 @@ final appRouter = GoRouter(
           path: '/more',
           pageBuilder: (context, state) =>
               const NoTransitionPage(child: MoreScreen()),
+        ),
+        GoRoute(
+          path: '/connect',
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: ConnectMarketplaceScreen()),
         ),
       ],
     ),
@@ -379,11 +390,6 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
-      path: '/connect',
-      builder: (context, state) => const ConnectMarketplaceScreen(),
-    ),
-    GoRoute(
-      parentNavigatorKey: _rootNavigatorKey,
       path: '/connect/listing',
       builder: (context, state) => const ConnectListingScreen(),
     ),
@@ -391,6 +397,36 @@ final appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/connect/need',
       builder: (context, state) => const ConnectNeedScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/products',
+      builder: (context, state) => const ProductsScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/quotes',
+      builder: (context, state) => const QuotesScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/recurring-invoices',
+      builder: (context, state) => const RecurringInvoicesScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/vendors',
+      builder: (context, state) => const VendorsScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/purchase-orders',
+      builder: (context, state) => const PurchaseOrdersScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/credits',
+      builder: (context, state) => const CreditsScreen(),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,

@@ -439,6 +439,41 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                           onChanged: (v) => setState(() => _currency = v ?? kDefaultCurrency),
                         ),
                         const SizedBox(height: 16),
+                        const ClivoraFieldLabel(label: 'From catalog'),
+                        ref.watch(productsProvider).when(
+                          loading: () => const SizedBox.shrink(),
+                          error: (_, _) => const SizedBox.shrink(),
+                          data: (products) {
+                            if (products.isEmpty) {
+                              return TextButton(
+                                onPressed: () => context.push('/products'),
+                                child: const Text('Add products to catalog'),
+                              );
+                            }
+                            return DropdownButtonFormField<int>(
+                              decoration: const InputDecoration(hintText: 'Pick a product or service'),
+                              items: [
+                                const DropdownMenuItem(value: -1, child: Text('Custom line')),
+                                ...products.map(
+                                  (p) => DropdownMenuItem(
+                                    value: p.id,
+                                    child: Text('${p.name} · ${formatCurrency(p.unitPrice)}'),
+                                  ),
+                                ),
+                              ],
+                              onChanged: (id) {
+                                if (id == null || id < 0) return;
+                                final p = products.firstWhere((e) => e.id == id);
+                                setState(() {
+                                  _descriptionController.text = p.name;
+                                  _amountController.text = p.unitPrice.toString();
+                                  _taxController.text = p.taxRate.toString();
+                                });
+                              },
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 16),
                         ClivoraTextField(controller: _descriptionController, label: 'Description', hint: 'Service or item description'),
                         const SizedBox(height: 16),
                         ClivoraTextField(controller: _amountController, label: 'Amount', hint: '0', keyboardType: TextInputType.number, required: true),

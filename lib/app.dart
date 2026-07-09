@@ -14,10 +14,10 @@ import 'core/services/connectivity_service.dart';
 import 'core/services/contract_sync_service.dart';
 import 'core/services/local_notification_service.dart';
 import 'core/services/push_notification_service.dart';
+import 'core/services/recurring_invoice_service.dart';
 import 'core/services/subscription_manager.dart';
 import 'core/services/sync_outbox_service.dart';
 import 'core/services/task_reminder_service.dart';
-import 'core/services/locale_service.dart';
 import 'core/services/telemetry_service.dart';
 import 'core/utils/crm_refresh.dart';
 import 'core/auth/user_roles.dart';
@@ -103,6 +103,9 @@ class _ClivoraAppState extends ConsumerState<ClivoraApp> with WidgetsBindingObse
     await ref.read(contractSyncServiceProvider).reconcileSignedContracts();
     ref.read(adminSyncServiceProvider).syncPendingEvents();
     await ref.read(taskReminderServiceProvider).syncAllForCurrentUser();
+    try {
+      await ref.read(recurringInvoiceServiceProvider).processDue();
+    } catch (_) {}
     try {
       await ref.read(appUpdateServiceProvider).checkForUpdate();
     } catch (_) {}

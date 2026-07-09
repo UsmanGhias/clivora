@@ -36,6 +36,13 @@ part 'database.g.dart';
     ProjectMilestones,
     ProjectReviews,
     InvoiceDisputes,
+    Products,
+    Quotes,
+    RecurringInvoices,
+    Vendors,
+    PurchaseOrders,
+    Credits,
+    InvoicePayments,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -44,7 +51,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 17;
 
   bool _databaseRepaired = false;
 
@@ -128,6 +135,36 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(projectMilestones);
             await m.createTable(projectReviews);
             await m.createTable(invoiceDisputes);
+          }
+          if (from < 17) {
+            await m.createTable(products);
+            await m.createTable(quotes);
+            await m.createTable(recurringInvoices);
+            await m.createTable(vendors);
+            await m.createTable(purchaseOrders);
+            await m.createTable(credits);
+            await m.createTable(invoicePayments);
+            if (!await _columnExists('expenses', 'vendor_id')) {
+              await m.addColumn(expenses, expenses.vendorId);
+            }
+            if (!await _columnExists('expenses', 'is_billable')) {
+              await m.addColumn(expenses, expenses.isBillable);
+            }
+            if (!await _columnExists('expenses', 'is_invoiced')) {
+              await m.addColumn(expenses, expenses.isInvoiced);
+            }
+            if (!await _columnExists('expenses', 'invoice_id')) {
+              await m.addColumn(expenses, expenses.invoiceId);
+            }
+            if (!await _columnExists('invoices', 'amount_paid')) {
+              await m.addColumn(invoices, invoices.amountPaid);
+            }
+            if (!await _columnExists('invoices', 'recurring_invoice_id')) {
+              await m.addColumn(invoices, invoices.recurringInvoiceId);
+            }
+            if (!await _columnExists('invoices', 'quote_id')) {
+              await m.addColumn(invoices, invoices.quoteId);
+            }
           }
         },
       );
