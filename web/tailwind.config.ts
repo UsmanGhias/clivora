@@ -23,6 +23,14 @@ const config: Config = {
           DEFAULT: "#0F172A",
           light: "#1E293B",
         },
+        /** Client portal — slate (mirrors Flutter ClivoraColors.client*) */
+        client: {
+          accent: "#475569",
+          "accent-light": "#F8FAFC",
+          surface: "#F1F5F9",
+          muted: "#94A3B8",
+          header: "#334155",
+        },
         background: "#FAFAF9",
         surface: "#ffffff",
         success: "#10B981",
@@ -47,8 +55,9 @@ const config: Config = {
       },
       backgroundImage: {
         "brand-gradient": "linear-gradient(135deg, #0F172A 0%, #0D9488 100%)",
+        "client-gradient": "linear-gradient(135deg, #1E293B 0%, #64748B 100%)",
         "logo-gradient":
-          "linear-gradient(135deg, #7C5CFF 0%, #5B3FD9 50%, #0D9488 100%)",
+          "linear-gradient(135deg, #0F172A 0%, #0D9488 100%)",
       },
     },
   },

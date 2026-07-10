@@ -74,7 +74,7 @@ export default async function InvoicesPage() {
             ))}
           </ul>
         )}
-        <DownloadAppCard title="PDF download & payment confirm in the app" />
+        <DownloadAppCard title="PDF download & payment confirm in the app" tone="client" />
       </div>
     );
   }

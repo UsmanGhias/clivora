@@ -1,16 +1,17 @@
 "use client";
 
-import { FormEvent, useMemo, useState, type CSSProperties } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase-browser";
 import {
-  CLIVORA_NAVY,
-  CLIVORA_PURPLE,
   OFFICIAL_EMAIL,
   PRO_PLUS_PRICE_USD,
   PRO_PRICE_USD,
 } from "@/lib/admin-auth";
+import { SubPageChrome } from "@/components/app/SubPageChrome";
+import { Logo } from "@/components/ui/Logo";
+import { SmartAppCta } from "@/components/app/SmartAppCta";
 
 type Plan = "pro" | "pro_plus";
 
@@ -20,7 +21,9 @@ export default function ProCheckout() {
   const [plan, setPlan] = useState<Plan>(initialPlan);
   const [fullName, setFullName] = useState(params.get("name") ?? "");
   const [email, setEmail] = useState(params.get("email") ?? "");
-  const [accountType, setAccountType] = useState(params.get("type") === "client" ? "client" : "freelancer");
+  const [accountType, setAccountType] = useState(
+    params.get("type") === "client" ? "client" : "freelancer",
+  );
   const [country, setCountry] = useState("PK");
   const [paymentMethod, setPaymentMethod] = useState("jazzcash");
   const [paymentReference, setPaymentReference] = useState("");
@@ -31,6 +34,7 @@ export default function ProCheckout() {
 
   const amount = plan === "pro_plus" ? PRO_PLUS_PRICE_USD : PRO_PRICE_USD;
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
+  const isClient = accountType === "client";
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -59,127 +63,174 @@ export default function ProCheckout() {
     }
   }
 
-  if (done) {
-    return (
-      <main style={pageWrap}>
-        <div style={card}>
-          <div style={logo}>C</div>
-          <h1 style={heading}>Request received</h1>
-          <p style={bodyText}>
-            Thanks {fullName || "there"}. We received your{" "}
-            <strong style={{ color: "#0f172a" }}>{plan === "pro_plus" ? "Pro Plus" : "Pro"}</strong> request for{" "}
-            <strong style={{ color: "#0f172a" }}>${amount}</strong>.
-          </p>
-          <p style={bodyText}>
-            <strong style={{ color: "#0f172a" }}>Android app users:</strong> subscribe inside the CLIVORA app via
-            Google Play Billing (Play policy). This web form is for website visitors and admin-assisted grants only —
-            it is not linked from the Play-distributed app.
-          </p>
-          <Link href="/" style={primaryBtn}>
-            Back to CLIVORA
-          </Link>
-        </div>
-      </main>
-    );
-  }
-
   return (
-    <main style={pageWrap}>
-      <div style={{ ...card, maxWidth: 720 }}>
-        <div style={logo}>C</div>
-        <h1 style={heading}>CLIVORA Pro (web)</h1>
-        <p style={{ ...bodyText, marginTop: 0 }}>
-          This page is for website visitors and admin-assisted grants.{" "}
-          <strong style={{ color: "#0f172a" }}>Android app users must subscribe inside the CLIVORA app via Google Play Billing</strong>{" "}
-          (Google Play payments policy). The Play app does not open this checkout.
-        </p>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
-          <PlanOption
-            active={plan === "pro"}
-            title="Pro"
-            price={`$${PRO_PRICE_USD}/mo`}
-            onClick={() => setPlan("pro")}
-          />
-          <PlanOption
-            active={plan === "pro_plus"}
-            title="Pro Plus"
-            price={`$${PRO_PLUS_PRICE_USD}/mo`}
-            badge="Best value"
-            onClick={() => setPlan("pro_plus")}
-          />
-        </div>
-
-        <div style={infoBox}>
-          <strong style={{ color: "#0f172a", display: "block", marginBottom: 4 }}>How to pay</strong>
-          <ol style={{ margin: "8px 0 0", paddingLeft: 18, color: "#334155", lineHeight: 1.55 }}>
-            <li>Send ${amount} via JazzCash, EasyPaisa, bank transfer, or international wire.</li>
-            <li>Use your CLIVORA email as the payment note or reference.</li>
-            <li>Paste the transaction ID below and submit.</li>
-            <li>We activate Pro or Pro Plus after verification (usually same day).</li>
-          </ol>
-          <p style={{ margin: "10px 0 0", fontSize: "0.9rem", color: "#475569" }}>
-            Payment destination: <strong style={{ color: "#0f172a" }}>CODCrafters / CLIVORA</strong>. Contact{" "}
-            <a href={`mailto:${OFFICIAL_EMAIL}`} style={{ color: CLIVORA_PURPLE, fontWeight: 600 }}>
-              {OFFICIAL_EMAIL}
-            </a>{" "}
-            for bank details or WhatsApp transfer instructions.
-          </p>
-        </div>
-
-        <form onSubmit={onSubmit} style={{ marginTop: 20, color: "#0f172a" }}>
-          {error && <p style={{ color: "#dc2626", fontSize: "0.9rem" }}>{error}</p>}
-          <label style={label}>Full name</label>
-          <input required value={fullName} onChange={(e) => setFullName(e.target.value)} style={input} />
-          <label style={label}>CLIVORA account email</label>
-          <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={input} />
-          <label style={label}>Account type</label>
-          <select value={accountType} onChange={(e) => setAccountType(e.target.value)} style={input}>
-            <option value="freelancer">Freelancer</option>
-            <option value="client">Client</option>
-          </select>
-          <label style={label}>Country</label>
-          <select value={country} onChange={(e) => setCountry(e.target.value)} style={input}>
-            <option value="PK">Pakistan</option>
-            <option value="AE">United Arab Emirates</option>
-            <option value="SA">Saudi Arabia</option>
-            <option value="US">United States</option>
-            <option value="GB">United Kingdom</option>
-            <option value="OTHER">Other / Worldwide</option>
-          </select>
-          <label style={label}>Payment method</label>
-          <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} style={input}>
-            <option value="jazzcash">JazzCash</option>
-            <option value="easypaisa">EasyPaisa</option>
-            <option value="bank_transfer">Bank transfer (PK)</option>
-            <option value="international_wire">International wire / Wise</option>
-            <option value="card_manual">Card (manual confirmation)</option>
-          </select>
-          <label style={label}>Transaction / reference ID</label>
-          <input
-            required
-            value={paymentReference}
-            onChange={(e) => setPaymentReference(e.target.value)}
-            placeholder="e.g. JC123456 or bank TRN"
-            style={input}
-          />
-          <label style={label}>Notes (optional)</label>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={3}
-            style={{ ...input, resize: "vertical" }}
-          />
-          <button
-            type="submit"
-            disabled={busy}
-            style={{ ...primaryBtn, width: "100%", border: "none", cursor: busy ? "wait" : "pointer" }}
+    <SubPageChrome
+      isClient={isClient}
+      backHref="/app"
+      backLabel="Back to app"
+      crumbs={[
+        { label: "App", href: "/app" },
+        { label: "Upgrade" },
+      ]}
+      title="CLIVORA Pro"
+    >
+      <div className="mx-auto max-w-xl space-y-6">
+        {done ? (
+          <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
+            <Logo size="sm" variant="onLight" />
+            <h2 className="mt-4 text-2xl font-extrabold text-navy">Request received</h2>
+            <p className="mt-2 text-sm text-text-secondary">
+              Thanks {fullName || "there"}. We received your{" "}
+              <strong>{plan === "pro_plus" ? "Pro Plus" : "Pro"}</strong> request for{" "}
+              <strong>${amount}</strong>.
+            </p>
+            <p className="mt-3 text-sm text-text-secondary">
+              <strong>Android app users:</strong> subscribe inside the CLIVORA app via Google Play
+              Billing. This web form is for website visitors and admin-assisted grants.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                href="/app"
+                className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white"
+              >
+                Back to app
+              </Link>
+              <Link
+                href="/"
+                className="rounded-full border border-navy/20 px-4 py-2 text-sm font-semibold text-navy"
+              >
+                Marketing home
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <form
+            onSubmit={onSubmit}
+            className="space-y-4 rounded-2xl border border-border bg-surface p-6 shadow-sm"
           >
-            {busy ? "Submitting…" : `Submit payment for $${amount}`}
-          </button>
-        </form>
+            <Logo size="sm" variant="onLight" />
+            <p className="text-sm text-text-secondary">
+              Website checkout for Pro / Pro Plus.{" "}
+              <strong className="text-navy">App users must upgrade via Google Play</strong> inside
+              CLIVORA.
+            </p>
+
+            <div className="grid grid-cols-2 gap-3">
+              <PlanOption
+                active={plan === "pro"}
+                title="Pro"
+                price={`$${PRO_PRICE_USD}/mo`}
+                onClick={() => setPlan("pro")}
+              />
+              <PlanOption
+                active={plan === "pro_plus"}
+                title="Pro Plus"
+                price={`$${PRO_PLUS_PRICE_USD}/mo`}
+                badge="Connect"
+                onClick={() => setPlan("pro_plus")}
+              />
+            </div>
+
+            <label className="block text-sm font-semibold text-navy">
+              Full name
+              <input
+                required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-border px-3 py-2.5"
+              />
+            </label>
+            <label className="block text-sm font-semibold text-navy">
+              Email
+              <input
+                required
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-border px-3 py-2.5"
+              />
+            </label>
+            <label className="block text-sm font-semibold text-navy">
+              Account type
+              <select
+                value={accountType}
+                onChange={(e) => setAccountType(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-border px-3 py-2.5"
+              >
+                <option value="freelancer">Freelancer</option>
+                <option value="client">Client</option>
+              </select>
+            </label>
+            <label className="block text-sm font-semibold text-navy">
+              Country
+              <select
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-border px-3 py-2.5"
+              >
+                <option value="PK">Pakistan</option>
+                <option value="US">United States</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </label>
+            <label className="block text-sm font-semibold text-navy">
+              Payment method
+              <select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-border px-3 py-2.5"
+              >
+                <option value="jazzcash">JazzCash</option>
+                <option value="easypaisa">Easypaisa</option>
+                <option value="bank">Bank transfer</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+            <label className="block text-sm font-semibold text-navy">
+              Payment reference
+              <input
+                required
+                value={paymentReference}
+                onChange={(e) => setPaymentReference(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-border px-3 py-2.5"
+                placeholder="Txn ID / receipt #"
+              />
+            </label>
+            <label className="block text-sm font-semibold text-navy">
+              Notes
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-border px-3 py-2.5"
+                rows={2}
+              />
+            </label>
+
+            <div className="rounded-xl bg-client-surface p-3 text-xs text-text-secondary">
+              Amount due: <strong className="text-navy">${amount} USD</strong>. After payment, email{" "}
+              {OFFICIAL_EMAIL} if approval takes longer than expected.
+            </div>
+
+            {error && <p className="rounded-lg bg-error/10 px-3 py-2 text-sm text-error">{error}</p>}
+
+            <button
+              type="submit"
+              disabled={busy}
+              className="w-full rounded-full bg-primary py-3 text-sm font-bold text-white disabled:opacity-60"
+            >
+              {busy ? "Submitting…" : `Submit ${plan === "pro_plus" ? "Pro Plus" : "Pro"} request`}
+            </button>
+          </form>
+        )}
+
+        <SmartAppCta
+          tone={isClient ? "client" : "freelancer"}
+          title="Already on Android?"
+          body="Subscribe with Google Play Billing inside the CLIVORA app — same Pro / Pro Plus unlock as web grants."
+          deepPath="open/upgrade"
+        />
       </div>
-    </main>
+    </SubPageChrome>
   );
 }
 
@@ -200,120 +251,19 @@ function PlanOption({
     <button
       type="button"
       onClick={onClick}
-      style={{
-        textAlign: "left",
-        borderRadius: 14,
-        border: active ? `2px solid ${CLIVORA_PURPLE}` : "1px solid #e2e8f0",
-        background: active ? "#f5f3ff" : "#fff",
-        padding: 14,
-        cursor: "pointer",
-        color: "#0f172a",
-      }}
+      className={`rounded-2xl border-2 p-4 text-left transition ${
+        active ? "border-primary bg-primary/5" : "border-border bg-white"
+      }`}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
-        <strong style={{ color: "#0f172a" }}>{title}</strong>
+      <div className="flex items-center justify-between gap-2">
+        <strong className="text-navy">{title}</strong>
         {badge && (
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: "#92400e",
-              background: "#fef3c7",
-              padding: "2px 8px",
-              borderRadius: 999,
-            }}
-          >
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-900">
             {badge}
           </span>
         )}
       </div>
-      <div style={{ marginTop: 6, color: CLIVORA_PURPLE, fontWeight: 800 }}>{price}</div>
+      <p className="mt-1 font-extrabold text-primary">{price}</p>
     </button>
   );
 }
-
-const pageWrap: CSSProperties = {
-  minHeight: "100vh",
-  background: `linear-gradient(160deg, ${CLIVORA_NAVY} 0%, #134e4a 45%, #0f766e 100%)`,
-  padding: 24,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  color: "#0f172a",
-};
-
-const card: CSSProperties = {
-  width: "100%",
-  maxWidth: 520,
-  background: "#fff",
-  borderRadius: 22,
-  padding: 28,
-  boxShadow: "0 24px 60px rgba(0,0,0,0.28)",
-  color: "#0f172a",
-};
-
-const logo: CSSProperties = {
-  width: 48,
-  height: 48,
-  borderRadius: 14,
-  background: CLIVORA_PURPLE,
-  color: "#fff",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontWeight: 800,
-  fontSize: "1.4rem",
-  marginBottom: 14,
-};
-
-const heading: CSSProperties = {
-  margin: "0 0 8px",
-  color: "#0f172a",
-  fontSize: "1.75rem",
-  fontWeight: 800,
-};
-
-const bodyText: CSSProperties = {
-  color: "#475569",
-  lineHeight: 1.6,
-};
-
-const label: CSSProperties = {
-  display: "block",
-  fontSize: "0.85rem",
-  fontWeight: 600,
-  marginBottom: 6,
-  color: "#0f172a",
-};
-
-const input: CSSProperties = {
-  width: "100%",
-  padding: "10px 12px",
-  border: "1px solid #cbd5e1",
-  borderRadius: 10,
-  fontSize: "0.95rem",
-  marginBottom: 14,
-  background: "#fff",
-  color: "#0f172a",
-  WebkitTextFillColor: "#0f172a",
-};
-
-const primaryBtn: CSSProperties = {
-  display: "inline-block",
-  textAlign: "center",
-  background: CLIVORA_PURPLE,
-  color: "#fff",
-  borderRadius: 12,
-  padding: "12px 18px",
-  fontWeight: 700,
-  textDecoration: "none",
-  marginTop: 8,
-};
-
-const infoBox: CSSProperties = {
-  background: "#f8fafc",
-  border: "1px solid #e2e8f0",
-  borderRadius: 14,
-  padding: 14,
-  color: "#0f172a",
-};

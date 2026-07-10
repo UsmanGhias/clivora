@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile, isClientAccount, planLabel } from "@/lib/profile";
 import { site } from "@/lib/site";
-import { DownloadAppCard } from "@/components/app/DownloadAppCard";
+import { SmartAppCta } from "@/components/app/SmartAppCta";
 
 export default async function AppHomePage() {
   const profile = await getProfile();
@@ -39,13 +39,17 @@ export default async function AppHomePage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl bg-brand-gradient p-6 text-white shadow-lg">
+      <section
+        className={`rounded-2xl p-6 text-white shadow-lg ${
+          client ? "bg-client-gradient" : "bg-brand-gradient"
+        }`}
+      >
         <p className="text-sm text-white/70">Welcome back</p>
         <h1 className="mt-1 text-2xl font-extrabold">
-          {profile?.name || (client ? "Client" : "Freelancer")}
+          {profile?.name || (client ? "Client portal" : "Freelancer workspace")}
         </h1>
         <p className="mt-2 text-sm text-white/80">
-          Plan: <span className="font-semibold">{plan}</span> · Same Supabase account as the mobile app
+          Plan: <span className="font-semibold">{plan}</span> · Same account as the CLIVORA mobile app
         </p>
         <div className="mt-4 grid grid-cols-3 gap-2">
           <Stat label="Projects" value={projectCount} />
@@ -61,7 +65,9 @@ export default async function AppHomePage() {
           </Link>
           <Link
             href="/pro"
-            className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white"
+            className={`rounded-full px-4 py-2 text-sm font-semibold text-white ${
+              client ? "bg-client-accent" : "bg-primary"
+            }`}
           >
             Upgrade · Pro {site.pricing.proMonthlyLabel} / Plus {site.pricing.proPlusMonthlyLabel}
           </Link>
@@ -71,28 +77,38 @@ export default async function AppHomePage() {
       <section className="grid gap-4 sm:grid-cols-2">
         {client ? (
           <>
-            <HomeCard title="Invoices" body="Shared invoices from freelancers." href="/app/invoices" />
-            <HomeCard title="Messages" body="Cloud message history." href="/app/messages" />
-            <HomeCard title="Tasks" body="Assigned client tasks." href="/app/tasks" />
-            <HomeCard title="Account" body="Profile & plan." href="/app/account" />
-            <HomeCard title="Connect" body="Post needs & find freelancers." href="/connect" />
-            <HomeCard title="Notifications" body="Cloud alerts." href="/app/notifications" />
+            <HomeCard title="Invoices" body="Shared invoices from freelancers." href="/app/invoices" client />
+            <HomeCard title="Messages" body="Cloud message history." href="/app/messages" client />
+            <HomeCard title="Updates" body="Activity & alerts." href="/app/activity" client />
+            <HomeCard title="Projects" body="Work shared with you." href="/app/projects" client />
+            <HomeCard title="Account" body="Profile & plan." href="/app/account" client />
+            <HomeCard title="Connect" body="Post needs & find freelancers." href="/connect" client />
           </>
         ) : (
           <>
-            <HomeCard title="Clients" body="Cloud-linked client shares." href="/app/clients" />
-            <HomeCard title="Work" body="Shared projects." href="/app/projects" />
-            <HomeCard title="Billing" body="Invoice shares & payments." href="/app/invoices" />
-            <HomeCard title="Hub" body="Shortcuts & upgrade." href="/app/hub" />
+            <HomeCard title="Clients" body="Cloud CRM clients." href="/app/clients" />
+            <HomeCard title="Work" body="Projects & shares." href="/app/projects" />
+            <HomeCard title="Billing" body="Invoices & payments." href="/app/invoices" />
+            <HomeCard title="Hub" body="Tools & shortcuts." href="/app/hub" />
             <HomeCard title="Connect" body="Marketplace (Pro Plus to post)." href="/connect" />
             <HomeCard title="Notifications" body="Cloud alerts." href="/app/notifications" />
           </>
         )}
       </section>
 
-      <DownloadAppCard
-        title="Need offline CRM, PDF branding, AI, vault, or workflows?"
-        body="Those tools run best in the CLIVORA Android app. Web stays connected to the same Supabase data for shares, Connect, invoices, and messages."
+      <SmartAppCta
+        tone={client ? "client" : "freelancer"}
+        title={
+          client
+            ? "Contracts, milestones & files are in the app"
+            : "Offline CRM, PDF branding, AI & vault are in the app"
+        }
+        body={
+          client
+            ? "The client portal on Android includes contracts, quotes, payments, credits, files, and push updates."
+            : "Web covers cloud CRM, Connect, and shares. Heavy tools stay app-preferred for speed and offline use."
+        }
+        deepPath={client ? "open/client-portal" : "open/dashboard"}
       />
     </div>
   );
@@ -111,15 +127,21 @@ function HomeCard({
   title,
   body,
   href,
+  client,
 }: {
   title: string;
   body: string;
   href: string;
+  client?: boolean;
 }) {
   return (
     <Link
       href={href}
-      className="rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-primary/40"
+      className={`rounded-2xl border bg-surface p-5 shadow-sm transition ${
+        client
+          ? "border-border hover:border-client-accent/50"
+          : "border-border hover:border-primary/40"
+      }`}
     >
       <h2 className="font-bold text-text-primary">{title}</h2>
       <p className="mt-1 text-sm text-text-secondary">{body}</p>

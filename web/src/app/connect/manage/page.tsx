@@ -1,9 +1,9 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { SubPageChrome } from "@/components/app/SubPageChrome";
 
 type ProfileRow = {
   id?: string;
@@ -179,23 +179,29 @@ export default function ConnectManagePage() {
     );
   }
 
+  const isClient = accountType === "client";
+
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-navy px-4 py-4 text-white">
-        <div className="mx-auto flex max-w-3xl items-center justify-between">
-          <Link href="/connect" className="font-extrabold">
-            ← Connect
-          </Link>
-          <span className="text-xs text-white/70">Plan: {plan}</span>
-        </div>
-      </header>
-      <main className="mx-auto max-w-3xl space-y-8 px-4 py-8">
-        <div>
-          <h1 className="text-2xl font-extrabold">Manage Connect</h1>
-          <p className="text-sm text-text-secondary">
-            Publish to the same marketplace moderated in CodCrafters Admin.
-          </p>
-        </div>
+    <SubPageChrome
+      isClient={isClient}
+      backHref="/connect"
+      backLabel="Back to Connect"
+      crumbs={[
+        { label: "App", href: "/app" },
+        { label: "Connect", href: "/connect" },
+        { label: "Manage" },
+      ]}
+      title="Manage Connect"
+      rightSlot={
+        <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80">
+          Plan: {plan}
+        </span>
+      }
+    >
+      <div className="mx-auto max-w-3xl space-y-8">
+        <p className="text-sm text-text-secondary">
+          Publish to the same marketplace moderated in CodCrafters Admin.
+        </p>
 
         {accountType !== "client" && (
           <form onSubmit={saveListing} className="space-y-3 rounded-2xl border border-border bg-surface p-5">
@@ -299,7 +305,7 @@ export default function ConnectManagePage() {
         {message && (
           <p className="rounded-lg bg-primary/10 px-3 py-2 text-sm text-primary-dark">{message}</p>
         )}
-      </main>
-    </div>
+      </div>
+    </SubPageChrome>
   );
 }

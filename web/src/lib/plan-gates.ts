@@ -1,4 +1,5 @@
-import { Profile, isPro } from "@/lib/profile";
+import type { Profile } from "@/lib/profile-types";
+import { isPro } from "@/lib/plan";
 import { site } from "@/lib/site";
 
 /** Mirrors Flutter PlanLimits for web create gates. */

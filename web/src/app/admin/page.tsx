@@ -11,6 +11,7 @@ import {
   PRO_PRICE_USD,
   SYNC_KEY,
 } from "@/lib/admin-auth";
+import { Logo } from "@/components/ui/Logo";
 
 type AdminEvent = {
   id: string;
@@ -546,8 +547,8 @@ export default function AdminPage() {
     return (
       <main className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
         <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl border border-slate-200">
-          <div className="w-12 h-12 rounded-xl bg-teal-600 flex items-center justify-center text-white font-bold text-lg mb-4">
-            C
+          <div className="mb-4 inline-flex rounded-2xl bg-navy px-3 py-2">
+            <Logo size="sm" variant="onDark" />
           </div>
           <h1 className="text-2xl font-bold text-slate-900">CLIVORA Admin</h1>
           <p className="text-slate-600 text-sm mt-2 mb-6">
