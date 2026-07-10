@@ -4,6 +4,10 @@ import { site, legalLinks } from "@/lib/site";
 export default function sitemap(): MetadataRoute.Sitemap {
   const pages = [
     "",
+    "/connect",
+    "/login",
+    "/signup",
+    "/pro",
     legalLinks.privacy,
     legalLinks.terms,
     legalLinks.cookies,

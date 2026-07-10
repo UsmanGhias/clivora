@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 const navLinks = [
   { label: "Features", href: "/#features" },
-  { label: "Dashboard", href: "/#dashboard" },
+  { label: "Connect", href: "/connect" },
   { label: "Pricing", href: "/#pricing" },
   { label: "FAQ", href: "/#faq" },
 ];
@@ -56,10 +56,16 @@ export function Navbar() {
 
           <div className="hidden items-center gap-4 md:flex">
             <Link
-              href="/support"
+              href="/connect"
               className="text-sm font-medium text-white/70 transition-colors hover:text-white"
             >
-              Support
+              Marketplace
+            </Link>
+            <Link
+              href="/login"
+              className="text-sm font-medium text-white/70 transition-colors hover:text-white"
+            >
+              Sign in
             </Link>
             <Link
               href="/pro"
@@ -68,7 +74,7 @@ export function Navbar() {
               Get Pro
             </Link>
             <motion.a
-              href="/#download"
+              href="/signup"
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.98 }}
               className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-shadow hover:shadow-primary/40"
@@ -107,19 +113,19 @@ export function Navbar() {
                 </Link>
               ))}
               <Link
-                href="/support"
+                href="/login"
                 onClick={() => setMobileOpen(false)}
                 className="text-lg font-medium text-white/80 py-2"
               >
-                Support
+                Sign in
               </Link>
-              <a
-                href="/#download"
+              <Link
+                href="/signup"
                 onClick={() => setMobileOpen(false)}
                 className="mt-2 rounded-full bg-primary px-5 py-3 text-center font-semibold text-white"
               >
                 Get Started Free
-              </a>
+              </Link>
             </nav>
           </motion.div>
         )}

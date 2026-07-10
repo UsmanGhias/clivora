@@ -24,9 +24,9 @@ async function loadShare(token: string): Promise<InvoiceShare | null> {
 export default async function PublicInvoicePage({
   params,
 }: {
-  params: Promise<{ token: string }> | { token: string };
+  params: Promise<{ token: string }>;
 }) {
-  const resolved = await Promise.resolve(params);
+  const resolved = await params;
   const share = await loadShare(resolved.token);
 
   if (!share) {
