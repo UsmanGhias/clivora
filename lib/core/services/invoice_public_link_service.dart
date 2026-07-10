@@ -5,8 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../cloud/cloud_invoice_repository.dart';
 import '../cloud/supabase_auth_helper.dart';
-import '../constants/supabase_config.dart';
-
 final invoicePublicLinkServiceProvider = Provider<InvoicePublicLinkService>((ref) {
   return InvoicePublicLinkService(ref);
 });
@@ -65,6 +63,4 @@ class InvoicePublicLinkService {
     }
   }
 
-  // Keep config import used for future edge calls.
-  String get _projectHint => kSupabaseUrl;
 }

@@ -67,6 +67,73 @@ class AiAssistantService {
       ));
     }
 
+    // 30-day cash-flow forecast from due invoices
+    final now = DateTime.now();
+    final dueSoon = invoices.where((i) {
+      if (i.status != 'sent' && i.status != 'overdue') return false;
+      final due = i.dueDate;
+      if (due == null) return true;
+      return !due.isAfter(now.add(const Duration(days: 30)));
+    }).toList();
+    if (dueSoon.isNotEmpty) {
+      final forecast = dueSoon.fold<double>(0, (s, i) => s + i.total);
+      insights.add(AiInsight(
+        title: '30-day cash-flow forecast',
+        body: '${dueSoon.length} invoice(s) due within 30 days total ${_formatMoney(forecast, currency)}. Prioritize collections on the oldest first.',
+        actionLabel: 'Open invoices',
+        category: 'Forecast',
+        route: '/invoices',
+      ));
+    }
+
+    // Clients with unpaid > 14 days
+    final longUnpaid = invoices.where((i) {
+      if (i.status != 'sent' && i.status != 'overdue') return false;
+      final due = i.dueDate ?? i.updatedAt;
+      return now.difference(due).inDays >= 14;
+    }).toList();
+    if (longUnpaid.isNotEmpty) {
+      insights.add(AiInsight(
+        title: '${longUnpaid.length} client invoice(s) unpaid 14+ days',
+        body: 'Oldest: ${longUnpaid.first.invoiceNumber}. Send a firm follow-up or offer a payment plan.',
+        actionLabel: 'Follow up',
+        category: 'Collections',
+        route: '/invoices',
+        copyable: true,
+      ));
+    }
+
+    // Bill unbilled time prompt
+    try {
+      final entries = await (db.select(db.projectTimeEntries)
+            ..where((t) => t.ownerUserId.equals(ownerUserId)))
+          .get();
+      final thisMonth = DateTime(now.year, now.month);
+      final billedProjectIds = invoices
+          .where((i) => i.createdAt.isAfter(thisMonth) && i.projectId != null)
+          .map((i) => i.projectId!)
+          .toSet();
+      final unbilledSeconds = <int, int>{};
+      for (final e in entries) {
+        if (e.endedAt == null) continue;
+        if (e.startedAt.isBefore(thisMonth)) continue;
+        if (billedProjectIds.contains(e.projectId)) continue;
+        unbilledSeconds[e.projectId] = (unbilledSeconds[e.projectId] ?? 0) +
+            e.endedAt!.difference(e.startedAt).inSeconds;
+      }
+      if (unbilledSeconds.isNotEmpty) {
+        final projectId = unbilledSeconds.entries.first.key;
+        final hours = (unbilledSeconds[projectId]! / 3600).toStringAsFixed(1);
+        insights.add(AiInsight(
+          title: 'Bill unbilled time',
+          body: 'Project #$projectId has ~$hours tracked hours this month with no invoice yet. Create a draft from Hub → Bill work.',
+          actionLabel: 'Open projects',
+          category: 'Billing',
+          route: '/projects',
+        ));
+      }
+    } catch (_) {}
+
     if (paidTotal > 0 && customers.isNotEmpty) {
       final margin = paidTotal - expenseTotal;
       insights.add(AiInsight(
