@@ -12,6 +12,7 @@ import 'core/services/billing_service.dart';
 import 'core/services/biometric_service.dart';
 import 'core/services/connectivity_service.dart';
 import 'core/services/contract_sync_service.dart';
+import 'core/services/home_widget_service.dart';
 import 'core/services/local_notification_service.dart';
 import 'core/services/overdue_invoice_service.dart';
 import 'core/services/push_notification_service.dart';
@@ -24,6 +25,7 @@ import 'core/utils/crm_refresh.dart';
 import 'core/auth/user_roles.dart';
 import 'core/theme/clivora_theme.dart';
 import 'data/providers/app_providers.dart';
+import 'data/database/user_scoped_queries.dart';
 import 'l10n/app_localizations.dart';
 import 'routing/app_router.dart';
 
@@ -122,6 +124,22 @@ class _ClivoraAppState extends ConsumerState<ClivoraApp> with WidgetsBindingObse
       if (user != null && await ref.read(cloudCrmBackupServiceProvider).shouldRemindBackup()) {
         // Reminder surfaces on Hub; keep bootstrap quiet.
       }
+    } catch (_) {}
+    try {
+      final stats = await ref.read(dashboardStatsProvider.future);
+      var overdueCount = 0;
+      final ownerId = ref.read(authStateProvider).valueOrNull?.id;
+      if (ownerId != null) {
+        final overdue = await ref
+            .read(databaseProvider)
+            .watchInvoicesForUser(ownerId, status: 'overdue')
+            .first;
+        overdueCount = overdue.length;
+      }
+      await HomeWidgetService.updateStats(
+        outstanding: stats.outstanding,
+        overdueCount: overdueCount,
+      );
     } catch (_) {}
   }
 

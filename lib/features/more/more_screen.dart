@@ -434,9 +434,7 @@ class MoreScreen extends ConsumerWidget {
             label: isPlus ? 'Manage Pro Plus' : isPro ? 'Manage Pro' : 'Upgrade to Pro',
             subtitle: isPlus
                 ? 'Pro Plus · Cancel in Google Play'
-                : isPro
-                    ? 'Active · Cancel in Google Play'
-                    : 'Pro & Plus via Google Play Billing',
+                : 'Plus includes all Pro + 50GB vault',
             onTap: () => context.push('/upgrade'),
           ),
           const SizedBox(height: 24),

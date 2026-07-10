@@ -21,8 +21,8 @@ abstract final class PlanLimits {
   static const proStorageBytes = 5 * 1024 * 1024 * 1024; // 5 GB
   static const proMaxEmailsPerMonth = 500;
 
-  // Pro Plus tier
-  static const proPlusStorageBytes = 25 * 1024 * 1024 * 1024; // 25 GB
+  // Pro Plus tier — Plus includes all Pro limits/features, plus higher caps below
+  static const proPlusStorageBytes = 50 * 1024 * 1024 * 1024; // 50 GB
   static const proPlusMaxEmailsPerMonth = 3000;
 
   // Client free caps
