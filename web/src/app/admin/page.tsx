@@ -31,6 +31,8 @@ type AdminProfile = {
   accountType: string;
   plan: string;
   createdAt: string;
+  isBlocked?: boolean;
+  isRestricted?: boolean;
 };
 
 type Stats = {
@@ -95,8 +97,17 @@ type ConnectNeed = {
   created_at?: string;
 };
 
+type ConnectAutoApproveSettings = {
+  profiles: boolean;
+  needs: boolean;
+};
+
 const EMPTY = "N/A";
-const ADMIN_VERSION = "v2.7.2";
+const ADMIN_VERSION = "v2.9.3";
+const DEFAULT_CONNECT_SETTINGS: ConnectAutoApproveSettings = {
+  profiles: true,
+  needs: true,
+};
 
 function formatAuditAction(eventType: string): string {
   return eventType.replace(/^audit_/, "").replace(/_/g, " ");
@@ -177,7 +188,21 @@ export default function AdminPage() {
   const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([]);
   const [connectProfiles, setConnectProfiles] = useState<ConnectProfile[]>([]);
   const [connectNeeds, setConnectNeeds] = useState<ConnectNeed[]>([]);
+  const [connectSettings, setConnectSettings] = useState<ConnectAutoApproveSettings>(DEFAULT_CONNECT_SETTINGS);
   const [connectBusy, setConnectBusy] = useState(false);
+
+  const adminAuthBody = useCallback(() => {
+    const adminEmail =
+      (typeof window !== "undefined" ? sessionStorage.getItem(ADMIN_SESSION_EMAIL) : null) ||
+      email;
+    const adminPassword =
+      (typeof window !== "undefined" ? sessionStorage.getItem(ADMIN_SESSION_PASS) : null) ||
+      password;
+    return {
+      adminEmail: adminEmail.trim().toLowerCase(),
+      adminPassword,
+    };
+  }, [email, password]);
 
   const loadStats = useCallback(async () => {
     setLoading(true);
@@ -203,10 +228,12 @@ export default function AdminPage() {
 
   const loadPayments = useCallback(async () => {
     try {
+      const auth = adminAuthBody();
+      if (!auth.adminEmail || !auth.adminPassword) return;
       const res = await fetch("/api/admin/payment-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminEmail: email, adminPassword: password }),
+        body: JSON.stringify(auth),
       });
       if (!res.ok) return;
       const data = (await res.json()) as { requests?: PaymentRequest[] };
@@ -214,43 +241,57 @@ export default function AdminPage() {
     } catch {
       /* optional panel */
     }
-  }, [email, password]);
+  }, [adminAuthBody]);
 
   const loadConnect = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/marketplace", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "list",
-          adminEmail: email,
-          adminPassword: password,
+      const auth = adminAuthBody();
+      if (!auth.adminEmail || !auth.adminPassword) return;
+      const [marketplaceRes, settingsRes] = await Promise.all([
+        fetch("/api/admin/marketplace", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "list",
+            ...auth,
+          }),
         }),
-      });
-      if (!res.ok) return;
-      const data = (await res.json()) as {
-        profiles?: ConnectProfile[];
-        needs?: ConnectNeed[];
-      };
-      setConnectProfiles(Array.isArray(data.profiles) ? data.profiles : []);
-      setConnectNeeds(Array.isArray(data.needs) ? data.needs : []);
+        fetch("/api/admin/moderation", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "get_settings",
+            ...auth,
+          }),
+        }),
+      ]);
+      if (marketplaceRes.ok) {
+        const data = (await marketplaceRes.json()) as {
+          profiles?: ConnectProfile[];
+          needs?: ConnectNeed[];
+        };
+        setConnectProfiles(Array.isArray(data.profiles) ? data.profiles : []);
+        setConnectNeeds(Array.isArray(data.needs) ? data.needs : []);
+      }
+      if (settingsRes.ok) {
+        const data = (await settingsRes.json()) as {
+          settings?: Record<string, boolean>;
+        };
+        setConnectSettings({
+          profiles:
+            typeof data.settings?.connect_auto_approve_profiles === "boolean"
+              ? data.settings.connect_auto_approve_profiles
+              : DEFAULT_CONNECT_SETTINGS.profiles,
+          needs:
+            typeof data.settings?.connect_auto_approve_needs === "boolean"
+              ? data.settings.connect_auto_approve_needs
+              : DEFAULT_CONNECT_SETTINGS.needs,
+        });
+      }
     } catch {
       /* optional panel */
     }
-  }, [email, password]);
-
-  function adminAuthBody() {
-    const adminEmail =
-      (typeof window !== "undefined" ? sessionStorage.getItem(ADMIN_SESSION_EMAIL) : null) ||
-      email;
-    const adminPassword =
-      (typeof window !== "undefined" ? sessionStorage.getItem(ADMIN_SESSION_PASS) : null) ||
-      password;
-    return {
-      adminEmail: adminEmail.trim().toLowerCase(),
-      adminPassword,
-    };
-  }
+  }, [adminAuthBody]);
 
   async function runGrant(body: Record<string, unknown>) {
     setActionBusy(true);
@@ -312,6 +353,37 @@ export default function AdminPage() {
     }
   }
 
+  async function runUserModerationAction(
+    profile: AdminProfile,
+    action: "block" | "unblock" | "restrict" | "unrestrict",
+  ) {
+    setActionBusy(true);
+    setActionMsg("");
+    try {
+      const auth = adminAuthBody();
+      if (!auth.adminEmail || !auth.adminPassword) {
+        throw new Error("Session expired. Sign out and sign in again.");
+      }
+      const res = await fetch("/api/admin/moderation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action,
+          userId: profile.id,
+          ...auth,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Moderation action failed");
+      setActionMsg(`${action[0].toUpperCase()}${action.slice(1)} ok for ${profile.email || profile.id}`);
+      await loadStats();
+    } catch (e) {
+      setActionMsg(e instanceof Error ? e.message : "Moderation action failed");
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const flag = sessionStorage.getItem(ADMIN_SESSION_FLAG);
@@ -347,6 +419,36 @@ export default function AdminPage() {
       await loadConnect();
     } catch (e) {
       setActionMsg(e instanceof Error ? e.message : "Connect action failed");
+    } finally {
+      setConnectBusy(false);
+    }
+  }
+
+  async function runSetAutoApprove(target: keyof ConnectAutoApproveSettings, enabled: boolean) {
+    setConnectBusy(true);
+    setActionMsg("");
+    try {
+      const auth = adminAuthBody();
+      if (!auth.adminEmail || !auth.adminPassword) {
+        throw new Error("Session expired. Sign out and sign in again.");
+      }
+      const res = await fetch("/api/admin/moderation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "set_auto_approve",
+          target,
+          enabled,
+          ...auth,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Auto-approve update failed");
+      setConnectSettings((current) => ({ ...current, [target]: enabled }));
+      setActionMsg(`Connect auto-approve ${target === "profiles" ? "listings" : "job posts"} ${enabled ? "on" : "off"}`);
+      await loadConnect();
+    } catch (e) {
+      setActionMsg(e instanceof Error ? e.message : "Auto-approve update failed");
     } finally {
       setConnectBusy(false);
     }
@@ -710,18 +812,60 @@ export default function AdminPage() {
                 <div>
                   <h2 className="font-semibold text-slate-900">CLIVORA Connect moderation</h2>
                   <p className="text-sm text-slate-600 mt-1">
-                    Approve, verify, or hide Pro Plus listings and need posts. Anonymous until mutual accept · Rs{" "}
+                    Approve, verify, or hide Pro Plus listings and need posts. Anonymous until mutual accept · $
                     {PRO_PLUS_PRICE_USD.toLocaleString()}/mo.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  disabled={connectBusy}
-                  onClick={() => loadConnect()}
-                  className="text-sm bg-slate-900 text-white px-3 py-1.5 rounded-lg disabled:opacity-50"
-                >
-                  Refresh
-                </button>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    aria-pressed={connectSettings.profiles}
+                    disabled={connectBusy}
+                    onClick={() => runSetAutoApprove("profiles", !connectSettings.profiles)}
+                    className="inline-flex items-center gap-2 text-sm border border-slate-300 bg-white text-slate-800 px-3 py-1.5 rounded-lg disabled:opacity-50"
+                  >
+                    <span
+                      className={`inline-flex h-5 w-9 items-center rounded-full p-0.5 transition-colors ${
+                        connectSettings.profiles ? "bg-teal-600" : "bg-slate-300"
+                      }`}
+                    >
+                      <span
+                        className={`h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                          connectSettings.profiles ? "translate-x-4" : "translate-x-0"
+                        }`}
+                      />
+                    </span>
+                    Auto-approve listings
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={connectSettings.needs}
+                    disabled={connectBusy}
+                    onClick={() => runSetAutoApprove("needs", !connectSettings.needs)}
+                    className="inline-flex items-center gap-2 text-sm border border-slate-300 bg-white text-slate-800 px-3 py-1.5 rounded-lg disabled:opacity-50"
+                  >
+                    <span
+                      className={`inline-flex h-5 w-9 items-center rounded-full p-0.5 transition-colors ${
+                        connectSettings.needs ? "bg-teal-600" : "bg-slate-300"
+                      }`}
+                    >
+                      <span
+                        className={`h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                          connectSettings.needs ? "translate-x-4" : "translate-x-0"
+                        }`}
+                      />
+                    </span>
+                    Auto-approve job posts
+                  </button>
+                  <button
+                    type="button"
+                    disabled={connectBusy}
+                    onClick={() => loadConnect()}
+                    className="text-sm bg-slate-900 text-white px-3 py-1.5 rounded-lg disabled:opacity-50"
+                  >
+                    Refresh
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -875,8 +1019,10 @@ export default function AdminPage() {
                       <th className={thClass}>Name</th>
                       <th className={thClass}>Account</th>
                       <th className={thClass}>Plan</th>
+                      <th className={thClass}>Status</th>
                       <th className={thClass}>Joined</th>
                       <th className={thClass}>User ID</th>
+                      <th className={thClass}>Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -906,8 +1052,55 @@ export default function AdminPage() {
                             {p.plan || "free"}
                           </span>
                         </td>
+                        <td className={tdClass}>
+                          <div className="flex flex-wrap gap-1">
+                            {p.isBlocked && (
+                              <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                Blocked
+                              </span>
+                            )}
+                            {p.isRestricted && (
+                              <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
+                                Restricted
+                              </span>
+                            )}
+                            {!p.isBlocked && !p.isRestricted && (
+                              <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800">
+                                Active
+                              </span>
+                            )}
+                          </div>
+                        </td>
                         <td className={`${tdClass} text-slate-600 whitespace-nowrap`}>{formatDate(p.createdAt)}</td>
                         <td className={`${tdClass} text-xs text-slate-500 font-mono`}>{p.id.slice(0, 8)}...</td>
+                        <td className={tdClass}>
+                          <div className="flex flex-wrap gap-1">
+                            <button
+                              type="button"
+                              disabled={actionBusy}
+                              onClick={() => runUserModerationAction(p, p.isBlocked ? "unblock" : "block")}
+                              className={`text-xs text-white px-2 py-1 rounded disabled:opacity-50 ${
+                                p.isBlocked ? "bg-slate-700 hover:bg-slate-800" : "bg-red-600 hover:bg-red-700"
+                              }`}
+                            >
+                              {p.isBlocked ? "Unblock" : "Block"}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={actionBusy}
+                              onClick={() =>
+                                runUserModerationAction(p, p.isRestricted ? "unrestrict" : "restrict")
+                              }
+                              className={`text-xs text-white px-2 py-1 rounded disabled:opacity-50 ${
+                                p.isRestricted
+                                  ? "bg-slate-700 hover:bg-slate-800"
+                                  : "bg-orange-600 hover:bg-orange-700"
+                              }`}
+                            >
+                              {p.isRestricted ? "Unrestrict" : "Restrict"}
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
