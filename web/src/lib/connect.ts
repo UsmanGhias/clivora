@@ -9,7 +9,7 @@ export async function listPublicConnectProfiles(search?: string) {
   let q = supabase
     .from("connect_profiles")
     .select(
-      "id, user_id, display_title, headline, bio, skills, rate_band, availability, location_label, is_listed, is_verified, moderation_status, account_type, updated_at",
+      "id, user_id, display_title, headline, bio, skills, rate_band, availability, location_label, is_listed, is_verified, moderation_status, account_type, created_at, updated_at",
     )
     .eq("is_listed", true)
     .in("moderation_status", ["approved", "auto_approved", "pending"])

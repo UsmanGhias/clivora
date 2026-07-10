@@ -1,27 +1,35 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans, Sora } from "next/font/google";
 import { site } from "@/lib/site";
 import "./globals.css";
 
-const inter = Inter({
+const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-jakarta",
+  display: "swap",
+});
+
+const sora = Sora({
+  subsets: ["latin"],
+  variable: "--font-sora",
   display: "swap",
 });
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
-    default: `${site.name} - ${site.tagline}`,
-    template: `%s - ${site.name}`,
+    default: `${site.name} — ${site.tagline}`,
+    template: `%s — ${site.name}`,
   },
   description: site.description,
   keywords: [
     "freelancer CRM",
+    "CLIVORA Connect",
+    "freelance marketplace",
     "business operating system",
     "invoice app",
     "project management",
-    "agency tools",
+    "hire freelancers",
     "CLIVORA",
     "CODCrafters",
   ],
@@ -29,9 +37,8 @@ export const metadata: Metadata = {
   creator: site.company.name,
   publisher: site.company.name,
   openGraph: {
-    title: `${site.name} - ${site.tagline}`,
-    description:
-      "Run your entire freelance business from one beautiful app. CRM, invoicing, projects, expenses & more.",
+    title: `${site.name} — ${site.tagline}`,
+    description: site.description,
     url: site.url,
     siteName: site.name,
     type: "website",
@@ -39,9 +46,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: `${site.name} - ${site.tagline}`,
-    description:
-      "Run your entire freelance business from one beautiful app.",
+    title: `${site.name} — ${site.tagline}`,
+    description: site.shortDescription,
   },
   robots: {
     index: true,
@@ -59,8 +65,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={inter.variable}>
-      <body className="min-h-screen overflow-x-hidden">{children}</body>
+    <html lang="en" className={`${jakarta.variable} ${sora.variable}`}>
+      <body className="min-h-screen overflow-x-hidden font-sans">{children}</body>
     </html>
   );
 }
