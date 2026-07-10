@@ -192,12 +192,12 @@ class _ClientHubGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GridView.count(
-      crossAxisCount: 1,
+      crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 10,
-      childAspectRatio: 4.6,
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 1.3,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       children: children,
     );

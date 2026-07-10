@@ -22,6 +22,7 @@ import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_bottom_sheet.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 import '../../shared/widgets/clivora_logo.dart';
+import '../../shared/widgets/form_dialog_fields.dart';
 import '../../shared/widgets/step_progress_card.dart';
 import '../../shared/widgets/tool_grid_tile.dart';
 import '../../core/services/analytics_export_service.dart';
@@ -50,21 +51,24 @@ class MoreScreen extends ConsumerWidget {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => AlertDialog(
           title: const Text('Bill project to invoice'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<int>(
-                value: projectId,
-                decoration: const InputDecoration(labelText: 'Project'),
-                items: active.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))).toList(),
-                onChanged: (v) => setLocal(() => projectId = v ?? projectId),
-              ),
-              TextField(
-                controller: rateCtrl,
-                decoration: const InputDecoration(labelText: 'Hourly rate (optional)'),
-                keyboardType: TextInputType.number,
-              ),
-            ],
+          content: SizedBox(
+            width: 360,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: spacedDialogFields([
+                DropdownButtonFormField<int>(
+                  value: projectId,
+                  decoration: clivoraDialogFieldDecoration(ctx, 'Project'),
+                  items: active.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))).toList(),
+                  onChanged: (v) => setLocal(() => projectId = v ?? projectId),
+                ),
+                TextField(
+                  controller: rateCtrl,
+                  decoration: clivoraDialogFieldDecoration(ctx, 'Hourly rate (optional)'),
+                  keyboardType: TextInputType.number,
+                ),
+              ]),
+            ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
@@ -247,12 +251,12 @@ class MoreScreen extends ConsumerWidget {
             child: const SectionHeader(title: 'Money & catalog'),
           ),
           GridView.count(
-            crossAxisCount: 1,
+            crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: 4.6,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 1.3,
             children: [
               if (isPlus)
                 ToolGridTile(icon: Icons.view_kanban_outlined, label: 'Work', iconBackground: ClivoraColors.iconIndigo, iconColor: Colors.indigo, onTap: () => context.go('/projects')),
@@ -273,12 +277,12 @@ class MoreScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           const SectionHeader(title: 'Business Tools'),
           GridView.count(
-            crossAxisCount: 1,
+            crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: 4.6,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 1.3,
             children: [
               if (!isPlus)
                 ToolGridTile(icon: Icons.view_kanban_outlined, label: 'Work', iconBackground: ClivoraColors.iconIndigo, iconColor: Colors.indigo, onTap: () => context.go('/projects')),
@@ -300,12 +304,12 @@ class MoreScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           GridView.count(
-            crossAxisCount: 1,
+            crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: 4.6,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 1.3,
             children: [
               ToolGridTile(icon: Icons.cloud_outlined, label: 'File Vault', iconBackground: ClivoraColors.iconBlue, iconColor: Colors.blue, onTap: () async {
                 if (!PlanFeatures.fileVault(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'File Vault')) return;
