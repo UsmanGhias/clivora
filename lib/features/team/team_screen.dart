@@ -133,6 +133,11 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
           IconButton(
             tooltip: 'Pending invites',
             onPressed: () => context.push('/team-invites'),
+            style: IconButton.styleFrom(
+              backgroundColor: Theme.of(context).brightness == Brightness.light
+                  ? ClivoraColors.chipBackground
+                  : ClivoraColors.darkBorder,
+            ),
             icon: invitesAsync.maybeWhen(
               data: (list) => Badge(
                 isLabelVisible: list.isNotEmpty,
@@ -142,7 +147,16 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
               orElse: () => const Icon(Icons.mail_outline),
             ),
           ),
-          IconButton(onPressed: _addMember, icon: const Icon(Icons.person_add_outlined)),
+          const SizedBox(width: 8),
+          IconButton(
+            onPressed: _addMember,
+            icon: const Icon(Icons.person_add_outlined),
+            style: IconButton.styleFrom(
+              backgroundColor: Theme.of(context).brightness == Brightness.light
+                  ? ClivoraColors.chipBackground
+                  : ClivoraColors.darkBorder,
+            ),
+          ),
         ],
       ),
       body: Column(

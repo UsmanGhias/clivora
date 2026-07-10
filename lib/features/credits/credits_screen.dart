@@ -12,6 +12,7 @@ import '../../data/database/user_scoped_queries.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
+import '../../shared/widgets/form_dialog_fields.dart';
 
 class CreditsScreen extends ConsumerWidget {
   const CreditsScreen({super.key});
@@ -24,7 +25,7 @@ class CreditsScreen extends ConsumerWidget {
     return ClivoraScaffold(
       title: 'Credits',
       showBackButton: true,
-      action: IconButton(icon: const Icon(Icons.add), onPressed: () => _create(context, ref)),
+      action: ClivoraIconButton(icon: Icons.add, onPressed: () => _create(context, ref)),
       body: creditsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('$e')),
@@ -113,35 +114,41 @@ class CreditsScreen extends ConsumerWidget {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => AlertDialog(
           title: const Text('Apply credit'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<int>(
-                initialValue: invoiceId,
-                decoration: const InputDecoration(labelText: 'Invoice'),
-                items: open
-                    .map((i) => DropdownMenuItem(
-                          value: i.id,
-                          child: Text('${i.invoiceNumber} · bal ${formatCurrency(i.total - i.amountPaid)}'),
-                        ))
-                    .toList(),
-                onChanged: (v) {
-                  if (v == null) return;
-                  setLocal(() {
-                    invoiceId = v;
-                    final inv = open.firstWhere((i) => i.id == v);
-                    final bal = (inv.total - inv.amountPaid).clamp(0.0, double.infinity).toDouble();
-                    final apply = credit.balance < bal ? credit.balance : bal;
-                    amountCtrl.text = apply.toStringAsFixed(2);
-                  });
-                },
-              ),
-              TextField(
-                controller: amountCtrl,
-                decoration: InputDecoration(labelText: 'Amount (max ${formatCurrency(credit.balance)})'),
-                keyboardType: TextInputType.number,
-              ),
-            ],
+          content: SizedBox(
+            width: 360,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: spacedDialogFields([
+                DropdownButtonFormField<int>(
+                  initialValue: invoiceId,
+                  decoration: clivoraDialogFieldDecoration(ctx, 'Invoice'),
+                  items: open
+                      .map((i) => DropdownMenuItem(
+                            value: i.id,
+                            child: Text('${i.invoiceNumber} · bal ${formatCurrency(i.total - i.amountPaid)}'),
+                          ))
+                      .toList(),
+                  onChanged: (v) {
+                    if (v == null) return;
+                    setLocal(() {
+                      invoiceId = v;
+                      final inv = open.firstWhere((i) => i.id == v);
+                      final bal = (inv.total - inv.amountPaid).clamp(0.0, double.infinity).toDouble();
+                      final apply = credit.balance < bal ? credit.balance : bal;
+                      amountCtrl.text = apply.toStringAsFixed(2);
+                    });
+                  },
+                ),
+                TextField(
+                  controller: amountCtrl,
+                  decoration: clivoraDialogFieldDecoration(
+                    ctx,
+                    'Amount (max ${formatCurrency(credit.balance)})',
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+              ]),
+            ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
@@ -187,24 +194,27 @@ class CreditsScreen extends ConsumerWidget {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => AlertDialog(
           title: const Text('New credit'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<int>(
-                value: customerId,
-                decoration: const InputDecoration(labelText: 'Client'),
-                items: customers
-                    .map((c) => DropdownMenuItem(value: c.id, child: Text(c.contactPerson)))
-                    .toList(),
-                onChanged: (v) => setLocal(() => customerId = v ?? customerId),
-              ),
-              TextField(
-                controller: amount,
-                decoration: const InputDecoration(labelText: 'Amount'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(controller: notes, decoration: const InputDecoration(labelText: 'Notes')),
-            ],
+          content: SizedBox(
+            width: 360,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: spacedDialogFields([
+                DropdownButtonFormField<int>(
+                  value: customerId,
+                  decoration: clivoraDialogFieldDecoration(ctx, 'Client'),
+                  items: customers
+                      .map((c) => DropdownMenuItem(value: c.id, child: Text(c.contactPerson)))
+                      .toList(),
+                  onChanged: (v) => setLocal(() => customerId = v ?? customerId),
+                ),
+                TextField(
+                  controller: amount,
+                  decoration: clivoraDialogFieldDecoration(ctx, 'Amount'),
+                  keyboardType: TextInputType.number,
+                ),
+                TextField(controller: notes, decoration: clivoraDialogFieldDecoration(ctx, 'Notes')),
+              ]),
+            ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),

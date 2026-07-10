@@ -17,6 +17,7 @@ import '../../data/models/invoice_line_item.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
+import '../../shared/widgets/form_dialog_fields.dart';
 
 class QuotesScreen extends ConsumerStatefulWidget {
   const QuotesScreen({super.key});
@@ -278,46 +279,49 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => AlertDialog(
           title: const Text('New quote'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<int>(
-                  value: customerId,
-                  decoration: const InputDecoration(labelText: 'Client'),
-                  items: customers
-                      .map((c) => DropdownMenuItem(value: c.id, child: Text(c.contactPerson)))
-                      .toList(),
-                  onChanged: (v) => setLocal(() => customerId = v ?? customerId),
-                ),
-                if (products.isNotEmpty)
+          content: SizedBox(
+            width: 360,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: spacedDialogFields([
                   DropdownButtonFormField<int>(
-                    decoration: const InputDecoration(labelText: 'From catalog'),
-                    items: [
-                      const DropdownMenuItem(value: -1, child: Text('Custom line')),
-                      ...products.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))),
-                    ],
-                    onChanged: (id) {
-                      if (id == null || id < 0) return;
-                      final p = products.firstWhere((e) => e.id == id);
-                      desc.text = p.name;
-                      amount.text = p.unitPrice.toString();
-                      tax.text = p.taxRate.toString();
-                      setLocal(() {});
-                    },
+                    value: customerId,
+                    decoration: clivoraDialogFieldDecoration(ctx, 'Client'),
+                    items: customers
+                        .map((c) => DropdownMenuItem(value: c.id, child: Text(c.contactPerson)))
+                        .toList(),
+                    onChanged: (v) => setLocal(() => customerId = v ?? customerId),
                   ),
-                TextField(controller: desc, decoration: const InputDecoration(labelText: 'Description')),
-                TextField(
-                  controller: amount,
-                  decoration: const InputDecoration(labelText: 'Amount'),
-                  keyboardType: TextInputType.number,
-                ),
-                TextField(
-                  controller: tax,
-                  decoration: const InputDecoration(labelText: 'Tax %'),
-                  keyboardType: TextInputType.number,
-                ),
-              ],
+                  if (products.isNotEmpty)
+                    DropdownButtonFormField<int>(
+                      decoration: clivoraDialogFieldDecoration(ctx, 'From catalog'),
+                      items: [
+                        const DropdownMenuItem(value: -1, child: Text('Custom line')),
+                        ...products.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))),
+                      ],
+                      onChanged: (id) {
+                        if (id == null || id < 0) return;
+                        final p = products.firstWhere((e) => e.id == id);
+                        desc.text = p.name;
+                        amount.text = p.unitPrice.toString();
+                        tax.text = p.taxRate.toString();
+                        setLocal(() {});
+                      },
+                    ),
+                  TextField(controller: desc, decoration: clivoraDialogFieldDecoration(ctx, 'Description')),
+                  TextField(
+                    controller: amount,
+                    decoration: clivoraDialogFieldDecoration(ctx, 'Amount'),
+                    keyboardType: TextInputType.number,
+                  ),
+                  TextField(
+                    controller: tax,
+                    decoration: clivoraDialogFieldDecoration(ctx, 'Tax %'),
+                    keyboardType: TextInputType.number,
+                  ),
+                ]),
+              ),
             ),
           ),
           actions: [

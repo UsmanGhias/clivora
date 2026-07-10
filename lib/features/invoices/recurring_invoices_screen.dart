@@ -13,6 +13,7 @@ import '../../data/models/invoice_line_item.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
+import '../../shared/widgets/form_dialog_fields.dart';
 
 class RecurringInvoicesScreen extends ConsumerWidget {
   const RecurringInvoicesScreen({super.key});
@@ -31,6 +32,11 @@ class RecurringInvoicesScreen extends ConsumerWidget {
           IconButton(
             tooltip: 'Run due now',
             icon: const Icon(Icons.play_circle_outline),
+            style: IconButton.styleFrom(
+              backgroundColor: Theme.of(context).brightness == Brightness.light
+                  ? ClivoraColors.chipBackground
+                  : ClivoraColors.darkBorder,
+            ),
             onPressed: () async {
               final n = await ref.read(recurringInvoiceServiceProvider).processDue();
               if (context.mounted) {
@@ -40,8 +46,14 @@ class RecurringInvoicesScreen extends ConsumerWidget {
               }
             },
           ),
+          const SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.add),
+            style: IconButton.styleFrom(
+              backgroundColor: Theme.of(context).brightness == Brightness.light
+                  ? ClivoraColors.chipBackground
+                  : ClivoraColors.darkBorder,
+            ),
             onPressed: () => _create(context, ref),
           ),
         ],
@@ -128,21 +140,6 @@ class RecurringInvoicesScreen extends ConsumerWidget {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) {
-          final scheme = Theme.of(ctx).colorScheme;
-          InputDecoration deco(String label) => InputDecoration(
-                labelText: label,
-                filled: false,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: scheme.outlineVariant),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: scheme.primary, width: 1.5),
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              );
           return AlertDialog(
             title: const Text('New recurring invoice'),
             content: SizedBox(
@@ -150,21 +147,19 @@ class RecurringInvoicesScreen extends ConsumerWidget {
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(controller: title, decoration: deco('Title')),
-                    const SizedBox(height: 14),
+                  children: spacedDialogFields([
+                    TextField(controller: title, decoration: clivoraDialogFieldDecoration(ctx, 'Title')),
                     DropdownButtonFormField<int>(
                       value: customerId,
-                      decoration: deco('Client'),
+                      decoration: clivoraDialogFieldDecoration(ctx, 'Client'),
                       items: customers
                           .map((c) => DropdownMenuItem(value: c.id, child: Text(c.contactPerson)))
                           .toList(),
                       onChanged: (v) => setLocal(() => customerId = v ?? customerId),
                     ),
-                    const SizedBox(height: 14),
                     DropdownButtonFormField<String>(
                       value: frequency,
-                      decoration: deco('Frequency'),
+                      decoration: clivoraDialogFieldDecoration(ctx, 'Frequency'),
                       items: const [
                         DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
                         DropdownMenuItem(value: 'biweekly', child: Text('Every 2 weeks')),
@@ -174,13 +169,12 @@ class RecurringInvoicesScreen extends ConsumerWidget {
                       ],
                       onChanged: (v) => setLocal(() => frequency = v ?? frequency),
                     ),
-                    const SizedBox(height: 14),
                     TextField(
                       controller: amount,
-                      decoration: deco('Amount (USD)'),
+                      decoration: clivoraDialogFieldDecoration(ctx, 'Amount (USD)'),
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     ),
-                  ],
+                  ]),
                 ),
               ),
             ),

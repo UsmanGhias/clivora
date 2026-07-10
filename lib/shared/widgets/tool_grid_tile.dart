@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/clivora_colors.dart';
 
-/// Long horizontal Hub tile — icon + label, clear gaps, never merges with neighbors.
+/// Compact Hub card — colored icon well + label for 2-column grids.
 class ToolGridTile extends StatelessWidget {
   const ToolGridTile({
     super.key,
@@ -27,14 +27,14 @@ class ToolGridTile extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Material(
       color: scheme.surface,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isDark ? ClivoraColors.darkBorder : ClivoraColors.borderLight,
             ),
@@ -42,7 +42,8 @@ class ToolGridTile extends StatelessWidget {
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              Row(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     width: 40,
@@ -53,29 +54,23 @@ class ToolGridTile extends StatelessWidget {
                     ),
                     child: Icon(icon, color: iconColor, size: 20),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      label,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: scheme.onSurface,
-                          ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    size: 18,
-                    color: scheme.onSurface.withValues(alpha: 0.35),
+                  const Spacer(),
+                  Text(
+                    label,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: scheme.onSurface,
+                          height: 1.2,
+                        ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
               if (badge != null)
                 Positioned(
-                  right: 22,
-                  top: -2,
+                  right: -2,
+                  top: -4,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(

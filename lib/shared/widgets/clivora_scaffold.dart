@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/theme/clivora_colors.dart';
 import '../../core/theme/clivora_tokens.dart';
 import '../../core/theme/theme_context.dart';
 import 'messages_icon_button.dart';
@@ -47,6 +48,11 @@ class ClivoraScaffold extends StatelessWidget {
                     IconButton(
                       onPressed: () => context.pop(),
                       icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Theme.of(context).brightness == Brightness.light
+                            ? ClivoraColors.chipBackground
+                            : ClivoraColors.darkBorder,
+                      ),
                     ),
                     const SizedBox(width: ClivoraSpacing.sm),
                   ],
@@ -58,7 +64,7 @@ class ClivoraScaffold extends StatelessWidget {
                   ),
                   if (showMessagesButton) ...[
                     MessagesIconButton(route: messagesRoute),
-                    if (action != null) const SizedBox(width: ClivoraSpacing.md),
+                    if (action != null) const SizedBox(width: ClivoraSpacing.sm),
                   ],
                   if (action != null) action!,
                 ],
@@ -93,6 +99,12 @@ class ClivoraIconButton extends StatelessWidget {
     return IconButton(
       onPressed: onPressed,
       icon: Icon(icon, size: 22),
+      style: IconButton.styleFrom(
+        minimumSize: const Size(44, 44),
+        backgroundColor: Theme.of(context).brightness == Brightness.light
+            ? ClivoraColors.chipBackground
+            : ClivoraColors.darkBorder,
+      ),
     );
   }
 }

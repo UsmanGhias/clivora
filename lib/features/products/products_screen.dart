@@ -10,6 +10,7 @@ import '../../data/database/user_scoped_queries.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
+import '../../shared/widgets/form_dialog_fields.dart';
 
 class ProductsScreen extends ConsumerWidget {
   const ProductsScreen({super.key});
@@ -20,8 +21,8 @@ class ProductsScreen extends ConsumerWidget {
     return ClivoraScaffold(
       title: 'Products & Services',
       showBackButton: true,
-      action: IconButton(
-        icon: const Icon(Icons.add),
+      action: ClivoraIconButton(
+        icon: Icons.add,
         onPressed: () => _edit(context, ref, null),
       ),
       body: productsAsync.when(
@@ -89,22 +90,37 @@ class ProductsScreen extends ConsumerWidget {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => AlertDialog(
           title: Text(existing == null ? 'New catalog item' : 'Edit item'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(controller: name, decoration: const InputDecoration(labelText: 'Name')),
-                TextField(controller: desc, decoration: const InputDecoration(labelText: 'Description'), maxLines: 2),
-                TextField(controller: sku, decoration: const InputDecoration(labelText: 'SKU (optional)')),
-                TextField(controller: price, decoration: const InputDecoration(labelText: 'Unit price'), keyboardType: TextInputType.number),
-                TextField(controller: tax, decoration: const InputDecoration(labelText: 'Tax %'), keyboardType: TextInputType.number),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Service (not physical product)'),
-                  value: isService,
-                  onChanged: (v) => setLocal(() => isService = v),
-                ),
-              ],
+          content: SizedBox(
+            width: 360,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: spacedDialogFields([
+                  TextField(controller: name, decoration: clivoraDialogFieldDecoration(ctx, 'Name')),
+                  TextField(
+                    controller: desc,
+                    decoration: clivoraDialogFieldDecoration(ctx, 'Description'),
+                    maxLines: 2,
+                  ),
+                  TextField(controller: sku, decoration: clivoraDialogFieldDecoration(ctx, 'SKU (optional)')),
+                  TextField(
+                    controller: price,
+                    decoration: clivoraDialogFieldDecoration(ctx, 'Unit price'),
+                    keyboardType: TextInputType.number,
+                  ),
+                  TextField(
+                    controller: tax,
+                    decoration: clivoraDialogFieldDecoration(ctx, 'Tax %'),
+                    keyboardType: TextInputType.number,
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Service (not physical product)'),
+                    value: isService,
+                    onChanged: (v) => setLocal(() => isService = v),
+                  ),
+                ]),
+              ),
             ),
           ),
           actions: [
