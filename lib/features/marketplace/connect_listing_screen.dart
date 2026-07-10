@@ -61,16 +61,34 @@ class _ConnectListingScreenState extends ConsumerState<ConnectListingScreen> {
   Widget build(BuildContext context) {
     final user = ref.watch(authStateProvider).valueOrNull;
     final isClient = isClientUser(user);
-    final hasAccess = isClient ? ref.watch(isProProvider) : ref.watch(isProPlusProvider);
+    final hasAccess = ref.watch(isProPlusProvider);
 
     return ClivoraScaffold(
       title: isClient ? 'My about listing' : 'My Connect listing',
       showBackButton: true,
       body: !hasAccess
           ? Center(
-              child: FilledButton(
-                onPressed: () => context.push('/upgrade'),
-                child: Text(isClient ? 'Upgrade to Client Pro' : 'Upgrade to Pro Plus'),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.lock_outline,
+                    size: 44,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Connect requires Pro Plus',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton(
+                    onPressed: () => context.push('/upgrade'),
+                    child: const Text('Upgrade to Pro Plus'),
+                  ),
+                ],
               ),
             )
           : ListView(
@@ -114,7 +132,8 @@ class _ConnectListingScreenState extends ConsumerState<ConnectListingScreen> {
                 TextField(controller: _location, decoration: const InputDecoration(labelText: 'Location label (optional)')),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: _rate,
+                  key: ValueKey(_rate),
+                  initialValue: _rate,
                   decoration: InputDecoration(
                     labelText: isClient ? 'Typical budget band' : 'Rate band',
                   ),
@@ -129,7 +148,8 @@ class _ConnectListingScreenState extends ConsumerState<ConnectListingScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: _availability,
+                  key: ValueKey(_availability),
+                  initialValue: _availability,
                   decoration: InputDecoration(
                     labelText: isClient ? 'Hiring status' : 'Availability',
                   ),

@@ -172,7 +172,9 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                   FutureBuilder<DateTime?>(
                     future: SubscriptionManager.proExpiresAt(),
                     builder: (context, snap) {
-                      if (!isPro || snap.data == null) return const SizedBox.shrink();
+                      if (!isPro || snap.data == null) {
+                        return const SizedBox.shrink();
+                      }
                       final exp = snap.data!;
                       return Container(
                         margin: const EdgeInsets.only(bottom: 12),
@@ -229,7 +231,7 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                   const SizedBox(height: 16),
                   referralAsync.when(
                     loading: () => const SizedBox.shrink(),
-                    error: (_, __) => const SizedBox.shrink(),
+                    error: (_, _) => const SizedBox.shrink(),
                     data: (stats) => _ReferralTeaser(
                       code: stats.code,
                       referrals: stats.count,
@@ -360,8 +362,6 @@ const _clientProFeatures = [
   'Unlimited invoice downloads',
   'Verified client badge',
   'Biometric app lock',
-  'CLIVORA Connect: publish about + post jobs',
-  'Connect with freelancers (anonymous until accept)',
   'Advanced activity timeline',
   'Priority notifications',
   'Leave project reviews',
@@ -369,6 +369,8 @@ const _clientProFeatures = [
 
 const _clientPlusFeatures = [
   'Everything in Client Pro',
+  'CLIVORA Connect: publish about + post jobs',
+  'Connect with freelancers (anonymous until accept)',
   'Priority support',
   'Branded portal experience',
   'Faster invoice & contract exports',
