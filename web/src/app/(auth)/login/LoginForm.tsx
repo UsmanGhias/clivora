@@ -4,6 +4,11 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import {
+  authErrorMessage,
+  isEmailNotConfirmedError,
+} from "@/lib/auth-errors";
+import { ResendVerification } from "@/components/auth/ResendVerification";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -12,12 +17,14 @@ export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [needsVerify, setNeedsVerify] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setNeedsVerify(false);
     const supabase = createClient();
     const { error: err } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
@@ -25,7 +32,8 @@ export default function LoginForm() {
     });
     setLoading(false);
     if (err) {
-      setError(err.message);
+      setError(authErrorMessage(err.message));
+      setNeedsVerify(isEmailNotConfirmedError(err.message));
       return;
     }
     router.push(next);
@@ -36,7 +44,7 @@ export default function LoginForm() {
     <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
       <h1 className="text-2xl font-extrabold text-text-primary">Sign in</h1>
       <p className="mt-1 text-sm text-text-secondary">
-        Same account as the CLIVORA mobile app.
+        Same account as the CLIVORA mobile app. You can browse after signup; verify email before creating work.
       </p>
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
         <label className="block text-sm font-medium text-text-primary">
@@ -46,7 +54,7 @@ export default function LoginForm() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2.5 outline-none ring-primary focus:ring-2"
+            className="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2.5 text-text-primary outline-none ring-primary focus:ring-2"
           />
         </label>
         <label className="block text-sm font-medium text-text-primary">
@@ -57,12 +65,13 @@ export default function LoginForm() {
             minLength={6}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2.5 outline-none ring-primary focus:ring-2"
+            className="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2.5 text-text-primary outline-none ring-primary focus:ring-2"
           />
         </label>
         {error && (
           <p className="rounded-lg bg-error/10 px-3 py-2 text-sm text-error">{error}</p>
         )}
+        {needsVerify && <ResendVerification email={email} />}
         <button
           type="submit"
           disabled={loading}
@@ -75,7 +84,7 @@ export default function LoginForm() {
         <Link href="/auth/reset-password" className="text-primary hover:underline">
           Forgot password?
         </Link>
-        <Link href="/signup" className="font-medium text-text-primary hover:underline">
+        <Link href="/signup" className="font-medium text-primary hover:underline">
           Create account
         </Link>
       </div>

@@ -13,16 +13,22 @@ export function ConnectActions({
 }) {
   if (!signedIn) {
     return (
-      <div className="rounded-2xl border border-border bg-surface p-5">
-        <p className="font-bold">Browse free · post with Pro Plus</p>
+      <div className="rounded-2xl border border-border bg-white p-5 shadow-sm">
+        <p className="font-bold text-navy">Browse free · post with Pro Plus</p>
         <p className="mt-1 text-sm text-text-secondary">
           Anyone can explore listings. Sign in and upgrade to Pro Plus to publish a listing, post a need, or send requests.
         </p>
-        <div className="mt-3 flex gap-2">
-          <Link href="/login" className="rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white">
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link
+            href="/login"
+            className="inline-flex rounded-full bg-navy px-5 py-2.5 text-sm font-semibold text-white"
+          >
             Sign in
           </Link>
-          <Link href="/signup" className="rounded-full border border-border px-4 py-2 text-sm font-semibold">
+          <Link
+            href="/signup"
+            className="inline-flex rounded-full border-2 border-navy bg-white px-5 py-2.5 text-sm font-semibold text-navy"
+          >
             Sign up
           </Link>
         </div>
@@ -49,8 +55,8 @@ export function ConnectActions({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5">
-      <p className="font-bold">You have Connect access</p>
+    <div className="rounded-2xl border border-border bg-white p-5 shadow-sm">
+      <p className="font-bold text-navy">You have Connect access</p>
       <p className="mt-1 text-sm text-text-secondary">
         Manage your {isClient ? "need posts" : "freelancer listing"} and send requests.
       </p>
