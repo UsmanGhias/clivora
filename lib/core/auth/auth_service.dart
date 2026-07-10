@@ -222,6 +222,15 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     final cloudUid = SupabaseAuthHelper.currentUid;
     if (cloudUid == null) return 'Sign in failed: no Supabase session.';
 
+    final blockedProfile = await SupabaseAuthHelper.fetchOwnProfile();
+    if (blockedProfile?['is_blocked'] == true) {
+      await SupabaseAuthHelper.signOut();
+      final reason = (blockedProfile?['block_reason'] as String?)?.trim();
+      return (reason != null && reason.isNotEmpty)
+          ? 'Account blocked: $reason'
+          : 'This account has been blocked by CLIVORA admin.';
+    }
+
     var user = await _db.safeGetUserByEmail(trimmedEmail);
     user ??= await _db.recoverUserByEmail(trimmedEmail);
     if (user == null) {

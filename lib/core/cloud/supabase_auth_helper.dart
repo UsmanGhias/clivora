@@ -66,7 +66,9 @@ class SupabaseAuthHelper {
     try {
       return await client
           .from('profiles')
-          .select('id, email, name, account_type, account_type_locked, role')
+          .select(
+            'id, email, name, account_type, account_type_locked, role, subscription_plan, is_blocked, is_restricted, block_reason',
+          )
           .eq('id', uid)
           .maybeSingle();
     } catch (e) {
