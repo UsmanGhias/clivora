@@ -11,6 +11,7 @@ import '../../core/utils/greeting.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/services/admin_management_service.dart';
 import '../../core/services/coach_marks_service.dart';
+import '../../core/services/email_verification_service.dart';
 import '../../data/database/database.dart';
 import '../../data/providers/app_providers.dart';
 import '../../l10n/app_localizations.dart';
@@ -192,6 +193,35 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ],
                 ),
               ),
+              if (authUser != null &&
+                  !isGuestUser(authUser) &&
+                  !ref.watch(emailVerificationServiceProvider).isVerified(authUser)) ...[
+                const SizedBox(height: 12),
+                Material(
+                  color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(16),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () => openFormRoute(context, '/profile'),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      child: Row(
+                        children: [
+                          Icon(Icons.mark_email_unread_outlined, color: Theme.of(context).colorScheme.error),
+                          const SizedBox(width: 10),
+                          const Expanded(
+                            child: Text(
+                              'Verify your email to create clients, invoices, and projects. Tap to open Profile.',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
               Container(
                 width: double.infinity,
@@ -466,7 +496,10 @@ class _QuickActions extends ConsumerWidget {
       _QuickAction(Icons.person_add_outlined, l10n.quickActionClient, ClivoraColors.iconPurple, ClivoraColors.primaryPurple, () => addCustomer()),
       _QuickAction(Icons.create_new_folder_outlined, l10n.quickActionProject, ClivoraColors.iconOrange, ClivoraColors.warningOrange, () => addProject()),
       _QuickAction(Icons.receipt_long_outlined, l10n.quickActionInvoice, ClivoraColors.iconGreen, ClivoraColors.successGreen, () => addInvoice()),
-      _QuickAction(Icons.task_alt_outlined, l10n.quickActionTask, ClivoraColors.iconBlue, Colors.blue, () => openFormRoute(context, '/tasks/new')),
+      _QuickAction(Icons.task_alt_outlined, l10n.quickActionTask, ClivoraColors.iconBlue, Colors.blue, () async {
+        if (!await requireEmailVerified(context, ref, actionLabel: 'create tasks')) return;
+        if (context.mounted) openFormRoute(context, '/tasks/new');
+      }),
     ];
 
     return Row(

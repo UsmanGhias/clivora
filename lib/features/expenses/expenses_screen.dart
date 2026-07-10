@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/auth/auth_service.dart';
 import '../../core/services/billable_to_invoice_service.dart';
+import '../../core/services/email_verification_service.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../data/database/database.dart';
@@ -38,6 +39,12 @@ class ExpensesScreen extends ConsumerStatefulWidget {
 class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   String _category = 'all';
 
+  Future<void> _openNewExpense() async {
+    if (!await requireEmailVerified(context, ref, actionLabel: 'add expenses')) return;
+    if (!mounted) return;
+    context.push('/expenses/new');
+  }
+
   @override
   Widget build(BuildContext context) {
     final expensesAsync = ref.watch(
@@ -50,7 +57,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       showBackButton: true,
       action: ClivoraIconButton(
         icon: Icons.add,
-        onPressed: () => context.push('/expenses/new'),
+        onPressed: _openNewExpense,
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,7 +107,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                     icon: Icons.receipt_outlined,
                     message: 'No expenses yet',
                     actionLabel: 'Add your first expense',
-                    onAction: () => context.push('/expenses/new'),
+                    onAction: _openNewExpense,
                   );
                 }
                 return ListView.separated(
@@ -281,6 +288,9 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
         ));
       }
     } else {
+      if (!await requireEmailVerified(context, ref, actionLabel: 'add expenses')) {
+        return;
+      }
       await db.insertExpense(ExpensesCompanion.insert(
         ownerUserId: ref.read(authStateProvider).valueOrNull!.id,
         title: _titleController.text.trim(),

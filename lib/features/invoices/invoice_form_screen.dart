@@ -23,6 +23,7 @@ import '../../data/models/invoice_line_item.dart';
 import '../../core/constants/plan_limits.dart';
 import '../../core/utils/crm_refresh.dart';
 import '../../core/utils/plan_limit_dialog.dart';
+import '../../core/services/email_verification_service.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/step_progress_card.dart';
 import '../../shared/widgets/entity_activity_timeline.dart';
@@ -179,6 +180,9 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
         );
       }
     } else {
+      if (!await requireEmailVerified(context, ref, actionLabel: 'add invoices')) {
+        return;
+      }
       if (!await ref.read(planLimitServiceProvider).canAddInvoice()) {
         if (mounted) {
           final upgrade = await showPlanLimitDialog(

@@ -299,6 +299,7 @@ class PlanLimitService {
   }
 
   Future<bool> canAddCustomer() async {
+    if (!await _emailOk()) return false;
     if (await _isPro()) return true;
     final ownerId = ref.read(authStateProvider).valueOrNull?.id;
     if (ownerId == null) return false;
@@ -307,6 +308,7 @@ class PlanLimitService {
   }
 
   Future<bool> canAddProject() async {
+    if (!await _emailOk()) return false;
     if (await _isPro()) return true;
     final ownerId = ref.read(authStateProvider).valueOrNull?.id;
     if (ownerId == null) return false;
@@ -315,12 +317,14 @@ class PlanLimitService {
   }
 
   Future<bool> canAddInvoice() async {
+    if (!await _emailOk()) return false;
     if (await _isPro()) return true;
     final count = await ref.read(monthlyInvoiceCountProvider.future);
     return count < PlanLimits.freeMaxInvoicesPerMonth;
   }
 
   Future<bool> canAddTemplate() async {
+    if (!await _emailOk()) return false;
     if (await _isPro()) return true;
     final ownerId = ref.read(authStateProvider).valueOrNull?.id;
     if (ownerId == null) return false;
@@ -329,6 +333,7 @@ class PlanLimitService {
   }
 
   Future<bool> canAddTaskToProject(int? projectId) async {
+    if (!await _emailOk()) return false;
     if (await _isPro()) return true;
     if (projectId == null) return true;
     final ownerId = ref.read(authStateProvider).valueOrNull?.id;
@@ -338,9 +343,13 @@ class PlanLimitService {
   }
 
   Future<bool> canAddClientContract(int currentCount) async {
+    if (!await _emailOk()) return false;
     if (await _isPro()) return true;
     return currentCount < PlanLimits.freeMaxClientContracts;
   }
+
+  /// Soft gate for create actions that do not have a free-tier count limit.
+  Future<bool> canCreateWork() async => _emailOk();
 
   Future<bool> canDownloadClientInvoicePdf() async {
     if (await _isPro()) return true;
@@ -364,6 +373,18 @@ class PlanLimitService {
     final user = ref.read(authStateProvider).valueOrNull;
     if (isAdminUser(user)) return true;
     return PlanFeatures.isPro(await currentPlan());
+  }
+
+  Future<bool> _emailOk() async {
+    final user = ref.read(authStateProvider).valueOrNull;
+    if (user == null) return false;
+    if (isAdminUser(user)) return true;
+    if (user.email.toLowerCase().endsWith('@clivora.local')) return true;
+    if (user.emailVerified) return true;
+    final cloud = SupabaseAuthHelper.client.auth.currentUser;
+    if (cloud?.emailConfirmedAt != null) return true;
+    if ((cloud?.identities ?? const []).any((i) => i.provider == 'google')) return true;
+    return false;
   }
 
   Future<void> setPlan(String plan) async {

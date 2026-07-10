@@ -26,6 +26,7 @@ import '../../core/utils/navigation_helper.dart';
 import '../../core/constants/plan_limits.dart';
 import '../../core/utils/plan_limit_dialog.dart';
 import '../../core/utils/template_utils.dart';
+import '../../core/services/email_verification_service.dart';
 import '../../data/models/invoice_line_item.dart';
 import '../../data/database/database.dart';
 import '../../data/database/user_scoped_queries.dart';
@@ -304,6 +305,9 @@ class _MessageTemplatesScreenState extends ConsumerState<MessageTemplatesScreen>
   }
 
   Future<void> _showTemplateForm(BuildContext context) async {
+    if (!await requireEmailVerified(context, ref, actionLabel: 'add templates')) {
+      return;
+    }
     if (!await ref.read(planLimitServiceProvider).canAddTemplate()) {
       if (context.mounted) {
         final upgrade = await showPlanLimitDialog(
