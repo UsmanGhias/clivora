@@ -1,6 +1,6 @@
 {
   "name": "clivora-web",
-  "version": "2.9.3",
+  "version": "2.10.3",
   "private": true,
   "engines": {
     "node": ">=20.0.0"
@@ -12,23 +12,24 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "next": "15.3.8",
-    "react": "^19.1.5",
-    "react-dom": "^19.1.5",
+    "@supabase/ssr": "^0.6.1",
+    "@supabase/supabase-js": "^2.49.1",
+    "clsx": "^2.1.1",
     "framer-motion": "^12.16.0",
     "lucide-react": "^0.511.0",
-    "clsx": "^2.1.1",
-    "@supabase/supabase-js": "^2.49.1"
+    "next": "15.3.8",
+    "react": "^19.1.5",
+    "react-dom": "^19.1.5"
   },
   "devDependencies": {
     "@types/node": "^22.15.29",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.5",
-    "typescript": "^5.8.3",
-    "tailwindcss": "^3.4.17",
     "autoprefixer": "^10.4.21",
-    "postcss": "^8.5.4",
     "eslint": "^8.57.1",
-    "eslint-config-next": "15.3.8"
+    "eslint-config-next": "15.3.8",
+    "postcss": "^8.5.4",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.8.3"
   }
 }

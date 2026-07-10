@@ -5,10 +5,10 @@ import { Github, Mail } from "lucide-react";
 const footerLinks = {
   Product: [
     { label: "Features", href: "/#features" },
-    { label: "Dashboard", href: "/#dashboard" },
+    { label: "Connect", href: "/connect" },
     { label: "Pricing", href: "/#pricing" },
     { label: "FAQ", href: "/#faq" },
-    { label: "Roadmap", href: "/#roadmap" },
+    { label: "Sign in", href: "/login" },
   ],
   Company: [
     { label: "About CODCrafters", href: legalLinks.about },

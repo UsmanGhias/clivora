@@ -6,6 +6,7 @@ import { Features } from "@/components/Features";
 import { DashboardPreview } from "@/components/DashboardPreview";
 import { Audience } from "@/components/Audience";
 import { Testimonials } from "@/components/Testimonials";
+import { ConnectMarketplace } from "@/components/ConnectMarketplace";
 import { Pricing } from "@/components/Pricing";
 import { FAQ } from "@/components/FAQ";
 import { Roadmap } from "@/components/Roadmap";
@@ -24,6 +25,7 @@ export default function Home() {
       <DashboardPreview />
       <Audience />
       <Testimonials />
+      <ConnectMarketplace />
       <Pricing />
       <FAQ />
       <Roadmap />
