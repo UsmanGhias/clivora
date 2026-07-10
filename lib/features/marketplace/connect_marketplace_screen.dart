@@ -372,15 +372,15 @@ class _ConnectGate extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.lock_outline, size: 56, color: scheme.primary),
+            Icon(Icons.hub_outlined, size: 56, color: scheme.primary),
             const SizedBox(height: 14),
             Text(
-              'Connect is Pro Plus',
+              'What is CLIVORA Connect?',
               style: Theme.of(
                 context,
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
@@ -388,9 +388,20 @@ class _ConnectGate extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Upgrade to Pro Plus to browse, save, post, and message in the private marketplace.',
+              'A private marketplace where freelancers list services and clients post needs. '
+              'Browse listings, save matches, send requests, and message after both sides accept — '
+              'without sharing contact details too early.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: scheme.onSurface.withValues(alpha: 0.7),
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Connect is included with Pro Plus (${ProPricing.plusMonthlyLabel}/mo) and appears as a bottom tab.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: scheme.onSurface.withValues(alpha: 0.65),
                 height: 1.35,
               ),
               textAlign: TextAlign.center,
@@ -402,6 +413,11 @@ class _ConnectGate extends StatelessWidget {
               label: Text(
                 'Upgrade to Pro Plus · ${ProPricing.plusMonthlyLabel}',
               ),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => context.push('/upgrade'),
+              child: const Text('Compare Pro & Pro Plus plans'),
             ),
           ],
         ),
