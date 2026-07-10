@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/providers/app_providers.dart';
+import '../services/admin_management_service.dart';
 
 /// Last sync failure message for user-visible retry prompts.
 final syncFailureMessageProvider = StateProvider<String?>((ref) => null);
@@ -38,5 +39,10 @@ void invalidateOnReconnect(WidgetRef ref) {
   ref.invalidate(clientInvoicesProvider);
   ref.invalidate(unifiedClientInboxProvider);
   ref.invalidate(freelancerMailboxProvider);
+  ref.invalidate(unreadMessagesProvider);
+  ref.invalidate(cloudNotificationsProvider);
+  ref.invalidate(cloudUnreadCountProvider);
+  ref.invalidate(freelancerClientTasksProvider);
+  ref.invalidate(clientAssignedTasksProvider);
   ref.invalidate(reportsProvider);
 }

@@ -10,12 +10,14 @@ import '../cloud/supabase_sync_service.dart';
 import '../constants/plan_limits.dart';
 
 final cloudNotificationsProvider = StreamProvider<List<CloudNotification>>((ref) {
+  ref.watch(authStateProvider);
   final uid = SupabaseAuthHelper.currentUid;
-  if (uid == null || uid.isEmpty) return const Stream.empty();
+  if (uid == null || uid.isEmpty) return Stream.value(const <CloudNotification>[]);
   return ref.watch(cloudNotificationRepositoryProvider).watchForUser(uid);
 });
 
 final cloudUnreadCountProvider = FutureProvider<int>((ref) async {
+  ref.watch(authStateProvider);
   final uid = SupabaseAuthHelper.currentUid;
   if (uid == null) return 0;
   ref.watch(cloudNotificationsProvider);
@@ -23,14 +25,16 @@ final cloudUnreadCountProvider = FutureProvider<int>((ref) async {
 });
 
 final freelancerClientTasksProvider = StreamProvider<List<CloudClientTask>>((ref) {
+  ref.watch(authStateProvider);
   final uid = SupabaseAuthHelper.currentUid;
-  if (uid == null || uid.isEmpty) return const Stream.empty();
+  if (uid == null || uid.isEmpty) return Stream.value(const <CloudClientTask>[]);
   return ref.watch(cloudClientTaskRepositoryProvider).watchForFreelancer(uid);
 });
 
 final clientAssignedTasksProvider = StreamProvider<List<CloudClientTask>>((ref) {
+  ref.watch(authStateProvider);
   final uid = SupabaseAuthHelper.currentUid;
-  if (uid == null || uid.isEmpty) return const Stream.empty();
+  if (uid == null || uid.isEmpty) return Stream.value(const <CloudClientTask>[]);
   return ref.watch(cloudClientTaskRepositoryProvider).watchForClient(uid);
 });
 

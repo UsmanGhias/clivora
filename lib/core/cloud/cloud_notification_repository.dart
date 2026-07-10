@@ -130,8 +130,20 @@ class CloudNotificationRepository {
     }
   }
 
-  Stream<List<CloudNotification>> watchForUser(String uid) {
-    return _db
+  Stream<List<CloudNotification>> watchForUser(String uid) async* {
+    try {
+      final initial = await _db
+          .from('notifications')
+          .select()
+          .eq('user_uid', uid)
+          .order('created_at', ascending: false)
+          .limit(100);
+      yield (initial as List).map((r) => CloudNotification.fromRow(Map<String, dynamic>.from(r as Map))).toList();
+    } catch (e) {
+      debugPrint('Notification bootstrap failed: $e');
+      yield <CloudNotification>[];
+    }
+    yield* _db
         .from('notifications')
         .stream(primaryKey: ['id'])
         .eq('user_uid', uid)

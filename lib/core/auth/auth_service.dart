@@ -21,6 +21,7 @@ import '../../core/cloud/supabase_sync_service.dart';
 import '../../core/constants/admin_config.dart';
 import '../../core/constants/plan_limits.dart';
 import '../../core/services/analytics_service.dart';
+import '../../core/services/admin_management_service.dart';
 import '../../core/services/automation_service.dart';
 import '../../core/services/project_time_service.dart';
 import '../../core/services/push_notification_service.dart';
@@ -568,6 +569,10 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     ref.invalidate(freelancerMailboxProvider);
     ref.invalidate(unreadMessagesProvider);
     ref.invalidate(freelancerUnreadProvider);
+    ref.invalidate(cloudNotificationsProvider);
+    ref.invalidate(cloudUnreadCountProvider);
+    ref.invalidate(freelancerClientTasksProvider);
+    ref.invalidate(clientAssignedTasksProvider);
     ref.invalidate(projectTimeTrackerProvider);
     ref.invalidate(projectTrackedSecondsMapProvider);
   }
