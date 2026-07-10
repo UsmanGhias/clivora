@@ -143,22 +143,53 @@ class CloudMessageRepository {
     var received = <CloudMessage>[];
 
     final controller = StreamController<List<CloudMessage>>();
+    // Never leave UI in perpetual loading — emit immediately, then bootstrap + realtime.
+    controller.add(const <CloudMessage>[]);
+
+    Future<void> bootstrap() async {
+      try {
+        final rows = await _db
+            .from('client_messages')
+            .select()
+            .or('from_uid.eq.$uid,to_uid.eq.$uid')
+            .order('created_at', ascending: false)
+            .limit(200);
+        final all = (rows as List)
+            .map((r) => CloudMessage.fromRow(Map<String, dynamic>.from(r as Map)))
+            .toList();
+        sent = all.where((m) => m.fromUid == uid).toList();
+        received = all.where((m) => m.toUid == uid).toList();
+        if (!controller.isClosed) controller.add(_mergeMailbox(sent, received));
+      } catch (e) {
+        debugPrint('Mailbox bootstrap failed: $e');
+        if (!controller.isClosed) controller.add(const <CloudMessage>[]);
+      }
+    }
+
+    unawaited(bootstrap());
+
     final sentSub = _db
         .from('client_messages')
         .stream(primaryKey: ['id'])
         .eq('from_uid', uid)
         .listen((rows) {
       sent = rows.map(CloudMessage.fromRow).toList();
-      controller.add(_mergeMailbox(sent, received));
-    }, onError: controller.addError);
+      if (!controller.isClosed) controller.add(_mergeMailbox(sent, received));
+    }, onError: (e) {
+      debugPrint('Sent mailbox stream error: $e');
+      if (!controller.isClosed) controller.add(_mergeMailbox(sent, received));
+    });
     final recvSub = _db
         .from('client_messages')
         .stream(primaryKey: ['id'])
         .eq('to_uid', uid)
         .listen((rows) {
       received = rows.map(CloudMessage.fromRow).toList();
-      controller.add(_mergeMailbox(sent, received));
-    }, onError: (e) => debugPrint('Client mailbox error: $e'));
+      if (!controller.isClosed) controller.add(_mergeMailbox(sent, received));
+    }, onError: (e) {
+      debugPrint('Client mailbox error: $e');
+      if (!controller.isClosed) controller.add(_mergeMailbox(sent, received));
+    });
 
     controller.onCancel = () {
       sentSub.cancel();
@@ -190,29 +221,8 @@ class CloudMessageRepository {
     await _db.from('client_messages').update({'is_read': true}).eq('id', messageId);
   }
 
-  Stream<List<CloudMessage>> watchFreelancerMailbox({required String uid}) async* {
-    var sent = <CloudMessage>[];
-    var received = <CloudMessage>[];
-
-    final controller = StreamController<List<CloudMessage>>();
-    final sentSub = _db
-        .from('client_messages')
-        .stream(primaryKey: ['id'])
-        .eq('from_uid', uid)
-        .listen((rows) {
-      sent = rows.map(CloudMessage.fromRow).toList();
-      controller.add(_mergeMailbox(sent, received));
-    }, onError: controller.addError);
-    final recvSub = _db
-        .from('client_messages')
-        .stream(primaryKey: ['id'])
-        .eq('to_uid', uid)
-        .listen((rows) {
-      received = rows.map(CloudMessage.fromRow).toList();
-      controller.add(_mergeMailbox(sent, received));
-    }, onError: (e) => debugPrint('Freelancer inbox error: $e'));
-
-    yield* controller.stream;
+  Stream<List<CloudMessage>> watchFreelancerMailbox({required String uid}) {
+    return watchClientMailbox(uid: uid, email: '');
   }
 
   List<CloudMessage> _mergeMailbox(List<CloudMessage> sent, List<CloudMessage> received) {

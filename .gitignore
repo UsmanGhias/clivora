@@ -68,3 +68,7 @@ key.properties
 
 .tmp_secrets/
 
+
+supabase/.temp/
+.tmp_secrets/
+

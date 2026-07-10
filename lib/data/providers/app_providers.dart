@@ -463,8 +463,9 @@ final unifiedClientInboxProvider = StreamProvider<List<ClientInboxEntry>>((ref) 
 
 /// Freelancer mailbox — sent + received (Supabase).
 final freelancerMailboxProvider = StreamProvider<List<CloudMessage>>((ref) {
+  ref.watch(authStateProvider);
   final uid = SupabaseAuthHelper.currentUid;
-  if (uid == null || uid.isEmpty) return const Stream.empty();
+  if (uid == null || uid.isEmpty) return Stream.value(const <CloudMessage>[]);
   return ref.watch(cloudMessageRepositoryProvider).watchFreelancerMailbox(uid: uid);
 });
 

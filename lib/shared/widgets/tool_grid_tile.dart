@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/clivora_colors.dart';
 
-/// Compact Hub card — colored icon well + label for 2-column grids.
+/// Compact Hub card — centered icon well + centered label for 2-column grids.
 class ToolGridTile extends StatelessWidget {
   const ToolGridTile({
     super.key,
@@ -32,7 +32,7 @@ class ToolGridTile extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
+          padding: const EdgeInsets.fromLTRB(10, 14, 10, 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
@@ -43,20 +43,23 @@ class ToolGridTile extends StatelessWidget {
             clipBehavior: Clip.none,
             children: [
               Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
-                    width: 40,
-                    height: 40,
+                    width: 44,
+                    height: 44,
+                    alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: iconBackground,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Icon(icon, color: iconColor, size: 20),
+                    child: Icon(icon, color: iconColor, size: 22),
                   ),
-                  const Spacer(),
+                  const SizedBox(height: 10),
                   Text(
                     label,
+                    textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: scheme.onSurface,
