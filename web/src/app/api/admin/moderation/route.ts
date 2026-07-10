@@ -24,7 +24,10 @@ function headers(key: string) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    assertAdminPanelAuth(String(body.adminEmail ?? ""), String(body.adminPassword ?? ""));
+    await assertAdminPanelAuth(
+      String(body.adminEmail ?? ""),
+      String(body.adminToken ?? body.adminPassword ?? ""),
+    );
     const key = serviceKey();
     if (!key) {
       return NextResponse.json(

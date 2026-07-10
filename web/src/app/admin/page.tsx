@@ -6,7 +6,7 @@ import {
   ADMIN_SESSION_EMAIL,
   ADMIN_SESSION_FLAG,
   ADMIN_SESSION_PASS,
-  PANEL_PASSWORD,
+  ADMIN_SESSION_TOKEN,
   PRO_PLUS_PRICE_USD,
   PRO_PRICE_USD,
   SYNC_KEY,
@@ -103,7 +103,7 @@ type ConnectAutoApproveSettings = {
 };
 
 const EMPTY = "N/A";
-const ADMIN_VERSION = "v2.9.3";
+const ADMIN_VERSION = "v2.10.4";
 const DEFAULT_CONNECT_SETTINGS: ConnectAutoApproveSettings = {
   profiles: true,
   needs: true,
@@ -190,19 +190,22 @@ export default function AdminPage() {
   const [connectNeeds, setConnectNeeds] = useState<ConnectNeed[]>([]);
   const [connectSettings, setConnectSettings] = useState<ConnectAutoApproveSettings>(DEFAULT_CONNECT_SETTINGS);
   const [connectBusy, setConnectBusy] = useState(false);
+  const [sessionToken, setSessionToken] = useState("");
+  const [newPanelPassword, setNewPanelPassword] = useState("");
+  const [confirmPanelPassword, setConfirmPanelPassword] = useState("");
 
   const adminAuthBody = useCallback(() => {
     const adminEmail =
       (typeof window !== "undefined" ? sessionStorage.getItem(ADMIN_SESSION_EMAIL) : null) ||
       email;
-    const adminPassword =
-      (typeof window !== "undefined" ? sessionStorage.getItem(ADMIN_SESSION_PASS) : null) ||
-      password;
+    const adminToken =
+      (typeof window !== "undefined" ? sessionStorage.getItem(ADMIN_SESSION_TOKEN) : null) ||
+      sessionToken;
     return {
       adminEmail: adminEmail.trim().toLowerCase(),
-      adminPassword,
+      adminToken,
     };
-  }, [email, password]);
+  }, [email, sessionToken]);
 
   const loadStats = useCallback(async () => {
     setLoading(true);
@@ -229,7 +232,7 @@ export default function AdminPage() {
   const loadPayments = useCallback(async () => {
     try {
       const auth = adminAuthBody();
-      if (!auth.adminEmail || !auth.adminPassword) return;
+      if (!auth.adminEmail || !auth.adminToken) return;
       const res = await fetch("/api/admin/payment-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -246,7 +249,7 @@ export default function AdminPage() {
   const loadConnect = useCallback(async () => {
     try {
       const auth = adminAuthBody();
-      if (!auth.adminEmail || !auth.adminPassword) return;
+      if (!auth.adminEmail || !auth.adminToken) return;
       const [marketplaceRes, settingsRes] = await Promise.all([
         fetch("/api/admin/marketplace", {
           method: "POST",
@@ -298,7 +301,7 @@ export default function AdminPage() {
     setActionMsg("");
     try {
       const auth = adminAuthBody();
-      if (!auth.adminEmail || !auth.adminPassword) {
+      if (!auth.adminEmail || !auth.adminToken) {
         throw new Error("Session expired. Sign out and sign in again.");
       }
       const res = await fetch("/api/admin/grant-pro", {
@@ -330,7 +333,7 @@ export default function AdminPage() {
     setActionMsg("");
     try {
       const auth = adminAuthBody();
-      if (!auth.adminEmail || !auth.adminPassword) {
+      if (!auth.adminEmail || !auth.adminToken) {
         throw new Error("Session expired. Sign out and sign in again.");
       }
       const res = await fetch("/api/admin/grant-admin", {
@@ -361,7 +364,7 @@ export default function AdminPage() {
     setActionMsg("");
     try {
       const auth = adminAuthBody();
-      if (!auth.adminEmail || !auth.adminPassword) {
+      if (!auth.adminEmail || !auth.adminToken) {
         throw new Error("Session expired. Sign out and sign in again.");
       }
       const res = await fetch("/api/admin/moderation", {
@@ -388,15 +391,17 @@ export default function AdminPage() {
     if (typeof window === "undefined") return;
     const flag = sessionStorage.getItem(ADMIN_SESSION_FLAG);
     const savedEmail = sessionStorage.getItem(ADMIN_SESSION_EMAIL) ?? "";
-    const savedPass = sessionStorage.getItem(ADMIN_SESSION_PASS) ?? "";
-    if (flag === "1" && ADMIN_EMAILS.includes(savedEmail.toLowerCase()) && savedPass === PANEL_PASSWORD) {
+    const savedToken = sessionStorage.getItem(ADMIN_SESSION_TOKEN) ?? "";
+    // Clear legacy plaintext password if present
+    sessionStorage.removeItem(ADMIN_SESSION_PASS);
+    if (flag === "1" && ADMIN_EMAILS.includes(savedEmail.toLowerCase()) && savedToken) {
       setEmail(savedEmail);
-      setPassword(savedPass);
+      setSessionToken(savedToken);
       setLoggedIn(true);
     } else {
       sessionStorage.removeItem(ADMIN_SESSION_FLAG);
       sessionStorage.removeItem(ADMIN_SESSION_EMAIL);
-      sessionStorage.removeItem(ADMIN_SESSION_PASS);
+      sessionStorage.removeItem(ADMIN_SESSION_TOKEN);
     }
   }, []);
 
@@ -405,7 +410,7 @@ export default function AdminPage() {
     setActionMsg("");
     try {
       const auth = adminAuthBody();
-      if (!auth.adminEmail || !auth.adminPassword) {
+      if (!auth.adminEmail || !auth.adminToken) {
         throw new Error("Session expired. Sign out and sign in again.");
       }
       const res = await fetch("/api/admin/marketplace", {
@@ -429,7 +434,7 @@ export default function AdminPage() {
     setActionMsg("");
     try {
       const auth = adminAuthBody();
-      if (!auth.adminEmail || !auth.adminPassword) {
+      if (!auth.adminEmail || !auth.adminToken) {
         throw new Error("Session expired. Sign out and sign in again.");
       }
       const res = await fetch("/api/admin/moderation", {
@@ -461,29 +466,75 @@ export default function AdminPage() {
     loadConnect();
   }, [loggedIn, loadStats, loadPayments, loadConnect]);
 
-  function login() {
+  async function login() {
     const normalized = email.trim().toLowerCase();
     if (!ADMIN_EMAILS.includes(normalized)) {
       setError("This admin email is not authorized. Use iusmanghias@gmail.com.");
       return;
     }
-    if (password !== PANEL_PASSWORD) {
-      setError("Incorrect password.");
+    setError("");
+    try {
+      const res = await fetch("/api/admin/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "login", adminEmail: normalized, adminPassword: password }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Login failed");
+      sessionStorage.setItem(ADMIN_SESSION_FLAG, "1");
+      sessionStorage.setItem(ADMIN_SESSION_EMAIL, normalized);
+      sessionStorage.setItem(ADMIN_SESSION_TOKEN, json.token);
+      sessionStorage.removeItem(ADMIN_SESSION_PASS);
+      setSessionToken(json.token);
+      setEmail(normalized);
+      setPassword("");
+      setLoggedIn(true);
+      setActionMsg("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Login failed");
+    }
+  }
+
+  async function changePanelPassword() {
+    setActionMsg("");
+    if (newPanelPassword.length < 10) {
+      setActionMsg("New password must be at least 10 characters.");
       return;
     }
-    sessionStorage.setItem(ADMIN_SESSION_FLAG, "1");
-    sessionStorage.setItem(ADMIN_SESSION_EMAIL, normalized);
-    sessionStorage.setItem(ADMIN_SESSION_PASS, password);
-    setEmail(normalized);
-    setLoggedIn(true);
-    setError("");
-    setActionMsg("");
+    if (newPanelPassword !== confirmPanelPassword) {
+      setActionMsg("Password confirmation does not match.");
+      return;
+    }
+    try {
+      const auth = adminAuthBody();
+      const res = await fetch("/api/admin/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "change_password",
+          adminEmail: auth.adminEmail,
+          adminToken: auth.adminToken,
+          newPassword: newPanelPassword,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Password change failed");
+      sessionStorage.setItem(ADMIN_SESSION_TOKEN, json.token);
+      setSessionToken(json.token);
+      setNewPanelPassword("");
+      setConfirmPanelPassword("");
+      setActionMsg(json.message || "Panel password updated.");
+    } catch (e) {
+      setActionMsg(e instanceof Error ? e.message : "Password change failed");
+    }
   }
 
   function logout() {
     sessionStorage.removeItem(ADMIN_SESSION_FLAG);
     sessionStorage.removeItem(ADMIN_SESSION_EMAIL);
+    sessionStorage.removeItem(ADMIN_SESSION_TOKEN);
     sessionStorage.removeItem(ADMIN_SESSION_PASS);
+    setSessionToken("");
     setLoggedIn(false);
     setPassword("");
     setStats(null);
@@ -673,6 +724,39 @@ export default function AdminPage() {
                   /pro
                 </a>
               </p>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+              <h2 className="font-semibold text-slate-900 mb-2">Admin panel password</h2>
+              <p className="text-sm text-slate-600 mb-3">
+                Stored as a hash in Supabase <code className="text-xs">app_settings</code>. Session uses a
+                signed token — the password is never kept in sessionStorage.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="password"
+                  className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
+                  placeholder="New password (min 10)"
+                  value={newPanelPassword}
+                  onChange={(e) => setNewPanelPassword(e.target.value)}
+                  autoComplete="new-password"
+                />
+                <input
+                  type="password"
+                  className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-slate-900"
+                  placeholder="Confirm new password"
+                  value={confirmPanelPassword}
+                  onChange={(e) => setConfirmPanelPassword(e.target.value)}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={changePanelPassword}
+                  className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-semibold"
+                >
+                  Update password
+                </button>
+              </div>
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/profile";
 import { DownloadAppCard } from "@/components/app/DownloadAppCard";
+import { MessageCompose } from "@/components/app/MessageCompose";
 
 export default async function MessagesPage() {
   const profile = await getProfile();
@@ -32,9 +33,10 @@ export default async function MessagesPage() {
       <div>
         <h1 className="text-2xl font-extrabold">Messages</h1>
         <p className="text-sm text-text-secondary">
-          Recent cloud messages. Full realtime chat and push alerts are in the mobile app.
+          Cloud inbox. Realtime chat and push alerts are richer in the mobile app.
         </p>
       </div>
+      <MessageCompose fromEmail={profile?.email ?? ""} />
       {rows.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center">
           <p className="font-semibold">No messages yet</p>
