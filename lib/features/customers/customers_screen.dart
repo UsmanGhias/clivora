@@ -172,11 +172,14 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                             IconButton(
                               icon: const Icon(Icons.edit_outlined, size: 20),
                               tooltip: 'Edit',
+                              visualDensity: VisualDensity.compact,
                               onPressed: () => openFormRoute(context, '/customers/${c.id}/edit'),
                             ),
+                            const SizedBox(width: 8),
                             IconButton(
                               icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
                               tooltip: 'Delete',
+                              visualDensity: VisualDensity.compact,
                               onPressed: () => _deleteCustomer(c.id, c.contactPerson),
                             ),
                           ],

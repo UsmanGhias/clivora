@@ -23,16 +23,21 @@ class TodayOverdueCard extends ConsumerWidget {
     final muted = scheme.onSurfaceVariant;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(top: 2, bottom: 16),
       child: Card(
         elevation: 0,
         margin: EdgeInsets.zero,
+        color: scheme.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.6)),
+          side: BorderSide(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? ClivoraColors.darkBorder
+                : scheme.outlineVariant.withValues(alpha: 0.6),
+          ),
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -49,7 +54,7 @@ class TodayOverdueCard extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 14),
               if (outstanding > 0)
                 _ActionRow(
                   icon: Icons.receipt_long_outlined,
@@ -68,7 +73,7 @@ class TodayOverdueCard extends ConsumerWidget {
                 ),
               if (outstanding <= 0 && pendingTasks > 0)
                 Padding(
-                  padding: const EdgeInsets.only(left: 44, bottom: 6),
+                  padding: const EdgeInsets.only(left: 44, bottom: 6, top: 4),
                   child: Text(
                     'Stay on top of your work for today',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(color: muted),

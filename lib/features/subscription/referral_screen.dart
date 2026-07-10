@@ -6,7 +6,6 @@ import '../../core/services/app_engagement_service.dart';
 import '../../core/services/referral_service.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
-import 'upgrade_screen.dart';
 
 /// Referral program — share code, track referrals, earn bonus Pro days.
 class ReferralScreen extends ConsumerStatefulWidget {
@@ -28,6 +27,7 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> {
   @override
   Widget build(BuildContext context) {
     final statsAsync = ref.watch(referralStatsProvider);
+    final scheme = Theme.of(context).colorScheme;
 
     return ClivoraScaffold(
       title: 'Refer & Earn',
@@ -36,43 +36,49 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (stats) => ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
           children: [
             Container(
-              padding: const EdgeInsets.all(20),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               decoration: BoxDecoration(
                 gradient: ClivoraColors.brandGradient,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
                     'Invite friends to CLIVORA',
-                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+                    style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text(
-                    'Share your code. When they subscribe to Pro, you earn '
-                    '${ReferralService.bonusDaysPerReferral} bonus days each time.',
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.9), height: 1.4),
+                    'When they subscribe to Pro, you earn ${ReferralService.bonusDaysPerReferral} bonus days.',
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.9), height: 1.35, fontSize: 13),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   Row(
                     children: [
                       Expanded(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.15),
+                            color: Colors.white.withValues(alpha: 0.14),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             stats.code ?? 'N/A',
-                            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: 2),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.6,
+                            ),
                           ),
                         ),
                       ),
+                      const SizedBox(width: 8),
                       IconButton(
                         onPressed: stats.code == null
                             ? null
@@ -89,28 +95,32 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(child: _StatBox(label: 'Referrals', value: '${stats.count}')),
-                const SizedBox(width: 12),
-                Expanded(child: _StatBox(label: 'Bonus days', value: '${stats.bonusDays}')),
-              ],
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: () => ref.read(appEngagementServiceProvider).shareReferral(),
-              icon: const Icon(Icons.share_outlined),
-              label: const Text('Share my referral link'),
-            ),
             const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: () => ref.read(appEngagementServiceProvider).shareApp(),
-              icon: const Icon(Icons.ios_share),
-              label: const Text('Share CLIVORA app'),
+            _LongStatRow(label: 'Successful referrals', value: '${stats.count}'),
+            const SizedBox(height: 8),
+            _LongStatRow(label: 'Bonus Pro days earned', value: '${stats.bonusDays}'),
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () => ref.read(appEngagementServiceProvider).shareReferral(),
+                icon: const Icon(Icons.share_outlined, size: 18),
+                label: const Text('Share my referral link'),
+                style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+              ),
             ),
-            const Divider(height: 40),
-            Text('Have a friend\'s code?', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => ref.read(appEngagementServiceProvider).shareApp(),
+                icon: const Icon(Icons.ios_share, size: 18),
+                label: const Text('Share CLIVORA app'),
+                style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+              ),
+            ),
+            const SizedBox(height: 28),
+            Text('Have a friend\'s code?', style: Theme.of(context).textTheme.titleSmall?.copyWith(color: scheme.onSurface)),
             const SizedBox(height: 8),
             TextField(
               controller: _applyController,
@@ -121,16 +131,19 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: () async {
-                final err = await ref.read(referralServiceProvider).applyReferralCode(_applyController.text);
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(err ?? 'Referral code saved. Bonus applies when you subscribe to Pro.')),
-                );
-                if (err == null) _applyController.clear();
-              },
-              child: const Text('Apply code'),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () async {
+                  final err = await ref.read(referralServiceProvider).applyReferralCode(_applyController.text);
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(err ?? 'Referral code saved. Bonus applies when you subscribe to Pro.')),
+                  );
+                  if (err == null) _applyController.clear();
+                },
+                child: const Text('Apply code'),
+              ),
             ),
           ],
         ),
@@ -139,25 +152,43 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> {
   }
 }
 
-class _StatBox extends StatelessWidget {
-  const _StatBox({required this.label, required this.value});
+class _LongStatRow extends StatelessWidget {
+  const _LongStatRow({required this.label, required this.value});
 
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      padding: const EdgeInsets.all(16),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: scheme.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Theme.of(context).dividerColor),
+        border: Border.all(color: isDark ? ClivoraColors.darkBorder : ClivoraColors.borderLight),
       ),
-      child: Column(
+      child: Row(
         children: [
-          Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
+          Expanded(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: scheme.onSurface.withValues(alpha: 0.7),
+                    fontWeight: FontWeight.w500,
+                  ),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: scheme.onSurface,
+            ),
+          ),
         ],
       ),
     );

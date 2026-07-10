@@ -246,6 +246,7 @@ final monthlyInvoiceCountProvider = FutureProvider<int>((ref) async {
 });
 
 final dashboardStatsProvider = FutureProvider<DashboardStats>((ref) async {
+  ref.watch(authStateProvider);
   final ownerId = _ownerId(ref);
   if (ownerId == null) {
     return const DashboardStats(revenue: 0, totalInvoiced: 0, outstanding: 0, customers: 0, activeProjects: 0);
@@ -1004,6 +1005,8 @@ final invoicePaymentsProvider = StreamProvider<List<InvoicePayment>>((ref) {
 
 /// 30-day revenue series for dashboard sparkline (paid invoice totals by day).
 final revenueSparklineProvider = FutureProvider<List<double>>((ref) async {
+  // Recompute whenever auth owner changes (sign-out / sign-in).
+  ref.watch(authStateProvider);
   final ownerId = _ownerId(ref);
   if (ownerId == null) return List.filled(30, 0);
   final invoices = await ref.read(databaseProvider).watchInvoicesForUser(ownerId).first;
