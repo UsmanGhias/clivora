@@ -12,6 +12,7 @@ export type ConnectProfile = {
   is_verified: boolean | null;
   moderation_status: string | null;
   account_type: string | null;
+  created_at?: string | null;
   updated_at?: string | null;
 };
 

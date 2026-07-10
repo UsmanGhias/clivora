@@ -19,9 +19,9 @@ import { SubPageChrome } from "@/components/app/SubPageChrome";
 import { ConnectBoard } from "@/components/connect/ConnectBoard";
 
 export const metadata: Metadata = {
-  title: "CLIVORA Connect — Marketplace",
+  title: "CLIVORA Connect — Private marketplace",
   description:
-    "Hire freelancers and find clients on CLIVORA Connect. Private contact until mutual accept — better than open marketplaces.",
+    "Hire freelancers and find clients on CLIVORA Connect. Private contact until mutual accept — then continue in the same CRM.",
 };
 
 export default async function ConnectPage() {
@@ -51,13 +51,13 @@ export default async function ConnectPage() {
       title="Connect"
       rightSlot={
         signedIn ? (
-          <span className="hidden rounded-full bg-emerald-500/20 px-2.5 py-1 text-[11px] font-bold text-emerald-200 sm:inline">
+          <span className="hidden rounded-lg bg-emerald-500/20 px-2.5 py-1 text-[11px] font-bold text-emerald-200 sm:inline">
             {planLabel(profile)}
           </span>
         ) : (
           <Link
             href="/login?next=/connect"
-            className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white"
+            className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold text-white"
           >
             Sign in
           </Link>
@@ -71,9 +71,9 @@ export default async function ConnectPage() {
           }`}
         >
           <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-white/70">
-            Marketplace
+            CLIVORA Connect
           </p>
-          <h1 className="mt-2 text-2xl font-extrabold sm:text-4xl">
+          <h1 className="mt-2 font-display text-2xl font-extrabold sm:text-4xl">
             Hire & get hired — privately
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/85 sm:text-base">
@@ -84,14 +84,14 @@ export default async function ConnectPage() {
             {signedIn && plus ? (
               <Link
                 href="/connect/manage"
-                className="rounded-full bg-white px-4 py-2 text-sm font-bold text-navy"
+                className="rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-navy"
               >
                 {client ? "Post a job" : "Update my profile"}
               </Link>
             ) : (
               <Link
                 href={signedIn ? "/pro?plan=pro_plus" : "/signup"}
-                className="rounded-full bg-white px-4 py-2 text-sm font-bold text-navy"
+                className="rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-navy"
               >
                 {signedIn
                   ? `Unlock Connect · ${site.pricing.proPlusMonthlyLabel}/mo`
@@ -101,7 +101,7 @@ export default async function ConnectPage() {
             {!signedIn && (
               <Link
                 href="/login?next=/connect"
-                className="rounded-full border border-white/30 px-4 py-2 text-sm font-bold text-white"
+                className="rounded-xl border border-white/30 px-4 py-2.5 text-sm font-bold text-white"
               >
                 Sign in
               </Link>
@@ -114,6 +114,35 @@ export default async function ConnectPage() {
             </p>
           )}
         </section>
+
+        <ol className="grid gap-3 sm:grid-cols-3">
+          {[
+            {
+              n: "01",
+              t: "Discover",
+              d: "Search talent or open jobs by skill, rate, and budget.",
+            },
+            {
+              n: "02",
+              t: "Request",
+              d: "Send a Connect request — emails stay private until accept.",
+            },
+            {
+              n: "03",
+              t: "Work in CRM",
+              d: "After match, manage the relationship in CLIVORA on web or app.",
+            },
+          ].map((step) => (
+            <li
+              key={step.n}
+              className="rounded-2xl border border-border bg-surface px-4 py-4 shadow-sm"
+            >
+              <p className="font-display text-xs font-bold tracking-widest text-primary">{step.n}</p>
+              <p className="mt-1 font-bold text-navy">{step.t}</p>
+              <p className="mt-1 text-sm text-text-secondary">{step.d}</p>
+            </li>
+          ))}
+        </ol>
 
         <ConnectBoard
           profiles={profiles}

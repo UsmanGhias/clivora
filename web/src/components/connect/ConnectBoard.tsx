@@ -23,6 +23,7 @@ import { site } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 type Tab = "talent" | "jobs" | "inbox";
+type SortMode = "featured" | "rate" | "newest";
 
 export function ConnectBoard({
   profiles,
@@ -46,6 +47,8 @@ export function ConnectBoard({
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("talent");
   const [query, setQuery] = useState("");
+  const [skillFilter, setSkillFilter] = useState<string | null>(null);
+  const [sort, setSort] = useState<SortMode>("featured");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
@@ -57,10 +60,36 @@ export function ConnectBoard({
   } | null>(null);
   const [message, setMessage] = useState("Hi — I'd like to connect on CLIVORA.");
 
+  const popularSkills = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const p of profiles) {
+      for (const s of skillsList(p.skills)) {
+        const key = s.trim();
+        if (!key) continue;
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      }
+    }
+    for (const n of needs) {
+      for (const s of skillsList(n.skills)) {
+        const key = s.trim();
+        if (!key) continue;
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      }
+    }
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([s]) => s);
+  }, [profiles, needs]);
+
   const filteredProfiles = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return profiles;
-    return profiles.filter((p) => {
+    let list = profiles.filter((p) => {
+      if (skillFilter) {
+        const skills = skillsList(p.skills).map((s) => s.toLowerCase());
+        if (!skills.some((s) => s === skillFilter.toLowerCase())) return false;
+      }
+      if (!q) return true;
       const hay = [
         p.display_title,
         p.headline,
@@ -74,19 +103,41 @@ export function ConnectBoard({
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [profiles, query]);
+    if (sort === "rate") {
+      list = [...list].sort((a, b) => (b.rate_band || "").localeCompare(a.rate_band || ""));
+    } else if (sort === "newest") {
+      list = [...list].sort((a, b) =>
+        String(b.updated_at || b.created_at || "").localeCompare(
+          String(a.updated_at || a.created_at || ""),
+        ),
+      );
+    } else {
+      list = [...list].sort((a, b) => Number(!!b.is_verified) - Number(!!a.is_verified));
+    }
+    return list;
+  }, [profiles, query, skillFilter, sort]);
 
   const filteredNeeds = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return needs;
-    return needs.filter((n) => {
+    let list = needs.filter((n) => {
+      if (skillFilter) {
+        const skills = skillsList(n.skills).map((s) => s.toLowerCase());
+        if (!skills.some((s) => s === skillFilter.toLowerCase())) return false;
+      }
+      if (!q) return true;
       const hay = [n.title, n.summary, n.budget_band, ...skillsList(n.skills)]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [needs, query]);
+    if (sort === "newest") {
+      list = [...list].sort((a, b) =>
+        String(b.created_at || "").localeCompare(String(a.created_at || "")),
+      );
+    }
+    return list;
+  }, [needs, query, skillFilter, sort]);
 
   async function sendRequest(e: FormEvent) {
     e.preventDefault();
@@ -178,15 +229,18 @@ export function ConnectBoard({
 
   return (
     <div className="space-y-6">
-      {/* Search + tabs */}
-      <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm sm:p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={tab === "jobs" ? "Search jobs, skills, budget…" : "Search talent, skills, location…"}
+              placeholder={
+                tab === "jobs"
+                  ? "Search jobs, skills, budget…"
+                  : "Search talent, skills, location…"
+              }
               className="w-full rounded-xl border border-border bg-white py-2.5 pl-10 pr-3 text-sm outline-none ring-primary focus:ring-2"
             />
           </div>
@@ -218,16 +272,62 @@ export function ConnectBoard({
             ))}
           </div>
         </div>
-        <div className="mt-3 flex flex-wrap gap-2 text-xs text-text-secondary">
-          <span className="rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary-dark">
+
+        {popularSkills.length > 0 && tab !== "inbox" && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setSkillFilter(null)}
+              className={cn(
+                "rounded-lg px-2.5 py-1 text-xs font-semibold",
+                !skillFilter ? "bg-navy text-white" : "bg-background text-text-secondary",
+              )}
+            >
+              All skills
+            </button>
+            {popularSkills.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setSkillFilter(skillFilter === s ? null : s)}
+                className={cn(
+                  "rounded-lg px-2.5 py-1 text-xs font-semibold",
+                  skillFilter === s ? "bg-primary text-white" : "bg-background text-text-secondary",
+                )}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-text-secondary">
+          <span className="rounded-lg bg-primary/10 px-2.5 py-1 font-semibold text-primary-dark">
             {filteredProfiles.length} freelancers
           </span>
-          <span className="rounded-full bg-client-surface px-2.5 py-1 font-semibold text-client-accent">
+          <span className="rounded-lg bg-client-surface px-2.5 py-1 font-semibold text-client-accent">
             {filteredNeeds.length} open jobs
           </span>
+          {tab !== "inbox" && (
+            <label className="ml-auto inline-flex items-center gap-1.5 font-semibold text-navy">
+              Sort
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortMode)}
+                className="rounded-lg border border-border bg-white px-2 py-1 text-xs"
+              >
+                <option value="featured">Featured</option>
+                <option value="newest">Newest</option>
+                {tab === "talent" && <option value="rate">Rate</option>}
+              </select>
+            </label>
+          )}
           {!isProPlus && (
-            <Link href="/pro?plan=pro_plus" className="rounded-full bg-amber-100 px-2.5 py-1 font-semibold text-amber-900">
-              Upgrade to Pro Plus to contact · {site.pricing.proPlusMonthlyLabel}/mo
+            <Link
+              href="/pro?plan=pro_plus"
+              className="rounded-lg bg-amber-100 px-2.5 py-1 font-semibold text-amber-900"
+            >
+              Upgrade to contact · {site.pricing.proPlusMonthlyLabel}/mo
             </Link>
           )}
         </div>
@@ -245,7 +345,10 @@ export function ConnectBoard({
       )}
 
       {compose && (
-        <form onSubmit={sendRequest} className="rounded-2xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+        <form
+          onSubmit={sendRequest}
+          className="space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-4"
+        >
           <p className="text-sm font-bold text-navy">Contact {compose.label}</p>
           <p className="text-xs text-text-secondary">
             Emails stay private until both sides accept — safer than open marketplaces.
@@ -261,14 +364,14 @@ export function ConnectBoard({
             <button
               type="submit"
               disabled={!!busyId}
-              className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               {busyId ? "Sending…" : "Send Connect request"}
             </button>
             <button
               type="button"
               onClick={() => setCompose(null)}
-              className="rounded-full border border-border px-4 py-2 text-sm font-semibold"
+              className="rounded-xl border border-border px-4 py-2 text-sm font-semibold"
             >
               Cancel
             </button>
@@ -280,8 +383,10 @@ export function ConnectBoard({
         <section className="space-y-4">
           <div className="flex items-end justify-between gap-3">
             <div>
-              <h2 className="text-xl font-extrabold text-navy">Top freelancers</h2>
-              <p className="text-sm text-text-secondary">Verified listings from the CLIVORA network</p>
+              <h2 className="font-display text-xl font-extrabold text-navy">Top freelancers</h2>
+              <p className="text-sm text-text-secondary">
+                Verified listings from the CLIVORA network
+              </p>
             </div>
             {signedIn && isProPlus && !isClient && (
               <Link href="/connect/manage" className="text-sm font-semibold text-primary">
@@ -309,7 +414,7 @@ export function ConnectBoard({
                       )}
                     </div>
                     {p.is_verified && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase text-primary-dark">
+                      <span className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase text-primary-dark">
                         <ShieldCheck className="h-3 w-3" /> Verified
                       </span>
                     )}
@@ -327,12 +432,14 @@ export function ConnectBoard({
                     {skillsList(p.skills)
                       .slice(0, 6)
                       .map((s) => (
-                        <span
+                        <button
                           key={s}
-                          className="rounded-full bg-background px-2 py-0.5 text-[11px] text-text-secondary"
+                          type="button"
+                          onClick={() => setSkillFilter(s)}
+                          className="rounded-lg bg-background px-2 py-0.5 text-[11px] text-text-secondary hover:bg-primary/10 hover:text-primary-dark"
                         >
                           {s}
-                        </span>
+                        </button>
                       ))}
                   </div>
                   <button
@@ -347,7 +454,7 @@ export function ConnectBoard({
                         }),
                       )
                     }
-                    className="mt-4 rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+                    className="mt-4 rounded-xl bg-navy px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
                   >
                     Contact
                   </button>
@@ -362,7 +469,7 @@ export function ConnectBoard({
         <section className="space-y-4">
           <div className="flex items-end justify-between gap-3">
             <div>
-              <h2 className="text-xl font-extrabold text-navy">Open jobs</h2>
+              <h2 className="font-display text-xl font-extrabold text-navy">Open jobs</h2>
               <p className="text-sm text-text-secondary">Client briefs looking for freelancers</p>
             </div>
             {signedIn && isProPlus && isClient && (
@@ -378,11 +485,11 @@ export function ConnectBoard({
               {filteredNeeds.map((n) => (
                 <article
                   key={n.id}
-                  className="rounded-2xl border border-border bg-surface p-5 shadow-sm"
+                  className="rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-primary/40"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="font-bold text-navy">{n.title || "Job"}</h3>
-                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-900">
+                    <span className="rounded-lg bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-900">
                       Open
                     </span>
                   </div>
@@ -390,18 +497,22 @@ export function ConnectBoard({
                     {n.summary || "Details in Connect"}
                   </p>
                   {n.budget_band && (
-                    <p className="mt-2 text-sm font-extrabold text-navy">Budget: {n.budget_band}</p>
+                    <p className="mt-2 text-sm font-extrabold text-navy">
+                      Budget: {n.budget_band}
+                    </p>
                   )}
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {skillsList(n.skills)
                       .slice(0, 8)
                       .map((s) => (
-                        <span
+                        <button
                           key={s}
-                          className="rounded-full bg-background px-2 py-0.5 text-[11px] text-text-secondary"
+                          type="button"
+                          onClick={() => setSkillFilter(s)}
+                          className="rounded-lg bg-background px-2 py-0.5 text-[11px] text-text-secondary hover:bg-primary/10 hover:text-primary-dark"
                         >
                           {s}
-                        </span>
+                        </button>
                       ))}
                   </div>
                   <button
@@ -416,7 +527,7 @@ export function ConnectBoard({
                         }),
                       )
                     }
-                    className="mt-4 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+                    className="mt-4 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
                   >
                     Apply / Contact
                   </button>
@@ -430,7 +541,7 @@ export function ConnectBoard({
       {tab === "inbox" && (
         <section className="space-y-4">
           <div>
-            <h2 className="text-xl font-extrabold text-navy">Connect inbox</h2>
+            <h2 className="font-display text-xl font-extrabold text-navy">Connect inbox</h2>
             <p className="text-sm text-text-secondary">
               Accept to reveal emails. Decline to keep privacy.
             </p>
@@ -470,7 +581,7 @@ export function ConnectBoard({
                             type="button"
                             disabled={!!busyId}
                             onClick={() => respond(r.id, true)}
-                            className="rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-white"
+                            className="rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-white"
                           >
                             Accept
                           </button>
@@ -478,7 +589,7 @@ export function ConnectBoard({
                             type="button"
                             disabled={!!busyId}
                             onClick={() => respond(r.id, false)}
-                            className="rounded-full border border-border px-3 py-1.5 text-xs font-bold"
+                            className="rounded-xl border border-border px-3 py-1.5 text-xs font-bold"
                           >
                             Decline
                           </button>
