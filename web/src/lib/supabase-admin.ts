@@ -85,13 +85,15 @@ export type AdminProfile = {
   accountType: string;
   plan: string;
   createdAt: string;
+  isBlocked?: boolean;
+  isRestricted?: boolean;
 };
 
 export async function fetchProfilesFromSupabase(limit = 100): Promise<AdminProfile[]> {
   const key = serviceKey();
   if (!key) return [];
 
-  const url = `${SUPABASE_URL}/rest/v1/profiles?select=id,email,full_name,account_type,subscription_plan,created_at&order=created_at.desc&limit=${limit}`;
+  const url = `${SUPABASE_URL}/rest/v1/profiles?select=id,email,name,account_type,subscription_plan,updated_at,is_blocked,is_restricted&order=updated_at.desc&limit=${limit}`;
   const res = await fetch(url, {
     headers: restHeaders(key),
     cache: "no-store",
@@ -105,7 +107,9 @@ export async function fetchProfilesFromSupabase(limit = 100): Promise<AdminProfi
     name: String(row.full_name ?? row.name ?? ""),
     accountType: String(row.account_type ?? "freelancer"),
     plan: String(row.subscription_plan ?? row.plan ?? "free"),
-    createdAt: String(row.created_at ?? ""),
+    createdAt: String(row.created_at ?? row.updated_at ?? ""),
+    isBlocked: row.is_blocked === true,
+    isRestricted: row.is_restricted === true,
   }));
 }
 
