@@ -2,6 +2,7 @@ import 'plan_limits.dart';
 
 /// Free vs Pro feature matrix for freelancers and clients.
 abstract final class PlanFeatures {
+  /// True for Pro and higher. Already includes `pro_plus` (Plus gets all Pro features).
   static bool isPro(String? plan) =>
       plan == PlanLimits.proPlan ||
       plan == PlanLimits.proPlusPlan ||
@@ -16,6 +17,7 @@ abstract final class PlanFeatures {
   static bool notificationsCenter(String? plan) => true;
   static bool coachMarks(String? plan) => true;
 
+  /// Vault byte cap — Plus returns [PlanLimits.proPlusStorageBytes] (50 GB).
   static int fileVaultLimitBytes(String? plan) {
     if (isProPlus(plan)) return PlanLimits.proPlusStorageBytes;
     if (isPro(plan)) return PlanLimits.proStorageBytes;

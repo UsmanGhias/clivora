@@ -339,9 +339,9 @@ const _freelancerProFeatures = [
 ];
 
 const _freelancerPlusFeatures = [
-  'Everything in Pro',
+  'Everything in Pro (all Pro features included)',
   'CLIVORA Connect marketplace (anonymous until accept)',
-  '25 GB vault + 3,000 emails / month',
+  '50 GB vault + 3,000 emails / month',
   'Priority support channel',
   'White-label invoice branding',
   'Unlimited team seats',

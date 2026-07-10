@@ -41,8 +41,8 @@ class NotificationsScreen extends ConsumerWidget {
           children: [
             cloudAsync.when(
               loading: () => const Padding(
-                padding: EdgeInsets.all(24),
-                child: Center(child: CircularProgressIndicator()),
+                padding: EdgeInsets.symmetric(vertical: 4),
+                child: LinearProgressIndicator(minHeight: 2),
               ),
               error: (e, _) => Text('Cloud notifications: $e'),
               data: (items) {

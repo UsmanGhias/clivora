@@ -14,6 +14,7 @@ import '../../core/services/clivora_ai_enhanced_service.dart';
 import '../../core/services/ai_assistant_service.dart';
 import '../../core/services/automation_service.dart';
 import '../../core/constants/plan_features.dart';
+import '../../core/cloud/supabase_auth_helper.dart';
 import '../../core/services/contract_pdf_service.dart';
 import '../../core/services/vault_service.dart';
 import '../../core/theme/clivora_colors.dart';
@@ -727,6 +728,20 @@ class AutomationsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(automationSettingsProvider);
     final runsAsync = ref.watch(_automationRunsProvider);
+    final pipelines = <({String trigger, String action})>[
+      if (settings.overdueFollowUp)
+        (trigger: 'Invoice overdue', action: 'Create task + notify'),
+      if (settings.customerWelcome)
+        (trigger: 'New customer', action: 'Welcome note + onboarding task'),
+      if (settings.weeklySummary)
+        (trigger: 'Every 7 days', action: 'Revenue summary note'),
+      if (settings.taskAssignedMessage)
+        (trigger: 'Task assigned', action: 'Send client message'),
+      if (settings.contractSignedStage)
+        (trigger: 'Contract signed', action: 'Project → in progress'),
+      if (settings.inactiveClientReminder)
+        (trigger: 'Client inactive 7+ days', action: 'Create follow-up task'),
+    ];
     return ClivoraScaffold(
       title: 'Workflows',
       showBackButton: true,
@@ -738,6 +753,20 @@ class AutomationsScreen extends ConsumerWidget {
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 16),
+          Text('Active pipeline', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          if (pipelines.isEmpty)
+            Text(
+              'Enable a toggle below to build your workflow pipeline.',
+              style: Theme.of(context).textTheme.bodySmall,
+            )
+          else
+            ...pipelines.map(
+              (p) => _PipelineCard(trigger: p.trigger, action: p.action),
+            ),
+          const SizedBox(height: 20),
+          Text('Automations', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
           _AutomationTile(
             title: 'Overdue invoice follow-up',
             subtitle: 'Creates a high-priority task when an invoice is marked overdue',
@@ -813,8 +842,86 @@ class AutomationsScreen extends ConsumerWidget {
 }
 
 final _automationRunsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) {
+  if (SupabaseAuthHelper.currentUid == null) return Future.value([]);
   return ref.read(automationServiceProvider).recentRuns(limit: 20);
 });
+
+class _PipelineCard extends StatelessWidget {
+  const _PipelineCard({required this.trigger, required this.action});
+
+  final String trigger;
+  final String action;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Theme.of(context).dividerColor),
+      ),
+      child: Row(
+        children: [
+          Flexible(
+            child: _PipelineChip(
+              label: trigger,
+              background: scheme.primaryContainer.withValues(alpha: 0.55),
+              foreground: scheme.onPrimaryContainer,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Icon(Icons.arrow_forward_rounded, size: 18, color: scheme.outline),
+          ),
+          Flexible(
+            child: _PipelineChip(
+              label: action,
+              background: scheme.secondaryContainer.withValues(alpha: 0.55),
+              foreground: scheme.onSecondaryContainer,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PipelineChip extends StatelessWidget {
+  const _PipelineChip({
+    required this.label,
+    required this.background,
+    required this.foreground,
+  });
+
+  final String label;
+  final Color background;
+  final Color foreground;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: foreground,
+        ),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+}
 
 class _AutomationTile extends StatelessWidget {
   const _AutomationTile({
