@@ -51,17 +51,29 @@ class ClientPortalScreen extends ConsumerWidget {
                       const Expanded(
                         child: Text(
                           'Client Portal',
-                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: ClivoraColors.clientAccent),
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: ClivoraColors.clientAccent,
+                          ),
                         ),
                       ),
                       NotificationIconButton(isClient: true),
                       IconButton(
-                        onPressed: () => openFormRoute(context, '/client-messages'),
-                        icon: const Icon(Icons.mail_outline_rounded, color: ClivoraColors.clientAccent),
+                        onPressed: () =>
+                            openFormRoute(context, '/client-messages'),
+                        icon: const Icon(
+                          Icons.mail_outline_rounded,
+                          color: ClivoraColors.clientAccent,
+                        ),
                       ),
                     ],
                   ),
-                  _ClientWelcomeHeader(firstName: firstName, projectCount: projects.length, isGuest: isGuest),
+                  _ClientWelcomeHeader(
+                    firstName: firstName,
+                    projectCount: projects.length,
+                    isGuest: isGuest,
+                  ),
                   const SizedBox(height: 20),
                   _ClientStatsRow(projects: projects, clientUserId: user?.id),
                   const SizedBox(height: 12),
@@ -69,19 +81,31 @@ class ClientPortalScreen extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () => openFormRoute(context, '/client-invoices'),
-                          icon: const Icon(Icons.receipt_long_outlined, size: 18),
+                          onPressed: () =>
+                              openFormRoute(context, '/client-invoices'),
+                          icon: const Icon(
+                            Icons.receipt_long_outlined,
+                            size: 18,
+                          ),
                           label: const Text('Invoices'),
-                          style: OutlinedButton.styleFrom(foregroundColor: ClivoraColors.clientAccent),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: ClivoraColors.clientAccent,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () => openFormRoute(context, '/client-contracts'),
-                          icon: const Icon(Icons.description_outlined, size: 18),
+                          onPressed: () =>
+                              openFormRoute(context, '/client-contracts'),
+                          icon: const Icon(
+                            Icons.description_outlined,
+                            size: 18,
+                          ),
                           label: const Text('Contracts'),
-                          style: OutlinedButton.styleFrom(foregroundColor: ClivoraColors.clientAccent),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: ClivoraColors.clientAccent,
+                          ),
                         ),
                       ),
                     ],
@@ -95,7 +119,9 @@ class ClientPortalScreen extends ConsumerWidget {
                       label: const Text('Open Client Hub'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: ClivoraColors.clientAccent,
-                        side: const BorderSide(color: ClivoraColors.clientAccent),
+                        side: const BorderSide(
+                          color: ClivoraColors.clientAccent,
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                     ),
@@ -104,12 +130,15 @@ class ClientPortalScreen extends ConsumerWidget {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: () => openFormRoute(context, '/client-link-freelancer'),
+                      onPressed: () =>
+                          openFormRoute(context, '/client-link-freelancer'),
                       icon: const Icon(Icons.person_add_alt_1_outlined),
                       label: const Text('Add your freelancer'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: ClivoraColors.clientAccent,
-                        side: const BorderSide(color: ClivoraColors.clientAccent),
+                        side: const BorderSide(
+                          color: ClivoraColors.clientAccent,
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                     ),
@@ -123,13 +152,18 @@ class ClientPortalScreen extends ConsumerWidget {
                       label: const Text('Assign task to freelancer'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: ClivoraColors.clientAccent,
-                        side: const BorderSide(color: ClivoraColors.clientAccent),
+                        side: const BorderSide(
+                          color: ClivoraColors.clientAccent,
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                     ),
                   ),
                   const SizedBox(height: 24),
-                  _ClientProjectsSection(projects: projects, clientUserId: user?.id),
+                  _ClientProjectsSection(
+                    projects: projects,
+                    clientUserId: user?.id,
+                  ),
                 ],
               );
             },
@@ -141,7 +175,11 @@ class ClientPortalScreen extends ConsumerWidget {
 }
 
 class _ClientWelcomeHeader extends StatelessWidget {
-  const _ClientWelcomeHeader({required this.firstName, required this.projectCount, this.isGuest = false});
+  const _ClientWelcomeHeader({
+    required this.firstName,
+    required this.projectCount,
+    this.isGuest = false,
+  });
 
   final String firstName;
   final int projectCount;
@@ -169,7 +207,12 @@ class _ClientWelcomeHeader extends StatelessWidget {
               ),
               child: const Text(
                 'GUEST PREVIEW · CLIENT',
-                style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.6),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.6,
+                ),
               ),
             ),
           Container(
@@ -180,24 +223,39 @@ class _ClientWelcomeHeader extends StatelessWidget {
             ),
             child: const Text(
               'CLIENT PORTAL',
-              style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8,
+              ),
             ),
           ),
           const SizedBox(height: 12),
           Text(
             timeBasedGreeting(),
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 12),
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.75),
+              fontSize: 12,
+            ),
           ),
           Text(
             firstName,
-            style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             projectCount == 0
                 ? 'Projects shared with you will appear below.'
                 : 'You have $projectCount shared ${projectCount == 1 ? 'project' : 'projects'} to review.',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 14),
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 14,
+            ),
           ),
         ],
       ),
@@ -216,7 +274,10 @@ class _ClientStatsRow extends ConsumerWidget {
     final statsAsync = ref.watch(clientPortalStatsProvider);
 
     return statsAsync.when(
-      loading: () => const SizedBox(height: 88, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
+      loading: () => const SizedBox(
+        height: 88,
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      ),
       error: (_, _) => const SizedBox.shrink(),
       data: (stats) => Row(
         children: [
@@ -225,7 +286,8 @@ class _ClientStatsRow extends ConsumerWidget {
               label: 'Projects',
               value: '${projects.length}',
               icon: Icons.folder_shared_outlined,
-              onTap: () => _showStatSheet(context, ref, 'All projects', projects),
+              onTap: () =>
+                  _showStatSheet(context, ref, 'All projects', projects),
             ),
           ),
           const SizedBox(width: 10),
@@ -238,7 +300,13 @@ class _ClientStatsRow extends ConsumerWidget {
                 context,
                 ref,
                 'Active projects',
-                projects.where((p) => p.status == 'in_progress' || p.status == 'not_started').toList(),
+                projects
+                    .where(
+                      (p) =>
+                          p.status == 'in_progress' ||
+                          p.status == 'not_started',
+                    )
+                    .toList(),
               ),
             ),
           ),
@@ -248,7 +316,8 @@ class _ClientStatsRow extends ConsumerWidget {
               label: 'Hours',
               value: stats.hoursLabel,
               icon: Icons.schedule_rounded,
-              onTap: () => _showHoursSheet(context, ref, projects, clientUserId),
+              onTap: () =>
+                  _showHoursSheet(context, ref, projects, clientUserId),
             ),
           ),
         ],
@@ -279,7 +348,10 @@ Future<void> _showStatSheet(
             else
               ...filtered.map(
                 (p) => ListTile(
-                  leading: const Icon(Icons.folder_open_rounded, color: ClivoraColors.clientAccent),
+                  leading: const Icon(
+                    Icons.folder_open_rounded,
+                    color: ClivoraColors.clientAccent,
+                  ),
                   title: Text(p.name),
                   subtitle: Text(p.status.replaceAll('_', ' ').toUpperCase()),
                   trailing: const Icon(Icons.chevron_right),
@@ -338,13 +410,21 @@ Future<void> _showHoursSheet(
             Text('Tracked hours', style: Theme.of(ctx).textTheme.titleLarge),
             const SizedBox(height: 12),
             if (rows.isEmpty)
-              const Text('No tracked time yet. Your freelancer logs hours per project.')
+              const Text(
+                'No tracked time yet. Your freelancer logs hours per project.',
+              )
             else
               ...rows.map(
                 (r) => ListTile(
-                  leading: const Icon(Icons.timer_outlined, color: ClivoraColors.successGreen),
+                  leading: const Icon(
+                    Icons.timer_outlined,
+                    color: ClivoraColors.successGreen,
+                  ),
                   title: Text(r.name),
-                  trailing: Text(r.hours, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  trailing: Text(
+                    r.hours,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                 ),
               ),
           ],
@@ -355,7 +435,10 @@ Future<void> _showHoursSheet(
 }
 
 class _ClientProjectsSection extends ConsumerWidget {
-  const _ClientProjectsSection({required this.projects, required this.clientUserId});
+  const _ClientProjectsSection({
+    required this.projects,
+    required this.clientUserId,
+  });
 
   final List<ClientSharedProjectView> projects;
   final int? clientUserId;
@@ -363,37 +446,62 @@ class _ClientProjectsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (projects.isEmpty) {
-      return _EmptyProjects(email: ref.watch(authStateProvider).valueOrNull?.email ?? '');
+      return _EmptyProjects(
+        email: ref.watch(authStateProvider).valueOrNull?.email ?? '',
+      );
     }
 
-    final active = projects.where((p) => p.status != 'completed' && p.status != 'cancelled').toList();
-    final done = projects.where((p) => p.status == 'completed' || p.status == 'cancelled').toList();
+    final active = projects
+        .where((p) => p.status != 'completed' && p.status != 'cancelled')
+        .toList();
+    final done = projects
+        .where((p) => p.status == 'completed' || p.status == 'cancelled')
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Text('Shared Projects', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+            Text(
+              'Shared Projects',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
             const Spacer(),
-            Text('${projects.length} total', style: Theme.of(context).textTheme.bodySmall),
+            Text(
+              '${projects.length} total',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ],
         ),
         const SizedBox(height: 12),
         ...active.map(
           (p) => Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: _ClientProjectCard(projectView: p, clientUserId: clientUserId),
+            child: _ClientProjectCard(
+              projectView: p,
+              clientUserId: clientUserId,
+            ),
           ),
         ),
         if (done.isNotEmpty) ...[
           const SizedBox(height: 8),
-          Text('Completed', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+          Text(
+            'Completed',
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 10),
           ...done.map(
             (p) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _ClientProjectCard(projectView: p, clientUserId: clientUserId),
+              child: _ClientProjectCard(
+                projectView: p,
+                clientUserId: clientUserId,
+              ),
             ),
           ),
         ],
@@ -403,7 +511,12 @@ class _ClientProjectsSection extends ConsumerWidget {
 }
 
 class _StatCard extends StatelessWidget {
-  const _StatCard({required this.label, required this.value, required this.icon, this.onTap});
+  const _StatCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    this.onTap,
+  });
 
   final String label;
   final String value;
@@ -412,8 +525,9 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Material(
-      color: ClivoraColors.clientAccentLight,
+      color: colorScheme.surface,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -422,14 +536,26 @@ class _StatCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: ClivoraColors.clientAccent.withValues(alpha: 0.15)),
+            border: Border.all(color: colorScheme.outline),
           ),
           child: Column(
             children: [
-              Icon(icon, color: ClivoraColors.clientAccent, size: 20),
+              Icon(icon, color: colorScheme.primary, size: 20),
               const SizedBox(height: 6),
-              Text(value, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: ClivoraColors.clientAccent)),
-              Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11)),
+              Text(
+                value,
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              Text(
+                label,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(fontSize: 11),
+              ),
             ],
           ),
         ),
@@ -454,9 +580,16 @@ class _EmptyProjects extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Icon(Icons.inbox_outlined, size: 56, color: ClivoraColors.clientAccent.withValues(alpha: 0.45)),
+          Icon(
+            Icons.inbox_outlined,
+            size: 56,
+            color: ClivoraColors.clientAccent.withValues(alpha: 0.45),
+          ),
           const SizedBox(height: 16),
-          Text('Waiting for your freelancer', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            'Waiting for your freelancer',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 8),
           Text(
             'Ask them to share a project using $email. You\'ll see hours logged, status updates, and progress here.',
@@ -470,7 +603,10 @@ class _EmptyProjects extends StatelessWidget {
 }
 
 class _ClientProjectCard extends ConsumerWidget {
-  const _ClientProjectCard({required this.projectView, required this.clientUserId});
+  const _ClientProjectCard({
+    required this.projectView,
+    required this.clientUserId,
+  });
 
   final ClientSharedProjectView projectView;
   final int? clientUserId;
@@ -479,10 +615,17 @@ class _ClientProjectCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final view = projectView;
     final status = view.status.replaceAll('_', ' ');
-    final secondsAsync = (!view.isCloudOnly && clientUserId != null && view.localProject != null)
-        ? ref.watch(clientProjectSecondsProvider(
-            ClientTrackingKey(clientUserId: clientUserId!, projectId: view.localProject!.id),
-          ))
+    final colorScheme = Theme.of(context).colorScheme;
+    final secondsAsync =
+        (!view.isCloudOnly && clientUserId != null && view.localProject != null)
+        ? ref.watch(
+            clientProjectSecondsProvider(
+              ClientTrackingKey(
+                clientUserId: clientUserId!,
+                projectId: view.localProject!.id,
+              ),
+            ),
+          )
         : null;
 
     return Material(
@@ -492,97 +635,144 @@ class _ClientProjectCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(20),
         onTap: () => openClientProjectDetail(context, ref, view, clientUserId),
         child: Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Theme.of(context).dividerColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Theme.of(context).dividerColor),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: ClivoraColors.clientAccentLight,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(Icons.folder_open_rounded, color: ClivoraColors.clientAccent),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(
+                      Icons.folder_open_rounded,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Text(view.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                view.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                            if (view.isCloudOnly)
+                              Icon(
+                                Icons.cloud_done_outlined,
+                                size: 16,
+                                color: ClivoraColors.labelGray,
+                              ),
+                          ],
                         ),
-                        if (view.isCloudOnly)
-                          Icon(Icons.cloud_done_outlined, size: 16, color: ClivoraColors.labelGray),
+                        const SizedBox(height: 4),
+                        Text(
+                          status.toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: ClivoraColors.clientAccent,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        if (view.budget > 0)
+                          Text(
+                            formatCurrency(
+                              view.budget,
+                              symbol: currencySymbol(view.currency),
+                            ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(status.toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: ClivoraColors.clientAccent, letterSpacing: 0.5)),
-                    if (view.budget > 0)
-                      Text(
-                        formatCurrency(view.budget, symbol: currencySymbol(view.currency)),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (view.description.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(view.description, style: Theme.of(context).textTheme.bodySmall),
-          ],
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              if (!view.isCloudOnly) ...[
-                const Icon(Icons.timer_outlined, size: 18, color: ClivoraColors.successGreen),
-                const SizedBox(width: 6),
-                Text(
-                  secondsAsync == null
-                      ? 'Synced from your freelancer'
-                      : secondsAsync.when(
-                          loading: () => 'Loading hours…',
-                          error: (_, _) => 'Hours unavailable',
-                          data: (seconds) => '${formatTrackedDuration(seconds)} tracked',
-                        ),
-                  style: TextStyle(
-                    fontWeight: secondsAsync != null ? FontWeight.w600 : null,
                   ),
-                ),
-              ] else if (view.isCloudOnly)
+                ],
+              ),
+              if (view.description.isNotEmpty) ...[
+                const SizedBox(height: 12),
                 Text(
-                  'Synced from your freelancer',
+                  view.description,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
-              if (view.deadline != null) ...[
-                const Spacer(),
-                Icon(Icons.event_outlined, size: 16, color: ClivoraColors.labelGray),
-                const SizedBox(width: 4),
+              ],
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  if (!view.isCloudOnly) ...[
+                    const Icon(
+                      Icons.timer_outlined,
+                      size: 18,
+                      color: ClivoraColors.successGreen,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      secondsAsync == null
+                          ? 'Synced from your freelancer'
+                          : secondsAsync.when(
+                              loading: () => 'Loading hours…',
+                              error: (_, _) => 'Hours unavailable',
+                              data: (seconds) =>
+                                  '${formatTrackedDuration(seconds)} tracked',
+                            ),
+                      style: TextStyle(
+                        fontWeight: secondsAsync != null
+                            ? FontWeight.w600
+                            : null,
+                      ),
+                    ),
+                  ] else if (view.isCloudOnly)
+                    Text(
+                      'Synced from your freelancer',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  if (view.deadline != null) ...[
+                    const Spacer(),
+                    Icon(
+                      Icons.event_outlined,
+                      size: 16,
+                      color: ClivoraColors.labelGray,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Due ${view.deadline!.toLocal().toString().split(' ').first}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ],
+              ),
+              if (!view.isCloudOnly &&
+                  clientUserId != null &&
+                  view.localProject != null) ...[
+                const SizedBox(height: 14),
                 Text(
-                  'Due ${view.deadline!.toLocal().toString().split(' ').first}',
-                  style: Theme.of(context).textTheme.bodySmall,
+                  'Recent updates',
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
+                const SizedBox(height: 8),
+                _ClientTrackingTimeline(
+                  clientUserId: clientUserId!,
+                  projectId: view.localProject!.id,
                 ),
               ],
             ],
           ),
-          if (!view.isCloudOnly && clientUserId != null && view.localProject != null) ...[
-            const SizedBox(height: 14),
-            Text('Recent updates', style: Theme.of(context).textTheme.labelSmall),
-            const SizedBox(height: 8),
-            _ClientTrackingTimeline(clientUserId: clientUserId!, projectId: view.localProject!.id),
-          ],
-        ],
-      ),
         ),
       ),
     );
@@ -590,7 +780,10 @@ class _ClientProjectCard extends ConsumerWidget {
 }
 
 class _ClientTrackingTimeline extends ConsumerWidget {
-  const _ClientTrackingTimeline({required this.clientUserId, required this.projectId});
+  const _ClientTrackingTimeline({
+    required this.clientUserId,
+    required this.projectId,
+  });
 
   final int clientUserId;
   final int projectId;
@@ -598,14 +791,19 @@ class _ClientTrackingTimeline extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final eventsAsync = ref.watch(
-      _clientTrackingProvider(ClientTrackingKey(clientUserId: clientUserId, projectId: projectId)),
+      _clientTrackingProvider(
+        ClientTrackingKey(clientUserId: clientUserId, projectId: projectId),
+      ),
     );
     return eventsAsync.when(
       loading: () => const LinearProgressIndicator(),
       error: (_, _) => const Text('Could not load updates'),
       data: (events) {
         if (events.isEmpty) {
-          return Text('No updates yet', style: Theme.of(context).textTheme.bodySmall);
+          return Text(
+            'No updates yet',
+            style: Theme.of(context).textTheme.bodySmall,
+          );
         }
         return Column(
           children: events.take(3).map((e) {
@@ -614,7 +812,11 @@ class _ClientTrackingTimeline extends ConsumerWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.fiber_manual_record, size: 8, color: ClivoraColors.clientAccent),
+                  const Icon(
+                    Icons.fiber_manual_record,
+                    size: 8,
+                    color: ClivoraColors.clientAccent,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -633,26 +835,38 @@ class _ClientTrackingTimeline extends ConsumerWidget {
 }
 
 class ClientTrackingKey {
-  const ClientTrackingKey({required this.clientUserId, required this.projectId});
+  const ClientTrackingKey({
+    required this.clientUserId,
+    required this.projectId,
+  });
   final int clientUserId;
   final int projectId;
 
   @override
   bool operator ==(Object other) =>
-      other is ClientTrackingKey && other.clientUserId == clientUserId && other.projectId == projectId;
+      other is ClientTrackingKey &&
+      other.clientUserId == clientUserId &&
+      other.projectId == projectId;
   @override
   int get hashCode => Object.hash(clientUserId, projectId);
 }
 
 class ClientPortalStats {
-  const ClientPortalStats({required this.activeCount, required this.hoursLabel});
+  const ClientPortalStats({
+    required this.activeCount,
+    required this.hoursLabel,
+  });
   final int activeCount;
   final String hoursLabel;
 }
 
-final clientPortalStatsProvider = FutureProvider<ClientPortalStats>((ref) async {
+final clientPortalStatsProvider = FutureProvider<ClientPortalStats>((
+  ref,
+) async {
   final user = ref.watch(authStateProvider).valueOrNull;
-  if (user == null) return const ClientPortalStats(activeCount: 0, hoursLabel: '0h');
+  if (user == null) {
+    return const ClientPortalStats(activeCount: 0, hoursLabel: '0h');
+  }
   final projects = await ref.watch(clientSharedProjectsProvider.future);
   var active = 0;
   var totalSeconds = 0;
@@ -661,7 +875,10 @@ final clientPortalStatsProvider = FutureProvider<ClientPortalStats>((ref) async 
     if (p.status == 'in_progress' || p.status == 'not_started') active++;
     final local = p.localProject;
     if (local != null) {
-      final entries = await db.getTimeEntriesForClientProject(user.id, local.id);
+      final entries = await db.getTimeEntriesForClientProject(
+        user.id,
+        local.id,
+      );
       for (final e in entries) {
         totalSeconds += e.endedAt != null
             ? e.durationSeconds
@@ -675,20 +892,29 @@ final clientPortalStatsProvider = FutureProvider<ClientPortalStats>((ref) async 
   );
 });
 
-final clientProjectSecondsProvider = StreamProvider.family<int, ClientTrackingKey>((ref, key) {
-  return ref.watch(databaseProvider).watchTimeEntriesForClientProject(key.clientUserId, key.projectId).map((entries) {
-    var total = 0;
-    final now = DateTime.now();
-    for (final e in entries) {
-      total += e.endedAt != null ? e.durationSeconds : now.difference(e.startedAt).inSeconds;
-    }
-    return total;
-  });
-});
+final clientProjectSecondsProvider =
+    StreamProvider.family<int, ClientTrackingKey>((ref, key) {
+      return ref
+          .watch(databaseProvider)
+          .watchTimeEntriesForClientProject(key.clientUserId, key.projectId)
+          .map((entries) {
+            var total = 0;
+            final now = DateTime.now();
+            for (final e in entries) {
+              total += e.endedAt != null
+                  ? e.durationSeconds
+                  : now.difference(e.startedAt).inSeconds;
+            }
+            return total;
+          });
+    });
 
-final _clientTrackingProvider = StreamProvider.family<List<TrackingEvent>, ClientTrackingKey>((ref, key) {
-  return ref.watch(databaseProvider).watchTrackingForClientProject(
-        clientUserId: key.clientUserId,
-        projectId: key.projectId,
-      );
-});
+final _clientTrackingProvider =
+    StreamProvider.family<List<TrackingEvent>, ClientTrackingKey>((ref, key) {
+      return ref
+          .watch(databaseProvider)
+          .watchTrackingForClientProject(
+            clientUserId: key.clientUserId,
+            projectId: key.projectId,
+          );
+    });
