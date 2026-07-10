@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../cloud/cloud_crm_repository.dart';
 import '../cloud/cloud_invoice_repository.dart';
 import '../cloud/cloud_notification_repository.dart';
 import '../cloud/cloud_project_repository.dart';
@@ -287,6 +288,36 @@ class SyncOutboxService {
               localProjectId: projectId,
               project: project,
             );
+        return true;
+      case 'crm_customer':
+        final user = ref.read(authStateProvider).valueOrNull;
+        final localId = (item.payload['localId'] as num?)?.toInt();
+        if (user == null || localId == null) return false;
+        await ref.read(cloudCrmRepositoryProvider).pushCustomer(
+              ownerUserId: user.id,
+              localId: localId,
+            );
+        return true;
+      case 'crm_project':
+        final user = ref.read(authStateProvider).valueOrNull;
+        final localId = (item.payload['localId'] as num?)?.toInt();
+        if (user == null || localId == null) return false;
+        await ref.read(cloudCrmRepositoryProvider).pushProject(
+              ownerUserId: user.id,
+              localId: localId,
+            );
+        return true;
+      case 'crm_invoice':
+        final user = ref.read(authStateProvider).valueOrNull;
+        final localId = (item.payload['localId'] as num?)?.toInt();
+        if (user == null || localId == null) return false;
+        await ref.read(cloudCrmRepositoryProvider).pushInvoice(
+              ownerUserId: user.id,
+              localId: localId,
+            );
+        return true;
+      case 'crm_sync_all':
+        await ref.read(cloudCrmRepositoryProvider).syncAllForSignedInUser();
         return true;
       default:
         return true;

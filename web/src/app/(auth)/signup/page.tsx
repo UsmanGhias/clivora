@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { site } from "@/lib/site";
 import { authErrorMessage, isRateLimitError } from "@/lib/auth-errors";
 import { ResendVerification } from "@/components/auth/ResendVerification";
+import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -136,6 +137,12 @@ export default function SignupPage() {
           {loading ? "Creating…" : "Sign up"}
         </button>
       </form>
+      <div className="my-4 flex items-center gap-3 text-xs text-text-muted">
+        <div className="h-px flex-1 bg-border" />
+        OR
+        <div className="h-px flex-1 bg-border" />
+      </div>
+      <GoogleAuthButton mode="signup" accountType={accountType} />
       {awaitingVerify && (
         <div className="mt-4 flex flex-wrap gap-2 text-sm">
           <Link href="/login" className="rounded-full bg-navy px-4 py-2 font-semibold text-white">

@@ -9,6 +9,7 @@ import {
   isEmailNotConfirmedError,
 } from "@/lib/auth-errors";
 import { ResendVerification } from "@/components/auth/ResendVerification";
+import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -80,6 +81,12 @@ export default function LoginForm() {
           {loading ? "Signing in…" : "Sign in"}
         </button>
       </form>
+      <div className="my-4 flex items-center gap-3 text-xs text-text-muted">
+        <div className="h-px flex-1 bg-border" />
+        OR
+        <div className="h-px flex-1 bg-border" />
+      </div>
+      <GoogleAuthButton mode="signin" next={next} />
       <div className="mt-4 flex items-center justify-between text-sm">
         <Link href="/auth/reset-password" className="text-primary hover:underline">
           Forgot password?
