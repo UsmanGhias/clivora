@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/clivora_colors.dart';
 
-/// Hub / tools tile with clear separation so adjacent tiles never visually merge.
+/// Long horizontal Hub tile — icon + label, clear gaps, never merges with neighbors.
 class ToolGridTile extends StatelessWidget {
   const ToolGridTile({
     super.key,
@@ -26,55 +26,56 @@ class ToolGridTile extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Material(
-      color: Theme.of(context).cardColor,
-      borderRadius: BorderRadius.circular(18),
-      elevation: 0,
-      shadowColor: Colors.transparent,
+      color: scheme.surface,
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: isDark
-                  ? ClivoraColors.darkBorder.withValues(alpha: 0.9)
-                  : ClivoraColors.borderLight.withValues(alpha: 0.95),
-              width: 1,
+              color: isDark ? ClivoraColors.darkBorder : ClivoraColors.borderLight,
             ),
           ),
           child: Stack(
+            clipBehavior: Clip.none,
             children: [
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              Row(
                 children: [
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
                       color: iconBackground,
-                      shape: BoxShape.circle,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(icon, color: iconColor, size: 22),
+                    child: Icon(icon, color: iconColor, size: 20),
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: scheme.onSurface,
-                        ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: scheme.onSurface,
+                          ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18,
+                    color: scheme.onSurface.withValues(alpha: 0.35),
                   ),
                 ],
               ),
               if (badge != null)
                 Positioned(
-                  right: 0,
-                  top: 0,
+                  right: 22,
+                  top: -2,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(

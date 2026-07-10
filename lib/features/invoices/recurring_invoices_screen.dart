@@ -127,46 +127,69 @@ class RecurringInvoicesScreen extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) => AlertDialog(
-          title: const Text('New recurring invoice'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(controller: title, decoration: const InputDecoration(labelText: 'Title')),
-                DropdownButtonFormField<int>(
-                  value: customerId,
-                  decoration: const InputDecoration(labelText: 'Client'),
-                  items: customers
-                      .map((c) => DropdownMenuItem(value: c.id, child: Text(c.contactPerson)))
-                      .toList(),
-                  onChanged: (v) => setLocal(() => customerId = v ?? customerId),
+        builder: (ctx, setLocal) {
+          final scheme = Theme.of(ctx).colorScheme;
+          InputDecoration deco(String label) => InputDecoration(
+                labelText: label,
+                filled: false,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: scheme.outlineVariant),
                 ),
-                DropdownButtonFormField<String>(
-                  value: frequency,
-                  decoration: const InputDecoration(labelText: 'Frequency'),
-                  items: const [
-                    DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
-                    DropdownMenuItem(value: 'biweekly', child: Text('Every 2 weeks')),
-                    DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
-                    DropdownMenuItem(value: 'quarterly', child: Text('Quarterly')),
-                    DropdownMenuItem(value: 'yearly', child: Text('Yearly')),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: scheme.primary, width: 1.5),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              );
+          return AlertDialog(
+            title: const Text('New recurring invoice'),
+            content: SizedBox(
+              width: 360,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(controller: title, decoration: deco('Title')),
+                    const SizedBox(height: 14),
+                    DropdownButtonFormField<int>(
+                      value: customerId,
+                      decoration: deco('Client'),
+                      items: customers
+                          .map((c) => DropdownMenuItem(value: c.id, child: Text(c.contactPerson)))
+                          .toList(),
+                      onChanged: (v) => setLocal(() => customerId = v ?? customerId),
+                    ),
+                    const SizedBox(height: 14),
+                    DropdownButtonFormField<String>(
+                      value: frequency,
+                      decoration: deco('Frequency'),
+                      items: const [
+                        DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
+                        DropdownMenuItem(value: 'biweekly', child: Text('Every 2 weeks')),
+                        DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
+                        DropdownMenuItem(value: 'quarterly', child: Text('Quarterly')),
+                        DropdownMenuItem(value: 'yearly', child: Text('Yearly')),
+                      ],
+                      onChanged: (v) => setLocal(() => frequency = v ?? frequency),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: amount,
+                      decoration: deco('Amount (USD)'),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    ),
                   ],
-                  onChanged: (v) => setLocal(() => frequency = v ?? frequency),
                 ),
-                TextField(
-                  controller: amount,
-                  decoration: const InputDecoration(labelText: 'Amount'),
-                  keyboardType: TextInputType.number,
-                ),
-              ],
+              ),
             ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Save')),
-          ],
-        ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+              FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Save')),
+            ],
+          );
+        },
       ),
     );
     if (ok != true) return;

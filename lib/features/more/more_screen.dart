@@ -247,12 +247,12 @@ class MoreScreen extends ConsumerWidget {
             child: const SectionHeader(title: 'Money & catalog'),
           ),
           GridView.count(
-            crossAxisCount: 2,
+            crossAxisCount: 1,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 14,
-            crossAxisSpacing: 14,
-            childAspectRatio: 1.28,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 4.6,
             children: [
               if (isPlus)
                 ToolGridTile(icon: Icons.view_kanban_outlined, label: 'Work', iconBackground: ClivoraColors.iconIndigo, iconColor: Colors.indigo, onTap: () => context.go('/projects')),
@@ -273,12 +273,12 @@ class MoreScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           const SectionHeader(title: 'Business Tools'),
           GridView.count(
-            crossAxisCount: 2,
+            crossAxisCount: 1,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 14,
-            crossAxisSpacing: 14,
-            childAspectRatio: 1.28,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 4.6,
             children: [
               if (!isPlus)
                 ToolGridTile(icon: Icons.view_kanban_outlined, label: 'Work', iconBackground: ClivoraColors.iconIndigo, iconColor: Colors.indigo, onTap: () => context.go('/projects')),
@@ -300,12 +300,12 @@ class MoreScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           GridView.count(
-            crossAxisCount: 3,
+            crossAxisCount: 1,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 14,
-            crossAxisSpacing: 14,
-            childAspectRatio: 0.82,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 4.6,
             children: [
               ToolGridTile(icon: Icons.cloud_outlined, label: 'File Vault', iconBackground: ClivoraColors.iconBlue, iconColor: Colors.blue, onTap: () async {
                 if (!PlanFeatures.fileVault(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'File Vault')) return;

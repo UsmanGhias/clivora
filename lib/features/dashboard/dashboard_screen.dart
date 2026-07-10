@@ -203,6 +203,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
               const SizedBox(height: 12),
               const _RevenueSparklineCard(),
+              const SizedBox(height: 14),
               const TodayOverdueCard(),
               const SizedBox(height: 8),
               Container(
@@ -339,7 +340,7 @@ class _StatsGrid extends StatelessWidget {
                 title: '${stats.customers}',
                 subtitle: 'Customers',
                 background: Theme.of(context).cardColor,
-                foreground: ClivoraColors.textPrimary,
+                foreground: Theme.of(context).colorScheme.onSurface,
                 icon: Icons.people_outline,
                 iconColor: ClivoraColors.primaryPurple,
                 bordered: true,
@@ -352,7 +353,7 @@ class _StatsGrid extends StatelessWidget {
                 title: '${stats.activeProjects}',
                 subtitle: 'Active Projects',
                 background: Theme.of(context).cardColor,
-                foreground: ClivoraColors.textPrimary,
+                foreground: Theme.of(context).colorScheme.onSurface,
                 icon: Icons.work_outline,
                 iconColor: ClivoraColors.warningOrange,
                 bordered: true,
@@ -399,7 +400,13 @@ class _StatCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            border: bordered ? Border.all(color: ClivoraColors.borderLight) : null,
+            border: bordered
+                ? Border.all(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? ClivoraColors.darkBorder
+                        : ClivoraColors.borderLight,
+                  )
+                : null,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -727,8 +734,14 @@ class _RevenueSparklineCard extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  const Expanded(
-                    child: Text('Paid revenue · 30 days', style: TextStyle(fontWeight: FontWeight.w700)),
+                  Expanded(
+                    child: Text(
+                      'Paid revenue · 30 days',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
                   ),
                   Text(
                     formatCurrency(total),
@@ -752,7 +765,9 @@ class _RevenueSparklineCard extends ConsumerWidget {
                             decoration: BoxDecoration(
                               color: v > 0
                                   ? ClivoraColors.primary.withValues(alpha: 0.85)
-                                  : ClivoraColors.borderLight,
+                                  : (Theme.of(context).brightness == Brightness.dark
+                                      ? Colors.white24
+                                      : ClivoraColors.borderLight),
                               borderRadius: BorderRadius.circular(3),
                             ),
                           ),
