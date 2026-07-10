@@ -24,7 +24,7 @@ export default async function ClientsPage() {
             Client accounts view shared work from freelancers. Manage your own CRM in the freelancer app.
           </p>
         </div>
-        <DownloadAppCard title="Switch to freelancer mode in the app" />
+        <DownloadAppCard title="Switch to freelancer mode in the app" tone="client" />
       </div>
     );
   }
@@ -45,7 +45,7 @@ export default async function ClientsPage() {
         gateReason={!gate.ok ? gate.reason : undefined}
         upgradeHref={!gate.ok ? gate.upgradeHref : undefined}
       />
-      <DownloadAppCard title="Full CRM offline in the app" />
+          <DownloadAppCard title="Full CRM offline in the app" tone="freelancer" />
       <p className="text-xs text-text-secondary">
         Looking for Connect? <Link href="/connect" className="font-semibold text-primary">Open marketplace →</Link>
       </p>

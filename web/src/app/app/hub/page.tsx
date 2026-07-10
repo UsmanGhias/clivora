@@ -1,16 +1,22 @@
 import Link from "next/link";
-import { getProfile, planLabel } from "@/lib/profile";
+import { redirect } from "next/navigation";
+import { getProfile, isClientAccount, planLabel } from "@/lib/profile";
 import { site } from "@/lib/site";
+import { SmartAppCta } from "@/components/app/SmartAppCta";
 
+/** Freelancer hub — mirrors Flutter /more with app-preferred tools called out. */
 export default async function HubPage() {
   const profile = await getProfile();
+  if (isClientAccount(profile)) redirect("/app/account");
   const plan = planLabel(profile);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-extrabold">Hub</h1>
-        <p className="text-sm text-text-secondary">Shortcuts for your web workspace.</p>
+        <p className="text-sm text-text-secondary">
+          Web shortcuts plus tools that open best in the CLIVORA app.
+        </p>
       </div>
 
       <div className="rounded-2xl bg-navy p-5 text-white">
@@ -19,42 +25,67 @@ export default async function HubPage() {
         <p className="mt-2 text-sm">Plan: {plan}</p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <HubLink href="/connect" title="CLIVORA Connect" body="Marketplace for freelancers & clients" />
-        <HubLink href="/pro" title="Upgrade" body={`Pro ${site.pricing.proMonthlyLabel}/mo · Plus ${site.pricing.proPlusMonthlyLabel}/mo`} />
-        <HubLink href="/app/invoices" title="Payment & invoices" body="Cloud invoice shares" />
-        <HubLink href="/support" title="Support" body="Help & FAQ" />
-        <HubLink href={site.playStoreUrl} title="Mobile app" body="Full CRM on Android" external />
+      <div>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-text-secondary">
+          Available on web
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <HubLink href="/app/clients" title="Clients" body="Cloud CRM" />
+          <HubLink href="/app/projects" title="Work" body="Projects" />
+          <HubLink href="/app/invoices" title="Billing" body="Invoices" />
+          <HubLink href="/app/messages" title="Messages" body="Cloud inbox" />
+          <HubLink href="/connect" title="CLIVORA Connect" body="Marketplace" />
+          <HubLink
+            href="/pro"
+            title="Upgrade"
+            body={`Pro ${site.pricing.proMonthlyLabel}/mo · Plus ${site.pricing.proPlusMonthlyLabel}/mo`}
+          />
+        </div>
       </div>
+
+      <div>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-text-secondary">
+          Best in the mobile app
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <AppPreferred title="AI assistant" body="Drafts, summaries, coaching" />
+          <AppPreferred title="Calendar & time" body="Scheduling and timers" />
+          <AppPreferred title="Reports & analytics" body="Revenue charts" />
+          <AppPreferred title="Contracts & vault" body="PDFs and secure files" />
+          <AppPreferred title="Automations" body="Workflows & reminders" />
+          <AppPreferred title="Team & biometrics" body="Seats and lock screen" />
+        </div>
+      </div>
+
+      <SmartAppCta
+        title="Open the full freelancer toolkit"
+        body="Expenses, notes, quotes, products, recurring invoices, backup, and offline CRM sync on Android."
+        deepPath="open/more"
+      />
     </div>
   );
 }
 
-function HubLink({
-  href,
-  title,
-  body,
-  external,
-}: {
-  href: string;
-  title: string;
-  body: string;
-  external?: boolean;
-}) {
-  const className =
-    "rounded-2xl border border-border bg-surface p-4 transition hover:border-primary/40";
-  if (external) {
-    return (
-      <a href={href} target="_blank" rel="noreferrer" className={className}>
-        <p className="font-bold">{title}</p>
-        <p className="text-sm text-text-secondary">{body}</p>
-      </a>
-    );
-  }
+function HubLink({ href, title, body }: { href: string; title: string; body: string }) {
   return (
-    <Link href={href} className={className}>
+    <Link
+      href={href}
+      className="rounded-2xl border border-border bg-surface p-4 transition hover:border-primary/40"
+    >
       <p className="font-bold">{title}</p>
       <p className="text-sm text-text-secondary">{body}</p>
     </Link>
+  );
+}
+
+function AppPreferred({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-4">
+      <p className="font-bold text-navy">{title}</p>
+      <p className="text-sm text-text-secondary">{body}</p>
+      <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-primary-dark">
+        App preferred
+      </p>
+    </div>
   );
 }

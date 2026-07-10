@@ -7,7 +7,7 @@ export const site = {
     "CLIVORA is your all-in-one Business Operating System for freelancers, consultants, and small agencies. Manage clients, track projects, send branded PDF invoices, and monitor revenue from your phone.",
   url: "https://clivora.codcrafters.org",
   appPackage: "org.codcrafters.clivora",
-  appVersion: "2.10.4",
+  appVersion: "2.10.5",
   company: {
     name: "CODCrafters",
     url: "https://codcrafters.org",
@@ -40,6 +40,8 @@ export const site = {
     github: "https://github.com/usmanghias/clivora-web",
   },
   playStoreUrl: "https://play.google.com/store/apps/details?id=org.codcrafters.clivora",
+  /** Custom scheme handled by Android MainActivity */
+  appDeepLinkScheme: "clivora",
   appStoreUrl: "#",
   proCheckoutUrl: "/pro",
 } as const;

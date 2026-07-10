@@ -73,7 +73,7 @@ export default async function ProjectsPage() {
             ))}
           </ul>
         )}
-        <DownloadAppCard title="Track milestones in the app" />
+        <DownloadAppCard title="Track milestones in the app" tone="client" />
       </div>
     );
   }

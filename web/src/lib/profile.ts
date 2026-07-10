@@ -1,15 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
+import type { Profile } from "@/lib/profile-types";
 
-export type AccountType = "freelancer" | "client" | "admin";
-
-export type Profile = {
-  id: string;
-  email: string | null;
-  name: string | null;
-  account_type: string | null;
-  subscription_plan: string | null;
-  role?: string | null;
-};
+export type { Profile, AccountType } from "@/lib/profile-types";
+export {
+  isClientAccount,
+  isPro,
+  isProPlus,
+  planLabel,
+} from "@/lib/plan";
 
 export async function getSessionUser() {
   const supabase = await createClient();
@@ -41,24 +39,4 @@ export async function getProfile(): Promise<Profile | null> {
     account_type: (user.user_metadata?.account_type as string | undefined) ?? "freelancer",
     subscription_plan: "free",
   };
-}
-
-export function isClientAccount(profile: Profile | null) {
-  return (profile?.account_type ?? "").toLowerCase() === "client";
-}
-
-export function isProPlus(profile: Profile | null) {
-  const plan = (profile?.subscription_plan ?? "free").toLowerCase();
-  return plan === "pro_plus" || plan === "plus" || plan === "proplus";
-}
-
-export function isPro(profile: Profile | null) {
-  const plan = (profile?.subscription_plan ?? "free").toLowerCase();
-  return plan === "pro" || isProPlus(profile);
-}
-
-export function planLabel(profile: Profile | null) {
-  if (isProPlus(profile)) return "Pro Plus";
-  if (isPro(profile)) return "Pro";
-  return "Free";
 }

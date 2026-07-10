@@ -4,6 +4,8 @@ import { listPublicConnectNeeds, listPublicConnectProfiles, skillsList } from "@
 import { getProfile, isClientAccount, isProPlus, planLabel } from "@/lib/profile";
 import { site } from "@/lib/site";
 import { ConnectActions } from "@/components/connect/ConnectActions";
+import { SubPageChrome } from "@/components/app/SubPageChrome";
+import { SmartAppCta } from "@/components/app/SmartAppCta";
 
 export const metadata: Metadata = {
   title: "CLIVORA Connect",
@@ -20,44 +22,44 @@ export default async function ConnectPage() {
   const signedIn = !!profile;
   const plus = isProPlus(profile);
   const client = isClientAccount(profile);
+  const backHref = signedIn ? "/app" : "/";
+  const backLabel = signedIn ? "Back to app" : "Back to home";
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-navy text-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <Link href="/" className="font-extrabold tracking-wide">
-            CLIVORA <span className="text-primary">Connect</span>
+    <SubPageChrome
+      isClient={client}
+      backHref={backHref}
+      backLabel={backLabel}
+      crumbs={[
+        { label: signedIn ? "App" : "Home", href: backHref },
+        { label: "Connect" },
+      ]}
+      title="CLIVORA Connect"
+      rightSlot={
+        signedIn ? (
+          <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80">
+            {planLabel(profile)}
+          </span>
+        ) : (
+          <Link href="/login" className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white">
+            Sign in
           </Link>
-          <div className="flex items-center gap-3 text-sm">
-            {signedIn ? (
-              <>
-                <span className="text-white/70">{planLabel(profile)}</span>
-                <Link href="/app" className="rounded-full bg-white/10 px-3 py-1.5 font-semibold">
-                  Open app
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link href="/login" className="text-white/80 hover:text-white">
-                  Sign in
-                </Link>
-                <Link href="/signup" className="rounded-full bg-primary px-3 py-1.5 font-semibold">
-                  Join free
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-6xl space-y-10 px-4 py-10">
-        <section className="rounded-3xl bg-brand-gradient p-8 text-white shadow-xl">
+        )
+      }
+    >
+      <div className="space-y-10">
+        <section
+          className={`rounded-3xl p-8 text-white shadow-xl ${
+            client ? "bg-client-gradient" : "bg-brand-gradient"
+          }`}
+        >
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/70">Marketplace</p>
-          <h1 className="mt-2 text-3xl font-extrabold sm:text-4xl">What is CLIVORA Connect?</h1>
+          <h2 className="mt-2 text-3xl font-extrabold sm:text-4xl">What is CLIVORA Connect?</h2>
           <p className="mt-3 max-w-2xl text-white/85 leading-relaxed">
             A private marketplace where freelancers list services and clients post needs. Browse listings,
             send requests, and message after both sides accept — without sharing contact details too early.
-            Full Connect posting & requests are included with <strong>Pro Plus</strong> ({site.pricing.proPlusMonthlyLabel}/mo).
+            Full Connect posting & requests are included with <strong>Pro Plus</strong> (
+            {site.pricing.proPlusMonthlyLabel}/mo).
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             {!signedIn && (
@@ -71,17 +73,23 @@ export default async function ConnectPage() {
               </Link>
             )}
             {signedIn && plus && (
-              <Link href="/connect/manage" className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-navy">
+              <Link
+                href="/connect/manage"
+                className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-navy"
+              >
                 Manage my listing
               </Link>
             )}
           </div>
         </section>
 
-        <ConnectActions
-          signedIn={signedIn}
-          isProPlus={plus}
-          isClient={client}
+        <ConnectActions signedIn={signedIn} isProPlus={plus} isClient={client} />
+
+        <SmartAppCta
+          tone={client ? "client" : "freelancer"}
+          title="Send Connect requests in the app"
+          body="Browsing works on web. Accepting requests, chat after match, and push alerts are richer in the CLIVORA Android app."
+          deepPath="open/connect"
         />
 
         <section>
@@ -172,8 +180,8 @@ export default async function ConnectPage() {
             </div>
           )}
         </section>
-      </main>
-    </div>
+      </div>
+    </SubPageChrome>
   );
 }
 
