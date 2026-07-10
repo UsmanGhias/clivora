@@ -14,7 +14,7 @@ const problems = [
     icon: Puzzle,
     title: "Too Many Tools",
     description:
-      "Spreadsheets for clients, separate apps for invoices, another for tasks. Context switching kills productivity.",
+      "Spreadsheets for clients, separate apps for invoices, another for hiring. Context switching kills productivity.",
   },
   {
     icon: Clock,
@@ -24,9 +24,9 @@ const problems = [
   },
   {
     icon: AlertTriangle,
-    title: "Missed Opportunities",
+    title: "Risky Marketplaces",
     description:
-      "Overdue invoices slip through, follow-ups get forgotten, and financial blind spots hurt your bottom line.",
+      "Open platforms expose your email to spam. CLIVORA Connect keeps contact private until both sides accept.",
   },
 ];
 

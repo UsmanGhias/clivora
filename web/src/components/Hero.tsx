@@ -2,195 +2,133 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import {
-  ArrowRight,
-  Sparkles,
-  Play,
-  TrendingUp,
-  Users,
-  FileText,
-  Globe2,
-  Smartphone,
-} from "lucide-react";
-import { GlowOrb } from "./ui/AnimatedSection";
+import { ArrowRight, Smartphone, Network } from "lucide-react";
 import { PhoneMockup } from "./PhoneMockup";
 import { site } from "@/lib/site";
 
-const floatingStats = [
-  {
-    icon: TrendingUp,
-    label: "Revenue",
-    value: "245K",
-    prefix: "$",
-    color: "text-success",
-    dot: "bg-success",
-  },
-  {
-    icon: Users,
-    label: "Clients",
-    value: "48",
-    prefix: "",
-    color: "text-primary",
-    dot: "bg-primary",
-  },
-  {
-    icon: FileText,
-    label: "Invoices",
-    value: "127",
-    prefix: "",
-    color: "text-warning",
-    dot: "bg-warning",
-  },
-];
-
+/**
+ * Marketing hero — one composition, brand-first, mobile Chrome friendly.
+ * Phone mockup is desktop-only so the first viewport stays readable on phones.
+ */
 export function Hero() {
   return (
-    <section className="relative min-h-screen overflow-hidden pt-32 pb-20 lg:pt-40 lg:pb-32">
-      <div className="absolute inset-0 grid-pattern" />
-      <GlowOrb className="top-20 -left-32 h-96 w-96" color="purple" />
-      <GlowOrb className="top-40 -right-32 h-80 w-80" color="blue" />
-      <GlowOrb className="bottom-0 left-1/3 h-64 w-64" color="pink" />
+    <section className="relative overflow-hidden pt-24 pb-12 sm:pt-28 sm:pb-16 lg:pt-32 lg:pb-24">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(13,148,136,0.18),_transparent_55%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.2),transparent_40%)]" />
 
-      <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="grid items-center gap-16 lg:grid-cols-2 lg:gap-8">
+      <div className="relative mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-12">
           <div className="text-center lg:text-left">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="mb-6 inline-flex items-center gap-2 rounded-full glass px-4 py-2 text-sm"
-            >
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-white/80">
-                Web + Android · one Supabase account for freelancers & clients
-              </span>
-            </motion.div>
-
             <motion.p
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.05 }}
-              className="mb-3 text-sm font-bold uppercase tracking-[0.28em] text-teal-300/90"
+              transition={{ duration: 0.45 }}
+              className="text-sm font-extrabold uppercase tracking-[0.28em] text-teal-300"
             >
               {site.name}
             </motion.p>
 
             <motion.h1
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.1 }}
-              className="text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-6xl xl:text-7xl"
+              transition={{ duration: 0.55, delay: 0.05 }}
+              className="mt-3 text-[2.15rem] font-extrabold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-6xl"
             >
-              Your business OS
+              Run your freelance
               <br />
-              <span className="text-gradient">on web &amp; mobile</span>
+              <span className="bg-gradient-to-r from-teal-300 via-teal-200 to-emerald-300 bg-clip-text text-transparent">
+                business OS
+              </span>
             </motion.h1>
 
             <motion.p
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.2 }}
-              className="mt-6 max-w-xl text-lg text-white/60 lg:text-xl"
+              transition={{ duration: 0.55, delay: 0.12 }}
+              className="mx-auto mt-4 max-w-lg text-base leading-relaxed text-white/65 sm:text-lg lg:mx-0"
             >
-              Sign in once. Manage clients, projects, invoices, Connect marketplace, and messages
-              from the browser — with the full offline CRM power in the Android app.
+              Clients, projects, invoices, and{" "}
+              <strong className="font-semibold text-white/90">CLIVORA Connect</strong> — one
+              account on web and Android. Built for freelancers and the clients who hire them.
             </motion.p>
 
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.3 }}
-              className="mt-10 flex flex-col items-center gap-4 sm:flex-row lg:justify-start"
+              transition={{ duration: 0.55, delay: 0.2 }}
+              className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center lg:justify-start"
             >
-              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
-                <Link
-                  href="/signup"
-                  className="group flex items-center gap-2 rounded-full bg-primary px-8 py-4 text-base font-semibold text-white shadow-xl shadow-primary/30 transition-shadow hover:shadow-primary/50"
-                >
-                  Start free on web
-                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-                </Link>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
-                <Link
-                  href="/connect"
-                  className="flex items-center gap-2 rounded-full glass px-8 py-4 text-base font-semibold text-white/90 transition-colors hover:bg-white/10"
-                >
-                  <Play className="h-5 w-5 fill-white/80 text-white/80" />
-                  Explore Connect
-                </Link>
-              </motion.div>
+              <Link
+                href="/signup"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-primary/30"
+              >
+                Start free
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/connect"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-7 py-3.5 text-sm font-bold text-white backdrop-blur"
+              >
+                <Network className="h-4 w-4 text-teal-300" />
+                Open Connect
+              </Link>
             </motion.div>
 
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.7, delay: 0.45 }}
-              className="mt-6 flex flex-wrap items-center justify-center gap-3 lg:justify-start"
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-white/55 lg:justify-start"
             >
-              <Link
-                href="/login"
-                className="inline-flex items-center gap-2 rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-white/80 hover:bg-white/5"
-              >
-                <Globe2 className="h-4 w-4 text-primary" /> Sign in to web app
+              <Link href="/login" className="hover:text-white">
+                Sign in
               </Link>
+              <span className="text-white/25">·</span>
               <a
                 href={site.playStoreUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-white/80 hover:bg-white/5"
+                className="inline-flex items-center gap-1.5 hover:text-white"
               >
-                <Smartphone className="h-4 w-4 text-primary" /> Get Android app
+                <Smartphone className="h-3.5 w-3.5" />
+                Get Android app
               </a>
+              <span className="text-white/25">·</span>
+              <Link href="/pro" className="hover:text-white">
+                Pro from {site.pricing.proMonthlyLabel}/mo
+              </Link>
             </motion.div>
 
-            <motion.div
+            <motion.ul
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.7, delay: 0.55 }}
-              className="mt-12 flex flex-wrap items-center justify-center gap-8 lg:justify-start"
+              transition={{ duration: 0.5, delay: 0.38 }}
+              className="mt-8 grid grid-cols-3 gap-2 text-center lg:max-w-md lg:text-left"
             >
               {[
-                { value: "Web", label: "Live dashboard" },
-                { value: "App", label: "Offline CRM" },
-                { value: "Plus", label: `Connect · ${site.pricing.proPlusMonthlyLabel}` },
-              ].map((stat) => (
-                <div key={stat.label} className="text-center lg:text-left">
-                  <div className="text-2xl font-bold text-white">{stat.value}</div>
-                  <div className="text-sm text-white/50">{stat.label}</div>
-                </div>
+                { k: "Web", v: "Live CRM" },
+                { k: "App", v: "Offline" },
+                { k: "Plus", v: "Connect" },
+              ].map((item) => (
+                <li
+                  key={item.k}
+                  className="rounded-2xl border border-white/10 bg-white/[0.04] px-2 py-3"
+                >
+                  <p className="text-sm font-extrabold text-white">{item.k}</p>
+                  <p className="text-[11px] text-white/50">{item.v}</p>
+                </li>
               ))}
-            </motion.div>
+            </motion.ul>
           </div>
 
+          {/* Desktop visual only — keeps mobile first viewport clean */}
           <motion.div
-            initial={{ opacity: 0, x: 60 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.9, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="relative flex justify-center pb-14 lg:pb-16"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.25 }}
+            className="relative hidden justify-center lg:flex"
           >
             <PhoneMockup />
-
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 1, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute bottom-0 left-1/2 z-20 flex w-[min(100%,340px)] -translate-x-1/2 items-center justify-between gap-2 rounded-2xl border border-white/10 bg-navy/80 px-4 py-3 shadow-2xl backdrop-blur-xl"
-            >
-              {floatingStats.map((s) => (
-                <div key={s.label} className="flex flex-col items-center">
-                  <div className="flex items-center gap-1">
-                    <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
-                    <s.icon className={`h-3.5 w-3.5 ${s.color}`} />
-                  </div>
-                  <p className="mt-1 text-sm font-bold text-white">
-                    {s.prefix}
-                    {s.value}
-                  </p>
-                  <p className="text-[10px] text-white/50">{s.label}</p>
-                </div>
-              ))}
-            </motion.div>
           </motion.div>
         </div>
       </div>

@@ -9,8 +9,11 @@ type ProfileRow = {
   id?: string;
   display_title: string;
   headline: string;
+  bio: string;
   skills: string;
   rate_band: string;
+  availability: string;
+  location_label: string;
   is_listed: boolean;
 };
 
@@ -31,11 +34,15 @@ export default function ConnectManagePage() {
   const [message, setMessage] = useState<string | null>(null);
   const [accountType, setAccountType] = useState("freelancer");
   const [plan, setPlan] = useState("free");
+  const [restricted, setRestricted] = useState(false);
   const [listing, setListing] = useState<ProfileRow>({
     display_title: "",
     headline: "",
+    bio: "",
     skills: "",
     rate_band: "",
+    availability: "Available now",
+    location_label: "",
     is_listed: true,
   });
   const [need, setNeed] = useState({ title: "", summary: "", skills: "", budget_band: "" });
@@ -53,21 +60,28 @@ export default function ConnectManagePage() {
       }
       const { data: profile } = await supabase
         .from("profiles")
-        .select("account_type, subscription_plan, name")
+        .select("account_type, subscription_plan, name, is_blocked, is_restricted")
         .eq("id", user.id)
         .maybeSingle();
+      if (profile?.is_blocked) {
+        router.replace("/blocked");
+        return;
+      }
       const p = (profile?.subscription_plan ?? "free").toLowerCase();
       const plus = p === "pro_plus" || p === "plus" || p === "proplus";
       if (!plus) {
-        router.replace("/pro");
+        router.replace("/pro?plan=pro_plus");
         return;
       }
+      setRestricted(profile?.is_restricted === true);
       setAccountType((profile?.account_type ?? "freelancer").toLowerCase());
       setPlan(profile?.subscription_plan ?? "free");
 
       const { data: cp } = await supabase
         .from("connect_profiles")
-        .select("id, display_title, headline, skills, rate_band, is_listed")
+        .select(
+          "id, display_title, headline, bio, skills, rate_band, availability, location_label, is_listed",
+        )
         .eq("user_id", user.id)
         .maybeSingle();
       if (cp) {
@@ -75,8 +89,11 @@ export default function ConnectManagePage() {
           id: cp.id,
           display_title: cp.display_title ?? "",
           headline: cp.headline ?? "",
+          bio: cp.bio ?? "",
           skills: Array.isArray(cp.skills) ? cp.skills.join(", ") : String(cp.skills ?? ""),
           rate_band: cp.rate_band ?? "",
+          availability: cp.availability ?? "Available now",
+          location_label: cp.location_label ?? "",
           is_listed: !!cp.is_listed,
         });
       } else if (profile?.name) {
@@ -96,7 +113,7 @@ export default function ConnectManagePage() {
           skills: Array.isArray(n.skills) ? n.skills.join(", ") : String(n.skills ?? ""),
           budget_band: n.budget_band ?? "",
           is_open: !!n.is_open,
-        }))
+        })),
       );
       setLoading(false);
     })();
@@ -104,6 +121,10 @@ export default function ConnectManagePage() {
 
   async function saveListing(e: FormEvent) {
     e.preventDefault();
+    if (restricted) {
+      setError("Your account is restricted from publishing.");
+      return;
+    }
     setSaving(true);
     setError(null);
     setMessage(null);
@@ -120,8 +141,11 @@ export default function ConnectManagePage() {
       user_id: user.id,
       display_title: listing.display_title.trim(),
       headline: listing.headline.trim(),
+      bio: listing.bio.trim(),
       skills,
       rate_band: listing.rate_band.trim(),
+      availability: listing.availability.trim(),
+      location_label: listing.location_label.trim(),
       is_listed: listing.is_listed,
       account_type: accountType,
       moderation_status: "pending",
@@ -135,11 +159,15 @@ export default function ConnectManagePage() {
       setError(err.message);
       return;
     }
-    setMessage("Listing saved. It may appear after moderation.");
+    setMessage("Profile saved. It may appear after moderation.");
   }
 
   async function createNeed(e: FormEvent) {
     e.preventDefault();
+    if (restricted) {
+      setError("Your account is restricted from posting jobs.");
+      return;
+    }
     setSaving(true);
     setError(null);
     setMessage(null);
@@ -166,7 +194,7 @@ export default function ConnectManagePage() {
       setError(err.message);
       return;
     }
-    setMessage("Need posted.");
+    setMessage("Job posted.");
     setNeed({ title: "", summary: "", skills: "", budget_band: "" });
     router.refresh();
   }
@@ -194,45 +222,73 @@ export default function ConnectManagePage() {
       title="Manage Connect"
       rightSlot={
         <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80">
-          Plan: {plan}
+          {plan}
         </span>
       }
     >
       <div className="mx-auto max-w-3xl space-y-8">
         <p className="text-sm text-text-secondary">
-          Publish to the same marketplace moderated in CodCrafters Admin.
+          Keep your listing sharp — title, rate, skills, location, and availability show on the
+          public marketplace.
         </p>
 
-        {accountType !== "client" && (
+        {restricted && (
+          <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            Restricted account: you can view Connect but cannot publish until an admin lifts the
+            restriction.
+          </p>
+        )}
+
+        {!isClient && (
           <form onSubmit={saveListing} className="space-y-3 rounded-2xl border border-border bg-surface p-5">
-            <h2 className="font-bold">Freelancer listing</h2>
+            <h2 className="font-bold text-navy">Freelancer profile</h2>
             <input
               required
-              placeholder="Display title"
+              placeholder="Display title (e.g. Full-stack developer)"
               value={listing.display_title}
               onChange={(e) => setListing({ ...listing, display_title: e.target.value })}
               className="w-full rounded-xl border border-border px-3 py-2"
             />
-            <textarea
+            <input
               required
               placeholder="Headline"
               value={listing.headline}
               onChange={(e) => setListing({ ...listing, headline: e.target.value })}
               className="w-full rounded-xl border border-border px-3 py-2"
-              rows={3}
             />
-            <input
-              placeholder="Skills (comma separated)"
-              value={listing.skills}
-              onChange={(e) => setListing({ ...listing, skills: e.target.value })}
+            <textarea
+              placeholder="Bio — what you deliver, industries, tools"
+              value={listing.bio}
+              onChange={(e) => setListing({ ...listing, bio: e.target.value })}
               className="w-full rounded-xl border border-border px-3 py-2"
+              rows={4}
             />
-            <input
-              placeholder="Rate band (e.g. $40–60/hr)"
-              value={listing.rate_band}
-              onChange={(e) => setListing({ ...listing, rate_band: e.target.value })}
-              className="w-full rounded-xl border border-border px-3 py-2"
-            />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <input
+                placeholder="Skills (comma separated)"
+                value={listing.skills}
+                onChange={(e) => setListing({ ...listing, skills: e.target.value })}
+                className="w-full rounded-xl border border-border px-3 py-2"
+              />
+              <input
+                placeholder="Rate band (e.g. $40–60/hr)"
+                value={listing.rate_band}
+                onChange={(e) => setListing({ ...listing, rate_band: e.target.value })}
+                className="w-full rounded-xl border border-border px-3 py-2"
+              />
+              <input
+                placeholder="Location (e.g. Lahore · Remote)"
+                value={listing.location_label}
+                onChange={(e) => setListing({ ...listing, location_label: e.target.value })}
+                className="w-full rounded-xl border border-border px-3 py-2"
+              />
+              <input
+                placeholder="Availability"
+                value={listing.availability}
+                onChange={(e) => setListing({ ...listing, availability: e.target.value })}
+                className="w-full rounded-xl border border-border px-3 py-2"
+              />
+            </div>
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
@@ -243,55 +299,57 @@ export default function ConnectManagePage() {
             </label>
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || restricted}
               className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
-              {saving ? "Saving…" : "Save listing"}
+              {saving ? "Saving…" : "Save profile"}
             </button>
           </form>
         )}
 
         <form onSubmit={createNeed} className="space-y-3 rounded-2xl border border-border bg-surface p-5">
-          <h2 className="font-bold">Post a need</h2>
+          <h2 className="font-bold text-navy">{isClient ? "Post a job" : "Post a need (optional)"}</h2>
           <input
             required
-            placeholder="Title"
+            placeholder="Job title"
             value={need.title}
             onChange={(e) => setNeed({ ...need, title: e.target.value })}
             className="w-full rounded-xl border border-border px-3 py-2"
           />
           <textarea
             required
-            placeholder="Summary"
+            placeholder="What do you need delivered?"
             value={need.summary}
             onChange={(e) => setNeed({ ...need, summary: e.target.value })}
             className="w-full rounded-xl border border-border px-3 py-2"
-            rows={3}
+            rows={4}
           />
-          <input
-            placeholder="Skills"
-            value={need.skills}
-            onChange={(e) => setNeed({ ...need, skills: e.target.value })}
-            className="w-full rounded-xl border border-border px-3 py-2"
-          />
-          <input
-            placeholder="Budget band"
-            value={need.budget_band}
-            onChange={(e) => setNeed({ ...need, budget_band: e.target.value })}
-            className="w-full rounded-xl border border-border px-3 py-2"
-          />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <input
+              placeholder="Skills"
+              value={need.skills}
+              onChange={(e) => setNeed({ ...need, skills: e.target.value })}
+              className="w-full rounded-xl border border-border px-3 py-2"
+            />
+            <input
+              placeholder="Budget band"
+              value={need.budget_band}
+              onChange={(e) => setNeed({ ...need, budget_band: e.target.value })}
+              className="w-full rounded-xl border border-border px-3 py-2"
+            />
+          </div>
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || restricted}
             className="rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
           >
-            {saving ? "Posting…" : "Post need"}
+            {saving ? "Posting…" : "Publish job"}
           </button>
         </form>
 
         {needs.length > 0 && (
           <div className="space-y-2">
-            <h2 className="font-bold">Your needs</h2>
+            <h2 className="font-bold">Your jobs</h2>
             {needs.map((n) => (
               <div key={n.id} className="rounded-xl border border-border bg-surface px-4 py-3">
                 <p className="font-semibold">{n.title}</p>
