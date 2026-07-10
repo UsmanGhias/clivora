@@ -11,6 +11,7 @@ import '../../core/services/client_invite_service.dart';
 import '../../core/constants/plan_limits.dart';
 import '../../core/utils/form_validators.dart';
 import '../../core/utils/plan_limit_dialog.dart';
+import '../../core/services/email_verification_service.dart';
 import '../../data/database/database.dart';
 import '../../data/database/user_scoped_queries.dart';
 import '../../data/models/invoice_line_item.dart';
@@ -144,6 +145,9 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
           ),
         );
       } else {
+        if (!await requireEmailVerified(context, ref, actionLabel: 'add clients')) {
+          return;
+        }
         if (!await ref.read(planLimitServiceProvider).canAddCustomer()) {
           if (mounted) {
             final upgrade = await showPlanLimitDialog(

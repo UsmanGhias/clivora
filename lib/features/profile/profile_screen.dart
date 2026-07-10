@@ -8,6 +8,7 @@ import '../../core/auth/auth_service.dart';
 import '../../core/auth/user_roles.dart';
 import '../../core/constants/countries.dart';
 import '../../core/services/biometric_service.dart';
+import '../../core/services/email_verification_service.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../core/utils/form_validators.dart';
 import '../../data/database/database.dart';
@@ -40,6 +41,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   List<String> _skills = [];
   bool _initialized = false;
   bool _saving = false;
+  bool _verifyBusy = false;
 
   @override
   void dispose() {
@@ -182,6 +184,46 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
+  Future<void> _resendVerification() async {
+    if (_verifyBusy) return;
+    setState(() => _verifyBusy = true);
+    try {
+      final err = await ref.read(emailVerificationServiceProvider).resendVerificationEmail();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            err ?? 'Verification email sent. Check inbox and spam, then tap “I’ve verified”.',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _verifyBusy = false);
+    }
+  }
+
+  Future<void> _refreshVerification() async {
+    if (_verifyBusy) return;
+    setState(() => _verifyBusy = true);
+    try {
+      await ref.read(emailVerificationServiceProvider).syncFromSupabase();
+      if (!mounted) return;
+      final user = ref.read(authStateProvider).valueOrNull;
+      final ok = ref.read(emailVerificationServiceProvider).isVerified(user);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            ok
+                ? 'Email verified — you can start creating clients, invoices, and projects.'
+                : 'Still unverified. Open the link in your email, then try again.',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _verifyBusy = false);
+    }
+  }
+
   Future<void> _signOut() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -252,6 +294,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 const SizedBox(height: 8),
                 Center(child: Text('Tap camera to update photo', style: Theme.of(context).textTheme.bodySmall)),
+                const SizedBox(height: 16),
+                _EmailVerificationCard(
+                  user: user,
+                  busy: _verifyBusy,
+                  onResend: _resendVerification,
+                  onRefresh: _refreshVerification,
+                ),
                 const SizedBox(height: 24),
                 TextField(
                   controller: _nameController,
@@ -367,6 +416,85 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
               ],
             ),
+    );
+  }
+}
+
+class _EmailVerificationCard extends ConsumerWidget {
+  const _EmailVerificationCard({
+    required this.user,
+    required this.busy,
+    required this.onResend,
+    required this.onRefresh,
+  });
+
+  final User? user;
+  final bool busy;
+  final VoidCallback onResend;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (user == null || isGuestUser(user) || isAdminUser(user)) {
+      return const SizedBox.shrink();
+    }
+    final verified = ref.watch(emailVerificationServiceProvider).isVerified(user);
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: verified
+          ? ClivoraColors.successGreen.withValues(alpha: 0.08)
+          : scheme.errorContainer.withValues(alpha: 0.35),
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  verified ? Icons.mark_email_read_outlined : Icons.mark_email_unread_outlined,
+                  color: verified ? ClivoraColors.successGreen : scheme.error,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    verified ? 'Email verified' : 'Verify your email to start work',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              verified
+                  ? 'You’re all set to create clients, invoices, projects, and more.'
+                  : 'You can browse your account, but creating clients, invoices, projects, tasks, or expenses requires a verified email. We sent a link to ${user!.email}.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            if (!verified) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: busy ? null : onResend,
+                      child: Text(busy ? 'Please wait…' : 'Resend email'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: busy ? null : onRefresh,
+                      child: const Text('I’ve verified'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

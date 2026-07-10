@@ -587,6 +587,22 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     await prefs.setInt(_sessionUserIdKey, userId);
     state = AsyncValue.data(user);
     setAuthSession(user);
+    // Sync email verification from Supabase (Google / confirmed email).
+    try {
+      final cloud = SupabaseAuthHelper.client.auth.currentUser;
+      final confirmed = cloud?.emailConfirmedAt != null ||
+          (cloud?.identities ?? const []).any((i) => i.provider == 'google') ||
+          isAdminUser(user) ||
+          user.email.toLowerCase().endsWith('@clivora.local');
+      if (confirmed && !user.emailVerified) {
+        await _db.updateUser(user.copyWith(emailVerified: true));
+        final refreshed = await _db.getUser(user.id);
+        state = AsyncValue.data(refreshed);
+        setAuthSession(refreshed);
+      }
+    } catch (e) {
+      debugPrint('Email verification sync: $e');
+    }
     if (!skipCloudSync) {
       try {
         if (finalizeCloudRole) {
@@ -656,6 +672,16 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     return null;
   }
 
+  Future<void> setEmailVerified(bool value) async {
+    final user = state.valueOrNull;
+    if (user == null) return;
+    if (user.emailVerified == value) return;
+    await _db.updateUser(user.copyWith(emailVerified: value));
+    final updated = await _db.getUser(user.id);
+    state = AsyncValue.data(updated);
+    setAuthSession(updated);
+  }
+
   Future<String?> updateProfile({required String name, required String email}) async {
     final user = state.valueOrNull;
     if (user == null) return 'Not signed in';
@@ -677,6 +703,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       name: name.trim(),
       accountType: user.accountType,
       role: user.role,
+
     );
     return null;
   }

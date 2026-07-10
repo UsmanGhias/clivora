@@ -6,6 +6,7 @@ import '../auth/auth_service.dart';
 import '../auth/user_roles.dart';
 import '../constants/plan_features.dart';
 import '../constants/plan_limits.dart';
+import '../services/email_verification_service.dart';
 import 'plan_limit_dialog.dart';
 import '../../data/providers/app_providers.dart';
 
@@ -72,8 +73,16 @@ Future<bool> tryOpenWithPlanCheck(
   required String resource,
   required int max,
 }) async {
+  if (!await requireEmailVerified(context, ref, actionLabel: 'add $resource')) {
+    return false;
+  }
   if (!await canAdd()) {
     if (!context.mounted) return false;
+    // Distinguish email gate vs plan limit (canAdd already false for unverified).
+    final user = ref.read(authStateProvider).valueOrNull;
+    if (!ref.read(emailVerificationServiceProvider).isVerified(user)) {
+      return false;
+    }
     final upgrade = await showPlanLimitDialog(context, resource: resource, max: max);
     if (upgrade && context.mounted) context.push('/upgrade');
     return false;

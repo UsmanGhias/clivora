@@ -15,10 +15,9 @@ import '../../core/utils/crm_refresh.dart';
 import '../../core/utils/plan_limit_dialog.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../core/utils/user_messages.dart';
+import '../../core/services/email_verification_service.dart';
 import '../../data/models/invoice_line_item.dart';
 import '../../data/database/user_scoped_queries.dart';
-import '../../core/constants/plan_limits.dart';
-import '../../core/utils/plan_limit_dialog.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/step_progress_card.dart';
 
@@ -123,6 +122,9 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
         savedId = widget.projectId;
       }
     } else {
+      if (!await requireEmailVerified(context, ref, actionLabel: 'add projects')) {
+        return;
+      }
       if (!await ref.read(planLimitServiceProvider).canAddProject()) {
         if (mounted) {
           final upgrade = await showPlanLimitDialog(

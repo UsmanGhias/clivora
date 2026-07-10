@@ -275,6 +275,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           ClivoraUserMessages.showRoleMismatch(context, actualRole: accountTypeLabel(user));
         }
       }
+      if (mounted && user != null && !isGuestUser(user) && !user.emailVerified) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Account created. Check your inbox to verify your email before creating clients, invoices, or projects.',
+            ),
+            duration: Duration(seconds: 6),
+          ),
+        );
+      }
       navigateAfterAuth(context, ref);
     } catch (e) {
       if (mounted) {
