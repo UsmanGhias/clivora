@@ -242,7 +242,13 @@ class _ClientContractTile extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     ClientContractView contract,
-    ({String body, String? attachmentPath, String? clientSignature}) parsed,
+    ({
+      String body,
+      String? attachmentPath,
+      String? clientSignature,
+      String? signedAt,
+      String? deviceMeta,
+    }) parsed,
   ) async {
     await showModalBottomSheet<void>(
       context: context,
@@ -279,7 +285,11 @@ class _ClientContractTile extends ConsumerWidget {
                     color: ClivoraColors.successGreen.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text('Signed by: ${parsed.clientSignature}'),
+                  child: Text(
+                    'Signed by: ${parsed.clientSignature}'
+                    '${parsed.signedAt != null ? '\nAt: ${parsed.signedAt}' : ''}'
+                    '${parsed.deviceMeta != null ? '\nDevice: ${parsed.deviceMeta}' : ''}',
+                  ),
                 ),
               ],
               if (contract.status == 'sent') ...[
@@ -301,7 +311,13 @@ class _ClientContractTile extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     ClientContractView contract,
-    ({String body, String? attachmentPath, String? clientSignature}) parsed,
+    ({
+      String body,
+      String? attachmentPath,
+      String? clientSignature,
+      String? signedAt,
+      String? deviceMeta,
+    }) parsed,
   ) async {
     final nameCtrl = TextEditingController();
     final signed = await showDialog<bool>(
@@ -335,6 +351,8 @@ class _ClientContractTile extends ConsumerWidget {
       body: parsed.body,
       attachmentPath: parsed.attachmentPath,
       clientSignature: nameCtrl.text.trim(),
+      signedAt: DateTime.now().toUtc().toIso8601String(),
+      deviceMeta: Platform.operatingSystem,
     );
 
     final links = await ref.read(databaseProvider).getFreelancerLinksForClient(client.id);

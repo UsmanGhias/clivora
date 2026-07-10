@@ -26,6 +26,7 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
   bool? _biometricSupported;
   bool _biometricEnabled = false;
   bool _coachMarksEnabled = true;
+  int _timeoutMinutes = 30;
   bool _loading = true;
 
   @override
@@ -38,11 +39,13 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
     final bio = ref.read(biometricServiceProvider);
     final supported = await bio.isSupported;
     final enabled = await bio.isEnabled;
+    final timeout = await bio.timeoutMinutes();
     final coachEnabled = await ref.read(coachMarksServiceProvider).isEnabled();
     if (mounted) {
       setState(() {
         _biometricSupported = supported;
         _biometricEnabled = enabled;
+        _timeoutMinutes = timeout;
         _coachMarksEnabled = coachEnabled;
         _loading = false;
       });
@@ -177,6 +180,30 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
                   value: _biometricEnabled && (_biometricSupported ?? false) && isPro,
                   onChanged: isPro && (_biometricSupported ?? false) ? _toggleBiometric : null,
                 ),
+                if (_biometricEnabled && (_biometricSupported ?? false) && isPro)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: DropdownButtonFormField<int>(
+                      value: _timeoutMinutes,
+                      decoration: const InputDecoration(
+                        labelText: 'Lock after idle',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: BiometricService.timeoutOptions
+                          .map(
+                            (m) => DropdownMenuItem(
+                              value: m,
+                              child: Text('$m minutes'),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) async {
+                        if (v == null) return;
+                        await ref.read(biometricServiceProvider).setTimeoutMinutes(v);
+                        setState(() => _timeoutMinutes = v);
+                      },
+                    ),
+                  ),
                 SwitchListTile(
                   title: const Text('Dashboard tips'),
                   subtitle: const Text('Show one-time guide highlights on Home'),

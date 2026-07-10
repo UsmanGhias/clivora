@@ -7,6 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 import '../../data/database/database.dart';
 import '../../data/database/user_scoped_queries.dart';
 import '../../data/providers/database_provider.dart';
+import '../services/chat_block_service.dart';
+import 'cloud_notification_repository.dart';
 import 'supabase_auth_helper.dart';
 import 'supabase_sync_service.dart';
 
@@ -95,16 +97,45 @@ class CloudMessageRepository {
     required String body,
     String? projectShareId,
   }) async {
+    var resolvedToUid = toUid;
+    if (resolvedToUid == null || resolvedToUid.isEmpty) {
+      resolvedToUid = await ref.read(supabaseSyncServiceProvider).uidForEmail(toEmail);
+    }
+
+    if (resolvedToUid != null && resolvedToUid.isNotEmpty) {
+      final blocked = await ref.read(chatBlockServiceProvider).isEitherBlocked(fromUid, resolvedToUid);
+      if (blocked) {
+        debugPrint('Message blocked: chat_block between $fromUid and $resolvedToUid');
+        throw StateError('Messaging is blocked with this contact');
+      }
+    }
+
     await _db.from('client_messages').insert({
       'from_uid': fromUid,
       'from_email': fromEmail.trim().toLowerCase(),
       'to_email': toEmail.trim().toLowerCase(),
-      if (toUid != null && toUid.isNotEmpty) 'to_uid': toUid,
+      if (resolvedToUid != null && resolvedToUid.isNotEmpty) 'to_uid': resolvedToUid,
       'subject': subject,
       'body': body,
       'is_read': false,
       if (projectShareId != null) 'project_share_id': projectShareId,
     });
+
+    if (resolvedToUid != null && resolvedToUid.isNotEmpty) {
+      final preview = subject.trim().isNotEmpty
+          ? subject.trim()
+          : (body.length > 80 ? '${body.substring(0, 80)}…' : body);
+      try {
+        await ref.read(cloudNotificationRepositoryProvider).sendToUid(
+              toUid: resolvedToUid,
+              title: 'New message',
+              body: preview,
+              kind: 'message',
+            );
+      } catch (e) {
+        debugPrint('Message notification failed: $e');
+      }
+    }
   }
 
   Stream<List<CloudMessage>> watchClientMailbox({required String uid, required String email}) {
@@ -242,6 +273,13 @@ class CloudMessageRepository {
 
     try {
       final toUid = await ref.read(supabaseSyncServiceProvider).uidForEmail(toEmail);
+      if (toUid != null && toUid.isNotEmpty) {
+        final blocked = await ref.read(chatBlockServiceProvider).isEitherBlocked(fromUid, toUid);
+        if (blocked) {
+          debugPrint('Hybrid message blocked: chat_block between $fromUid and $toUid');
+          return;
+        }
+      }
       await sendMessage(
             fromUid: fromUid,
             fromEmail: fromUser.email,

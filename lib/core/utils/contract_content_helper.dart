@@ -10,22 +10,46 @@ class ContractContentHelper {
     required String body,
     String? attachmentPath,
     String? clientSignature,
+    String? signedAt,
+    String? deviceMeta,
   }) {
     final meta = <String, String>{
       if (attachmentPath != null && attachmentPath.isNotEmpty) 'attachment': attachmentPath,
       if (clientSignature != null && clientSignature.isNotEmpty) 'clientSignature': clientSignature,
+      if (signedAt != null && signedAt.isNotEmpty) 'signedAt': signedAt,
+      if (deviceMeta != null && deviceMeta.isNotEmpty) 'deviceMeta': deviceMeta,
     };
     if (meta.isEmpty) return body.trim();
     return '$_metaStart${jsonEncode(meta)}$_metaEnd\n${body.trim()}';
   }
 
-  static ({String body, String? attachmentPath, String? clientSignature}) decode(String raw) {
+  static ({
+    String body,
+    String? attachmentPath,
+    String? clientSignature,
+    String? signedAt,
+    String? deviceMeta,
+  }) decode(String raw) {
     final trimmed = raw.trim();
     if (!trimmed.startsWith(_metaStart)) {
-      return (body: trimmed, attachmentPath: null, clientSignature: null);
+      return (
+        body: trimmed,
+        attachmentPath: null,
+        clientSignature: null,
+        signedAt: null,
+        deviceMeta: null,
+      );
     }
     final end = trimmed.indexOf(_metaEnd);
-    if (end < 0) return (body: trimmed, attachmentPath: null, clientSignature: null);
+    if (end < 0) {
+      return (
+        body: trimmed,
+        attachmentPath: null,
+        clientSignature: null,
+        signedAt: null,
+        deviceMeta: null,
+      );
+    }
     final jsonPart = trimmed.substring(_metaStart.length, end);
     final body = trimmed.substring(end + _metaEnd.length).trimLeft();
     try {
@@ -34,9 +58,17 @@ class ContractContentHelper {
         body: body,
         attachmentPath: map['attachment'] as String?,
         clientSignature: map['clientSignature'] as String?,
+        signedAt: map['signedAt'] as String?,
+        deviceMeta: map['deviceMeta'] as String?,
       );
     } catch (_) {
-      return (body: body, attachmentPath: null, clientSignature: null);
+      return (
+        body: body,
+        attachmentPath: null,
+        clientSignature: null,
+        signedAt: null,
+        deviceMeta: null,
+      );
     }
   }
 }

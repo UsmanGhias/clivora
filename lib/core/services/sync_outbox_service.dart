@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -28,6 +28,83 @@ class SyncOutboxService {
 
   final Ref ref;
   static const _storageKey = 'clivora_sync_outbox_v1';
+  static const _conflictKey = 'clivora_invoice_conflicts_v1';
+
+  Future<List<Map<String, dynamic>>> pendingConflicts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_conflictKey);
+    if (raw == null || raw.isEmpty) return [];
+    try {
+      return (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> _saveConflicts(List<Map<String, dynamic>> items) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_conflictKey, jsonEncode(items));
+  }
+
+  Future<void> addInvoiceConflict({
+    required int localInvoiceId,
+    required String localStatus,
+    required String cloudStatus,
+    required String shareId,
+  }) async {
+    final list = await pendingConflicts();
+    list.removeWhere((e) => e['localInvoiceId'] == localInvoiceId);
+    list.add({
+      'localInvoiceId': localInvoiceId,
+      'localStatus': localStatus,
+      'cloudStatus': cloudStatus,
+      'shareId': shareId,
+      'at': DateTime.now().toIso8601String(),
+    });
+    await _saveConflicts(list);
+    ref.read(syncFailureMessageProvider.notifier).state =
+        'Invoice sync conflict — open Invoices to resolve.';
+  }
+
+  Future<void> clearConflict(int localInvoiceId) async {
+    final list = await pendingConflicts();
+    list.removeWhere((e) => e['localInvoiceId'] == localInvoiceId);
+    await _saveConflicts(list);
+  }
+
+  Future<void> resolveConflictKeepLocal({
+    required int localInvoiceId,
+    required String shareId,
+    required String clientEmail,
+    String? clientUid,
+  }) async {
+    final user = ref.read(authStateProvider).valueOrNull;
+    if (user == null) return;
+    final invoice = await ref.read(databaseProvider).getInvoiceForUser(user.id, localInvoiceId);
+    if (invoice == null) return;
+    await ref.read(cloudInvoiceRepositoryProvider).syncInvoiceToClient(
+          freelancer: user,
+          invoice: invoice,
+          clientEmail: clientEmail,
+          clientUid: clientUid,
+        );
+    await clearConflict(localInvoiceId);
+  }
+
+  Future<void> resolveConflictTakeCloud({
+    required int localInvoiceId,
+    required String cloudStatus,
+  }) async {
+    final user = ref.read(authStateProvider).valueOrNull;
+    if (user == null) return;
+    final invoice = await ref.read(databaseProvider).getInvoiceForUser(user.id, localInvoiceId);
+    if (invoice == null) return;
+    await ref.read(databaseProvider).updateInvoice(
+          invoice.copyWith(status: cloudStatus, updatedAt: DateTime.now()),
+        );
+    await clearConflict(localInvoiceId);
+    ref.invalidate(invoicesProvider(null));
+  }
   static const _maxRetries = 8;
 
   Future<void> enqueue(SyncOutboxItem item) async {
@@ -101,8 +178,9 @@ class SyncOutboxService {
 
         if (cloudUpdated != null && cloudUpdated.isAfter(invoice.updatedAt)) {
           if (invoice.status != cloudStatus) {
-            await db.updateInvoice(invoice.copyWith(status: cloudStatus, updatedAt: cloudUpdated.toLocal()));
+            // Always auto-apply when cloud is paid.
             if (cloudStatus == 'paid') {
+              await db.updateInvoice(invoice.copyWith(status: cloudStatus, updatedAt: cloudUpdated.toLocal()));
               final method = row['payment_method'] as String? ?? '';
               final clientEmail = row['client_email'] as String? ?? '';
               await ref.read(trackingServiceProvider).logStatusChange(
@@ -115,8 +193,25 @@ class SyncOutboxService {
                     invoiceNumber: invoice.invoiceNumber,
                     clientName: clientEmail,
                   );
+              await clearConflict(invoice.id);
+              ref.invalidate(invoicesProvider(null));
+            } else if (invoice.status == 'paid') {
+              // Local paid wins over non-paid cloud — push local.
+              await ref.read(cloudInvoiceRepositoryProvider).syncInvoiceToClient(
+                    freelancer: user,
+                    invoice: invoice,
+                    clientEmail: row['client_email'] as String? ?? '',
+                    clientUid: row['client_uid'] as String?,
+                  );
+            } else {
+              // Other conflicts (e.g. local overdue vs cloud sent) — defer to UI.
+              await addInvoiceConflict(
+                localInvoiceId: invoice.id,
+                localStatus: invoice.status,
+                cloudStatus: cloudStatus,
+                shareId: row['share_id'] as String? ?? '',
+              );
             }
-            ref.invalidate(invoicesProvider(null));
           }
         } else if (invoice.updatedAt.isAfter(cloudUpdated ?? DateTime(2000))) {
           await ref.read(cloudInvoiceRepositoryProvider).syncInvoiceToClient(
@@ -251,4 +346,71 @@ class SyncOutboxItem {
         retries: (json['retries'] as num?)?.toInt() ?? 0,
         createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
       );
+}
+
+/// Shows Keep local / Take cloud dialogs for pending invoice conflicts.
+Future<void> showInvoiceConflictDialog(BuildContext context, WidgetRef ref) async {
+  final outbox = ref.read(syncOutboxServiceProvider);
+  final conflicts = await outbox.pendingConflicts();
+  if (conflicts.isEmpty || !context.mounted) return;
+
+  for (final c in List<Map<String, dynamic>>.from(conflicts)) {
+    if (!context.mounted) return;
+    final localId = (c['localInvoiceId'] as num?)?.toInt();
+    if (localId == null) continue;
+    final localStatus = c['localStatus'] as String? ?? '';
+    final cloudStatus = c['cloudStatus'] as String? ?? '';
+    final shareId = c['shareId'] as String? ?? '';
+
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Invoice sync conflict'),
+        content: Text(
+          'Invoice #$localId differs: local is "$localStatus", cloud is "$cloudStatus".',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'local'),
+            child: const Text('Keep local'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, 'cloud'),
+            child: const Text('Take cloud'),
+          ),
+        ],
+      ),
+    );
+
+    if (choice == 'local') {
+      // Look up client email from cloud share if possible.
+      String clientEmail = '';
+      String? clientUid;
+      try {
+        final row = await SupabaseAuthHelper.client
+            .from('invoice_shares')
+            .select('client_email, client_uid')
+            .eq('share_id', shareId)
+            .maybeSingle();
+        clientEmail = row?['client_email'] as String? ?? '';
+        clientUid = row?['client_uid'] as String?;
+      } catch (_) {}
+      await outbox.resolveConflictKeepLocal(
+        localInvoiceId: localId,
+        shareId: shareId,
+        clientEmail: clientEmail,
+        clientUid: clientUid,
+      );
+    } else if (choice == 'cloud') {
+      await outbox.resolveConflictTakeCloud(
+        localInvoiceId: localId,
+        cloudStatus: cloudStatus,
+      );
+    }
+  }
+
+  final remaining = await outbox.pendingConflicts();
+  if (remaining.isEmpty) {
+    ref.read(syncFailureMessageProvider.notifier).state = null;
+  }
 }

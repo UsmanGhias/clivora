@@ -41,7 +41,10 @@ import '../features/marketplace/connect_marketplace_screen.dart';
 import '../features/marketplace/connect_listing_screen.dart';
 import '../features/marketplace/connect_need_screen.dart';
 import '../features/settings/legal_document_screen.dart';
+import '../features/settings/notification_settings_screen.dart';
 import '../features/settings/security_settings_screen.dart';
+import '../features/invoices/payment_confirmations_screen.dart';
+import '../features/client/client_milestones_screen.dart';
 import '../core/constants/legal_documents.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/onboarding/value_guidelines_screen.dart';
@@ -460,6 +463,21 @@ final appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/security',
       builder: (context, state) => const SecuritySettingsScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/notification-settings',
+      builder: (context, state) => const NotificationSettingsScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/payment-confirmations',
+      builder: (context, state) => const PaymentConfirmationsScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/client-milestones',
+      builder: (context, state) => const ClientMilestonesScreen(),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,

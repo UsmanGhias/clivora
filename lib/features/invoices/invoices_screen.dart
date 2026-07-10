@@ -32,8 +32,9 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
   void initState() {
     super.initState();
     _status = widget.initialFilter ?? 'all';
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(syncOutboxServiceProvider).reconcileInvoiceShares();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await ref.read(syncOutboxServiceProvider).reconcileInvoiceShares();
+      if (mounted) await showInvoiceConflictDialog(context, ref);
     });
   }
 
