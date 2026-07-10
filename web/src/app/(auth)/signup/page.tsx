@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { site } from "@/lib/site";
+import { authErrorMessage, isRateLimitError } from "@/lib/auth-errors";
+import { ResendVerification } from "@/components/auth/ResendVerification";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -14,6 +16,7 @@ export default function SignupPage() {
   const [accountType, setAccountType] = useState<"freelancer" | "client">("freelancer");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [awaitingVerify, setAwaitingVerify] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: FormEvent) {
@@ -21,9 +24,11 @@ export default function SignupPage() {
     setLoading(true);
     setError(null);
     setInfo(null);
+    setAwaitingVerify(false);
     const supabase = createClient();
+    const trimmedEmail = email.trim().toLowerCase();
     const { data, error: err } = await supabase.auth.signUp({
-      email: email.trim().toLowerCase(),
+      email: trimmedEmail,
       password,
       options: {
         data: {
@@ -35,15 +40,17 @@ export default function SignupPage() {
     });
     if (err) {
       setLoading(false);
-      setError(err.message);
+      setError(authErrorMessage(err.message));
+      if (isRateLimitError(err.message)) {
+        setAwaitingVerify(true);
+      }
       return;
     }
 
-    // Upsert profile when session exists (confirm-email may be off).
     if (data.user) {
       await supabase.from("profiles").upsert({
         id: data.user.id,
-        email: email.trim().toLowerCase(),
+        email: trimmedEmail,
         name: name.trim(),
         account_type: accountType,
         subscription_plan: "free",
@@ -53,7 +60,10 @@ export default function SignupPage() {
 
     setLoading(false);
     if (!data.session) {
-      setInfo("Check your inbox to verify your email, then sign in.");
+      setAwaitingVerify(true);
+      setInfo(
+        "Account created. Check your inbox (and spam) to verify your email, then sign in. You can browse Connect meanwhile; creating work needs verification."
+      );
       return;
     }
     router.push("/app");
@@ -64,7 +74,7 @@ export default function SignupPage() {
     <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
       <h1 className="text-2xl font-extrabold text-text-primary">Create account</h1>
       <p className="mt-1 text-sm text-text-secondary">
-        Works with the same Supabase backend as the mobile app.
+        Same Supabase account as the mobile app. Verify email before creating clients, invoices, or Connect posts.
       </p>
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
         <div className="grid grid-cols-2 gap-2 rounded-xl bg-background p-1">
@@ -87,7 +97,7 @@ export default function SignupPage() {
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2.5 outline-none ring-primary focus:ring-2"
+            className="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2.5 text-text-primary outline-none ring-primary focus:ring-2"
           />
         </label>
         <label className="block text-sm font-medium text-text-primary">
@@ -97,7 +107,7 @@ export default function SignupPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2.5 outline-none ring-primary focus:ring-2"
+            className="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2.5 text-text-primary outline-none ring-primary focus:ring-2"
           />
         </label>
         <label className="block text-sm font-medium text-text-primary">
@@ -108,7 +118,7 @@ export default function SignupPage() {
             minLength={6}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2.5 outline-none ring-primary focus:ring-2"
+            className="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2.5 text-text-primary outline-none ring-primary focus:ring-2"
           />
         </label>
         {error && (
@@ -117,6 +127,7 @@ export default function SignupPage() {
         {info && (
           <p className="rounded-lg bg-primary/10 px-3 py-2 text-sm text-primary-dark">{info}</p>
         )}
+        {awaitingVerify && <ResendVerification email={email} />}
         <button
           type="submit"
           disabled={loading}
@@ -125,6 +136,16 @@ export default function SignupPage() {
           {loading ? "Creating…" : "Sign up"}
         </button>
       </form>
+      {awaitingVerify && (
+        <div className="mt-4 flex flex-wrap gap-2 text-sm">
+          <Link href="/login" className="rounded-full bg-navy px-4 py-2 font-semibold text-white">
+            Go to sign in
+          </Link>
+          <Link href="/connect" className="rounded-full border border-navy/20 px-4 py-2 font-semibold text-navy">
+            Browse Connect
+          </Link>
+        </div>
+      )}
       <p className="mt-4 text-center text-sm text-text-secondary">
         Already have an account?{" "}
         <Link href="/login" className="font-medium text-primary hover:underline">

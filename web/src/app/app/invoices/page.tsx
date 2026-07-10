@@ -2,12 +2,13 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile, isClientAccount } from "@/lib/profile";
 
 type InvoiceShareRow = {
-  id: string;
+  share_id: string;
   invoice_number?: string | null;
   total?: number | null;
   currency?: string | null;
   status?: string | null;
   client_email?: string | null;
+  public_token?: string | null;
 };
 
 export default async function InvoicesPage() {
@@ -21,7 +22,7 @@ export default async function InvoicesPage() {
     let q = supabase
       .from("invoice_shares")
       .select(
-        "id, invoice_number, total, currency, status, client_email, freelancer_uid, client_uid, updated_at"
+        "share_id, invoice_number, total, currency, status, client_email, freelancer_uid, client_uid, public_token, updated_at"
       )
       .order("updated_at", { ascending: false })
       .limit(40);
@@ -53,7 +54,7 @@ export default async function InvoicesPage() {
         <ul className="space-y-2">
           {rows.map((r) => (
             <li
-              key={r.id}
+              key={r.share_id}
               className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3"
             >
               <div>
@@ -61,6 +62,14 @@ export default async function InvoicesPage() {
                 <p className="text-sm text-text-secondary">
                   {client ? "From freelancer" : r.client_email} · {r.status}
                 </p>
+                {r.public_token && (
+                  <a
+                    href={`/i/${r.public_token}`}
+                    className="text-xs font-semibold text-primary"
+                  >
+                    Public link →
+                  </a>
+                )}
               </div>
               <p className="font-bold">
                 {r.currency} {Number(r.total ?? 0).toFixed(2)}

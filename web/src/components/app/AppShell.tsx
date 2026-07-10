@@ -12,6 +12,9 @@ import {
   MessageSquare,
   UserCircle,
   LayoutDashboard,
+  FolderKanban,
+  Bell,
+  CheckSquare,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -34,7 +37,8 @@ export function AppShell({
   const freelancerNav: NavItem[] = [
     { href: "/app", label: "Home", icon: Home },
     { href: "/app/clients", label: "Clients", icon: Users },
-    { href: "/app/invoices", label: "Invoices", icon: FileText },
+    { href: "/app/projects", label: "Work", icon: FolderKanban },
+    { href: "/app/invoices", label: "Billing", icon: FileText },
     { href: "/connect", label: "Connect", icon: Network },
     { href: "/app/hub", label: "Hub", icon: LayoutDashboard },
   ];
@@ -42,12 +46,22 @@ export function AppShell({
   const clientNav: NavItem[] = [
     { href: "/app", label: "Home", icon: Home },
     { href: "/app/messages", label: "Messages", icon: MessageSquare },
+    { href: "/app/tasks", label: "Tasks", icon: CheckSquare },
     { href: "/app/invoices", label: "Invoices", icon: FileText },
     { href: "/connect", label: "Connect", icon: Network },
     { href: "/app/account", label: "Account", icon: UserCircle },
   ];
 
   const nav = isClient ? clientNav : freelancerNav;
+  const mobileNav = isClient
+    ? clientNav.filter((n) => !["/app/tasks"].includes(n.href)).slice(0, 5)
+    : [
+        freelancerNav[0],
+        freelancerNav[1],
+        freelancerNav[2],
+        freelancerNav[3],
+        freelancerNav[5],
+      ];
 
   async function signOut() {
     const supabase = createClient();
@@ -64,8 +78,15 @@ export function AppShell({
             <span className="rounded-lg bg-primary/20 px-2 py-1 text-primary-light">CLIVORA</span>
             <span className="hidden text-sm font-medium text-white/70 sm:inline">Web</span>
           </Link>
-          <div className="flex items-center gap-3 text-sm">
-            <span className="hidden text-white/70 sm:inline">
+          <div className="flex items-center gap-2 text-sm sm:gap-3">
+            <Link
+              href="/app/notifications"
+              className="rounded-full p-2 text-white/80 hover:bg-white/10"
+              aria-label="Notifications"
+            >
+              <Bell className="h-4 w-4" />
+            </Link>
+            <span className="hidden max-w-[140px] truncate text-white/70 sm:inline">
               {profile.name || profile.email}
             </span>
             <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold">
@@ -90,7 +111,7 @@ export function AppShell({
       </header>
 
       <div className="mx-auto flex max-w-6xl gap-6 px-4 py-6">
-        <aside className="hidden w-52 shrink-0 md:block">
+        <aside className="hidden w-52 shrink-0 lg:block">
           <nav className="sticky top-6 space-y-1">
             {nav.map((item) => {
               const active =
@@ -120,9 +141,9 @@ export function AppShell({
         <main className="min-w-0 flex-1 pb-24">{children}</main>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-navy md:hidden">
-        <div className="mx-auto flex max-w-lg justify-around px-2 py-2">
-          {nav.map((item) => {
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-navy lg:hidden">
+        <div className="mx-auto flex max-w-lg justify-around px-1 py-2">
+          {mobileNav.map((item) => {
             const active =
               item.href === "/app"
                 ? pathname === "/app"
@@ -133,7 +154,7 @@ export function AppShell({
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex flex-col items-center gap-0.5 rounded-lg px-2 py-1 text-[10px] font-semibold",
+                  "flex flex-col items-center gap-0.5 rounded-lg px-1.5 py-1 text-[10px] font-semibold",
                   active ? "text-primary" : "text-white/60"
                 )}
               >
