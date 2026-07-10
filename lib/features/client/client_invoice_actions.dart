@@ -205,6 +205,8 @@ class _PaymentFormState extends State<_PaymentForm> {
           value: _method,
           decoration: const InputDecoration(labelText: 'Payment method'),
           items: const [
+            DropdownMenuItem(value: 'JazzCash', child: Text('JazzCash')),
+            DropdownMenuItem(value: 'EasyPaisa', child: Text('EasyPaisa')),
             DropdownMenuItem(value: 'Bank transfer', child: Text('Bank transfer')),
             DropdownMenuItem(value: 'PayPal', child: Text('PayPal')),
             DropdownMenuItem(value: 'Stripe', child: Text('Stripe / Card')),
@@ -217,8 +219,8 @@ class _PaymentFormState extends State<_PaymentForm> {
         TextField(
           controller: _noteCtrl,
           decoration: const InputDecoration(
-            labelText: 'Receipt / reference (optional)',
-            hintText: 'Transaction ID, screenshot note, etc.',
+            labelText: 'Reference / receipt note',
+            hintText: 'Transaction ID, screenshot note, etc. (optional)',
           ),
           maxLines: 3,
         ),

@@ -29,6 +29,8 @@ import '../../core/services/analytics_export_service.dart';
 import '../../core/services/app_update_service.dart';
 import '../../core/services/billable_to_invoice_service.dart';
 import '../../core/services/cloud_crm_backup_service.dart';
+import '../../core/services/sync_outbox_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MoreScreen extends ConsumerWidget {
   const MoreScreen({super.key});
@@ -187,6 +189,42 @@ class MoreScreen extends ConsumerWidget {
               ),
             ),
           ],
+          FutureBuilder<int>(
+            future: ref.read(syncOutboxServiceProvider).pendingCount(),
+            builder: (context, snap) {
+              final n = snap.data ?? 0;
+              if (n <= 0) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: Material(
+                  color: ClivoraColors.warningOrange.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () async {
+                      await ref.read(syncOutboxServiceProvider).processQueue();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Sync retry started')),
+                        );
+                      }
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.sync_problem_outlined, size: 18, color: ClivoraColors.warningOrange),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text('Sync pending ($n)', style: const TextStyle(fontWeight: FontWeight.w600))),
+                          const Icon(Icons.refresh, size: 16),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
           if (!isPlus) ...[
             const SizedBox(height: 24),
             const SectionHeader(title: 'CLIVORA Connect'),
@@ -271,6 +309,13 @@ class MoreScreen extends ConsumerWidget {
                 iconBackground: ClivoraColors.iconGreen,
                 iconColor: ClivoraColors.successGreen,
                 onTap: () => _billProjectToInvoice(context, ref),
+              ),
+              ToolGridTile(
+                icon: Icons.payments_outlined,
+                label: 'Payment queue',
+                iconBackground: ClivoraColors.iconTeal,
+                iconColor: Colors.teal,
+                onTap: () => context.push('/payment-confirmations'),
               ),
             ],
           ),
@@ -372,6 +417,12 @@ class MoreScreen extends ConsumerWidget {
             label: 'Security & Privacy',
             subtitle: 'Biometric lock, delete account, licenses',
             onTap: () => context.push('/security'),
+          ),
+          _SettingsTile(
+            icon: Icons.notifications_outlined,
+            label: 'Notifications',
+            subtitle: 'Messages, billing, contracts, team',
+            onTap: () => context.push('/notification-settings'),
           ),
           _SettingsTile(
             icon: Icons.palette_outlined,
@@ -535,11 +586,15 @@ class MoreScreen extends ConsumerWidget {
     );
   }
 
-  void _showInvoiceBranding(BuildContext context, WidgetRef ref) {
+  void _showInvoiceBranding(BuildContext context, WidgetRef ref) async {
     final branding = ref.read(invoiceBrandingProvider).valueOrNull;
     var accentColor = branding?.accentColor ?? '#6C63FF';
     var templateStyle = branding?.templateStyle ?? 'classic';
     var showLogo = branding?.showLogo ?? true;
+    final prefs = await SharedPreferences.getInstance();
+    final ntnCtrl = TextEditingController(text: prefs.getString('branding_ntn') ?? '');
+    final paymentCtrl = TextEditingController(text: prefs.getString('branding_payment_instructions') ?? '');
+    if (!context.mounted) return;
 
     showModalBottomSheet<void>(
       context: context,
@@ -560,6 +615,9 @@ class MoreScreen extends ConsumerWidget {
                       showLogo: Value(showLogo),
                     ),
                   );
+              final p = await SharedPreferences.getInstance();
+              await p.setString('branding_ntn', ntnCtrl.text.trim());
+              await p.setString('branding_payment_instructions', paymentCtrl.text.trim());
               ref.invalidate(invoiceBrandingProvider);
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -612,6 +670,22 @@ class MoreScreen extends ConsumerWidget {
                   description: 'White surfaces with subtle borders.',
                   selected: templateStyle == 'minimal',
                   onTap: () => setModalState(() => templateStyle = 'minimal'),
+                ),
+                const SizedBox(height: 8),
+                _TemplateOption(
+                  title: 'Bold',
+                  description: 'Strong accent bar and large title.',
+                  selected: templateStyle == 'bold',
+                  onTap: () => setModalState(() => templateStyle = 'bold'),
+                ),
+                const SizedBox(height: 16),
+                ClivoraTextField(controller: ntnCtrl, label: 'NTN', hint: 'Tax / NTN number'),
+                const SizedBox(height: 12),
+                ClivoraTextField(
+                  controller: paymentCtrl,
+                  label: 'Payment instructions',
+                  hint: 'Bank details, JazzCash, EasyPaisa…',
+                  maxLines: 3,
                 ),
                 const SizedBox(height: 16),
                 Row(

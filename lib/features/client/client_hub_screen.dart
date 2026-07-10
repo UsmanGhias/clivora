@@ -154,6 +154,13 @@ class ClientHubScreen extends ConsumerWidget {
                 onTap: () => context.push('/client-activity'),
               ),
               ToolGridTile(
+                icon: Icons.flag_outlined,
+                label: 'Milestones',
+                iconBackground: ClivoraColors.iconIndigo,
+                iconColor: Colors.indigo,
+                onTap: () => context.push('/client-milestones'),
+              ),
+              ToolGridTile(
                 icon: Icons.person_add_alt_1_outlined,
                 label: 'Link freelancer',
                 iconBackground: ClivoraColors.iconGreen,

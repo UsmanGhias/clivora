@@ -13,6 +13,7 @@ import 'core/services/biometric_service.dart';
 import 'core/services/connectivity_service.dart';
 import 'core/services/contract_sync_service.dart';
 import 'core/services/local_notification_service.dart';
+import 'core/services/overdue_invoice_service.dart';
 import 'core/services/push_notification_service.dart';
 import 'core/services/recurring_invoice_service.dart';
 import 'core/services/subscription_manager.dart';
@@ -98,6 +99,9 @@ class _ClivoraAppState extends ConsumerState<ClivoraApp> with WidgetsBindingObse
     await ref.read(automationServiceProvider).runWeeklySummaryIfDue();
     await ref.read(automationServiceProvider).runInactiveClientCheckIfDue();
     await ref.read(pushNotificationServiceProvider).initialize();
+    try {
+      await ref.read(overdueInvoiceServiceProvider).scanAndPromote();
+    } catch (_) {}
     await ref.read(syncOutboxServiceProvider).processQueue();
     await ref.read(syncOutboxServiceProvider).reconcileInvoiceShares();
     await ref.read(contractSyncServiceProvider).reconcileSignedContracts();

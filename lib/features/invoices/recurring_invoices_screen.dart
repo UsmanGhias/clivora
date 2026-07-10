@@ -106,8 +106,37 @@ class RecurringInvoicesScreen extends ConsumerWidget {
                             ref.invalidate(recurringInvoicesProvider);
                           },
                         ),
+                        Text(
+                          r.isActive ? 'Active' : 'Paused',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: r.isActive ? ClivoraColors.successGreen : ClivoraColors.warningOrange,
+                          ),
+                        ),
                       ],
                     ),
+                    if (!r.isActive)
+                      TextButton.icon(
+                        onPressed: () async {
+                          await ref.read(databaseProvider).updateRecurringInvoice(
+                                r.copyWith(isActive: true, updatedAt: DateTime.now()),
+                              );
+                          ref.invalidate(recurringInvoicesProvider);
+                        },
+                        icon: const Icon(Icons.play_arrow, size: 18),
+                        label: const Text('Resume'),
+                      )
+                    else
+                      TextButton.icon(
+                        onPressed: () async {
+                          await ref.read(databaseProvider).updateRecurringInvoice(
+                                r.copyWith(isActive: false, updatedAt: DateTime.now()),
+                              );
+                          ref.invalidate(recurringInvoicesProvider);
+                        },
+                        icon: const Icon(Icons.pause, size: 18),
+                        label: const Text('Pause'),
+                      ),
                     Text('${client?.contactPerson ?? 'Client'} · ${r.frequency}'),
                     Text(
                       '${formatCurrency(r.total)} · next ${DateFormat.yMMMd().format(r.nextRunAt)}',

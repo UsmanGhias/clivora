@@ -3,12 +3,19 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timezone/timezone.dart' as tz;
 
+import '../auth/auth_service.dart';
+import '../auth/user_roles.dart';
+import 'notification_deep_link.dart';
+
 final localNotificationServiceProvider = Provider<LocalNotificationService>((ref) {
-  return LocalNotificationService();
+  return LocalNotificationService(ref);
 });
 
 /// Device notifications for reminders and cloud alerts (FCM-ready channels).
 class LocalNotificationService {
+  LocalNotificationService(this.ref);
+
+  final Ref ref;
   final _plugin = FlutterLocalNotificationsPlugin();
   bool _initialized = false;
   int _id = 0;
@@ -22,23 +29,34 @@ class LocalNotificationService {
 
     try {
       const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-      const ios = DarwinInitializationSettings();
+      const ios = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
       const linux = LinuxInitializationSettings(defaultActionName: 'Open CLIVORA');
       await _plugin.initialize(
         const InitializationSettings(android: android, iOS: ios, linux: linux),
-        onDidReceiveNotificationResponse: (_) {},
+        onDidReceiveNotificationResponse: (response) {
+          final user = ref.read(authStateProvider).valueOrNull;
+          NotificationDeepLink.open(
+            response.payload,
+            isClient: isClientUser(user),
+          );
+        },
       );
 
       const channel = AndroidNotificationChannel(
         'clivora_alerts',
         'CLIVORA Alerts',
         description: 'Invoices, tasks, messages, and updates',
-        importance: Importance.defaultImportance,
+        importance: Importance.high,
       );
 
-      await _plugin
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-          ?.createNotificationChannel(channel);
+      final androidPlugin = _plugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      await androidPlugin?.createNotificationChannel(channel);
+      await androidPlugin?.requestNotificationsPermission();
     } catch (e) {
       debugPrint('Local notifications unavailable: $e');
     }
@@ -58,8 +76,8 @@ class LocalNotificationService {
         'clivora_alerts',
         'CLIVORA Alerts',
         channelDescription: 'Invoices, tasks, messages, and updates',
-        importance: Importance.defaultImportance,
-        priority: Priority.defaultPriority,
+        importance: Importance.high,
+        priority: Priority.high,
       ),
       iOS: DarwinNotificationDetails(),
     );
@@ -84,8 +102,8 @@ class LocalNotificationService {
         'clivora_alerts',
         'CLIVORA Alerts',
         channelDescription: 'Invoices, tasks, messages, and updates',
-        importance: Importance.defaultImportance,
-        priority: Priority.defaultPriority,
+        importance: Importance.high,
+        priority: Priority.high,
       ),
       iOS: DarwinNotificationDetails(),
       linux: LinuxNotificationDetails(),

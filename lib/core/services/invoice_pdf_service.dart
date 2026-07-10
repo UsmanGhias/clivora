@@ -6,6 +6,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/database/database.dart';
 import '../../data/models/invoice_line_item.dart';
@@ -82,6 +83,10 @@ class InvoicePdfService {
       }
     }
 
+    final prefs = await SharedPreferences.getInstance();
+    final ntn = prefs.getString('branding_ntn')?.trim() ?? '';
+    final paymentInstructions = prefs.getString('branding_payment_instructions')?.trim() ?? '';
+
     final doc = pw.Document();
     final template = branding.templateStyle;
 
@@ -130,6 +135,14 @@ class InvoicePdfService {
                           : 'Please pay by the due date. Reference invoice ${invoice.invoiceNumber} with your transfer.',
                       style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
                     ),
+                    if (paymentInstructions.isNotEmpty) ...[
+                      pw.SizedBox(height: 4),
+                      pw.Text(paymentInstructions, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                    ],
+                    if (ntn.isNotEmpty) ...[
+                      pw.SizedBox(height: 4),
+                      pw.Text('NTN: $ntn', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                    ],
                     if (business.businessAddress.isNotEmpty)
                       pw.Text(business.businessAddress, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
                     if (business.businessCity.isNotEmpty || business.businessCountry.isNotEmpty)
@@ -167,6 +180,47 @@ class InvoicePdfService {
     String template,
     String documentLabel,
   ) {
+    if (template == 'bold') {
+      return pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Container(width: double.infinity, height: 10, color: accent),
+          pw.SizedBox(height: 12),
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              if (logo != null)
+                pw.Container(
+                  width: 56,
+                  height: 56,
+                  margin: const pw.EdgeInsets.only(right: 14),
+                  child: pw.Image(logo, fit: pw.BoxFit.contain),
+                ),
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      business.businessName.isNotEmpty ? business.businessName : 'CLIVORA',
+                      style: pw.TextStyle(fontSize: 28, fontWeight: pw.FontWeight.bold, color: accent),
+                    ),
+                    if (business.businessEmail.isNotEmpty)
+                      pw.Text(business.businessEmail, style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                    if (business.businessPhone.isNotEmpty)
+                      pw.Text(business.businessPhone, style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                  ],
+                ),
+              ),
+              pw.Text(
+                documentLabel,
+                style: pw.TextStyle(fontSize: 28, fontWeight: pw.FontWeight.bold, color: accent),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+
     final bg = _templateHeaderBg(template);
     return pw.Container(
       width: double.infinity,
@@ -344,6 +398,8 @@ class InvoicePdfService {
         return PdfColor.fromInt(0xFFEFF6FF);
       case 'minimal':
         return PdfColors.white;
+      case 'bold':
+        return PdfColors.white;
       default:
         return PdfColor.fromInt(0xFFF3F4F6);
     }
@@ -355,6 +411,8 @@ class InvoicePdfService {
         return PdfColor(accent.red, accent.green, accent.blue, 0.15);
       case 'minimal':
         return PdfColors.grey100;
+      case 'bold':
+        return PdfColor(accent.red, accent.green, accent.blue, 0.22);
       default:
         return PdfColor.fromInt(0xFFE5E7EB);
     }

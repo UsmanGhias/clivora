@@ -373,13 +373,23 @@ class _CloudNotificationTile extends ConsumerWidget {
       case 'task':
         return isClient ? '/client-tasks' : '/notifications';
       case 'invoice':
+      case 'payment':
         return isClient ? '/client-invoices' : '/invoices';
+      case 'quote':
+        return isClient ? '/client-quotes' : '/quotes';
       case 'project':
+      case 'milestone':
         return isClient ? '/client-portal' : '/projects';
       case 'contract':
         return isClient ? '/client-contracts' : '/contracts';
       case 'invite':
+      case 'message':
         return isClient ? '/client-messages' : '/freelancer-messages';
+      case 'team_invite':
+      case 'team':
+        return '/team';
+      case 'review':
+        return '/reviews';
       default:
         return null;
     }

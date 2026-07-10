@@ -726,6 +726,7 @@ class AutomationsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(automationSettingsProvider);
+    final runsAsync = ref.watch(_automationRunsProvider);
     return ClivoraScaffold(
       title: 'Workflows',
       showBackButton: true,
@@ -773,11 +774,47 @@ class AutomationsScreen extends ConsumerWidget {
             enabled: settings.inactiveClientReminder,
             onChanged: ref.read(automationSettingsProvider.notifier).setInactiveClientReminder,
           ),
+          const SizedBox(height: 24),
+          Text('Recent runs', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          runsAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.all(12),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (_, __) => const Text('Could not load run log'),
+            data: (runs) {
+              if (runs.isEmpty) {
+                return Text('No runs logged yet.', style: Theme.of(context).textTheme.bodySmall);
+              }
+              return Column(
+                children: [
+                  for (final run in runs)
+                    ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('${run['key'] ?? 'run'}'),
+                      subtitle: Text('${run['detail'] ?? ''}'),
+                      trailing: Text(
+                        '${run['created_at'] ?? ''}'.length >= 10
+                            ? '${run['created_at']}'.substring(0, 10)
+                            : '${run['created_at'] ?? ''}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
         ],
       ),
     );
   }
 }
+
+final _automationRunsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) {
+  return ref.read(automationServiceProvider).recentRuns(limit: 20);
+});
 
 class _AutomationTile extends StatelessWidget {
   const _AutomationTile({
