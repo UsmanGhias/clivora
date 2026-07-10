@@ -48,6 +48,11 @@ const freelancerExtraRoutes = {
   '/quotes',
   '/recurring-invoices',
   '/credits',
+  '/payment-confirmations',
+  '/security',
+  '/notification-settings',
+  '/reviews',
+  '/referral',
 };
 
 /// Routes only clients may access.
@@ -148,7 +153,12 @@ String? authRedirect({required String location, required User? user, required bo
     return null;
   }
 
-  if (!isClientUser(user) && !isAdminUser(user) && isClientRoute(path)) {
+  // Shared routes (e.g. /profile, /upgrade, /connect) are in both lists —
+  // do not redirect freelancers away from them.
+  if (!isClientUser(user) &&
+      !isAdminUser(user) &&
+      isClientRoute(path) &&
+      !isFreelancerRoute(path)) {
     return '/dashboard';
   }
 

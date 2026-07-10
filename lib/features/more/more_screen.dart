@@ -234,7 +234,7 @@ class MoreScreen extends ConsumerWidget {
               child: InkWell(
                 borderRadius: BorderRadius.circular(18),
                 onTap: () {
-                  if (context.mounted) context.push('/upgrade');
+                  if (context.mounted) context.push('/connect');
                 },
                 child: Container(
                   padding: const EdgeInsets.all(16),
@@ -259,13 +259,13 @@ class MoreScreen extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Unlock Connect',
+                              'What is Connect?',
                               style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Pro Plus bottom tab · ${ProPricing.plusMonthlyLabel}/mo',
-                              style: const TextStyle(color: Colors.white70, fontSize: 12),
+                              'Match with clients & freelancers · Pro Plus · ${ProPricing.plusMonthlyLabel}/mo',
+                              style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.35),
                             ),
                           ],
                         ),
