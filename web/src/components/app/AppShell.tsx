@@ -110,7 +110,6 @@ export function AppShell({
   const headerBg = isClient ? "bg-client-header" : "bg-navy";
   const activeAside = isClient ? "bg-client-accent text-white" : "bg-navy text-white";
   const activeMobile = isClient ? "text-client-muted" : "text-primary";
-  const upgradeLabel = plus ? "Pro Plus" : "Upgrade";
 
   return (
     <div
@@ -148,13 +147,13 @@ export function AppShell({
               {isClient ? "Client" : "Freelancer"}
             </span>
             <Link
-              href="/pro"
+              href={plus ? "/connect" : "/pro"}
               className={cn(
                 "inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-white",
                 isClient ? "bg-client-accent" : "bg-primary",
               )}
             >
-              <Sparkles className="h-3.5 w-3.5" /> {upgradeLabel}
+              <Sparkles className="h-3.5 w-3.5" /> {plus ? "Pro Plus" : "Upgrade"}
             </Link>
             <button
               type="button"

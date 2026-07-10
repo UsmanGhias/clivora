@@ -21,7 +21,7 @@
 @layer utilities {
   .text-gradient {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #0D9488 0%, #5EEAD4 50%, #7C5CFF 100%);
+    background-image: linear-gradient(135deg, #0D9488 0%, #5EEAD4 50%, #99F6E4 100%);
   }
 
   .text-gradient-gold {
@@ -53,8 +53,8 @@
 
   .grid-pattern {
     background-image:
-      linear-gradient(rgba(108, 99, 255, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(108, 99, 255, 0.03) 1px, transparent 1px);
+      linear-gradient(rgba(13, 148, 136, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(13, 148, 136, 0.04) 1px, transparent 1px);
     background-size: 60px 60px;
   }
 

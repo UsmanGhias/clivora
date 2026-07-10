@@ -104,7 +104,7 @@ type ConnectAutoApproveSettings = {
 };
 
 const EMPTY = "N/A";
-const ADMIN_VERSION = "v2.10.4";
+const ADMIN_VERSION = "v2.10.5";
 const DEFAULT_CONNECT_SETTINGS: ConnectAutoApproveSettings = {
   profiles: true,
   needs: true,

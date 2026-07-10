@@ -26,7 +26,9 @@ export async function getProfile(): Promise<Profile | null> {
 
   const { data } = await supabase
     .from("profiles")
-    .select("id, email, name, account_type, subscription_plan, role")
+    .select(
+      "id, email, name, account_type, subscription_plan, role, is_blocked, is_restricted, block_reason",
+    )
     .eq("id", user.id)
     .maybeSingle();
 
@@ -38,5 +40,15 @@ export async function getProfile(): Promise<Profile | null> {
     name: (user.user_metadata?.name as string | undefined) ?? null,
     account_type: (user.user_metadata?.account_type as string | undefined) ?? "freelancer",
     subscription_plan: "free",
+    is_blocked: false,
+    is_restricted: false,
   };
+}
+
+export function isBlocked(profile: Profile | null) {
+  return profile?.is_blocked === true;
+}
+
+export function isRestricted(profile: Profile | null) {
+  return profile?.is_restricted === true;
 }

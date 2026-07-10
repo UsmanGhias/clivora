@@ -7,4 +7,7 @@ export type Profile = {
   account_type: string | null;
   subscription_plan: string | null;
   role?: string | null;
+  is_blocked?: boolean | null;
+  is_restricted?: boolean | null;
+  block_reason?: string | null;
 };
