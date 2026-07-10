@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/auth/auth_service.dart';
 import '../../core/auth/user_roles.dart';
@@ -10,15 +11,20 @@ import '../../core/theme/clivora_colors.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 
-/// CLIVORA Connect — freelancer Pro Plus / client Pro marketplace.
+const _savedPrefsKey = 'connect_saved_ids';
+const _teal = Color(0xFF0F766E);
+
+/// CLIVORA Connect — Pro Plus marketplace for freelancers and clients.
 class ConnectMarketplaceScreen extends ConsumerStatefulWidget {
   const ConnectMarketplaceScreen({super.key});
 
   @override
-  ConsumerState<ConnectMarketplaceScreen> createState() => _ConnectMarketplaceScreenState();
+  ConsumerState<ConnectMarketplaceScreen> createState() =>
+      _ConnectMarketplaceScreenState();
 }
 
-class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScreen>
+class _ConnectMarketplaceScreenState
+    extends ConsumerState<ConnectMarketplaceScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabs;
   final _skillCtrl = TextEditingController();
@@ -27,19 +33,21 @@ class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScr
   List<Map<String, dynamic>> _profiles = [];
   List<Map<String, dynamic>> _needs = [];
   List<Map<String, dynamic>> _requests = [];
+  Set<String> _savedIds = {};
+  String _profileFilter = 'all'; // all | verified | available
   String _inboxFilter = 'all'; // all | pending | accepted | declined
+  bool _showSavedOnly = false;
 
-  bool _hasConnectAccess(WidgetRef ref) {
-    final user = ref.read(authStateProvider).valueOrNull;
-    if (isClientUser(user)) return ref.read(isProProvider);
-    return ref.read(isProPlusProvider);
-  }
+  bool _hasConnectAccess(WidgetRef ref) => ref.read(isProPlusProvider);
 
   @override
   void initState() {
     super.initState();
     _tabs = TabController(length: 3, vsync: this);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _reload());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadSavedIds();
+      _reload();
+    });
   }
 
   @override
@@ -47,6 +55,32 @@ class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScr
     _tabs.dispose();
     _skillCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadSavedIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(
+      () => _savedIds = (prefs.getStringList(_savedPrefsKey) ?? []).toSet(),
+    );
+  }
+
+  Future<void> _persistSavedIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_savedPrefsKey, _savedIds.toList()..sort());
+  }
+
+  Future<void> _toggleSaved(Map<String, dynamic> row) async {
+    final id = _connectRowId(row);
+    if (id.isEmpty) return;
+    setState(() {
+      if (_savedIds.contains(id)) {
+        _savedIds.remove(id);
+      } else {
+        _savedIds.add(id);
+      }
+    });
+    await _persistSavedIds();
   }
 
   Future<void> _reload() async {
@@ -87,115 +121,63 @@ class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScr
     }
   }
 
+  void _showSaved() {
+    _tabs.animateTo(0);
+    setState(() => _showSavedOnly = true);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final hasAccess = _hasConnectAccess(ref);
+    final hasAccess = ref.watch(isProPlusProvider);
     final user = ref.watch(authStateProvider).valueOrNull;
     final isClient = isClientUser(user);
     final scheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final messenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
 
     return ClivoraScaffold(
-      title: 'CLIVORA Connect',
+      title: 'Connect',
       showBackButton: false,
-      action: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            tooltip: isClient ? 'My about / listing' : 'My listing',
-            onPressed: () => context.push('/connect/listing'),
-            icon: const Icon(Icons.badge_outlined),
-          ),
-          const SizedBox(width: 4),
-          if (isClient)
-            IconButton(
-              tooltip: 'Post a job',
-              onPressed: () => context.push('/connect/need'),
-              icon: const Icon(Icons.work_outline),
-            ),
-          if (isClient) const SizedBox(width: 4),
-          IconButton(
-            tooltip: 'Refresh',
-            onPressed: _loading ? null : _reload,
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
+      action: IconButton(
+        tooltip: 'Refresh',
+        onPressed: _loading ? null : _reload,
+        icon: const Icon(Icons.refresh),
       ),
       body: !hasAccess
-          ? _ConnectGate(isClient: isClient)
+          ? const _ConnectGate()
           : Column(
               children: [
-                TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0, end: 1),
-                  duration: const Duration(milliseconds: 520),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, t, child) => Opacity(
-                    opacity: t,
-                    child: Transform.translate(
-                      offset: Offset(0, 12 * (1 - t)),
-                      child: child,
-                    ),
-                  ),
-                  child: Container(
-                    margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          ClivoraColors.navyDark,
-                          ClivoraColors.navyDark.withValues(alpha: 0.92),
-                          const Color(0xFF0F766E).withValues(alpha: 0.85),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'CLIVORA Connect',
-                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                color: Colors.white.withValues(alpha: 0.85),
-                                letterSpacing: 0.6,
-                                fontWeight: FontWeight.w700,
-                              ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Skills first. Identity later.',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800,
-                              ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Browse anonymously. Contact requests stay private until both sides accept. Then emails unlock and you work inside CLIVORA.',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.white.withValues(alpha: 0.85),
-                                height: 1.4,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
+                const _SlimConnectBanner(),
+                _QuickActionsRow(
+                  isClient: isClient,
+                  savedCount: _savedIds.length,
+                  onListing: () => context.push('/connect/listing'),
+                  onPostJob: () => context.push('/connect/need'),
+                  onSaved: _showSaved,
+                  onInbox: () => _tabs.animateTo(2),
                 ),
                 TabBar(
                   controller: _tabs,
                   labelColor: scheme.primary,
-                  unselectedLabelColor: scheme.onSurface.withValues(alpha: 0.55),
+                  unselectedLabelColor: scheme.onSurface.withValues(
+                    alpha: 0.55,
+                  ),
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 8),
                   tabs: [
                     Tab(text: isClient ? 'Talent' : 'Clients'),
-                    Tab(text: isClient ? 'My jobs' : 'Open jobs'),
+                    Tab(text: isClient ? 'Jobs' : 'Open jobs'),
                     Tab(text: 'Inbox (${_requests.length})'),
                   ],
                 ),
                 if (_error != null)
                   Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Text(_error!, style: TextStyle(color: scheme.error)),
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      _error!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: scheme.error, fontSize: 12),
+                    ),
                   ),
                 Expanded(
                   child: _loading
@@ -203,71 +185,90 @@ class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScr
                       : RefreshIndicator(
                           onRefresh: _reload,
                           child: TabBarView(
-                          controller: _tabs,
-                          children: [
-                            _TalentTab(
-                              freelancers: _profiles,
-                              skillCtrl: _skillCtrl,
-                              onSearch: _reload,
-                              onContact: (row) => _contactProfile(row),
-                              isDark: isDark,
-                              browseClients: !isClient,
-                            ),
-                            _NeedsTab(
-                              needs: _needs,
-                              isClient: isClient,
-                              onCreate: () => context.push('/connect/need'),
-                              onContact: (row) => _contactNeed(row),
-                              isDark: isDark,
-                            ),
-                            _InboxTab(
-                              requests: _requests,
-                              myUid: ref.read(connectMarketplaceServiceProvider).currentUserId,
-                              filter: _inboxFilter,
-                              onFilterChanged: (f) => setState(() => _inboxFilter = f),
-                              onAccept: (id) async {
-                                await ref
+                            controller: _tabs,
+                            children: [
+                              _TalentTab(
+                                profiles: _profiles,
+                                skillCtrl: _skillCtrl,
+                                filter: _profileFilter,
+                                showSavedOnly: _showSavedOnly,
+                                savedIds: _savedIds,
+                                onFilterChanged: (filter) {
+                                  setState(() {
+                                    _profileFilter = filter;
+                                    _showSavedOnly = false;
+                                  });
+                                },
+                                onClearSavedFilter: () =>
+                                    setState(() => _showSavedOnly = false),
+                                onSearch: _reload,
+                                onContact: _contactProfile,
+                                onToggleSaved: _toggleSaved,
+                                browseClients: !isClient,
+                              ),
+                              _NeedsTab(
+                                needs: _needs,
+                                isClient: isClient,
+                                onCreate: () => context.push('/connect/need'),
+                                onContact: _contactNeed,
+                              ),
+                              _InboxTab(
+                                requests: _requests,
+                                myUid: ref
                                     .read(connectMarketplaceServiceProvider)
-                                    .respondToRequest(id, accept: true);
-                                if (!mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Accepted. Identity unlocked — add them to your workspace.'),
-                                  ),
-                                );
-                                await _reload();
-                              },
-                              onDecline: (id) async {
-                                await ref
-                                    .read(connectMarketplaceServiceProvider)
-                                    .respondToRequest(id, accept: false);
-                                await _reload();
-                              },
-                              onLinkWorkspace: (row) async {
-                                try {
-                                  final id = await ref
+                                    .currentUserId,
+                                filter: _inboxFilter,
+                                onFilterChanged: (f) =>
+                                    setState(() => _inboxFilter = f),
+                                onAccept: (id) async {
+                                  await ref
                                       .read(connectMarketplaceServiceProvider)
-                                      .linkAcceptedPartnerToWorkspace(row);
+                                      .respondToRequest(id, accept: true);
                                   if (!mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
+                                  messenger.showSnackBar(
+                                    const SnackBar(
                                       content: Text(
-                                        id == null
-                                            ? 'Could not link partner (missing email).'
-                                            : 'Added to Clients. Open workspace to start work.',
+                                        'Accepted. Identity unlocked.',
                                       ),
                                     ),
                                   );
-                                  if (id != null && mounted) context.push('/customers');
-                                } catch (e) {
-                                  if (!mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
-                                }
-                              },
-                            ),
-                          ],
+                                  await _reload();
+                                },
+                                onDecline: (id) async {
+                                  await ref
+                                      .read(connectMarketplaceServiceProvider)
+                                      .respondToRequest(id, accept: false);
+                                  await _reload();
+                                },
+                                onLinkWorkspace: (row) async {
+                                  try {
+                                    final id = await ref
+                                        .read(connectMarketplaceServiceProvider)
+                                        .linkAcceptedPartnerToWorkspace(row);
+                                    if (!mounted) return;
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          id == null
+                                              ? 'Could not link partner.'
+                                              : 'Added to Clients.',
+                                        ),
+                                      ),
+                                    );
+                                    if (id != null) {
+                                      router.push('/customers');
+                                    }
+                                  } catch (e) {
+                                    if (!mounted) return;
+                                    messenger.showSnackBar(
+                                      SnackBar(content: Text('$e')),
+                                    );
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
                 ),
               ],
             ),
@@ -275,38 +276,54 @@ class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScr
   }
 
   Future<void> _contactProfile(Map<String, dynamic> row) async {
-    final message = await _askMessage('Introduce yourself without sharing personal details yet.');
+    final message = await _askMessage(
+      'Introduce yourself without sharing personal details yet.',
+    );
     if (message == null || message.isEmpty) return;
     try {
-      await ref.read(connectMarketplaceServiceProvider).sendContactRequest(
+      await ref
+          .read(connectMarketplaceServiceProvider)
+          .sendContactRequest(
             toUserId: row['user_id'] as String,
             targetProfileId: row['id'] as String?,
             message: message,
           );
-      await ref.read(connectMarketplaceServiceProvider).logConnectEvent('connect_request_sent');
+      await ref
+          .read(connectMarketplaceServiceProvider)
+          .logConnectEvent('connect_request_sent');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Request sent. Email stays hidden until they accept.')),
+          const SnackBar(
+            content: Text('Request sent. Email stays hidden until accept.'),
+          ),
         );
         await _reload();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$e')));
       }
     }
   }
 
   Future<void> _contactNeed(Map<String, dynamic> row) async {
-    final message = await _askMessage('Pitch your fit for this need. Stay anonymous for now.');
+    final message = await _askMessage(
+      'Pitch your fit for this need. Stay anonymous for now.',
+    );
     if (message == null || message.isEmpty) return;
     try {
-      await ref.read(connectMarketplaceServiceProvider).sendContactRequest(
+      await ref
+          .read(connectMarketplaceServiceProvider)
+          .sendContactRequest(
             toUserId: row['client_user_id'] as String,
             targetNeedId: row['id'] as String?,
             message: message,
           );
-      await ref.read(connectMarketplaceServiceProvider).logConnectEvent('connect_need_pitch_sent');
+      await ref
+          .read(connectMarketplaceServiceProvider)
+          .logConnectEvent('connect_need_pitch_sent');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Pitch sent anonymously.')),
@@ -315,7 +332,9 @@ class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScr
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$e')));
       }
     }
   }
@@ -332,8 +351,14 @@ class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScr
           decoration: InputDecoration(hintText: hint),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, ctrl.text.trim()), child: const Text('Send')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+            child: const Text('Send'),
+          ),
         ],
       ),
     );
@@ -341,210 +366,447 @@ class _ConnectMarketplaceScreenState extends ConsumerState<ConnectMarketplaceScr
 }
 
 class _ConnectGate extends StatelessWidget {
-  const _ConnectGate({required this.isClient});
-
-  final bool isClient;
+  const _ConnectGate();
 
   @override
   Widget build(BuildContext context) {
-    final title = isClient ? 'CLIVORA Connect is Client Pro' : 'CLIVORA Connect is Pro Plus';
-    final body = isClient
-        ? 'Publish your about, post jobs, and connect with freelancers — identity unlocks only after mutual accept. ${ProPricing.monthlyLabel}/mo.'
-        : 'A private marketplace built for trust: skills and briefs first, identity only after mutual accept. ${ProPricing.plusMonthlyLabel}/mo.';
-    final cta = isClient
-        ? 'Upgrade to Client Pro · ${ProPricing.monthlyLabel}'
-        : 'Upgrade to Pro Plus · ${ProPricing.plusMonthlyLabel}';
-    return ListView(
-      padding: const EdgeInsets.all(24),
-      children: [
-        Icon(Icons.hub_outlined, size: 64, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(height: 16),
-        Text(
-          title,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          body,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                height: 1.45,
+    final scheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.lock_outline, size: 56, color: scheme.primary),
+            const SizedBox(height: 14),
+            Text(
+              'Connect is Pro Plus',
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Upgrade to Pro Plus to browse, save, post, and message in the private marketplace.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurface.withValues(alpha: 0.7),
+                height: 1.35,
               ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 18),
+            FilledButton.icon(
+              onPressed: () => context.push('/upgrade'),
+              icon: const Icon(Icons.lock_open_outlined),
+              label: Text(
+                'Upgrade to Pro Plus · ${ProPricing.plusMonthlyLabel}',
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 24),
-        FilledButton(
-          onPressed: () => context.push('/upgrade'),
-          child: Text(cta),
+      ),
+    );
+  }
+}
+
+class _SlimConnectBanner extends StatelessWidget {
+  const _SlimConnectBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: ClivoraColors.navyDark,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.hub_outlined, color: Colors.white, size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Private marketplace: skills first, identity after mutual accept.',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.white.withValues(alpha: 0.9),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickActionsRow extends StatelessWidget {
+  const _QuickActionsRow({
+    required this.isClient,
+    required this.savedCount,
+    required this.onListing,
+    required this.onPostJob,
+    required this.onSaved,
+    required this.onInbox,
+  });
+
+  final bool isClient;
+  final int savedCount;
+  final VoidCallback onListing;
+  final VoidCallback onPostJob;
+  final VoidCallback onSaved;
+  final VoidCallback onInbox;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          _ActionTextButton(
+            icon: Icons.badge_outlined,
+            label: 'My listing',
+            onPressed: onListing,
+          ),
+          if (isClient)
+            _ActionTextButton(
+              icon: Icons.add_business_outlined,
+              label: 'Post job',
+              onPressed: onPostJob,
+            ),
+          _ActionTextButton(
+            icon: Icons.favorite_border,
+            label: savedCount == 0 ? 'Saved' : 'Saved $savedCount',
+            onPressed: onSaved,
+          ),
+          _ActionTextButton(
+            icon: Icons.inbox_outlined,
+            label: 'Inbox',
+            onPressed: onInbox,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionTextButton extends StatelessWidget {
+  const _ActionTextButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: TextButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 16),
+        label: Text(label),
+        style: TextButton.styleFrom(
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         ),
-      ],
+      ),
     );
   }
 }
 
 class _TalentTab extends StatelessWidget {
   const _TalentTab({
-    required this.freelancers,
+    required this.profiles,
     required this.skillCtrl,
+    required this.filter,
+    required this.showSavedOnly,
+    required this.savedIds,
+    required this.onFilterChanged,
+    required this.onClearSavedFilter,
     required this.onSearch,
     required this.onContact,
-    required this.isDark,
+    required this.onToggleSaved,
     this.browseClients = false,
   });
 
-  final List<Map<String, dynamic>> freelancers;
+  final List<Map<String, dynamic>> profiles;
   final TextEditingController skillCtrl;
+  final String filter;
+  final bool showSavedOnly;
+  final Set<String> savedIds;
+  final ValueChanged<String> onFilterChanged;
+  final VoidCallback onClearSavedFilter;
   final VoidCallback onSearch;
   final void Function(Map<String, dynamic>) onContact;
-  final bool isDark;
+  final Future<void> Function(Map<String, dynamic>) onToggleSaved;
   final bool browseClients;
 
   @override
   Widget build(BuildContext context) {
-    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final filtered = profiles.where((row) {
+      final id = _connectRowId(row);
+      if (showSavedOnly && !savedIds.contains(id)) return false;
+      if (filter == 'verified' && row['is_verified'] != true) return false;
+      if (filter == 'available' &&
+          (row['availability'] as String? ?? '').toLowerCase() != 'available') {
+        return false;
+      }
+      return true;
+    }).toList();
+
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.only(top: 8, bottom: 88),
       children: [
-        TextField(
-          controller: skillCtrl,
-          decoration: InputDecoration(
-            hintText: browseClients
-                ? 'Filter clients (e.g. SaaS, e‑commerce)'
-                : 'Filter by skill (e.g. Flutter, SEO)',
-            suffixIcon: IconButton(icon: const Icon(Icons.search), onPressed: onSearch),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          onSubmitted: (_) => onSearch(),
+        _TalentControls(
+          skillCtrl: skillCtrl,
+          filter: filter,
+          showSavedOnly: showSavedOnly,
+          browseClients: browseClients,
+          onFilterChanged: onFilterChanged,
+          onClearSavedFilter: onClearSavedFilter,
+          onSearch: onSearch,
         ),
-        const SizedBox(height: 12),
-        if (freelancers.isEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 40),
-            child: Column(
-              children: [
-                Icon(Icons.person_search_outlined, size: 48, color: onSurface.withValues(alpha: 0.35)),
-                const SizedBox(height: 12),
-                Text(
-                  browseClients
-                      ? 'No client about listings yet. Clients with Pro can publish theirs from My listing.'
-                      : 'No listed freelancers yet. Be the first from My listing.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: onSurface.withValues(alpha: 0.6)),
-                ),
-              ],
-            ),
-          ),
-        ...freelancers.asMap().entries.map((entry) {
-          final index = entry.key;
-          final row = entry.value;
-          final skills = (row['skills'] as List?)?.map((e) => e.toString()).toList() ?? [];
-          return TweenAnimationBuilder<double>(
-            key: ValueKey(row['id'] ?? index),
-            tween: Tween(begin: 0, end: 1),
-            duration: Duration(milliseconds: 320 + (index.clamp(0, 6) * 40)),
-            curve: Curves.easeOutCubic,
-            builder: (context, t, child) => Opacity(
-              opacity: t,
-              child: Transform.translate(offset: Offset(0, 10 * (1 - t)), child: child),
-            ),
-            child: Container(
-            margin: const EdgeInsets.only(bottom: 14),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: isDark ? ClivoraColors.navyDark.withValues(alpha: 0.55) : Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? ClivoraColors.darkBorder : ClivoraColors.borderLight,
+        if (filtered.isEmpty)
+          _CompactEmpty(
+            icon: Icons.person_search_outlined,
+            text: showSavedOnly
+                ? 'No saved listings yet.'
+                : browseClients
+                ? 'No client listings yet.'
+                : 'No freelancers yet.',
+          )
+        else
+          ..._withDividers(
+            context,
+            filtered.map(
+              (row) => _ProfileFeedRow(
+                row: row,
+                browseClients: browseClients,
+                saved: savedIds.contains(_connectRowId(row)),
+                onTap: () => onContact(row),
+                onToggleSaved: () => onToggleSaved(row),
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: ClivoraColors.primary.withValues(alpha: 0.15),
-                      child: Text(
-                        (row['display_title'] as String? ?? (browseClients ? 'C' : 'F')).isNotEmpty
-                            ? (row['display_title'] as String).characters.first.toUpperCase()
-                            : (browseClients ? 'C' : 'F'),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  row['display_title'] as String? ??
-                                      (browseClients ? 'Client' : 'Freelancer'),
-                                  style: const TextStyle(fontWeight: FontWeight.w700),
-                                ),
-                              ),
-                              if (row['is_verified'] == true) ...[
-                                const SizedBox(width: 6),
-                                const Icon(Icons.verified, color: Color(0xFF0F766E), size: 18),
-                              ],
-                            ],
-                          ),
-                          Text(
-                            row['headline'] as String? ?? '',
-                            style: TextStyle(color: onSurface.withValues(alpha: 0.65), fontSize: 13),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+          ),
+      ],
+    );
+  }
+}
+
+class _TalentControls extends StatelessWidget {
+  const _TalentControls({
+    required this.skillCtrl,
+    required this.filter,
+    required this.showSavedOnly,
+    required this.browseClients,
+    required this.onFilterChanged,
+    required this.onClearSavedFilter,
+    required this.onSearch,
+  });
+
+  final TextEditingController skillCtrl;
+  final String filter;
+  final bool showSavedOnly;
+  final bool browseClients;
+  final ValueChanged<String> onFilterChanged;
+  final VoidCallback onClearSavedFilter;
+  final VoidCallback onSearch;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 42,
+            child: TextField(
+              controller: skillCtrl,
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: browseClients ? 'Filter clients' : 'Filter by skill',
+                prefixIcon: const Icon(Icons.search, size: 18),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.arrow_forward, size: 18),
+                  onPressed: onSearch,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  row['bio'] as String? ?? '',
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: onSurface.withValues(alpha: 0.8), height: 1.35),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    Chip(
-                      label: Text(row['rate_band'] as String? ?? 'negotiable'),
-                      visualDensity: VisualDensity.compact,
-                      backgroundColor: ClivoraColors.iconTeal,
-                      side: BorderSide.none,
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                    ),
-                    ...skills.take(4).map(
-                          (s) => Chip(
-                            label: Text(s),
+              ),
+              onSubmitted: (_) => onSearch(),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      for (final entry in const [
+                        ('all', 'All'),
+                        ('verified', 'Verified'),
+                        ('available', 'Available'),
+                      ])
+                        Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: ChoiceChip(
+                            label: Text(entry.$2),
+                            selected: filter == entry.$1 && !showSavedOnly,
+                            onSelected: (_) => onFilterChanged(entry.$1),
                             visualDensity: VisualDensity.compact,
-                            side: BorderSide(
-                              color: isDark ? ClivoraColors.darkBorder : ClivoraColors.borderLight,
-                            ),
-                            backgroundColor: Colors.transparent,
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
                           ),
                         ),
-                  ],
-                ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton.icon(
-                    onPressed: () => onContact(row),
-                    icon: const Icon(Icons.handshake_outlined),
-                    label: Text(browseClients ? 'Connect' : 'Request contact'),
+                      if (showSavedOnly)
+                        InputChip(
+                          label: const Text('Saved'),
+                          selected: true,
+                          onDeleted: onClearSavedFilter,
+                          visualDensity: VisualDensity.compact,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                        ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-            ),
-          );
-        }),
-      ],
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.sort, size: 15, color: scheme.onSurfaceVariant),
+              const SizedBox(width: 3),
+              Text(
+                'Newest',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileFeedRow extends StatelessWidget {
+  const _ProfileFeedRow({
+    required this.row,
+    required this.browseClients,
+    required this.saved,
+    required this.onTap,
+    required this.onToggleSaved,
+  });
+
+  final Map<String, dynamic> row;
+  final bool browseClients;
+  final bool saved;
+  final VoidCallback onTap;
+  final VoidCallback onToggleSaved;
+
+  @override
+  Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final title =
+        row['display_title'] as String? ??
+        (browseClients ? 'Client' : 'Freelancer');
+    final headline = row['headline'] as String? ?? '';
+    final skills = _stringList(row['skills']);
+    final meta = [
+      row['rate_band'] as String? ?? 'Negotiable',
+      ...skills.take(2),
+    ].where((value) => value.trim().isNotEmpty).join(' · ');
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            children: [
+              _InitialDot(text: title, fallback: browseClients ? 'C' : 'F'),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                        if (row['is_verified'] == true) ...[
+                          const SizedBox(width: 5),
+                          const Icon(Icons.verified, color: _teal, size: 15),
+                        ],
+                      ],
+                    ),
+                    if (headline.isNotEmpty)
+                      Text(
+                        headline,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: onSurface.withValues(alpha: 0.68),
+                          fontSize: 12.5,
+                        ),
+                      ),
+                    Text(
+                      meta,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _teal,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: saved ? 'Unsave' : 'Save',
+                onPressed: onToggleSaved,
+                icon: Icon(
+                  saved ? Icons.favorite : Icons.favorite_border,
+                  color: saved ? _teal : onSurface.withValues(alpha: 0.45),
+                  size: 20,
+                ),
+                visualDensity: VisualDensity.compact,
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: onSurface.withValues(alpha: 0.35),
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -555,79 +817,124 @@ class _NeedsTab extends StatelessWidget {
     required this.isClient,
     required this.onCreate,
     required this.onContact,
-    required this.isDark,
   });
 
   final List<Map<String, dynamic>> needs;
   final bool isClient;
   final VoidCallback onCreate;
   final void Function(Map<String, dynamic>) onContact;
-  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.only(top: 8, bottom: 88),
+      children: [
+        if (isClient)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: onCreate,
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('Post job'),
+              style: TextButton.styleFrom(
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              ),
+            ),
+          ),
+        if (needs.isEmpty)
+          _CompactEmpty(
+            icon: Icons.work_outline,
+            text: isClient ? 'No jobs posted yet.' : 'No open jobs yet.',
+          )
+        else
+          ..._withDividers(
+            context,
+            needs.map(
+              (row) => _NeedFeedRow(
+                row: row,
+                onTap: isClient ? null : () => onContact(row),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _NeedFeedRow extends StatelessWidget {
+  const _NeedFeedRow({required this.row, required this.onTap});
+
+  final Map<String, dynamic> row;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final onSurface = Theme.of(context).colorScheme.onSurface;
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        if (isClient)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: OutlinedButton.icon(
-              onPressed: onCreate,
-              icon: const Icon(Icons.add),
-              label: const Text('Post a need (anonymous)'),
-            ),
-          ),
-        if (needs.isEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 40),
-            child: Text(
-              isClient ? 'No open needs yet. Post your first brief.' : 'No open needs yet.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: onSurface.withValues(alpha: 0.6)),
-            ),
-          ),
-        ...needs.map((row) {
-          final skills = (row['skills'] as List?)?.map((e) => e.toString()).toList() ?? [];
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? ClivoraColors.darkBorder : ClivoraColors.borderLight,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  row['title'] as String? ?? 'Need',
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-                ),
-                const SizedBox(height: 6),
-                Text(row['summary'] as String? ?? '', style: TextStyle(height: 1.35, color: onSurface.withValues(alpha: 0.8))),
-                const SizedBox(height: 8),
-                Text(
-                  'Budget: ${row['budget_band'] ?? 'negotiable'} · ${skills.take(3).join(', ')}',
-                  style: TextStyle(fontSize: 12, color: onSurface.withValues(alpha: 0.6)),
-                ),
-                if (!isClient)
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton.icon(
-                      onPressed: () => onContact(row),
-                      icon: const Icon(Icons.send_outlined),
-                      label: const Text('Pitch anonymously'),
+    final title = row['title'] as String? ?? 'Job';
+    final summary = row['summary'] as String? ?? '';
+    final skills = _stringList(row['skills']);
+    final meta = [
+      row['budget_band'] as String? ?? 'Negotiable',
+      ...skills.take(2),
+    ].where((value) => value.trim().isNotEmpty).join(' · ');
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            children: [
+              _InitialDot(text: title, fallback: 'J'),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                      ),
                     ),
-                  ),
-              ],
-            ),
-          );
-        }),
-      ],
+                    if (summary.isNotEmpty)
+                      Text(
+                        summary,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: onSurface.withValues(alpha: 0.68),
+                          fontSize: 12.5,
+                        ),
+                      ),
+                    Text(
+                      meta,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _teal,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                onTap == null ? Icons.work_outline : Icons.chevron_right,
+                color: onSurface.withValues(alpha: 0.35),
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -655,94 +962,266 @@ class _InboxTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final filtered = filter == 'all'
         ? requests
-        : requests.where((r) => (r['status'] as String? ?? 'pending') == filter).toList();
-    if (requests.isEmpty) {
-      return const Center(child: Text('No Connect requests yet.'));
-    }
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Column(
+        : requests
+              .where((r) => (r['status'] as String? ?? 'pending') == filter)
+              .toList();
+
+    return ListView(
+      padding: const EdgeInsets.only(top: 8, bottom: 88),
       children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: Row(
-            children: [
-              for (final f in const ['all', 'pending', 'accepted', 'declined'])
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(f[0].toUpperCase() + f.substring(1)),
-                    selected: filter == f,
-                    onSelected: (_) => onFilterChanged(f),
-                  ),
-                ),
-            ],
+        _InboxFilters(filter: filter, onFilterChanged: onFilterChanged),
+        if (requests.isEmpty)
+          const _CompactEmpty(
+            icon: Icons.inbox_outlined,
+            text: 'No Connect requests yet.',
+          )
+        else if (filtered.isEmpty)
+          const _CompactEmpty(
+            icon: Icons.filter_alt_off_outlined,
+            text: 'No requests here.',
+          )
+        else
+          ..._withDividers(
+            context,
+            filtered.map((row) {
+              final incoming = row['to_user_id'] == myUid;
+              final status = row['status'] as String? ?? 'pending';
+              return _InboxFeedRow(
+                row: row,
+                incoming: incoming,
+                status: status,
+                onAccept: () => onAccept(row['id'] as String),
+                onDecline: () => onDecline(row['id'] as String),
+                onLinkWorkspace: () => onLinkWorkspace(row),
+              );
+            }),
           ),
-        ),
-        Expanded(
-          child: filtered.isEmpty
-              ? const Center(child: Text('No requests in this filter.'))
-              : ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: filtered.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (context, i) {
-                    final r = filtered[i];
-                    final incoming = r['to_user_id'] == myUid;
-                    final status = r['status'] as String? ?? 'pending';
-                    final accepted = status == 'accepted';
-                    return Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isDark ? ClivoraColors.darkBorder : ClivoraColors.borderLight,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            incoming ? 'Incoming request' : 'Sent request',
-                            style: const TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(r['message'] as String? ?? ''),
-                          const SizedBox(height: 8),
-                          Text('Status: $status', style: Theme.of(context).textTheme.bodySmall),
-                          if (accepted) ...[
-                            const SizedBox(height: 8),
-                            Text(
-                              'Identity unlocked\n'
-                              '${incoming ? r['from_name'] : r['to_name'] ?? 'Partner'}\n'
-                              '${incoming ? r['from_email'] : r['to_email'] ?? ''}',
-                              style: const TextStyle(fontWeight: FontWeight.w600, height: 1.35),
-                            ),
-                            const SizedBox(height: 8),
-                            FilledButton.tonalIcon(
-                              onPressed: () => onLinkWorkspace(r),
-                              icon: const Icon(Icons.person_add_alt_1_outlined),
-                              label: const Text('Add to workspace'),
-                            ),
-                          ],
-                          if (incoming && status == 'pending')
-                            Row(
-                              children: [
-                                TextButton(onPressed: () => onDecline(r['id'] as String), child: const Text('Decline')),
-                                FilledButton(
-                                  onPressed: () => onAccept(r['id'] as String),
-                                  child: const Text('Accept & reveal'),
-                                ),
-                              ],
-                            ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-        ),
       ],
     );
   }
+}
+
+class _InboxFilters extends StatelessWidget {
+  const _InboxFilters({required this.filter, required this.onFilterChanged});
+
+  final String filter;
+  final ValueChanged<String> onFilterChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          for (final f in const ['all', 'pending', 'accepted', 'declined'])
+            Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: ChoiceChip(
+                label: Text(f[0].toUpperCase() + f.substring(1)),
+                selected: filter == f,
+                onSelected: (_) => onFilterChanged(f),
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InboxFeedRow extends StatelessWidget {
+  const _InboxFeedRow({
+    required this.row,
+    required this.incoming,
+    required this.status,
+    required this.onAccept,
+    required this.onDecline,
+    required this.onLinkWorkspace,
+  });
+
+  final Map<String, dynamic> row;
+  final bool incoming;
+  final String status;
+  final VoidCallback onAccept;
+  final VoidCallback onDecline;
+  final VoidCallback onLinkWorkspace;
+
+  @override
+  Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final accepted = status == 'accepted';
+    final title = incoming ? 'Incoming request' : 'Sent request';
+    final partnerName =
+        (incoming ? row['from_name'] : row['to_name']) as String?;
+    final partnerEmail =
+        (incoming ? row['from_email'] : row['to_email']) as String?;
+    final message = row['message'] as String? ?? '';
+    final meta = accepted
+        ? 'Unlocked · ${partnerName ?? 'Partner'}${partnerEmail == null ? '' : ' · $partnerEmail'}'
+        : '${incoming ? 'Incoming' : 'Sent'} · $status';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          _InitialDot(
+            text: accepted ? partnerName ?? title : title,
+            fallback: incoming ? 'I' : 'S',
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                  ),
+                ),
+                if (message.isNotEmpty)
+                  Text(
+                    message,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: onSurface.withValues(alpha: 0.68),
+                      fontSize: 12.5,
+                    ),
+                  ),
+                Text(
+                  meta,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: accepted ? _teal : onSurface.withValues(alpha: 0.56),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (incoming && status == 'pending') ...[
+            IconButton(
+              tooltip: 'Decline',
+              onPressed: onDecline,
+              icon: const Icon(Icons.close, size: 18),
+              visualDensity: VisualDensity.compact,
+            ),
+            IconButton(
+              tooltip: 'Accept',
+              onPressed: onAccept,
+              icon: const Icon(Icons.check, size: 18, color: _teal),
+              visualDensity: VisualDensity.compact,
+            ),
+          ] else if (accepted)
+            TextButton(
+              onPressed: onLinkWorkspace,
+              style: TextButton.styleFrom(
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+              ),
+              child: const Text('Add'),
+            )
+          else
+            Icon(
+              Icons.chevron_right,
+              color: onSurface.withValues(alpha: 0.28),
+              size: 20,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InitialDot extends StatelessWidget {
+  const _InitialDot({required this.text, required this.fallback});
+
+  final String text;
+  final String fallback;
+
+  @override
+  Widget build(BuildContext context) {
+    final initial = _initialFor(text, fallback);
+    return Container(
+      width: 34,
+      height: 34,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: _teal.withValues(alpha: 0.12),
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        initial,
+        style: const TextStyle(
+          color: _teal,
+          fontWeight: FontWeight.w900,
+          fontSize: 13,
+        ),
+      ),
+    );
+  }
+}
+
+class _CompactEmpty extends StatelessWidget {
+  const _CompactEmpty({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 42),
+      child: Column(
+        children: [
+          Icon(icon, size: 32, color: onSurface.withValues(alpha: 0.35)),
+          const SizedBox(height: 8),
+          Text(
+            text,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: onSurface.withValues(alpha: 0.6),
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+List<Widget> _withDividers(BuildContext context, Iterable<Widget> rows) {
+  final color = Theme.of(context).dividerColor.withValues(alpha: 0.55);
+  final widgets = <Widget>[];
+  for (final row in rows) {
+    if (widgets.isNotEmpty) {
+      widgets.add(Divider(height: 1, thickness: 0.6, color: color));
+    }
+    widgets.add(row);
+  }
+  return widgets;
+}
+
+List<String> _stringList(Object? value) {
+  if (value is List) return value.map((e) => e.toString()).toList();
+  return const [];
+}
+
+String _connectRowId(Map<String, dynamic> row) =>
+    (row['id'] ?? row['user_id'] ?? '').toString();
+
+String _initialFor(String value, String fallback) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) return fallback;
+  return trimmed.substring(0, 1).toUpperCase();
 }

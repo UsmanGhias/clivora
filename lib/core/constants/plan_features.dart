@@ -35,9 +35,9 @@ abstract final class PlanFeatures {
   static bool advancedMilestoneAutomation(String? plan) => isProPlus(plan);
   static bool clientBrandedPortal(String? plan) => isProPlus(plan);
 
-  /// Freelancer Connect requires Pro Plus; Client Connect requires Client Pro.
+  /// Connect requires Pro Plus for both freelancers and clients.
   static bool connectMarketplace(String? plan, {bool isClient = false}) =>
-      isClient ? isPro(plan) : isProPlus(plan);
+      isProPlus(plan);
 
   // ── Freelancer free ───────────────────────────────────────────────
   static bool freelancerGlobalSearch(String? plan) => isPro(plan);

@@ -15,10 +15,8 @@ import '../shared/widgets/sync_failure_banner.dart';
 /// Pending Connect inbox count for Pro Plus bottom-nav badge.
 final connectPendingBadgeProvider = FutureProvider<int>((ref) async {
   ref.watch(authStateProvider);
-  final user = ref.watch(authStateProvider).valueOrNull;
-  final isClient = isClientUser(user);
-  // Freelancer Connect = Pro Plus; Client Connect = Client Pro (or Plus).
-  final allowed = isClient ? ref.watch(isProProvider) : ref.watch(isProPlusProvider);
+  // Connect is Pro Plus only for both freelancers and clients.
+  final allowed = ref.watch(isProPlusProvider);
   if (!allowed) return 0;
   try {
     final rows = await ref.read(connectMarketplaceServiceProvider).myRequests();
@@ -59,8 +57,8 @@ class AppShell extends ConsumerWidget {
     _NavItem('/client-account', Icons.person_outline, Icons.person, 'Account'),
   ];
 
-  /// Client Pro / Pro Plus: Connect tab (parity with freelancer Plus) + Account.
-  static const _clientProTabs = [
+  /// Client Pro Plus: Connect tab (parity with freelancer Plus) + Account.
+  static const _clientPlusTabs = [
     _NavItem('/client-portal', Icons.home_outlined, Icons.home_rounded, 'Home'),
     _NavItem('/client-messages', Icons.mail_outline, Icons.mail_rounded, 'Messages'),
     _NavItem('/connect', Icons.hub_outlined, Icons.hub, 'Connect', connectBadge: true),
@@ -89,9 +87,8 @@ class AppShell extends ConsumerWidget {
     final user = ref.watch(authStateProvider).valueOrNull;
     final isClient = isClientUser(user);
     final isPlus = ref.watch(isProPlusProvider);
-    final isPro = ref.watch(isProProvider);
     final tabs = isClient
-        ? (isPro ? _clientProTabs : _clientBaseTabs)
+        ? (isPlus ? _clientPlusTabs : _clientBaseTabs)
         : (isPlus ? _freelancerPlusTabs : _freelancerBaseTabs);
     final semantic = context.clivoraColors;
     final accent = semantic.brand;

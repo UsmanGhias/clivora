@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/services/marketplace/connect_marketplace_service.dart';
+import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 
 class ConnectNeedScreen extends ConsumerStatefulWidget {
@@ -29,10 +30,36 @@ class _ConnectNeedScreenState extends ConsumerState<ConnectNeedScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final hasAccess = ref.watch(isProPlusProvider);
     return ClivoraScaffold(
       title: 'Post a job',
       showBackButton: true,
-      body: ListView(
+      body: !hasAccess
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.lock_outline,
+                    size: 44,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Connect requires Pro Plus',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton(
+                    onPressed: () => context.push('/upgrade'),
+                    child: const Text('Upgrade to Pro Plus'),
+                  ),
+                ],
+              ),
+            )
+          : ListView(
         padding: const EdgeInsets.all(20),
         children: [
           Text(
@@ -49,7 +76,8 @@ class _ConnectNeedScreenState extends ConsumerState<ConnectNeedScreen> {
           TextField(controller: _skills, decoration: const InputDecoration(labelText: 'Skills needed (comma separated)')),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            value: _budget,
+            key: ValueKey(_budget),
+            initialValue: _budget,
             decoration: const InputDecoration(labelText: 'Budget band'),
             items: const [
               DropdownMenuItem(value: 'Under \$500', child: Text('Under \$500')),
