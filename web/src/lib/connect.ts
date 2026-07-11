@@ -56,3 +56,66 @@ export async function listMyConnectRequests() {
     .limit(50);
   return (data ?? []) as ConnectRequestRow[];
 }
+
+export type ConnectReview = {
+  id: string;
+  request_id: string;
+  reviewer_id: string;
+  reviewee_id: string;
+  rating: number;
+  body: string | null;
+  created_at: string;
+};
+
+export type ConnectProposal = {
+  id: string;
+  need_id: string;
+  freelancer_id: string;
+  amount: number | null;
+  currency: string | null;
+  timeline: string | null;
+  message: string | null;
+  status: string;
+  created_at: string;
+};
+
+export type ConnectMilestone = {
+  id: string;
+  request_id: string;
+  title: string;
+  amount: number | null;
+  currency: string | null;
+  status: string;
+  due_date: string | null;
+  created_at: string;
+};
+
+export async function listReviewsForRequest(requestId: string): Promise<ConnectReview[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("connect_reviews")
+    .select("*")
+    .eq("request_id", requestId)
+    .order("created_at", { ascending: false });
+  return (data ?? []) as ConnectReview[];
+}
+
+export async function listProposalsForNeed(needId: string): Promise<ConnectProposal[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("connect_proposals")
+    .select("*")
+    .eq("need_id", needId)
+    .order("created_at", { ascending: false });
+  return (data ?? []) as ConnectProposal[];
+}
+
+export async function listMilestonesForRequest(requestId: string): Promise<ConnectMilestone[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("connect_milestones")
+    .select("*")
+    .eq("request_id", requestId)
+    .order("created_at", { ascending: true });
+  return (data ?? []) as ConnectMilestone[];
+}

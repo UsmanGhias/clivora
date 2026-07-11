@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getProfile, isClientAccount, planLabel } from "@/lib/profile";
 import { site } from "@/lib/site";
 import { SmartAppCta } from "@/components/app/SmartAppCta";
+import { AskAi } from "@/components/app/AskAi";
 
 /** Freelancer hub — mirrors Flutter /more with app-preferred tools called out. */
 export default async function HubPage() {
@@ -34,6 +35,9 @@ export default async function HubPage() {
           <HubLink href="/app/projects" title="Work" body="Projects" />
           <HubLink href="/app/invoices" title="Billing" body="Invoices" />
           <HubLink href="/app/messages" title="Messages" body="Cloud inbox" />
+          <HubLink href="/app/timesheets" title="Timesheets" body="Log & approve time" />
+          <HubLink href="/app/meetings" title="Meetings" body="Jitsi video rooms" />
+          <HubLink href="/app/support" title="Support" body="Submit a ticket" />
           <HubLink href="/connect" title="CLIVORA Connect" body="Marketplace" />
           <HubLink
             href="/pro"
@@ -56,6 +60,8 @@ export default async function HubPage() {
           <AppPreferred title="Team & biometrics" body="Seats and lock screen" />
         </div>
       </div>
+
+      <AskAi />
 
       <SmartAppCta
         title="Open the full freelancer toolkit"

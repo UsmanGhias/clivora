@@ -19,6 +19,7 @@ import {
   type ConnectProfile,
   type ConnectRequestRow,
 } from "@/lib/connect-types";
+import { ConnectTrust } from "@/components/connect/ConnectTrust";
 import { site } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
@@ -531,6 +532,15 @@ export function ConnectBoard({
                   >
                     Apply / Contact
                   </button>
+                  {signedIn && isProPlus && myUserId && n.client_user_id !== myUserId && (
+                    <ConnectTrust
+                      requestId={n.id}
+                      myUserId={myUserId}
+                      peerId={n.client_user_id}
+                      needId={n.id}
+                      mode="jobs"
+                    />
+                  )}
                 </article>
               ))}
             </div>
@@ -596,6 +606,15 @@ export function ConnectBoard({
                         </div>
                       )}
                     </div>
+                    {r.status === "accepted" && myUserId && (
+                      <ConnectTrust
+                        requestId={r.id}
+                        myUserId={myUserId}
+                        peerId={incoming ? r.from_user_id : r.to_user_id}
+                        needId={r.target_need_id}
+                        mode="accepted"
+                      />
+                    )}
                   </li>
                 );
               })}

@@ -20,7 +20,7 @@ export function DocsShell({
             <Link href="/" aria-label="CLIVORA home">
               <Logo size="sm" variant="onDark" />
             </Link>
-            <span className="hidden text-sm text-white/60 sm:inline">Documentation</span>
+            <span className="hidden text-sm text-white/60 sm:inline">Help center</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Link href="/connect" className="rounded-lg px-3 py-1.5 text-white/80 hover:bg-white/10">
@@ -29,12 +29,12 @@ export function DocsShell({
             <Link href="/app" className="rounded-lg px-3 py-1.5 text-white/80 hover:bg-white/10">
               Web app
             </Link>
-            <a
-              href="/docs/CLIVORA-AI-Research-Brief.pdf"
+            <Link
+              href="/support"
               className="hidden rounded-lg bg-primary px-3 py-1.5 font-semibold text-white sm:inline"
             >
-              Download PDF
-            </a>
+              Support
+            </Link>
           </div>
         </div>
       </header>
@@ -59,12 +59,12 @@ export function DocsShell({
               <p className="px-3 text-xs font-bold uppercase tracking-wide text-text-muted">
                 Resources
               </p>
-              <a
-                href="/docs/CLIVORA-AI-Research-Brief.pdf"
+              <Link
+                href="/support"
                 className="mt-2 block rounded-lg px-3 py-2 text-sm text-text-secondary hover:bg-surface"
               >
-                AI brief (PDF)
-              </a>
+                Contact support
+              </Link>
               <Link
                 href={site.playStoreUrl}
                 className="block rounded-lg px-3 py-2 text-sm text-text-secondary hover:bg-surface"

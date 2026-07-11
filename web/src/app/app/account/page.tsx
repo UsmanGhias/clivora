@@ -58,6 +58,28 @@ export default async function AccountPage() {
         Upgrade · Pro {site.pricing.proMonthlyLabel} / Plus {site.pricing.proPlusMonthlyLabel}
       </Link>
 
+      <div className="rounded-2xl border border-border bg-surface p-5">
+        <h2 className="font-bold text-navy">Two-factor authentication (MFA)</h2>
+        <p className="mt-2 text-sm text-text-secondary leading-relaxed">
+          CLIVORA uses Supabase Auth which supports TOTP-based MFA. To enable authenticator-app
+          2FA, go to your{" "}
+          <a
+            href="https://supabase.com/docs/guides/auth/auth-mfa"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-primary underline underline-offset-2"
+          >
+            Supabase security settings
+          </a>{" "}
+          or ask your admin to enable MFA enforcement. Once enrolled you will be prompted for a
+          6-digit code on every sign-in.
+        </p>
+        <p className="mt-2 text-xs text-text-muted">
+          App-level biometric lock is available separately in the CLIVORA Android app under
+          Settings → Security.
+        </p>
+      </div>
+
       <SmartAppCta
         tone={client ? "client" : "freelancer"}
         title={client ? "Open the full client portal" : "Manage profile in the app"}

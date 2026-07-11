@@ -53,7 +53,25 @@ type Stats = {
   source?: string;
 };
 
-type Tab = "overview" | "users" | "payments" | "marketplace" | "audit" | "events";
+type Tab = "overview" | "users" | "payments" | "marketplace" | "audit" | "events" | "flags" | "escrow";
+
+type FeatureFlag = {
+  id?: string;
+  key: string;
+  value: unknown;
+  description?: string | null;
+  updated_at?: string | null;
+};
+
+type EscrowMilestone = {
+  id: string;
+  request_id: string;
+  title: string;
+  amount?: number | null;
+  currency?: string | null;
+  status: string;
+  created_at?: string | null;
+};
 
 type PaymentRequest = {
   id: string;
@@ -191,6 +209,15 @@ export default function AdminPage() {
   const [connectNeeds, setConnectNeeds] = useState<ConnectNeed[]>([]);
   const [connectSettings, setConnectSettings] = useState<ConnectAutoApproveSettings>(DEFAULT_CONNECT_SETTINGS);
   const [connectBusy, setConnectBusy] = useState(false);
+  const [flags, setFlags] = useState<FeatureFlag[]>([]);
+  const [flagsBusy, setFlagsBusy] = useState(false);
+  const [newFlagKey, setNewFlagKey] = useState("");
+  const [newFlagValue, setNewFlagValue] = useState("");
+  const [newFlagDesc, setNewFlagDesc] = useState("");
+  const [escrowMilestones, setEscrowMilestones] = useState<EscrowMilestone[]>([]);
+  const [escrowBusy, setEscrowBusy] = useState(false);
+  const [escrowReleaseId, setEscrowReleaseId] = useState("");
+  const [escrowReleaseAmount, setEscrowReleaseAmount] = useState("");
   const [sessionToken, setSessionToken] = useState("");
   const [newPanelPassword, setNewPanelPassword] = useState("");
   const [confirmPanelPassword, setConfirmPanelPassword] = useState("");
@@ -244,6 +271,46 @@ export default function AdminPage() {
       setPaymentRequests(Array.isArray(data.requests) ? data.requests : []);
     } catch {
       /* optional panel */
+    }
+  }, [adminAuthBody]);
+
+  const loadEscrow = useCallback(async () => {
+    setEscrowBusy(true);
+    try {
+      const auth = adminAuthBody();
+      if (!auth.adminEmail || !auth.adminToken) return;
+      const res = await fetch("/api/admin/escrow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "list_milestones", ...auth }),
+      });
+      if (!res.ok) return;
+      const data = (await res.json()) as { milestones?: EscrowMilestone[] };
+      setEscrowMilestones(Array.isArray(data.milestones) ? data.milestones : []);
+    } catch {
+      /* optional */
+    } finally {
+      setEscrowBusy(false);
+    }
+  }, [adminAuthBody]);
+
+  const loadFlags = useCallback(async () => {
+    setFlagsBusy(true);
+    try {
+      const auth = adminAuthBody();
+      if (!auth.adminEmail || !auth.adminToken) return;
+      const res = await fetch("/api/admin/feature-flags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "list", ...auth }),
+      });
+      if (!res.ok) return;
+      const data = (await res.json()) as { flags?: FeatureFlag[] };
+      setFlags(Array.isArray(data.flags) ? data.flags : []);
+    } catch {
+      /* optional */
+    } finally {
+      setFlagsBusy(false);
     }
   }, [adminAuthBody]);
 
@@ -465,7 +532,9 @@ export default function AdminPage() {
     loadStats();
     loadPayments();
     loadConnect();
-  }, [loggedIn, loadStats, loadPayments, loadConnect]);
+    loadFlags();
+    loadEscrow();
+  }, [loggedIn, loadStats, loadPayments, loadConnect, loadFlags, loadEscrow]);
 
   async function login() {
     const normalized = email.trim().toLowerCase();
@@ -598,6 +667,8 @@ export default function AdminPage() {
     { id: "marketplace", label: "Connect" },
     { id: "audit", label: `Audit (${auditEvents.length})` },
     { id: "events", label: `Events (${events.length})` },
+    { id: "flags", label: `Flags (${flags.length})` },
+    { id: "escrow", label: "Escrow" },
   ];
 
   return (
@@ -1250,6 +1321,250 @@ export default function AdminPage() {
               </p>
             )}
           </TableShell>
+        )}
+
+        {tab === "flags" && (
+          <div className="space-y-5">
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="font-semibold text-slate-900">Feature flags</h2>
+                  <p className="text-sm text-slate-600 mt-0.5">
+                    Toggle platform capabilities stored in <code className="text-xs">app_feature_flags</code>.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={flagsBusy}
+                  onClick={() => loadFlags()}
+                  className="text-sm bg-slate-900 text-white px-3 py-1.5 rounded-lg disabled:opacity-50"
+                >
+                  Refresh
+                </button>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-sm"
+                  placeholder="flag.key"
+                  value={newFlagKey}
+                  onChange={(e) => setNewFlagKey(e.target.value)}
+                />
+                <input
+                  className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-sm"
+                  placeholder="value (true / false / text)"
+                  value={newFlagValue}
+                  onChange={(e) => setNewFlagValue(e.target.value)}
+                />
+                <input
+                  className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-sm"
+                  placeholder="description (optional)"
+                  value={newFlagDesc}
+                  onChange={(e) => setNewFlagDesc(e.target.value)}
+                />
+                <button
+                  type="button"
+                  disabled={flagsBusy || !newFlagKey.trim()}
+                  onClick={async () => {
+                    setFlagsBusy(true);
+                    const auth = adminAuthBody();
+                    let parsedValue: unknown = newFlagValue;
+                    if (newFlagValue === "true") parsedValue = true;
+                    else if (newFlagValue === "false") parsedValue = false;
+                    else if (newFlagValue !== "" && !isNaN(Number(newFlagValue))) parsedValue = Number(newFlagValue);
+                    try {
+                      await fetch("/api/admin/feature-flags", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ action: "set", key: newFlagKey, value: parsedValue, description: newFlagDesc || null, ...auth }),
+                      });
+                      setNewFlagKey(""); setNewFlagValue(""); setNewFlagDesc("");
+                      await loadFlags();
+                    } finally { setFlagsBusy(false); }
+                  }}
+                  className="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap"
+                >
+                  {flagsBusy ? "…" : "Set flag"}
+                </button>
+              </div>
+            </div>
+            <TableShell title="App feature flags" count={flags.length}>
+              {flags.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-slate-50 border-b border-slate-200">
+                      <tr>
+                        <th className={thClass}>Key</th>
+                        <th className={thClass}>Value</th>
+                        <th className={thClass}>Description</th>
+                        <th className={thClass}>Updated</th>
+                        <th className={thClass}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {flags.map((f) => (
+                        <tr key={f.key} className="hover:bg-slate-50">
+                          <td className={`${tdClass} font-mono text-xs font-semibold`}>{f.key}</td>
+                          <td className={tdClass}>
+                            <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                              f.value === true ? "bg-emerald-100 text-emerald-800" :
+                              f.value === false ? "bg-slate-100 text-slate-600" :
+                              "bg-amber-50 text-amber-800"
+                            }`}>
+                              {JSON.stringify(f.value)}
+                            </span>
+                          </td>
+                          <td className={`${tdClass} text-slate-500`}>{f.description ?? "—"}</td>
+                          <td className={`${tdClass} text-slate-500 whitespace-nowrap`}>{formatDate(f.updated_at ?? undefined)}</td>
+                          <td className={tdClass}>
+                            <button
+                              type="button"
+                              disabled={flagsBusy}
+                              onClick={async () => {
+                                if (!confirm(`Delete flag "${f.key}"?`)) return;
+                                setFlagsBusy(true);
+                                const auth = adminAuthBody();
+                                try {
+                                  await fetch("/api/admin/feature-flags", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ action: "delete", key: f.key, ...auth }),
+                                  });
+                                  await loadFlags();
+                                } finally { setFlagsBusy(false); }
+                              }}
+                              className="text-xs bg-red-600 text-white px-2 py-1 rounded disabled:opacity-50"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="px-5 py-10 text-center text-slate-500 text-sm">
+                  No feature flags yet. Add one above to toggle platform features at runtime.
+                </p>
+              )}
+            </TableShell>
+          </div>
+        )}
+
+        {tab === "escrow" && (
+          <div className="space-y-5">
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="font-semibold text-slate-900">Escrow milestones</h2>
+                  <p className="text-sm text-slate-600 mt-0.5">
+                    Admin-release a milestone and insert an escrow ledger entry.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={escrowBusy}
+                  onClick={() => loadEscrow()}
+                  className="text-sm bg-slate-900 text-white px-3 py-1.5 rounded-lg disabled:opacity-50"
+                >
+                  Refresh
+                </button>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-sm font-mono"
+                  placeholder="Milestone ID (UUID)"
+                  value={escrowReleaseId}
+                  onChange={(e) => setEscrowReleaseId(e.target.value)}
+                />
+                <input
+                  type="number"
+                  min="0"
+                  className="w-36 border border-slate-300 rounded-lg px-3 py-2 text-slate-900 text-sm"
+                  placeholder="Amount (USD)"
+                  value={escrowReleaseAmount}
+                  onChange={(e) => setEscrowReleaseAmount(e.target.value)}
+                />
+                <button
+                  type="button"
+                  disabled={escrowBusy || !escrowReleaseId.trim()}
+                  onClick={async () => {
+                    setEscrowBusy(true);
+                    setActionMsg("");
+                    const auth = adminAuthBody();
+                    try {
+                      const res = await fetch("/api/admin/escrow", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          action: "admin_release",
+                          milestoneId: escrowReleaseId.trim(),
+                          amount: escrowReleaseAmount ? Number(escrowReleaseAmount) : undefined,
+                          ...auth,
+                        }),
+                      });
+                      const json = await res.json();
+                      if (!res.ok) throw new Error(json.error || "Release failed");
+                      setActionMsg(`Milestone ${escrowReleaseId.trim().slice(0, 8)}… released.`);
+                      setEscrowReleaseId("");
+                      setEscrowReleaseAmount("");
+                      await loadEscrow();
+                    } catch (e) {
+                      setActionMsg(e instanceof Error ? e.message : "Release failed");
+                    } finally {
+                      setEscrowBusy(false);
+                    }
+                  }}
+                  className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap"
+                >
+                  {escrowBusy ? "…" : "Admin release"}
+                </button>
+              </div>
+            </div>
+            <TableShell title="Connect milestones" count={escrowMilestones.length}>
+              {escrowMilestones.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-slate-50 border-b border-slate-200">
+                      <tr>
+                        <th className={thClass}>ID</th>
+                        <th className={thClass}>Title</th>
+                        <th className={thClass}>Status</th>
+                        <th className={thClass}>Amount</th>
+                        <th className={thClass}>Created</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {escrowMilestones.map((m) => (
+                        <tr key={m.id} className="hover:bg-slate-50">
+                          <td className={`${tdClass} font-mono text-xs text-slate-500`}>{m.id.slice(0, 8)}…</td>
+                          <td className={`${tdClass} font-medium`}>{m.title || EMPTY}</td>
+                          <td className={tdClass}>
+                            <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                              m.status === "released" ? "bg-emerald-100 text-emerald-800" :
+                              m.status === "funded" ? "bg-blue-100 text-blue-800" :
+                              m.status === "disputed" ? "bg-red-100 text-red-800" :
+                              "bg-slate-100 text-slate-700"
+                            }`}>
+                              {m.status}
+                            </span>
+                          </td>
+                          <td className={tdClass}>
+                            {m.amount != null ? `$${m.amount} ${m.currency ?? "USD"}` : EMPTY}
+                          </td>
+                          <td className={`${tdClass} whitespace-nowrap text-slate-500`}>{formatDate(m.created_at ?? undefined)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="px-5 py-10 text-center text-slate-500 text-sm">
+                  No milestones found. They appear here once freelancers add them to accepted Connect requests.
+                </p>
+              )}
+            </TableShell>
+          </div>
         )}
 
         {tab === "events" && (
