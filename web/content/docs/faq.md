@@ -1,5 +1,14 @@
 # FAQ
 
+## Sign in with Google shows a strange supabase.co address
+
+That text is Google’s OAuth screen showing the login redirect host — **not** your database being exposed.
+
+- On **Android**, Google Sign-In is native and shows CLIVORA / your Google app branding.
+- On **web**, set the Google Cloud OAuth consent **App name** to **CLIVORA**, add your logo, privacy/terms links, verify `codcrafters.org`, and **Publish** the app. Details: ask support or your developer for the branding checklist.
+
+Until Google branding is published, some browsers may still show a technical host. Your data stays protected by account rules.
+
 ## Getting started
 
 ### How do I create an account?
