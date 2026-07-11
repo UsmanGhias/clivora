@@ -31,13 +31,12 @@ import '../../data/models/invoice_line_item.dart';
 import '../../data/database/database.dart';
 import '../../data/database/user_scoped_queries.dart';
 import '../../data/providers/app_providers.dart';
-import '../../shared/widgets/clivora_bottom_sheet.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 import '../../shared/widgets/filter_chip_row.dart';
 import '../../shared/widgets/step_progress_card.dart';
 import '../../features/client/client_contract_view.dart';
 
-/// Shared Pro gate banner — CLIVORA style (distinct from generic paywalls).
+/// Shared Pro gate banner | CLIVORA style (distinct from generic paywalls).
 class ProGateBanner extends ConsumerWidget {
   const ProGateBanner({
     super.key,
@@ -138,7 +137,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'Smart insights from your local business data. Private, offline, and instant.',
+                            'Works offline on your data. Private insights from your local CRM.',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ),
@@ -146,7 +145,39 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  ...?_insights?.map((i) => _InsightCard(insight: i)),
+                  if (_insights == null || _insights!.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 28),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.lightbulb_outline,
+                            size: 40,
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No CRM insights yet',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Add clients, projects, or invoices to unlock suggestions. '
+                            'Tip: use this to draft Connect proposal ideas.',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
+                              height: 1.4,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    ..._insights!.map((i) => _InsightCard(insight: i)),
                 ],
               ),
             ),

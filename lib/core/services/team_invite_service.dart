@@ -99,6 +99,27 @@ class TeamInviteService {
               project: project,
             );
       }
+      // Teammate-specific share so invitee can select via client_email RLS.
+      final teammateShareId = teammateShareIdFor(shareId, inviteeEmail);
+      try {
+        await _db.from('project_shares').upsert({
+          'share_id': teammateShareId,
+          'freelancer_uid': ownerUid,
+          'freelancer_email': owner.email.trim().toLowerCase(),
+          'client_email': inviteeEmail,
+          'local_project_id': project.id,
+          'project_name': project.name,
+          'description': project.description,
+          'status': project.status,
+          'budget': project.budget,
+          'currency': project.currency.isNotEmpty ? project.currency : 'USD',
+          'priority': project.priority,
+          'deadline': ?project.deadline?.toUtc().toIso8601String(),
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        });
+      } catch (e) {
+        debugPrint('team invite project_shares upsert: $e');
+      }
     }
 
     try {
@@ -107,7 +128,7 @@ class TeamInviteService {
         'invitee_email': inviteeEmail,
         'invitee_name': name.trim(),
         'role': role,
-        if (shareId != null) 'project_share_id': shareId,
+        'project_share_id': ?shareId,
         'project_name': projectName,
       });
     } catch (e) {
@@ -184,6 +205,18 @@ class TeamInviteService {
             }).toList());
   }
 
+  Stream<List<TeamInvite>> watchInvitesForOwner() {
+    final uid = SupabaseAuthHelper.currentUid;
+    if (uid == null) return const Stream.empty();
+
+    return _db
+        .from('team_invites')
+        .stream(primaryKey: ['id'])
+        .eq('owner_uid', uid)
+        .order('created_at', ascending: false)
+        .map((rows) => rows.map(TeamInvite.fromRow).toList());
+  }
+
   Future<String?> acceptInvite(TeamInvite invite) async {
     final uid = SupabaseAuthHelper.currentUid;
     if (uid == null) return 'Sign in required';
@@ -198,6 +231,11 @@ class TeamInviteService {
       return 'Could not accept invite: $e';
     }
 
+    final shareErr = await _grantSharedProjectAccess(invite, uid);
+    if (shareErr != null) {
+      debugPrint('team invite project grant: $shareErr');
+    }
+
     await ref.read(cloudNotificationRepositoryProvider).sendToUid(
           toUid: invite.ownerUid,
           title: 'Team invite accepted',
@@ -205,6 +243,91 @@ class TeamInviteService {
           kind: 'team',
         );
     return null;
+  }
+
+  /// Links the invitee to the shared project via [project_shares].
+  /// Owner creates the teammate share on send; accept sets [client_uid].
+  Future<String?> _grantSharedProjectAccess(TeamInvite invite, String uid) async {
+    final baseShareId = invite.projectShareId;
+    if (baseShareId == null || baseShareId.isEmpty) return null;
+
+    final email =
+        (SupabaseAuthHelper.currentEmail ?? invite.inviteeEmail).trim().toLowerCase();
+    if (email.isEmpty) return 'Missing invitee email for project share';
+
+    final teammateShareId = teammateShareIdFor(baseShareId, email);
+
+    try {
+      // Prefer linking the pre-created teammate share (invitee can update via RLS).
+      final updated = await _db
+          .from('project_shares')
+          .update({
+            'client_uid': uid,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('share_id', teammateShareId)
+          .select();
+
+      if ((updated as List).isNotEmpty) return null;
+
+      // Fallback: any share for this project already addressed to the invitee.
+      final byEmail = await _db
+          .from('project_shares')
+          .update({
+            'client_uid': uid,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('client_email', email)
+          .like('share_id', '$baseShareId%')
+          .select();
+      if ((byEmail as List).isNotEmpty) return null;
+
+      // Last resort: copy from the base project share if the invitee can read it
+      // (usually only the owner can insert; this helps when invitee is also owner in tests).
+      final base = await _db
+          .from('project_shares')
+          .select()
+          .eq('share_id', baseShareId)
+          .maybeSingle();
+      if (base != null) {
+        await _db.from('project_shares').upsert({
+          ...Map<String, dynamic>.from(base),
+          'share_id': teammateShareId,
+          'client_email': email,
+          'client_uid': uid,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        });
+        return null;
+      }
+
+      // Create a minimal share row when base share was never created (owner-only write).
+      final parts = baseShareId.split('_');
+      final localProjectId = int.tryParse(parts.isNotEmpty ? parts.last : '');
+      await _db.from('project_shares').upsert({
+        'share_id': teammateShareId,
+        'freelancer_uid': invite.ownerUid,
+        'freelancer_email': '',
+        'client_email': email,
+        'client_uid': uid,
+        'local_project_id': localProjectId ?? 0,
+        'project_name': invite.projectName.isNotEmpty ? invite.projectName : 'Shared project',
+        'description': '',
+        'status': 'not_started',
+        'budget': 0,
+        'currency': 'USD',
+        'priority': 'medium',
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      });
+      return null;
+    } catch (e) {
+      return '$e';
+    }
+  }
+
+  /// Deterministic teammate share id derived from the owner project share.
+  static String teammateShareIdFor(String baseShareId, String inviteeEmail) {
+    final safe = inviteeEmail.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+    return '${baseShareId}_tm_$safe';
   }
 
   Future<String?> declineInvite(TeamInvite invite) async {
@@ -226,4 +349,8 @@ class TeamInviteService {
 
 final pendingTeamInvitesProvider = StreamProvider<List<TeamInvite>>((ref) {
   return ref.watch(teamInviteServiceProvider).watchPendingForCurrentUser();
+});
+
+final ownerTeamInvitesProvider = StreamProvider<List<TeamInvite>>((ref) {
+  return ref.watch(teamInviteServiceProvider).watchInvitesForOwner();
 });
