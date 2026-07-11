@@ -43,6 +43,9 @@ export function GoogleAuthButton({
 
   return (
     <div className="space-y-2">
+      <p className="text-center text-xs text-text-secondary">
+        Continue securely to <strong className="text-navy">CLIVORA</strong>
+      </p>
       <button
         type="button"
         onClick={onGoogle}
