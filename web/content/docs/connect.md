@@ -42,6 +42,24 @@ When you manage your listing, fill in:
 
 Verified badge may be granted by admin after review.
 
+### Trust signals on talent cards
+
+Public talent cards show:
+
+- **Star rating + review count** (or a **New** badge when there are no reviews yet)
+- **Verified** badge when admin-approved
+- **Member since** date
+- **Completion rate** when milestone history exists
+- Sort options: Featured, Top rated, Newest, Rate
+
+Reviews are left after an accepted Connect request (web inbox or Android inbox ★).
+
+### Proposals & milestones
+
+- Freelancers can **submit proposals** on open jobs (Pro Plus).
+- After accept, both parties can add **milestones** and move status: pending → funded → released (or disputed).
+- Admins can release escrow ledger entries from the admin panel when funds are confirmed.
+
 ---
 
 ## Client job posts

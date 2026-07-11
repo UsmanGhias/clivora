@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.14 — Trust, ranking & growth
+
+- Star ratings, review counts, and “New” badge on Connect talent cards (web + Android)
+- Reputation score sorting (Featured / Top rated) with completion rate and member-since signals
+- Profile completeness scoring on Connect listings
+- Fixed Connect reviews / proposals / milestones to match the live database schema
+- Leave a Connect review from Android inbox after accept
+- Promo codes table ready for web checkout discounts
+- Marketing Connect section highlights ratings + escrow trust
+- Google Play payments profile IDs documented for merchant setup
+
 ## 2.13 — Platform expansion
 
 - Workspace snapshot charts on the web dashboard

@@ -24,7 +24,33 @@ import { site } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 type Tab = "talent" | "jobs" | "inbox";
-type SortMode = "featured" | "rate" | "newest";
+type SortMode = "featured" | "rating" | "rate" | "newest";
+
+function memberSinceLabel(iso?: string | null) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+}
+
+function TrustStars({ rating, count }: { rating?: number | null; count?: number | null }) {
+  const n = Number(count ?? 0);
+  const avg = Number(rating ?? 0);
+  if (n <= 0 || avg <= 0) {
+    return (
+      <span className="rounded-lg bg-sky-50 px-2 py-0.5 text-[10px] font-bold uppercase text-sky-800">
+        New
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-700">
+      <span className="text-amber-400">★</span>
+      {avg.toFixed(1)}
+      <span className="font-medium text-text-muted">({n})</span>
+    </span>
+  );
+}
 
 export function ConnectBoard({
   profiles,
@@ -112,8 +138,20 @@ export function ConnectBoard({
           String(a.updated_at || a.created_at || ""),
         ),
       );
+    } else if (sort === "rating") {
+      list = [...list].sort((a, b) => {
+        const score =
+          Number(b.reputation_score ?? 0) - Number(a.reputation_score ?? 0) ||
+          Number(b.avg_rating ?? 0) - Number(a.avg_rating ?? 0) ||
+          Number(b.review_count ?? 0) - Number(a.review_count ?? 0);
+        return score;
+      });
     } else {
-      list = [...list].sort((a, b) => Number(!!b.is_verified) - Number(!!a.is_verified));
+      list = [...list].sort((a, b) => {
+        const verified = Number(!!b.is_verified) - Number(!!a.is_verified);
+        if (verified !== 0) return verified;
+        return Number(b.reputation_score ?? 0) - Number(a.reputation_score ?? 0);
+      });
     }
     return list;
   }, [profiles, query, skillFilter, sort]);
@@ -318,6 +356,7 @@ export function ConnectBoard({
                 className="rounded-lg border border-border bg-white px-2 py-1 text-xs"
               >
                 <option value="featured">Featured</option>
+                {tab === "talent" && <option value="rating">Top rated</option>}
                 <option value="newest">Newest</option>
                 {tab === "talent" && <option value="rate">Rate</option>}
               </select>
@@ -414,15 +453,29 @@ export function ConnectBoard({
                         </p>
                       )}
                     </div>
-                    {p.is_verified && (
-                      <span className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase text-primary-dark">
-                        <ShieldCheck className="h-3 w-3" /> Verified
-                      </span>
-                    )}
+                    <div className="flex flex-col items-end gap-1">
+                      {p.is_verified && (
+                        <span className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase text-primary-dark">
+                          <ShieldCheck className="h-3 w-3" /> Verified
+                        </span>
+                      )}
+                      <TrustStars rating={p.avg_rating} count={p.review_count} />
+                    </div>
                   </div>
                   <p className="mt-2 line-clamp-2 text-sm text-text-secondary">
                     {p.headline || p.bio || "Available on CLIVORA Connect"}
                   </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
+                    {memberSinceLabel(p.created_at) && (
+                      <span>Member since {memberSinceLabel(p.created_at)}</span>
+                    )}
+                    {Number(p.completion_rate ?? 0) > 0 && (
+                      <span>{Number(p.completion_rate).toFixed(0)}% jobs completed</span>
+                    )}
+                    {Number(p.profile_completeness ?? 0) >= 80 && (
+                      <span className="font-semibold text-primary-dark">Strong profile</span>
+                    )}
+                  </div>
                   {p.rate_band && (
                     <p className="mt-2 text-sm font-extrabold text-navy">{p.rate_band}</p>
                   )}
@@ -612,6 +665,22 @@ export function ConnectBoard({
                         myUserId={myUserId}
                         peerId={incoming ? r.from_user_id : r.to_user_id}
                         needId={r.target_need_id}
+                        clientUserId={
+                          r.target_need_id
+                            ? r.to_user_id
+                            : r.target_profile_id
+                              ? r.from_user_id
+                              : myUserId
+                        }
+                        freelancerUserId={
+                          r.target_need_id
+                            ? r.from_user_id
+                            : r.target_profile_id
+                              ? r.to_user_id
+                              : incoming
+                                ? r.from_user_id
+                                : r.to_user_id
+                        }
                         mode="accepted"
                       />
                     )}
@@ -629,8 +698,9 @@ export function ConnectBoard({
           <div>
             <p className="font-bold text-navy">Why Connect beats open marketplaces</p>
             <p className="mt-1 text-sm text-text-secondary">
-              Private contact until mutual accept, same CRM workspace after you match, and one
-              subscription that also unlocks unlimited clients, projects, and invoices.
+              Private contact until mutual accept, milestone escrow status, star ratings on talent
+              cards, and the same CRM workspace after you match — one Pro Plus plan unlocks Connect
+              plus unlimited clients, projects, and invoices.
             </p>
           </div>
         </div>

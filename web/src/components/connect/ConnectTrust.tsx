@@ -36,12 +36,10 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
 
 function ReviewForm({
   requestId,
-  reviewerId,
   revieweeId,
   onDone,
 }: {
   requestId: string;
-  reviewerId: string;
   revieweeId: string;
   onDone: () => void;
 }) {
@@ -56,12 +54,16 @@ function ReviewForm({
     setError(null);
     try {
       const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Sign in required");
       const { error: err } = await supabase.from("connect_reviews").insert({
         request_id: requestId,
-        reviewer_id: reviewerId,
-        reviewee_id: revieweeId,
+        from_user_id: user.id,
+        to_user_id: revieweeId,
         rating,
-        body: body.trim() || null,
+        body: body.trim() || "",
       });
       if (err) throw err;
       onDone();
@@ -97,15 +99,15 @@ function ReviewForm({
 
 function ProposalForm({
   needId,
-  freelancerId,
+  toUserId,
   onDone,
 }: {
   needId: string;
-  freelancerId: string;
+  toUserId: string;
   onDone: () => void;
 }) {
   const [amount, setAmount] = useState("");
-  const [timeline, setTimeline] = useState("");
+  const [timelineDays, setTimelineDays] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -116,13 +118,18 @@ function ProposalForm({
     setError(null);
     try {
       const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Sign in required");
       const { error: err } = await supabase.from("connect_proposals").insert({
         need_id: needId,
-        freelancer_id: freelancerId,
-        amount: amount ? Number(amount) : null,
+        from_user_id: user.id,
+        to_user_id: toUserId,
+        amount: amount ? Number(amount) : 0,
         currency: "USD",
-        timeline: timeline.trim() || null,
-        message: message.trim() || null,
+        timeline_days: timelineDays ? Number(timelineDays) : null,
+        message: message.trim() || "",
         status: "pending",
       });
       if (err) throw err;
@@ -147,9 +154,11 @@ function ProposalForm({
           className="w-full rounded-xl border border-border px-3 py-2 text-sm"
         />
         <input
-          placeholder="Timeline (e.g. 2 weeks)"
-          value={timeline}
-          onChange={(e) => setTimeline(e.target.value)}
+          type="number"
+          min="1"
+          placeholder="Timeline (days)"
+          value={timelineDays}
+          onChange={(e) => setTimelineDays(e.target.value)}
           className="w-full rounded-xl border border-border px-3 py-2 text-sm"
         />
       </div>
@@ -175,15 +184,16 @@ function ProposalForm({
 
 function MilestonesPanel({
   requestId,
-  myUserId,
+  clientUserId,
+  freelancerUserId,
 }: {
   requestId: string;
-  myUserId: string;
+  clientUserId: string;
+  freelancerUserId: string;
 }) {
   const [milestones, setMilestones] = useState<ConnectMilestone[]>([]);
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
-  const [dueDate, setDueDate] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -192,7 +202,7 @@ function MilestonesPanel({
     const { data } = await supabase
       .from("connect_milestones")
       .select("*")
-      .eq("request_id", requestId)
+      .eq("engagement_request_id", requestId)
       .order("created_at", { ascending: true });
     setMilestones((data ?? []) as ConnectMilestone[]);
   }
@@ -210,17 +220,17 @@ function MilestonesPanel({
     try {
       const supabase = createClient();
       const { error: err } = await supabase.from("connect_milestones").insert({
-        request_id: requestId,
+        engagement_request_id: requestId,
+        client_user_id: clientUserId,
+        freelancer_user_id: freelancerUserId,
         title: title.trim(),
-        amount: amount ? Number(amount) : null,
+        amount: amount ? Number(amount) : 0,
         currency: "USD",
         status: "pending",
-        due_date: dueDate || null,
       });
       if (err) throw err;
       setTitle("");
       setAmount("");
-      setDueDate("");
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not add milestone");
@@ -233,7 +243,14 @@ function MilestonesPanel({
     setBusy(true);
     try {
       const supabase = createClient();
-      await supabase.from("connect_milestones").update({ status }).eq("id", id);
+      const patch: Record<string, string> = {
+        status,
+        updated_at: new Date().toISOString(),
+      };
+      if (status === "funded") patch.funded_at = new Date().toISOString();
+      if (status === "released") patch.released_at = new Date().toISOString();
+      if (status === "disputed") patch.disputed_at = new Date().toISOString();
+      await supabase.from("connect_milestones").update(patch).eq("id", id);
       await load();
     } finally {
       setBusy(false);
@@ -248,7 +265,7 @@ function MilestonesPanel({
 
   return (
     <div className="space-y-3">
-      <p className="text-sm font-bold text-navy">Milestones</p>
+      <p className="text-sm font-bold text-navy">Milestones & escrow status</p>
       {milestones.length === 0 ? (
         <p className="text-sm text-text-secondary">No milestones yet.</p>
       ) : (
@@ -263,14 +280,15 @@ function MilestonesPanel({
                 <div>
                   <p className="text-sm font-semibold">{m.title}</p>
                   <div className="mt-0.5 flex flex-wrap gap-1.5">
-                    <span className={`inline-block rounded px-2 py-0.5 text-[10px] font-bold uppercase ${statusBadge(m.status)}`}>
+                    <span
+                      className={`inline-block rounded px-2 py-0.5 text-[10px] font-bold uppercase ${statusBadge(m.status)}`}
+                    >
                       {m.status}
                     </span>
                     {m.amount != null && (
-                      <span className="text-xs text-text-secondary">${m.amount} {m.currency}</span>
-                    )}
-                    {m.due_date && (
-                      <span className="text-xs text-text-muted">Due {m.due_date}</span>
+                      <span className="text-xs text-text-secondary">
+                        ${m.amount} {m.currency}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -289,15 +307,18 @@ function MilestonesPanel({
           })}
         </ul>
       )}
-      <form onSubmit={addMilestone} className="space-y-2 rounded-xl border border-dashed border-border bg-background p-3">
+      <form
+        onSubmit={addMilestone}
+        className="space-y-2 rounded-xl border border-dashed border-border bg-background p-3"
+      >
         <p className="text-xs font-semibold text-text-secondary">Add milestone</p>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2">
           <input
             required
             placeholder="Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="col-span-2 rounded-xl border border-border px-3 py-1.5 text-sm sm:col-span-1"
+            className="rounded-xl border border-border px-3 py-1.5 text-sm"
           />
           <input
             type="number"
@@ -305,12 +326,6 @@ function MilestonesPanel({
             placeholder="Amount"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="rounded-xl border border-border px-3 py-1.5 text-sm"
-          />
-          <input
-            type="date"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
             className="rounded-xl border border-border px-3 py-1.5 text-sm"
           />
         </div>
@@ -332,6 +347,8 @@ export function ConnectTrust({
   myUserId,
   peerId,
   needId,
+  clientUserId,
+  freelancerUserId,
   existingReviews,
   mode,
 }: {
@@ -339,6 +356,8 @@ export function ConnectTrust({
   myUserId: string;
   peerId: string;
   needId?: string | null;
+  clientUserId?: string | null;
+  freelancerUserId?: string | null;
   existingReviews?: ConnectReview[];
   mode: "accepted" | "jobs";
 }) {
@@ -347,7 +366,9 @@ export function ConnectTrust({
   const [reviewDone, setReviewDone] = useState(false);
   const [proposalDone, setProposalDone] = useState(false);
 
-  const myReview = existingReviews?.find((r) => r.reviewer_id === myUserId);
+  const myReview = existingReviews?.find((r) => r.from_user_id === myUserId);
+  const resolvedClient = clientUserId || myUserId;
+  const resolvedFreelancer = freelancerUserId || peerId;
 
   return (
     <div className="mt-3 space-y-3 border-t border-border pt-3">
@@ -365,7 +386,6 @@ export function ConnectTrust({
           {showReviewForm && !reviewDone && (
             <ReviewForm
               requestId={requestId}
-              reviewerId={myUserId}
               revieweeId={peerId}
               onDone={() => {
                 setReviewDone(true);
@@ -374,9 +394,13 @@ export function ConnectTrust({
             />
           )}
           {(myReview || reviewDone) && (
-            <p className="text-xs text-green-700 font-semibold">✓ Review submitted</p>
+            <p className="text-xs font-semibold text-green-700">✓ Review submitted</p>
           )}
-          <MilestonesPanel requestId={requestId} myUserId={myUserId} />
+          <MilestonesPanel
+            requestId={requestId}
+            clientUserId={resolvedClient}
+            freelancerUserId={resolvedFreelancer}
+          />
         </>
       )}
 
@@ -394,7 +418,7 @@ export function ConnectTrust({
           {showProposalForm && !proposalDone && (
             <ProposalForm
               needId={needId}
-              freelancerId={myUserId}
+              toUserId={peerId}
               onDone={() => {
                 setProposalDone(true);
                 setShowProposalForm(false);
@@ -402,7 +426,7 @@ export function ConnectTrust({
             />
           )}
           {proposalDone && (
-            <p className="text-xs text-green-700 font-semibold">✓ Proposal sent</p>
+            <p className="text-xs font-semibold text-green-700">✓ Proposal sent</p>
           )}
         </>
       )}

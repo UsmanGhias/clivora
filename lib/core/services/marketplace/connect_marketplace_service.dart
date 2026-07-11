@@ -55,12 +55,12 @@ class ConnectMarketplaceService {
     final rows = await c
         .from('connect_profiles')
         .select(
-          'id,user_id,display_title,headline,bio,skills,rate_band,availability,location_label,is_verified,account_type',
+          'id,user_id,display_title,headline,bio,skills,rate_band,availability,location_label,is_verified,account_type,created_at,avg_rating,review_count,completion_rate,reputation_score,profile_completeness',
         )
         .eq('account_type', accountType)
         .eq('is_listed', true)
         .eq('moderation_status', 'approved')
-        .order('updated_at', ascending: false)
+        .order('reputation_score', ascending: false)
         .limit(50);
     final list = (rows as List).cast<Map<String, dynamic>>();
     if (skill == null || skill.trim().isEmpty) return list;
