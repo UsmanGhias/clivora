@@ -7,7 +7,7 @@ import '../../core/services/referral_service.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 
-/// Referral program — share code, track referrals, earn bonus Pro days.
+/// Referral program, share code, track referrals, earn bonus Pro days.
 class ReferralScreen extends ConsumerStatefulWidget {
   const ReferralScreen({super.key});
 

@@ -6,17 +6,17 @@ const pillars = [
   {
     icon: Search,
     title: "Talent & jobs in one place",
-    body: "Browse freelancers and client briefs with skills, rates, location, and budget — built for serious work, not endless scrolling.",
+    body: "Browse freelancers and client briefs with skills, rates, location, and budget, built for serious work, not endless scrolling.",
   },
   {
     icon: Shield,
     title: "Hire with confidence",
-    body: "Verified badges, star ratings, completion rate, and milestone escrow status — trust signals before you pay. Contact stays private until mutual accept.",
+    body: "Verified badges, star ratings, completion rate, and milestone escrow status, trust signals before you pay. Contact stays private until mutual accept.",
   },
   {
     icon: Network,
     title: "CRM the moment you match",
-    body: "Accepted partners live in the same CLIVORA workspace — clients, projects, invoices, messages on web and Android.",
+    body: "Accepted partners live in the same CLIVORA workspace, clients, projects, invoices, messages on web and Android.",
   },
 ];
 
@@ -43,7 +43,7 @@ export function ConnectMarketplace() {
           The marketplace that becomes your operating system
         </h2>
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/70 sm:text-lg">
-          Upwork and Fiverr stop at the hire. CLIVORA Connect starts there — private
+          Upwork and Fiverr stop at the hire. CLIVORA Connect starts there, private
           matching with ratings and escrow status, then the CRM, projects, and invoices you
           already run your business on.
         </p>

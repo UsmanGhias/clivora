@@ -1,4 +1,4 @@
-# Web and Android — what works where
+# Web and Android, what works where
 
 CLIVORA is **one account** on **two platforms**. This page helps you choose the right tool for each job.
 
@@ -8,7 +8,7 @@ CLIVORA is **one account** on **two platforms**. This page helps you choose the 
 
 - Marketing site and documentation  
 - Quick sign-in and cloud CRM edits (clients, projects, invoices)  
-- **Connect marketplace** — browse, inbox, manage profile/jobs  
+- **Connect marketplace**, browse, inbox, manage profile/jobs  
 - Pro / Pro Plus checkout (manual payment)  
 - Client portal when on desktop  
 - Admin panel (authorized emails only)  
@@ -19,7 +19,7 @@ CLIVORA is **one account** on **two platforms**. This page helps you choose the 
 
 ## Use the Android app for
 
-- **Offline CRM** — work without internet, sync later  
+- **Offline CRM**, work without internet, sync later  
 - Rich **PDF invoices** and branding  
 - **Time tracking** and milestones  
 - **File vault** and attachments  
@@ -39,26 +39,26 @@ CLIVORA is **one account** on **two platforms**. This page helps you choose the 
 |---------|:---:|:-------:|
 | Auth (email, Google) | ✓ | ✓ |
 | Cloud CRM CRUD | ✓ | ✓ |
-| Offline CRM | — | ✓ |
+| Offline CRM |, | ✓ |
 | Connect browse | ✓ | ✓ |
 | Connect contact/post | Pro Plus | Pro Plus |
 | Messages | ✓ | ✓ |
 | Public invoice link | ✓ | ✓ |
-| Recurring invoices | — | ✓ |
-| Quotes → invoice | — | ✓ |
-| Contracts PDF | — | ✓ |
+| Recurring invoices |, | ✓ |
+| Quotes → invoice |, | ✓ |
+| Contracts PDF |, | ✓ |
 | Expenses (cloud) | partial | ✓ |
-| Team invites | — | ✓ |
-| Referrals | — | ✓ |
-| Play billing | — | ✓ |
-| Web manual billing | ✓ | — |
+| Team invites |, | ✓ |
+| Referrals |, | ✓ |
+| Play billing |, | ✓ |
+| Web manual billing | ✓ |, |
 
 ---
 
 ## Sync model
 
 - **Supabase** is the cloud source of truth for CRM (`crm_*` tables), Connect, messages, and profiles.  
-- **Android SQLite** is the offline cache + outbox — changes queue and sync on sign-in.  
+- **Android SQLite** is the offline cache + outbox, changes queue and sync on sign-in.  
 - **Web** reads/writes cloud tables directly (no offline mode).
 
 ---

@@ -63,7 +63,7 @@ class _ConnectNeedScreenState extends ConsumerState<ConnectNeedScreen> {
         padding: const EdgeInsets.all(20),
         children: [
           Text(
-            'Stay anonymous until you accept a freelancer. Describe the work — not your company email.',
+            'Stay anonymous until you accept a freelancer. Describe the work, not your company email.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                 ),

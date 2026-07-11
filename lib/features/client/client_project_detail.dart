@@ -31,7 +31,7 @@ Future<void> openClientProjectDetail(
   }
 }
 
-/// Full project detail for clients — tap any shared project card.
+/// Full project detail for clients, tap any shared project card.
 Future<void> showClientProjectDetail(
   BuildContext context,
   WidgetRef ref, {

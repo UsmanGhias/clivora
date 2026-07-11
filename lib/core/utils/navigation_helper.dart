@@ -20,7 +20,7 @@ void openNotifications(BuildContext context, {required bool isClient}) {
   context.push('/notifications');
 }
 
-/// Shows upgrade dialog — works for both freelancer and client accounts.
+/// Shows upgrade dialog, works for both freelancer and client accounts.
 Future<bool> requireProFeature(
   BuildContext context, {
   required bool isPro,

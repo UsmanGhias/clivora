@@ -8,7 +8,7 @@ abstract final class HomeWidgetService {
   static const keyOutstanding = 'outstanding_balance';
   static const keyOverdue = 'overdue_count';
 
-  /// Best-effort update — never throws to callers.
+  /// Best-effort update, never throws to callers.
   static Future<void> updateStats({
     required double outstanding,
     required int overdueCount,

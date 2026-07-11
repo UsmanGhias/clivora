@@ -214,7 +214,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         SnackBar(
           content: Text(
             ok
-                ? 'Email verified — you can start creating clients, invoices, and projects.'
+                ? 'Email verified, you can start creating clients, invoices, and projects.'
                 : 'Still unverified. Open the link in your email, then try again.',
           ),
         ),

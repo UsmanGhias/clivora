@@ -20,8 +20,32 @@ import {
   type ConnectRequestRow,
 } from "@/lib/connect-types";
 import { ConnectTrust } from "@/components/connect/ConnectTrust";
+import { ConnectActions } from "@/components/connect/ConnectActions";
 import { site } from "@/lib/site";
 import { cn } from "@/lib/utils";
+
+const CATEGORIES = [
+  "Web & Software",
+  "Design & Creative",
+  "Sales & Marketing",
+  "Writing",
+  "Admin & Support",
+  "Other",
+] as const;
+
+function matchesCategory(hay: string, category: string): boolean {
+  const map: Record<string, string[]> = {
+    "Web & Software": ["web", "software", "dev", "code", "react", "flutter", "mobile", "api", "app"],
+    "Design & Creative": ["design", "ui", "ux", "brand", "figma", "creative", "illustrat"],
+    "Sales & Marketing": ["sales", "marketing", "seo", "ads", "growth", "content market"],
+    Writing: ["writ", "copy", "blog", "edit", "content"],
+    "Admin & Support": ["admin", "support", "va", "assistant", "ops"],
+    Other: [],
+  };
+  const keys = map[category] ?? [];
+  if (category === "Other" || keys.length === 0) return true;
+  return keys.some((k) => hay.includes(k));
+}
 
 type Tab = "talent" | "jobs" | "inbox";
 type SortMode = "featured" | "rating" | "rate" | "newest";
@@ -43,11 +67,19 @@ function TrustStars({ rating, count }: { rating?: number | null; count?: number 
       </span>
     );
   }
+  const topRated = avg >= 4.5 && n >= 3;
   return (
-    <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-700">
-      <span className="text-amber-400">★</span>
-      {avg.toFixed(1)}
-      <span className="font-medium text-text-muted">({n})</span>
+    <span className="inline-flex flex-wrap items-center justify-end gap-1">
+      {topRated && (
+        <span className="rounded-lg bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-900">
+          Top rated
+        </span>
+      )}
+      <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-700">
+        <span className="text-amber-400">★</span>
+        {avg.toFixed(1)}
+        <span className="font-medium text-text-muted">({n})</span>
+      </span>
     </span>
   );
 }
@@ -75,6 +107,8 @@ export function ConnectBoard({
   const [tab, setTab] = useState<Tab>("talent");
   const [query, setQuery] = useState("");
   const [skillFilter, setSkillFilter] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [sort, setSort] = useState<SortMode>("featured");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +119,7 @@ export function ConnectBoard({
     targetNeedId?: string;
     label: string;
   } | null>(null);
-  const [message, setMessage] = useState("Hi — I'd like to connect on CLIVORA.");
+  const [message, setMessage] = useState("Hi. I'd like to connect on CLIVORA.");
 
   const popularSkills = useMemo(() => {
     const counts = new Map<string, number>();
@@ -116,7 +150,6 @@ export function ConnectBoard({
         const skills = skillsList(p.skills).map((s) => s.toLowerCase());
         if (!skills.some((s) => s === skillFilter.toLowerCase())) return false;
       }
-      if (!q) return true;
       const hay = [
         p.display_title,
         p.headline,
@@ -128,6 +161,8 @@ export function ConnectBoard({
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
+      if (categoryFilter && !matchesCategory(hay, categoryFilter)) return false;
+      if (!q) return true;
       return hay.includes(q);
     });
     if (sort === "rate") {
@@ -154,7 +189,7 @@ export function ConnectBoard({
       });
     }
     return list;
-  }, [profiles, query, skillFilter, sort]);
+  }, [profiles, query, skillFilter, categoryFilter, sort]);
 
   const filteredNeeds = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -163,11 +198,12 @@ export function ConnectBoard({
         const skills = skillsList(n.skills).map((s) => s.toLowerCase());
         if (!skills.some((s) => s === skillFilter.toLowerCase())) return false;
       }
-      if (!q) return true;
       const hay = [n.title, n.summary, n.budget_band, ...skillsList(n.skills)]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
+      if (categoryFilter && !matchesCategory(hay, categoryFilter)) return false;
+      if (!q) return true;
       return hay.includes(q);
     });
     if (sort === "newest") {
@@ -176,7 +212,7 @@ export function ConnectBoard({
       );
     }
     return list;
-  }, [needs, query, skillFilter, sort]);
+  }, [needs, query, skillFilter, categoryFilter, sort]);
 
   async function sendRequest(e: FormEvent) {
     e.preventDefault();
@@ -184,7 +220,7 @@ export function ConnectBoard({
     setError(null);
     setOk(null);
     if (!signedIn) {
-      router.push("/login?next=/connect");
+      router.push(`/signup?next=${encodeURIComponent("/pro?plan=pro_plus")}`);
       return;
     }
     if (!isProPlus) {
@@ -241,7 +277,7 @@ export function ConnectBoard({
         .eq("id", requestId)
         .eq("to_user_id", user.id);
       if (err) throw err;
-      setOk(accept ? "Accepted — emails are now visible." : "Request declined.");
+      setOk(accept ? "Accepted, emails are now visible." : "Request declined.");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Update failed");
@@ -252,7 +288,7 @@ export function ConnectBoard({
 
   function contactGate(action: () => void) {
     if (!signedIn) {
-      router.push("/login?next=/connect");
+      router.push(`/signup?next=${encodeURIComponent("/pro?plan=pro_plus")}`);
       return;
     }
     if (!isProPlus) {
@@ -268,6 +304,8 @@ export function ConnectBoard({
 
   return (
     <div className="space-y-6">
+      <ConnectActions signedIn={signedIn} isProPlus={isProPlus} isClient={isClient} />
+
       <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm sm:p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
@@ -312,6 +350,26 @@ export function ConnectBoard({
           </div>
         </div>
 
+        {tab !== "inbox" && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {CATEGORIES.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setCategoryFilter(categoryFilter === c ? null : c)}
+                className={cn(
+                  "rounded-lg px-2.5 py-1 text-xs font-semibold",
+                  categoryFilter === c
+                    ? "bg-teal-700 text-white"
+                    : "bg-teal-50 text-teal-900",
+                )}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        )}
+
         {popularSkills.length > 0 && tab !== "inbox" && (
           <div className="mt-3 flex flex-wrap gap-2">
             <button
@@ -347,6 +405,9 @@ export function ConnectBoard({
           <span className="rounded-lg bg-client-surface px-2.5 py-1 font-semibold text-client-accent">
             {filteredNeeds.length} open jobs
           </span>
+          <span className="rounded-lg bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-800">
+            $0 platform fee
+          </span>
           {tab !== "inbox" && (
             <label className="ml-auto inline-flex items-center gap-1.5 font-semibold text-navy">
               Sort
@@ -364,10 +425,12 @@ export function ConnectBoard({
           )}
           {!isProPlus && (
             <Link
-              href="/pro?plan=pro_plus"
+              href={signedIn ? "/pro?plan=pro_plus" : `/signup?next=${encodeURIComponent("/pro?plan=pro_plus")}`}
               className="rounded-lg bg-amber-100 px-2.5 py-1 font-semibold text-amber-900"
             >
-              Upgrade to contact · {site.pricing.proPlusMonthlyLabel}/mo
+              {signedIn
+                ? `Upgrade to contact · ${site.pricing.proPlusMonthlyLabel}/mo`
+                : `Buy Pro Plus · ${site.pricing.proPlusMonthlyLabel}/mo`}
             </Link>
           )}
         </div>
@@ -391,7 +454,7 @@ export function ConnectBoard({
         >
           <p className="text-sm font-bold text-navy">Contact {compose.label}</p>
           <p className="text-xs text-text-secondary">
-            Emails stay private until both sides accept — safer than open marketplaces.
+            Emails stay private until both sides accept, safer than open marketplaces.
           </p>
           <textarea
             required
@@ -435,7 +498,23 @@ export function ConnectBoard({
             )}
           </div>
           {filteredProfiles.length === 0 ? (
-            <Empty text="No talent matches yet. Try another search or publish your listing." />
+            <Empty
+              text="No talent matches yet. Try another search or publish your listing."
+              ctaHref={
+                signedIn
+                  ? isProPlus
+                    ? "/connect/manage"
+                    : "/pro?plan=pro_plus"
+                  : `/signup?next=${encodeURIComponent("/pro?plan=pro_plus")}`
+              }
+              ctaLabel={
+                signedIn
+                  ? isProPlus
+                    ? "Publish my listing"
+                    : `Buy Pro Plus · ${site.pricing.proPlusMonthlyLabel}/mo`
+                  : `Buy Pro Plus · ${site.pricing.proPlusMonthlyLabel}/mo`
+              }
+            />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filteredProfiles.map((p) => (
@@ -462,9 +541,26 @@ export function ConnectBoard({
                       <TrustStars rating={p.avg_rating} count={p.review_count} />
                     </div>
                   </div>
-                  <p className="mt-2 line-clamp-2 text-sm text-text-secondary">
+                  <p
+                    className={cn(
+                      "mt-2 text-sm text-text-secondary",
+                      expandedId === p.id ? "" : "line-clamp-2",
+                    )}
+                  >
                     {p.headline || p.bio || "Available on CLIVORA Connect"}
                   </p>
+                  {(p.bio || p.headline) && (
+                    <button
+                      type="button"
+                      className="mt-1 text-xs font-semibold text-primary"
+                      onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}
+                    >
+                      {expandedId === p.id ? "Show less" : "Full profile"}
+                    </button>
+                  )}
+                  {expandedId === p.id && p.bio && p.headline && (
+                    <p className="mt-2 text-sm text-text-secondary">{p.bio}</p>
+                  )}
                   <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
                     {memberSinceLabel(p.created_at) && (
                       <span>Member since {memberSinceLabel(p.created_at)}</span>
@@ -533,7 +629,21 @@ export function ConnectBoard({
             )}
           </div>
           {filteredNeeds.length === 0 ? (
-            <Empty text="No open jobs match. Clients can post needs from Manage." />
+            <Empty
+              text="No open jobs match. Clients can post needs from Manage."
+              ctaHref={
+                signedIn
+                  ? isProPlus
+                    ? "/connect/manage"
+                    : "/pro?plan=pro_plus"
+                  : `/signup?next=${encodeURIComponent("/pro?plan=pro_plus")}`
+              }
+              ctaLabel={
+                signedIn && isProPlus && isClient
+                  ? "Post a job"
+                  : `Get Pro Plus · ${site.pricing.proPlusMonthlyLabel}/mo`
+              }
+            />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
               {filteredNeeds.map((n) => (
@@ -547,9 +657,23 @@ export function ConnectBoard({
                       Open
                     </span>
                   </div>
-                  <p className="mt-2 line-clamp-4 text-sm text-text-secondary">
+                  <p
+                    className={cn(
+                      "mt-2 text-sm text-text-secondary",
+                      expandedId === n.id ? "" : "line-clamp-3",
+                    )}
+                  >
                     {n.summary || "Details in Connect"}
                   </p>
+                  {n.summary && n.summary.length > 140 && (
+                    <button
+                      type="button"
+                      className="mt-1 text-xs font-semibold text-primary"
+                      onClick={() => setExpandedId(expandedId === n.id ? null : n.id)}
+                    >
+                      {expandedId === n.id ? "Show less" : "Full description"}
+                    </button>
+                  )}
                   {n.budget_band && (
                     <p className="mt-2 text-sm font-extrabold text-navy">
                       Budget: {n.budget_band}
@@ -698,9 +822,10 @@ export function ConnectBoard({
           <div>
             <p className="font-bold text-navy">Why Connect beats open marketplaces</p>
             <p className="mt-1 text-sm text-text-secondary">
-              Private contact until mutual accept, milestone escrow status, star ratings on talent
-              cards, and the same CRM workspace after you match — one Pro Plus plan unlocks Connect
-              plus unlimited clients, projects, and invoices.
+              $0 platform fees on your deals (no Upwork-style Connect tokens), private contact until
+              mutual accept, milestone escrow status, star ratings on talent cards, and the same CRM
+              after you match. One Pro Plus plan unlocks Connect plus unlimited clients, projects,
+              and invoices.
             </p>
           </div>
         </div>
@@ -709,10 +834,27 @@ export function ConnectBoard({
   );
 }
 
-function Empty({ text }: { text: string }) {
+function Empty({
+  text,
+  ctaHref,
+  ctaLabel,
+}: {
+  text: string;
+  ctaHref?: string;
+  ctaLabel?: string;
+}) {
   return (
-    <div className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center text-sm text-text-secondary">
-      {text}
+    <div className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center">
+      <Users className="mx-auto h-8 w-8 text-text-muted" />
+      <p className="mt-3 text-sm text-text-secondary">{text}</p>
+      {ctaHref && ctaLabel && (
+        <Link
+          href={ctaHref}
+          className="mt-4 inline-flex rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-navy"
+        >
+          {ctaLabel}
+        </Link>
+      )}
     </div>
   );
 }

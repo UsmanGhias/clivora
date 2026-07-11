@@ -20,7 +20,7 @@ class AiInsight {
   final bool copyable;
 }
 
-/// Local smart insights generated from your business data — no cloud AI required.
+/// Local smart insights generated from your business data, no cloud AI required.
 class AiAssistantService {
   Future<List<AiInsight>> generateInsights(AppDatabase db, int ownerUserId) async {
     final insights = <AiInsight>[];

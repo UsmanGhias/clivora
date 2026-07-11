@@ -141,7 +141,7 @@ String? authRedirect({required String location, required User? user, required bo
     return homeRouteForUser(user);
   }
 
-  // Shared routes (e.g. /notifications) are in both lists — do not redirect clients away.
+  // Shared routes (e.g. /notifications) are in both lists, do not redirect clients away.
   if (isClientUser(user) && isFreelancerRoute(path) && !isClientRoute(path)) {
     if (isAdminUser(user) && (path == '/admin-console' || path == '/admin')) {
       return null;
@@ -153,7 +153,7 @@ String? authRedirect({required String location, required User? user, required bo
     return null;
   }
 
-  // Shared routes (e.g. /profile, /upgrade, /connect) are in both lists —
+  // Shared routes (e.g. /profile, /upgrade, /connect) are in both lists
   // do not redirect freelancers away from them.
   if (!isClientUser(user) &&
       !isAdminUser(user) &&

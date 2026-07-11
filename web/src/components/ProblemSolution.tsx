@@ -16,7 +16,7 @@ const problems = [
     icon: Puzzle,
     title: "Tool sprawl",
     description:
-      "One app for clients, another for invoices, a third marketplace for hiring — and nothing talks to each other.",
+      "One app for clients, another for invoices, a third marketplace for hiring, and nothing talks to each other.",
   },
   {
     icon: AlertTriangle,
@@ -45,7 +45,7 @@ export function ProblemSolution() {
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-base text-white/60 sm:text-lg">
             We are not another gig board. CLIVORA is a cloud-first business operating
-            system — Connect to find work, CRM to run it, web and Android in sync.
+            system. Connect to find work, CRM to run it, web and Android in sync.
           </p>
         </AnimatedSection>
 

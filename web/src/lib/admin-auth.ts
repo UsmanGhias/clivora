@@ -8,7 +8,7 @@ export const ADMIN_EMAILS = [
   "iusmanghias@gmail.com",
 ];
 
-/** Env bootstrap password — used only until a hash is stored in app_settings. */
+/** Env bootstrap password, used only until a hash is stored in app_settings. */
 export const PANEL_PASSWORD_BOOTSTRAP =
   process.env.ADMIN_PANEL_PASSWORD ?? "ClivoraAdmin2026!";
 
@@ -28,9 +28,9 @@ export const PRO_PLUS_PRICE_PKR = PRO_PLUS_PRICE_USD;
 
 export const ADMIN_SESSION_FLAG = "clivora_admin";
 export const ADMIN_SESSION_EMAIL = "clivora_admin_email";
-/** Session token (HMAC) — never store the panel password in sessionStorage. */
+/** Session token (HMAC), never store the panel password in sessionStorage. */
 export const ADMIN_SESSION_TOKEN = "clivora_admin_token";
-/** @deprecated plaintext password key — cleared on login */
+/** @deprecated plaintext password key, cleared on login */
 export const ADMIN_SESSION_PASS = "clivora_admin_pass";
 
 const SUPABASE_URL =
@@ -157,7 +157,7 @@ export function verifyAdminSessionToken(
 
 /**
  * Accepts either a session token (preferred) or the panel password.
- * Prefer sending `adminToken` from the browser — never persist the password.
+ * Prefer sending `adminToken` from the browser, never persist the password.
  */
 export async function assertAdminPanelAuth(
   email: string | null | undefined,
@@ -184,7 +184,7 @@ export function assertSyncKey(key: string | null | undefined) {
   }
 }
 
-/** Fingerprint for UI — not a secret. */
+/** Fingerprint for UI, not a secret. */
 export function passwordConfigFingerprint(hash: string | null): string {
   if (!hash) return "bootstrap-env";
   return createHash("sha256").update(hash).digest("hex").slice(0, 8);

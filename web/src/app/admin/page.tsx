@@ -802,7 +802,7 @@ export default function AdminPage() {
               <h2 className="font-semibold text-slate-900 mb-2">Admin panel password</h2>
               <p className="text-sm text-slate-600 mb-3">
                 Stored as a hash in Supabase <code className="text-xs">app_settings</code>. Session uses a
-                signed token — the password is never kept in sessionStorage.
+                signed token, the password is never kept in sessionStorage.
               </p>
               <div className="flex flex-col sm:flex-row gap-2">
                 <input
@@ -1413,7 +1413,7 @@ export default function AdminPage() {
                               {JSON.stringify(f.value)}
                             </span>
                           </td>
-                          <td className={`${tdClass} text-slate-500`}>{f.description ?? "—"}</td>
+                          <td className={`${tdClass} text-slate-500`}>{f.description ?? "-"}</td>
                           <td className={`${tdClass} text-slate-500 whitespace-nowrap`}>{formatDate(f.updated_at ?? undefined)}</td>
                           <td className={tdClass}>
                             <button

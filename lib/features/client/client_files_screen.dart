@@ -6,7 +6,7 @@ import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
 
-/// Client file delivery lite — attachments linked to shared projects/contracts.
+/// Client file delivery lite, attachments linked to shared projects/contracts.
 class ClientFilesScreen extends ConsumerWidget {
   const ClientFilesScreen({super.key});
 

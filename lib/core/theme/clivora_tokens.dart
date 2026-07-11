@@ -1,4 +1,4 @@
-/// Raw design primitives — single source of truth for spacing, radii, and motion.
+/// Raw design primitives, single source of truth for spacing, radii, and motion.
 abstract final class ClivoraSpacing {
   static const double xs = 4;
   static const double sm = 8;

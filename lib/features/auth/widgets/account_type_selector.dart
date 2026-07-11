@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/auth/user_roles.dart';
 import '../../../core/theme/clivora_colors.dart';
 
-/// Freelancer vs Client role picker with checkmark — used on login and signup.
+/// Freelancer vs Client role picker with checkmark, used on login and signup.
 class AccountTypeSelector extends StatelessWidget {
   const AccountTypeSelector({
     super.key,

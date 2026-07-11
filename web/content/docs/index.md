@@ -1,6 +1,6 @@
 # CLIVORA Documentation
 
-Welcome to the official help center for **CLIVORA** — the cloud-first business operating system for freelancers and clients.
+Welcome to the official help center for **CLIVORA**, the cloud-first business operating system for freelancers and clients.
 
 **Live app:** [clivora.codcrafters.org](https://clivora.codcrafters.org)  
 **Android app:** [Google Play](https://play.google.com/store/apps/details?id=org.codcrafters.clivora)

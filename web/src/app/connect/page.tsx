@@ -19,9 +19,9 @@ import { SubPageChrome } from "@/components/app/SubPageChrome";
 import { ConnectBoard } from "@/components/connect/ConnectBoard";
 
 export const metadata: Metadata = {
-  title: "CLIVORA Connect — Private marketplace",
+  title: "CLIVORA Connect. Private marketplace",
   description:
-    "Hire freelancers and find clients on CLIVORA Connect. Private contact until mutual accept — then continue in the same CRM.",
+    "Hire freelancers and find clients on CLIVORA Connect. Private contact until mutual accept, then continue in the same CRM.",
 };
 
 export default async function ConnectPage() {
@@ -74,11 +74,12 @@ export default async function ConnectPage() {
             CLIVORA Connect
           </p>
           <h1 className="mt-2 font-display text-2xl font-extrabold sm:text-4xl">
-            Hire & get hired — privately
+            Hire & get hired, privately
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/85 sm:text-base">
-            Browse talent and jobs. Send Connect requests. Emails unlock only after both sides
-            accept. Then continue in the same CLIVORA CRM — web + Android.
+            Browse talent and jobs free. $0 platform fees on negotiated rates (no per-proposal
+            tokens). Contact and post with Pro Plus. Emails unlock only after both sides accept,
+            then continue in the same CLIVORA CRM.
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             {signedIn && plus ? (
@@ -90,12 +91,16 @@ export default async function ConnectPage() {
               </Link>
             ) : (
               <Link
-                href={signedIn ? "/pro?plan=pro_plus" : "/signup"}
-                className="rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-navy"
+                href={
+                  signedIn
+                    ? "/pro?plan=pro_plus"
+                    : `/signup?next=${encodeURIComponent("/pro?plan=pro_plus")}`
+                }
+                className="rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-navy"
               >
                 {signedIn
-                  ? `Unlock Connect · ${site.pricing.proPlusMonthlyLabel}/mo`
-                  : "Create free account"}
+                  ? `Buy Pro Plus · ${site.pricing.proPlusMonthlyLabel}/mo`
+                  : `Buy Pro Plus · ${site.pricing.proPlusMonthlyLabel}/mo`}
               </Link>
             )}
             {!signedIn && (
@@ -109,7 +114,7 @@ export default async function ConnectPage() {
           </div>
           {restricted && (
             <p className="mt-4 rounded-xl bg-black/20 px-3 py-2 text-sm text-amber-100">
-              Your account is restricted — browsing works, posting/contact is paused. Contact
+              Your account is restricted, browsing works, posting/contact is paused. Contact
               support if this is unexpected.
             </p>
           )}
@@ -125,7 +130,7 @@ export default async function ConnectPage() {
             {
               n: "02",
               t: "Request",
-              d: "Send a Connect request — emails stay private until accept.",
+              d: "Send a Connect request, emails stay private until accept.",
             },
             {
               n: "03",

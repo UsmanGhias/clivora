@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/clivora_colors.dart';
 
-/// Compact Hub card — centered icon well + centered label for 2-column grids.
+/// Compact Hub card, centered icon well + centered label for 2-column grids.
 class ToolGridTile extends StatelessWidget {
   const ToolGridTile({
     super.key,

@@ -1,6 +1,15 @@
+## 2.16 | Connect UX, hero, AI fallback
+
+- Marketing hero simplified with $0 platform fee USP
+- Guest Buy Pro Plus funnel on Connect; category filters; Top Rated badge
+- Ask AI: LLM when keyed, otherwise download-app CTA
+- Web Hub icon wells; role-aware Messages
+- Mobile Connect detail sheets, categories, team invite project share
+- Em-dashes removed from user-facing copy
+
 # Changelog
 
-## 2.15 — Reminders, referrals & Hub KPIs
+## 2.15. Reminders, referrals & Hub KPIs
 
 - Overdue invoice payment reminder Edge Function (Resend + idempotent scheduling)
 - Web Refer & Earn page (`/app/referrals`)
@@ -10,7 +19,7 @@
 - Android Connect sort picker (Featured / Top rated / Newest)
 - Sync conflict dialogs for projects and clients (not only invoices)
 
-## 2.14 — Trust, ranking & growth
+## 2.14. Trust, ranking & growth
 
 - Star ratings, review counts, and “New” badge on Connect talent cards (web + Android)
 - Reputation score sorting (Featured / Top rated) with completion rate and member-since signals
@@ -21,7 +30,7 @@
 - Marketing Connect section highlights ratings + escrow trust
 - Google Play payments profile IDs documented for merchant setup
 
-## 2.13 — Platform expansion
+## 2.13. Platform expansion
 
 - Workspace snapshot charts on the web dashboard
 - Message threads and read receipts on web
@@ -38,7 +47,7 @@
 - Secure vault share links
 - Ask AI assistant on Hub (Pro)
 
-## 2.11 — Foundation
+## 2.11. Foundation
 
 - Stronger offline sync and conflict handling
 - Project pipeline (kanban) on web and Android
@@ -46,7 +55,7 @@
 - Admin panel upgrades
 - Public help center (user docs only)
 
-## 2.10 — Connect marketplace & cloud CRM
+## 2.10. Connect marketplace & cloud CRM
 
 - CLIVORA Connect: talent, jobs, private contact requests
 - Cloud CRM on web (clients, projects, invoices)

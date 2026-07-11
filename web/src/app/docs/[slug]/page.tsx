@@ -7,7 +7,7 @@ import { site } from "@/lib/site";
 
 type Props = { params: Promise<{ slug: string }> };
 
-/** Old public URLs that exposed internal research — permanent redirect. */
+/** Old public URLs that exposed internal research, permanent redirect. */
 const REMOVED_SLUGS = new Set(["ai-research-brief", "architecture"]);
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -18,10 +18,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const doc = getDocBySlug(slug);
   if (!doc) return { title: "Not found" };
   return {
-    title: `${doc.meta.title} — Docs`,
+    title: `${doc.meta.title} | Docs`,
     description: `CLIVORA documentation: ${doc.meta.title}`,
     openGraph: {
-      title: `${doc.meta.title} — ${site.name} Docs`,
+      title: `${doc.meta.title} | ${site.name} Docs`,
       url: `${site.url}/docs/${slug}`,
     },
   };

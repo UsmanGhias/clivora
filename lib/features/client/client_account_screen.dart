@@ -12,7 +12,7 @@ import '../../core/services/app_engagement_service.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_logo.dart';
 
-/// Client account — profile, quick links, sign out.
+/// Client account, profile, quick links, sign out.
 class ClientAccountScreen extends ConsumerStatefulWidget {
   const ClientAccountScreen({super.key});
 

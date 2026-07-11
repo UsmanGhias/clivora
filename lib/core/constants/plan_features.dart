@@ -17,7 +17,7 @@ abstract final class PlanFeatures {
   static bool notificationsCenter(String? plan) => true;
   static bool coachMarks(String? plan) => true;
 
-  /// Vault byte cap — Plus returns [PlanLimits.proPlusStorageBytes] (50 GB).
+  /// Vault byte cap. Plus returns [PlanLimits.proPlusStorageBytes] (50 GB).
   static int fileVaultLimitBytes(String? plan) {
     if (isProPlus(plan)) return PlanLimits.proPlusStorageBytes;
     if (isPro(plan)) return PlanLimits.proStorageBytes;

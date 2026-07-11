@@ -66,7 +66,7 @@ class CloudSharedProject {
   }
 }
 
-/// View model for client portal — local project or cloud-only share.
+/// View model for client portal, local project or cloud-only share.
 class ClientSharedProjectView {
   const ClientSharedProjectView({
     required this.id,

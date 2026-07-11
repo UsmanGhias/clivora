@@ -272,7 +272,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     if (roleErr != null) return roleErr;
 
     if (user.passwordHash.isNotEmpty && !verifyPassword(password, user.passwordHash)) {
-      // Supabase auth succeeded — update local hash (user may have reset password in cloud).
+      // Supabase auth succeeded, update local hash (user may have reset password in cloud).
       await _db.updateUser(user.copyWith(passwordHash: hashPassword(password), googleId: Value(cloudUid)));
     } else if (user.passwordHash.isNotEmpty &&
         verifyPassword(password, user.passwordHash) &&
@@ -644,7 +644,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         } else {
           final remind = await ref.read(cloudCrmBackupServiceProvider).shouldRemindBackup();
           if (!remind) {
-            // Recent backup exists — quiet auto-upload to keep cloud fresh
+            // Recent backup exists, quiet auto-upload to keep cloud fresh
             try {
               await ref.read(cloudCrmBackupServiceProvider).uploadCurrentWorkspace();
             } catch (_) {}

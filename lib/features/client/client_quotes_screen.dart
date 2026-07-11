@@ -11,7 +11,7 @@ import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
 
-/// Client-facing quotes shared by freelancers — accept / decline / PDF.
+/// Client-facing quotes shared by freelancers, accept / decline / PDF.
 class ClientQuotesScreen extends ConsumerWidget {
   const ClientQuotesScreen({super.key});
 

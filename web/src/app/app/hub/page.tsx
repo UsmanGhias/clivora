@@ -1,12 +1,27 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { LucideIcon } from "lucide-react";
+import {
+  Briefcase,
+  Calendar,
+  CreditCard,
+  FileText,
+  FolderKanban,
+  Gift,
+  Headphones,
+  LayoutDashboard,
+  MessageSquare,
+  Network,
+  Sparkles,
+  Users,
+} from "lucide-react";
 import { getProfile, isClientAccount, planLabel } from "@/lib/profile";
 import { site } from "@/lib/site";
 import { SmartAppCta } from "@/components/app/SmartAppCta";
 import { AskAi } from "@/components/app/AskAi";
 import { getHubKpis } from "@/lib/hub-kpis";
 
-/** Freelancer hub — mirrors Flutter /more with app-preferred tools called out. */
+/** Freelancer hub, mirrors Flutter /more with app-preferred tools called out. */
 export default async function HubPage() {
   const profile = await getProfile();
   if (isClientAccount(profile)) redirect("/app/account");
@@ -43,11 +58,15 @@ export default async function HubPage() {
           href="/app/invoices"
           title="What's overdue?"
           body={`${kpis.overdueInvoices} invoice${kpis.overdueInvoices === 1 ? "" : "s"} past due`}
+          icon={FileText}
+          tone="amber"
         />
         <HubLink
           href="/connect"
           title="Needs action"
           body={`${kpis.pendingConnect} pending Connect request${kpis.pendingConnect === 1 ? "" : "s"}`}
+          icon={Network}
+          tone="teal"
         />
         <HubLink
           href="/connect/manage"
@@ -57,6 +76,8 @@ export default async function HubPage() {
               ? `${kpis.profileCompleteness}% complete · ratings & listing`
               : "Create listing · ratings · completeness"
           }
+          icon={Sparkles}
+          tone="sky"
         />
       </div>
 
@@ -65,19 +86,21 @@ export default async function HubPage() {
           Available on web
         </h2>
         <div className="grid gap-3 sm:grid-cols-2">
-          <HubLink href="/app/clients" title="Clients" body="Cloud CRM" />
-          <HubLink href="/app/projects" title="Work" body="Projects" />
-          <HubLink href="/app/invoices" title="Billing" body="Invoices" />
-          <HubLink href="/app/messages" title="Messages" body="Cloud inbox" />
-          <HubLink href="/app/timesheets" title="Timesheets" body="Log & approve time" />
-          <HubLink href="/app/meetings" title="Meetings" body="Jitsi video rooms" />
-          <HubLink href="/app/support" title="Support" body="Submit a ticket" />
-          <HubLink href="/connect" title="CLIVORA Connect" body="Marketplace" />
-          <HubLink href="/app/referrals" title="Refer & Earn" body="Share code · bonus Pro days" />
+          <HubLink href="/app/clients" title="Clients" body="Cloud CRM" icon={Users} />
+          <HubLink href="/app/projects" title="Work" body="Projects" icon={FolderKanban} />
+          <HubLink href="/app/invoices" title="Billing" body="Invoices" icon={FileText} />
+          <HubLink href="/app/messages" title="Messages" body="Cloud inbox" icon={MessageSquare} />
+          <HubLink href="/app/timesheets" title="Timesheets" body="Log & approve time" icon={Calendar} />
+          <HubLink href="/app/meetings" title="Meetings" body="Jitsi video rooms" icon={Briefcase} />
+          <HubLink href="/app/support" title="Support" body="Submit a ticket" icon={Headphones} />
+          <HubLink href="/connect" title="CLIVORA Connect" body="Marketplace · $0 fees" icon={Network} />
+          <HubLink href="/app/referrals" title="Refer & Earn" body="Share code · bonus Pro days" icon={Gift} />
           <HubLink
             href="/pro"
             title="Upgrade"
             body={`Pro ${site.pricing.proMonthlyLabel}/mo · Plus ${site.pricing.proPlusMonthlyLabel}/mo`}
+            icon={CreditCard}
+            tone="amber"
           />
         </div>
       </div>
@@ -87,12 +110,12 @@ export default async function HubPage() {
           Best in the mobile app
         </h2>
         <div className="grid gap-3 sm:grid-cols-2">
-          <AppPreferred title="AI assistant" body="Drafts, summaries, coaching" />
-          <AppPreferred title="Calendar & time" body="Scheduling and timers" />
-          <AppPreferred title="Reports & analytics" body="Revenue charts" />
-          <AppPreferred title="Contracts & vault" body="PDFs and secure files" />
-          <AppPreferred title="Automations" body="Workflows & reminders" />
-          <AppPreferred title="Team & biometrics" body="Seats and lock screen" />
+          <AppPreferred title="AI assistant" body="Drafts, summaries, coaching" icon={Sparkles} />
+          <AppPreferred title="Calendar & time" body="Scheduling and timers" icon={Calendar} />
+          <AppPreferred title="Reports & analytics" body="Revenue charts" icon={LayoutDashboard} />
+          <AppPreferred title="Contracts & vault" body="PDFs and secure files" icon={FileText} />
+          <AppPreferred title="Automations" body="Workflows & reminders" icon={Briefcase} />
+          <AppPreferred title="Team & biometrics" body="Seats and lock screen" icon={Users} />
         </div>
       </div>
 
@@ -107,26 +130,65 @@ export default async function HubPage() {
   );
 }
 
-function HubLink({ href, title, body }: { href: string; title: string; body: string }) {
+const toneClass: Record<string, string> = {
+  teal: "bg-teal-100 text-teal-800",
+  amber: "bg-amber-100 text-amber-900",
+  sky: "bg-sky-100 text-sky-800",
+  navy: "bg-navy/10 text-navy",
+};
+
+function HubLink({
+  href,
+  title,
+  body,
+  icon: Icon,
+  tone = "navy",
+}: {
+  href: string;
+  title: string;
+  body: string;
+  icon: LucideIcon;
+  tone?: keyof typeof toneClass;
+}) {
   return (
     <Link
       href={href}
-      className="rounded-2xl border border-border bg-surface p-4 transition hover:border-primary/40"
+      className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 transition hover:border-primary/40"
     >
-      <p className="font-bold">{title}</p>
-      <p className="text-sm text-text-secondary">{body}</p>
+      <span
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${toneClass[tone] ?? toneClass.navy}`}
+      >
+        <Icon className="h-5 w-5" />
+      </span>
+      <span className="min-w-0">
+        <p className="font-bold text-navy">{title}</p>
+        <p className="text-sm text-text-secondary">{body}</p>
+      </span>
     </Link>
   );
 }
 
-function AppPreferred({ title, body }: { title: string; body: string }) {
+function AppPreferred({
+  title,
+  body,
+  icon: Icon,
+}: {
+  title: string;
+  body: string;
+  icon: LucideIcon;
+}) {
   return (
-    <div className="rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-4">
-      <p className="font-bold text-navy">{title}</p>
-      <p className="text-sm text-text-secondary">{body}</p>
-      <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-primary-dark">
-        App preferred
-      </p>
+    <div className="flex items-start gap-3 rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-4">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary-dark">
+        <Icon className="h-5 w-5" />
+      </span>
+      <div>
+        <p className="font-bold text-navy">{title}</p>
+        <p className="text-sm text-text-secondary">{body}</p>
+        <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-primary-dark">
+          App preferred
+        </p>
+      </div>
     </div>
   );
 }

@@ -86,7 +86,7 @@ class SyncOutboxService {
     });
     await _saveConflicts(list);
     ref.read(syncFailureMessageProvider.notifier).state =
-        '${entityType[0].toUpperCase()}${entityType.substring(1)} sync conflict — resolve when online.';
+        '${entityType[0].toUpperCase()}${entityType.substring(1)} sync conflict, resolve when online.';
   }
 
   Future<List<Map<String, dynamic>>> pendingByEntity(String entityType) async {
@@ -171,11 +171,11 @@ class SyncOutboxService {
             await ref.read(databaseProvider).updateProject(
                   project.copyWith(status: cloudStatus, updatedAt: DateTime.now()),
                 );
-            // Family provider — callers refresh on next watch; clear conflict is enough.
+            // Family provider, callers refresh on next watch; clear conflict is enough.
             
           }
         } else if (entityType == 'customer') {
-          // Customers rarely have status conflicts — clear only.
+          // Customers rarely have status conflicts, clear only.
         }
       } catch (_) {}
     }
@@ -273,7 +273,7 @@ class SyncOutboxService {
               await clearConflict(invoice.id);
               ref.invalidate(invoicesProvider(null));
             } else if (invoice.status == 'paid') {
-              // Local paid wins over non-paid cloud — push local.
+              // Local paid wins over non-paid cloud, push local.
               await ref.read(cloudInvoiceRepositoryProvider).syncInvoiceToClient(
                     freelancer: user,
                     invoice: invoice,
@@ -281,7 +281,7 @@ class SyncOutboxService {
                     clientUid: row['client_uid'] as String?,
                   );
             } else {
-              // Other conflicts (e.g. local overdue vs cloud sent) — defer to UI.
+              // Other conflicts (e.g. local overdue vs cloud sent), defer to UI.
               await addInvoiceConflict(
                 localInvoiceId: invoice.id,
                 localStatus: invoice.status,

@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 
 /**
  * Low-cost Stripe Customer Portal (only when STRIPE_SECRET_KEY is set).
- * Without Stripe keys, returns a clear message — JazzCash/Play remain primary.
+ * Without Stripe keys, returns a clear message. JazzCash/Play remain primary.
  */
 export async function POST(req: NextRequest) {
   const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;

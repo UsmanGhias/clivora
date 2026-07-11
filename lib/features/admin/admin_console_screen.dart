@@ -21,7 +21,7 @@ import '../../core/theme/clivora_colors.dart';
 import '../../data/database/database.dart';
 import '../../data/providers/app_providers.dart';
 
-/// Super-admin command center — full platform control.
+/// Super-admin command center, full platform control.
 class AdminConsoleScreen extends ConsumerStatefulWidget {
   const AdminConsoleScreen({super.key});
 
@@ -453,9 +453,9 @@ class _PlansTab extends StatelessWidget {
         _PlanRow('Invoices / month', '${PlanLimits.freeMaxInvoicesPerMonth}', 'Unlimited'),
         _PlanRow('Emails / month', '${PlanLimits.freeMaxEmailsPerMonth}', '${PlanLimits.proMaxEmailsPerMonth}'),
         _PlanRow('Storage', '100 MB', '5 GB'),
-        _PlanRow('Biometric lock', '—', '✓'),
-        _PlanRow('Verified badge', '—', '✓'),
-        _PlanRow('Custom workflows', '—', '✓'),
+        _PlanRow('Biometric lock', '-', '✓'),
+        _PlanRow('Verified badge', '-', '✓'),
+        _PlanRow('Custom workflows', '-', '✓'),
         _PlanRow('CLIVORA AI Pro', 'Local only', 'Cloud + local'),
         _PlanRow('Advanced analytics', 'Basic', 'Full trends'),
         const SizedBox(height: 20),

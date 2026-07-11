@@ -10,7 +10,7 @@ import '../../shared/widgets/clivora_scaffold.dart';
 import 'client_portal_screen.dart' show ClientTrackingKey;
 import 'client_project_detail.dart';
 
-/// Client activity feed — updates across all shared projects.
+/// Client activity feed, updates across all shared projects.
 class ClientActivityScreen extends ConsumerWidget {
   const ClientActivityScreen({super.key});
 

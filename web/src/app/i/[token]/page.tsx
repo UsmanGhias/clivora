@@ -48,7 +48,7 @@ export default async function PublicInvoicePage({
         month: "short",
         day: "numeric",
       })
-    : "—";
+    : "-";
   const total = Number(share.total ?? 0).toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,

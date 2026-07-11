@@ -16,7 +16,7 @@ class CoachMarkStep {
   final EdgeInsets padding;
 }
 
-/// Spotlight coach marks — scrolls target into view and re-measures on layout/scroll.
+/// Spotlight coach marks, scrolls target into view and re-measures on layout/scroll.
 class CoachMarkOverlay extends StatefulWidget {
   const CoachMarkOverlay({
     super.key,

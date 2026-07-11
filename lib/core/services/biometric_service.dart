@@ -14,7 +14,7 @@ final biometricServiceProvider = Provider<BiometricService>((ref) {
   return BiometricService(ref);
 });
 
-/// Biometric unlock (Pro) — prompts after configurable idle timeout.
+/// Biometric unlock (Pro), prompts after configurable idle timeout.
 class BiometricService {
   BiometricService(this.ref);
 

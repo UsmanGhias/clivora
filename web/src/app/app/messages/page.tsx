@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { getProfile } from "@/lib/profile";
+import { getProfile, isClientAccount } from "@/lib/profile";
 import { DownloadAppCard } from "@/components/app/DownloadAppCard";
 import { MessagesThreadView } from "./MessagesThreadView";
 
@@ -20,6 +20,7 @@ export default async function MessagesPage() {
   const profile = await getProfile();
   const supabase = await createClient();
   const uid = profile?.id ?? "";
+  const isClient = isClientAccount(profile);
   let rows: MessageRow[] = [];
 
   try {
@@ -41,13 +42,16 @@ export default async function MessagesPage() {
       <div>
         <h1 className="text-2xl font-extrabold">Messages</h1>
         <p className="text-sm text-text-secondary">
-          Cloud inbox. Realtime chat and push alerts are richer in the mobile app.
+          {isClient
+            ? "Talk with freelancers after Connect accept or on shared work. Live chat is richer in the app."
+            : "Cloud inbox for clients and Connect matches. Realtime chat and push alerts are richer in the mobile app."}
         </p>
       </div>
       <MessagesThreadView
         rows={rows}
         fromEmail={profile?.email ?? ""}
         myUid={uid}
+        isClient={isClient}
       />
       <DownloadAppCard title="Chat live in the CLIVORA app" />
     </div>

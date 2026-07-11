@@ -49,7 +49,7 @@ final clientProjectsProvider = StreamProvider<List<Project>>((ref) {
   return ref.watch(databaseProvider).watchProjectsForClient(user.id);
 });
 
-/// Client portal — merges local SQLite links + Supabase cross-device shares.
+/// Client portal, merges local SQLite links + Supabase cross-device shares.
 final clientSharedProjectsProvider = StreamProvider<List<ClientSharedProjectView>>((ref) {
   final user = ref.watch(authStateProvider).valueOrNull;
   if (user == null) return const Stream.empty();
@@ -475,14 +475,14 @@ final clientInboxProvider = StreamProvider<List<ClientMessage>>((ref) {
   return ref.watch(databaseProvider).watchInboxForUser(userId);
 });
 
-/// Client inbox — local + Supabase (cross-device).
+/// Client inbox, local + Supabase (cross-device).
 final unifiedClientInboxProvider = StreamProvider<List<ClientInboxEntry>>((ref) {
   final user = ref.watch(authStateProvider).valueOrNull;
   if (user == null) return const Stream.empty();
   return watchUnifiedClientInbox(ref, user);
 });
 
-/// Freelancer mailbox — sent + received (Supabase).
+/// Freelancer mailbox, sent + received (Supabase).
 final freelancerMailboxProvider = StreamProvider<List<CloudMessage>>((ref) {
   ref.watch(authStateProvider);
   final uid = SupabaseAuthHelper.currentUid;

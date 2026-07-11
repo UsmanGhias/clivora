@@ -10,7 +10,7 @@ export function authErrorMessage(raw: string | null | undefined): string {
     lower.includes("email rate limit exceeded") ||
     lower.includes("over_email_send_rate_limit")
   ) {
-    return "Too many verification emails were sent. Wait a few minutes, then tap Resend — or open the link already in your inbox/spam.";
+    return "Too many verification emails were sent. Wait a few minutes, then tap Resend, or open the link already in your inbox/spam.";
   }
 
   if (lower.includes("email not confirmed") || lower.includes("email_not_confirmed")) {

@@ -16,7 +16,7 @@ final cloudMessageRepositoryProvider = Provider<CloudMessageRepository>((ref) {
   return CloudMessageRepository(ref);
 });
 
-/// Cross-device inbox — stored in Supabase Postgres.
+/// Cross-device inbox, stored in Supabase Postgres.
 class CloudMessage {
   CloudMessage({
     required this.id,
@@ -143,7 +143,7 @@ class CloudMessageRepository {
     var received = <CloudMessage>[];
 
     final controller = StreamController<List<CloudMessage>>();
-    // Never leave UI in perpetual loading — emit immediately, then bootstrap + realtime.
+    // Never leave UI in perpetual loading, emit immediately, then bootstrap + realtime.
     controller.add(const <CloudMessage>[]);
 
     Future<void> bootstrap() async {
