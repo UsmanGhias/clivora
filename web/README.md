@@ -1,35 +1,37 @@
 # CLIVORA Web
 
-Marketing website for [CLIVORA](https://codcrafters.org)  -  the Business Operating System for freelancers and agencies, developed by **CODCrafters**.
+Marketing site, web app, and documentation for [CLIVORA](https://clivora.codcrafters.org).
 
-**Live site:** [codcrafters.org](https://codcrafters.org)
+**Live:** [clivora.codcrafters.org](https://clivora.codcrafters.org)  
+**Docs:** [clivora.codcrafters.org/docs](https://clivora.codcrafters.org/docs)
+
+## Documentation
+
+| Resource | URL |
+|----------|-----|
+| Docs home | `/docs` |
+| User guide | `/docs/user-guide` |
+| Connect guide | `/docs/connect` |
+| AI research brief (web) | `/docs/ai-research-brief` |
+| AI research brief (PDF) | `/docs/CLIVORA-AI-Research-Brief.pdf` |
+
+Markdown sources live in `content/docs/`. Regenerate the PDF:
+
+```bash
+npm run docs:pdf
+```
 
 ## Pages
 
-| Page | URL | Purpose |
-|------|-----|---------|
-| Home | `/` | Marketing landing page |
-| Privacy Policy | `/privacy` | **Required for Google Play Console** |
-| Terms of Service | `/terms` | App terms and subscription info |
-| Cookie Policy | `/cookies` | Website cookie disclosure |
-| Data Safety | `/data-safety` | Play Console Data Safety reference |
-| Delete Account | `/delete-account` | **Required for Google Play account deletion** |
-| Support & FAQ | `/support` | Help center |
-| About | `/about` | About CODCrafters |
-| Contact | `/contact` | Support and business contact |
-
-### Google Play Console URLs
-
-Use these when submitting CLIVORA to Google Play:
-
-- **Privacy Policy:** `https://codcrafters.org/privacy`
-- **Account deletion:** `https://codcrafters.org/delete-account`
-- **Website:** `https://codcrafters.org`
-- **Support email:** `iusmanghias@gmail.com`
-
-## Tech Stack
-
-- Next.js 15 · React 19 · TypeScript · Tailwind CSS 3 · Framer Motion
+| Page | URL |
+|------|-----|
+| Home | `/` |
+| Connect | `/connect` |
+| Web app | `/app` |
+| Pro checkout | `/pro` |
+| Documentation | `/docs` |
+| Privacy | `/privacy` |
+| Terms | `/terms` |
 
 ## Development
 
@@ -38,14 +40,8 @@ npm install
 npm run dev
 ```
 
-## Deploy on Vercel
+## Deploy
 
-1. Import repo at [vercel.com/new](https://vercel.com/new)
-2. Set custom domain to `codcrafters.org`
-3. Deploy  -  no environment variables required
+Vercel — import `clivora-web` repo, domain `clivora.codcrafters.org`.
 
-## Company
-
-**CODCrafters**  -  [codcrafters.org](https://codcrafters.org)
-
-CLIVORA © 2026 CODCrafters. All rights reserved.
+**CODCrafters** · CLIVORA © 2026
