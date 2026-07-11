@@ -14,7 +14,7 @@ import '../../shared/widgets/clivora_scaffold.dart';
 const _savedPrefsKey = 'connect_saved_ids';
 const _teal = Color(0xFF0F766E);
 
-/// CLIVORA Connect — Pro Plus marketplace for freelancers and clients.
+/// CLIVORA Connect. Pro Plus marketplace for freelancers and clients.
 class ConnectMarketplaceScreen extends ConsumerStatefulWidget {
   const ConnectMarketplaceScreen({super.key});
 
@@ -37,6 +37,7 @@ class _ConnectMarketplaceScreenState
   String _profileFilter = 'all'; // all | verified | available
   String _talentSort = 'featured'; // featured | rating | newest
   String _inboxFilter = 'all'; // all | pending | accepted | declined
+  String? _categoryFilter; // null = all categories
   bool _showSavedOnly = false;
 
   bool _hasConnectAccess(WidgetRef ref) => ref.read(isProPlusProvider);
@@ -193,6 +194,7 @@ class _ConnectMarketplaceScreenState
                                 skillCtrl: _skillCtrl,
                                 filter: _profileFilter,
                                 sort: _talentSort,
+                                categoryFilter: _categoryFilter,
                                 showSavedOnly: _showSavedOnly,
                                 savedIds: _savedIds,
                                 onFilterChanged: (filter) {
@@ -201,6 +203,8 @@ class _ConnectMarketplaceScreenState
                                     _showSavedOnly = false;
                                   });
                                 },
+                                onCategoryChanged: (cat) =>
+                                    setState(() => _categoryFilter = cat),
                                 onSortChanged: (sort) {
                                   setState(() => _talentSort = sort);
                                   _reload();
@@ -208,15 +212,26 @@ class _ConnectMarketplaceScreenState
                                 onClearSavedFilter: () =>
                                     setState(() => _showSavedOnly = false),
                                 onSearch: _reload,
-                                onContact: _contactProfile,
+                                onOpenDetail: (row) => _showProfileDetail(
+                                  row,
+                                  browseClients: !isClient,
+                                  onContact: () => _contactProfile(row),
+                                ),
                                 onToggleSaved: _toggleSaved,
                                 browseClients: !isClient,
                               ),
                               _NeedsTab(
                                 needs: _needs,
                                 isClient: isClient,
+                                categoryFilter: _categoryFilter,
+                                onCategoryChanged: (cat) =>
+                                    setState(() => _categoryFilter = cat),
                                 onCreate: () => context.push('/connect/need'),
-                                onContact: _contactNeed,
+                                onOpenDetail: (row) => _showNeedDetail(
+                                  row,
+                                  canApply: !isClient,
+                                  onApply: () => _contactNeed(row),
+                                ),
                               ),
                               _InboxTab(
                                 requests: _requests,
@@ -448,14 +463,85 @@ class _ConnectMarketplaceScreenState
       ),
     );
   }
+
+  Future<void> _showProfileDetail(
+    Map<String, dynamic> row, {
+    required bool browseClients,
+    required VoidCallback onContact,
+  }) async {
+    final title =
+        row['display_title'] as String? ??
+        (browseClients ? 'Client' : 'Freelancer');
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _ConnectDetailSheet(
+        title: title,
+        subtitle: row['headline'] as String? ?? '',
+        description: row['bio'] as String? ?? '',
+        skills: _stringList(row['skills']),
+        moneyLabel: row['rate_band'] as String? ?? 'Negotiable',
+        moneyCaption: 'Rate',
+        location: row['location_label'] as String?,
+        avgRating: (row['avg_rating'] as num?)?.toDouble(),
+        reviewCount: (row['review_count'] as num?)?.toInt(),
+        verified: row['is_verified'] == true,
+        ctaLabel: 'Contact',
+        onCta: () {
+          Navigator.pop(ctx);
+          onContact();
+        },
+      ),
+    );
+  }
+
+  Future<void> _showNeedDetail(
+    Map<String, dynamic> row, {
+    required bool canApply,
+    required VoidCallback onApply,
+  }) async {
+    final title = row['title'] as String? ?? 'Job';
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _ConnectDetailSheet(
+        title: title,
+        subtitle: '',
+        description: row['summary'] as String? ?? '',
+        skills: _stringList(row['skills']),
+        moneyLabel: row['budget_band'] as String? ?? 'Negotiable',
+        moneyCaption: 'Budget',
+        location: row['location_label'] as String?,
+        avgRating: null,
+        reviewCount: null,
+        verified: false,
+        ctaLabel: canApply ? 'Apply' : null,
+        onCta: canApply
+            ? () {
+                Navigator.pop(ctx);
+                onApply();
+              }
+            : null,
+      ),
+    );
+  }
 }
 
-class _ConnectGate extends StatelessWidget {
+class _ConnectGate extends ConsumerWidget {
   const _ConnectGate();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
+    final user = ref.watch(authStateProvider).valueOrNull;
+    final guest = user == null || isGuestUser(user);
+    final bodyStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+      color: scheme.onSurface.withValues(alpha: 0.7),
+      height: 1.4,
+    );
+
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -465,7 +551,7 @@ class _ConnectGate extends StatelessWidget {
             Icon(Icons.hub_outlined, size: 56, color: scheme.primary),
             const SizedBox(height: 14),
             Text(
-              'What is CLIVORA Connect?',
+              'Buy Pro Plus for unlimited Connect access',
               style: Theme.of(
                 context,
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
@@ -474,17 +560,35 @@ class _ConnectGate extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'A private marketplace where freelancers list services and clients post needs. '
-              'Browse listings, save matches, send requests, and message after both sides accept — '
-              'without sharing contact details too early.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurface.withValues(alpha: 0.7),
-                height: 1.4,
-              ),
+              'Browse matches, send requests, and message after both sides accept.',
+              style: bodyStyle,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: _teal.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _teal.withValues(alpha: 0.28)),
+              ),
+              child: Text(
+                '\$0 platform fee on negotiated rates. Keep 100% of what you agree.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: _teal,
+                  fontWeight: FontWeight.w700,
+                  height: 1.35,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 12),
             Text(
-              'Connect is included with Pro Plus (${ProPricing.plusMonthlyLabel}/mo) and appears as a bottom tab.',
+              guest
+                  ? 'Create a free account, then upgrade to Pro Plus '
+                      '(${ProPricing.plusMonthlyLabel}/mo) for unlimited contact, proposals, and posting.'
+                  : 'Connect is included with Pro Plus (${ProPricing.plusMonthlyLabel}/mo) and appears as a bottom tab.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: scheme.onSurface.withValues(alpha: 0.65),
                 height: 1.35,
@@ -492,18 +596,38 @@ class _ConnectGate extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 18),
-            FilledButton.icon(
-              onPressed: () => context.push('/upgrade'),
-              icon: const Icon(Icons.lock_open_outlined),
-              label: Text(
-                'Upgrade to Pro Plus · ${ProPricing.plusMonthlyLabel}',
+            if (guest) ...[
+              FilledButton.icon(
+                onPressed: () => context.push('/signup'),
+                icon: const Icon(Icons.person_add_outlined),
+                label: Text(
+                  'Sign up, then get Pro Plus · ${ProPricing.plusMonthlyLabel}',
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => context.push('/upgrade'),
-              child: const Text('Compare Pro & Pro Plus plans'),
-            ),
+              const SizedBox(height: 8),
+              OutlinedButton(
+                onPressed: () => context.push('/login'),
+                child: const Text('Already have an account? Sign in'),
+              ),
+              const SizedBox(height: 4),
+              TextButton(
+                onPressed: () => context.push('/signup'),
+                child: const Text('After signup, open Upgrade for Pro Plus'),
+              ),
+            ] else ...[
+              FilledButton.icon(
+                onPressed: () => context.push('/upgrade'),
+                icon: const Icon(Icons.lock_open_outlined),
+                label: Text(
+                  'Buy Pro Plus · ${ProPricing.plusMonthlyLabel}/mo',
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => context.push('/upgrade'),
+                child: const Text('Compare Pro and Pro Plus plans'),
+              ),
+            ],
           ],
         ),
       ),
@@ -631,13 +755,15 @@ class _TalentTab extends StatelessWidget {
     required this.skillCtrl,
     required this.filter,
     required this.sort,
+    required this.categoryFilter,
     required this.showSavedOnly,
     required this.savedIds,
     required this.onFilterChanged,
+    required this.onCategoryChanged,
     required this.onSortChanged,
     required this.onClearSavedFilter,
     required this.onSearch,
-    required this.onContact,
+    required this.onOpenDetail,
     required this.onToggleSaved,
     this.browseClients = false,
   });
@@ -646,13 +772,15 @@ class _TalentTab extends StatelessWidget {
   final TextEditingController skillCtrl;
   final String filter;
   final String sort;
+  final String? categoryFilter;
   final bool showSavedOnly;
   final Set<String> savedIds;
   final ValueChanged<String> onFilterChanged;
+  final ValueChanged<String?> onCategoryChanged;
   final ValueChanged<String> onSortChanged;
   final VoidCallback onClearSavedFilter;
   final VoidCallback onSearch;
-  final void Function(Map<String, dynamic>) onContact;
+  final void Function(Map<String, dynamic>) onOpenDetail;
   final Future<void> Function(Map<String, dynamic>) onToggleSaved;
   final bool browseClients;
 
@@ -666,6 +794,7 @@ class _TalentTab extends StatelessWidget {
           (row['availability'] as String? ?? '').toLowerCase() != 'available') {
         return false;
       }
+      if (!_matchesCategory(row, categoryFilter)) return false;
       return true;
     }).toList();
 
@@ -676,9 +805,11 @@ class _TalentTab extends StatelessWidget {
           skillCtrl: skillCtrl,
           filter: filter,
           sort: sort,
+          categoryFilter: categoryFilter,
           showSavedOnly: showSavedOnly,
           browseClients: browseClients,
           onFilterChanged: onFilterChanged,
+          onCategoryChanged: onCategoryChanged,
           onSortChanged: onSortChanged,
           onClearSavedFilter: onClearSavedFilter,
           onSearch: onSearch,
@@ -700,7 +831,7 @@ class _TalentTab extends StatelessWidget {
                 row: row,
                 browseClients: browseClients,
                 saved: savedIds.contains(_connectRowId(row)),
-                onTap: () => onContact(row),
+                onTap: () => onOpenDetail(row),
                 onToggleSaved: () => onToggleSaved(row),
               ),
             ),
@@ -715,9 +846,11 @@ class _TalentControls extends StatelessWidget {
     required this.skillCtrl,
     required this.filter,
     required this.sort,
+    required this.categoryFilter,
     required this.showSavedOnly,
     required this.browseClients,
     required this.onFilterChanged,
+    required this.onCategoryChanged,
     required this.onSortChanged,
     required this.onClearSavedFilter,
     required this.onSearch,
@@ -726,9 +859,11 @@ class _TalentControls extends StatelessWidget {
   final TextEditingController skillCtrl;
   final String filter;
   final String sort;
+  final String? categoryFilter;
   final bool showSavedOnly;
   final bool browseClients;
   final ValueChanged<String> onFilterChanged;
+  final ValueChanged<String?> onCategoryChanged;
   final ValueChanged<String> onSortChanged;
   final VoidCallback onClearSavedFilter;
   final VoidCallback onSearch;
@@ -759,6 +894,11 @@ class _TalentControls extends StatelessWidget {
               ),
               onSubmitted: (_) => onSearch(),
             ),
+          ),
+          const SizedBox(height: 6),
+          _CategoryChipRow(
+            selected: categoryFilter,
+            onChanged: onCategoryChanged,
           ),
           const SizedBox(height: 6),
           Row(
@@ -970,20 +1110,31 @@ class _NeedsTab extends StatelessWidget {
   const _NeedsTab({
     required this.needs,
     required this.isClient,
+    required this.categoryFilter,
+    required this.onCategoryChanged,
     required this.onCreate,
-    required this.onContact,
+    required this.onOpenDetail,
   });
 
   final List<Map<String, dynamic>> needs;
   final bool isClient;
+  final String? categoryFilter;
+  final ValueChanged<String?> onCategoryChanged;
   final VoidCallback onCreate;
-  final void Function(Map<String, dynamic>) onContact;
+  final void Function(Map<String, dynamic>) onOpenDetail;
 
   @override
   Widget build(BuildContext context) {
+    final filtered =
+        needs.where((row) => _matchesCategory(row, categoryFilter)).toList();
+
     return ListView(
       padding: const EdgeInsets.only(top: 8, bottom: 88),
       children: [
+        _CategoryChipRow(
+          selected: categoryFilter,
+          onChanged: onCategoryChanged,
+        ),
         if (isClient)
           Align(
             alignment: Alignment.centerLeft,
@@ -998,7 +1149,7 @@ class _NeedsTab extends StatelessWidget {
               ),
             ),
           ),
-        if (needs.isEmpty)
+        if (filtered.isEmpty)
           _CompactEmpty(
             icon: Icons.work_outline,
             text: isClient ? 'No jobs posted yet.' : 'No open jobs yet.',
@@ -1006,10 +1157,10 @@ class _NeedsTab extends StatelessWidget {
         else
           ..._withDividers(
             context,
-            needs.map(
+            filtered.map(
               (row) => _NeedFeedRow(
                 row: row,
-                onTap: isClient ? null : () => onContact(row),
+                onTap: () => onOpenDetail(row),
               ),
             ),
           ),
@@ -1029,21 +1180,23 @@ class _NeedFeedRow extends StatelessWidget {
     final onSurface = Theme.of(context).colorScheme.onSurface;
     final title = row['title'] as String? ?? 'Job';
     final summary = row['summary'] as String? ?? '';
+    final budget = row['budget_band'] as String? ?? 'Negotiable';
     final skills = _stringList(row['skills']);
-    final meta = [
-      row['budget_band'] as String? ?? 'Negotiable',
-      ...skills.take(2),
-    ].where((value) => value.trim().isNotEmpty).join(' · ');
+    final skillLine = skills.take(3).where((s) => s.trim().isNotEmpty).join(' · ');
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _InitialDot(text: title, fallback: 'J'),
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: _InitialDot(text: title, fallback: 'J'),
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -1051,25 +1204,29 @@ class _NeedFeedRow extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 14,
                       ),
                     ),
-                    if (summary.isNotEmpty)
+                    if (summary.isNotEmpty) ...[
+                      const SizedBox(height: 3),
                       Text(
                         summary,
-                        maxLines: 1,
+                        maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: onSurface.withValues(alpha: 0.68),
                           fontSize: 12.5,
+                          height: 1.35,
                         ),
                       ),
+                    ],
+                    const SizedBox(height: 4),
                     Text(
-                      meta,
+                      budget,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -1078,13 +1235,27 @@ class _NeedFeedRow extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
+                    if (skillLine.isNotEmpty)
+                      Text(
+                        skillLine,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: onSurface.withValues(alpha: 0.5),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                   ],
                 ),
               ),
-              Icon(
-                onTap == null ? Icons.work_outline : Icons.chevron_right,
-                color: onSurface.withValues(alpha: 0.35),
-                size: 20,
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Icon(
+                  Icons.chevron_right,
+                  color: onSurface.withValues(alpha: 0.35),
+                  size: 20,
+                ),
               ),
             ],
           ),
@@ -1220,7 +1391,7 @@ class _InboxFeedRow extends StatelessWidget {
     final message = row['message'] as String? ?? '';
     final meta = accepted
         ? 'Unlocked · ${partnerName ?? 'Partner'}${partnerEmail == null ? '' : ' · $partnerEmail'}'
-        : '${incoming ? 'Incoming' : 'Sent'} · $status';
+        : (incoming ? 'Incoming' : 'Sent');
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -1235,14 +1406,22 @@ class _InboxFeedRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    _InboxStatusChip(status: status),
+                  ],
                 ),
                 if (message.isNotEmpty)
                   Text(
@@ -1390,4 +1569,350 @@ String _initialFor(String value, String fallback) {
   final trimmed = value.trim();
   if (trimmed.isEmpty) return fallback;
   return trimmed.substring(0, 1).toUpperCase();
+}
+
+const _connectCategories = <String>[
+  'Web & Software',
+  'Design & Creative',
+  'Sales & Marketing',
+  'Writing',
+  'Admin & Support',
+  'Other',
+];
+
+const _categoryKeywords = <String, List<String>>{
+  'Web & Software': [
+    'web',
+    'software',
+    'dev',
+    'code',
+    'react',
+    'flutter',
+    'mobile',
+    'api',
+    'app',
+  ],
+  'Design & Creative': [
+    'design',
+    'ui',
+    'ux',
+    'brand',
+    'figma',
+    'creative',
+    'illustrat',
+  ],
+  'Sales & Marketing': [
+    'sales',
+    'marketing',
+    'seo',
+    'ads',
+    'growth',
+    'content market',
+  ],
+  'Writing': ['writ', 'copy', 'blog', 'edit', 'content'],
+  'Admin & Support': ['admin', 'support', 'va', 'assistant', 'ops'],
+  'Other': <String>[],
+};
+
+bool _matchesCategory(Map<String, dynamic> row, String? category) {
+  if (category == null || category.isEmpty || category == 'Other') return true;
+  final keys = _categoryKeywords[category] ?? const <String>[];
+  if (keys.isEmpty) return true;
+  final skills = _stringList(row['skills']).join(' ').toLowerCase();
+  final title = (row['display_title'] as String? ??
+          row['title'] as String? ??
+          '')
+      .toLowerCase();
+  final headline = (row['headline'] as String? ??
+          row['summary'] as String? ??
+          '')
+      .toLowerCase();
+  final hay = '$skills $title $headline';
+  return keys.any(hay.contains);
+}
+
+class _CategoryChipRow extends StatelessWidget {
+  const _CategoryChipRow({
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final String? selected;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Row(
+        children: [
+          for (final cat in _connectCategories)
+            Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: FilterChip(
+                label: Text(cat),
+                selected: selected == cat,
+                onSelected: (on) => onChanged(on ? cat : null),
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InboxStatusChip extends StatelessWidget {
+  const _InboxStatusChip({required this.status});
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final normalized = status.toLowerCase();
+    late final Color bg;
+    late final Color fg;
+    late final String label;
+    switch (normalized) {
+      case 'accepted':
+        bg = _teal.withValues(alpha: 0.14);
+        fg = _teal;
+        label = 'Accepted';
+      case 'declined':
+        bg = Colors.red.withValues(alpha: 0.12);
+        fg = Colors.red.shade700;
+        label = 'Declined';
+      default:
+        bg = Colors.amber.withValues(alpha: 0.18);
+        fg = Colors.amber.shade900;
+        label = 'Pending';
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: fg,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _ConnectDetailSheet extends StatelessWidget {
+  const _ConnectDetailSheet({
+    required this.title,
+    required this.subtitle,
+    required this.description,
+    required this.skills,
+    required this.moneyLabel,
+    required this.moneyCaption,
+    required this.location,
+    required this.avgRating,
+    required this.reviewCount,
+    required this.verified,
+    required this.ctaLabel,
+    required this.onCta,
+  });
+
+  final String title;
+  final String subtitle;
+  final String description;
+  final List<String> skills;
+  final String moneyLabel;
+  final String moneyCaption;
+  final String? location;
+  final double? avgRating;
+  final int? reviewCount;
+  final bool verified;
+  final String? ctaLabel;
+  final VoidCallback? onCta;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final bottom = MediaQuery.viewInsetsOf(context).bottom;
+    final hasRating =
+        (reviewCount ?? 0) > 0 && (avgRating ?? 0) > 0;
+
+    return Container(
+      margin: const EdgeInsets.only(top: 48),
+      padding: EdgeInsets.only(bottom: bottom),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: scheme.onSurface.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  if (verified)
+                    const Padding(
+                      padding: EdgeInsets.only(left: 6, top: 2),
+                      child: Icon(Icons.verified, color: _teal, size: 20),
+                    ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
+              ),
+              if (subtitle.isNotEmpty)
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: scheme.onSurface.withValues(alpha: 0.7),
+                    height: 1.35,
+                  ),
+                ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _DetailMetaChip(
+                    icon: Icons.payments_outlined,
+                    label: '$moneyCaption: $moneyLabel',
+                  ),
+                  if (location != null && location!.trim().isNotEmpty)
+                    _DetailMetaChip(
+                      icon: Icons.place_outlined,
+                      label: location!.trim(),
+                    ),
+                  if (hasRating)
+                    _DetailMetaChip(
+                      icon: Icons.star_rounded,
+                      label:
+                          '${avgRating!.toStringAsFixed(1)} (${reviewCount!})',
+                    ),
+                ],
+              ),
+              if (description.trim().isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text(
+                  'Description',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  description.trim(),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    height: 1.45,
+                    color: scheme.onSurface.withValues(alpha: 0.82),
+                  ),
+                ),
+              ],
+              if (skills.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text(
+                  'Skills',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final skill in skills)
+                      Chip(
+                        label: Text(skill),
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize:
+                            MaterialTapTargetSize.shrinkWrap,
+                      ),
+                  ],
+                ),
+              ],
+              if (ctaLabel != null && onCta != null) ...[
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: onCta,
+                    icon: Icon(
+                      ctaLabel == 'Apply'
+                          ? Icons.send_outlined
+                          : Icons.chat_bubble_outline,
+                    ),
+                    label: Text(ctaLabel!),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailMetaChip extends StatelessWidget {
+  const _DetailMetaChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: _teal.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: _teal),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: const TextStyle(
+              color: _teal,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

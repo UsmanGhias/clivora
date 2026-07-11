@@ -122,7 +122,12 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
   Widget build(BuildContext context) {
     final teamAsync = ref.watch(teamMembersProvider);
     final invitesAsync = ref.watch(pendingTeamInvitesProvider);
+    final ownerInvitesAsync = ref.watch(ownerTeamInvitesProvider);
     final isPro = ref.watch(isProProvider);
+    final inviteStatusByEmail = <String, String>{
+      for (final invite in ownerInvitesAsync.valueOrNull ?? const <TeamInvite>[])
+        invite.inviteeEmail.trim().toLowerCase(): invite.status,
+    };
 
     return ClivoraScaffold(
       title: 'Team',
@@ -194,6 +199,14 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
                   separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final m = members[index];
+                    final status =
+                        inviteStatusByEmail[m.email.trim().toLowerCase()];
+                    final statusLabel = switch (status) {
+                      'accepted' => 'Active',
+                      'declined' => 'Declined',
+                      'pending' => 'Invite pending',
+                      _ => 'Invited',
+                    };
                     return ListTile(
                       tileColor: Theme.of(context).cardColor,
                       shape: RoundedRectangleBorder(
@@ -205,7 +218,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
                         child: Text(m.name.isNotEmpty ? m.name[0].toUpperCase() : '?'),
                       ),
                       title: Text(m.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: Text('${m.email} · ${m.role} · invite pending until accepted'),
+                      subtitle: Text('${m.email} · ${m.role} · $statusLabel'),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete_outline, color: ClivoraColors.errorRed),
                         onPressed: () => ref.read(databaseProvider).deleteTeamMember(m.id),
