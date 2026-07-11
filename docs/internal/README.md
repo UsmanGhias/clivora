@@ -14,3 +14,6 @@ Do not copy these files into `web/content/docs/` or `web/public/`.
 | `CLIVORA-Features-and-Improvements.pdf` | Features PDF for AI discussion |
 | `GOOGLE_OAUTH_BRANDING.md` | Google consent screen checklist |
 | `VERCEL_ENV_SETUP.md` | Web env vars checklist |
+
+| `RESEARCH_VS_SHIPPED_v2.15.md` | What research claimed vs what is live |
+| `INVOICE_REMINDERS.md` | Reminder Edge Function deploy + cron |

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants/plan_limits.dart';
+import '../../core/services/sync_outbox_service.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../data/providers/app_providers.dart';
@@ -25,6 +26,15 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
   String _status = 'all';
   String? _search;
   bool _kanban = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await showEntityConflictDialog(context, ref);
+    });
+  }
 
   @override
   void dispose() {

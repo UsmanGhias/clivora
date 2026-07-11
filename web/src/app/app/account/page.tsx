@@ -86,10 +86,17 @@ export default async function AccountPage() {
         body={
           client
             ? "Link freelancers, contracts, credits, recurring invoices, and biometric lock are on Android."
-            : "Profile photo, security, referrals, and backup settings are in the mobile app."
+            : "Profile photo, security, and backup settings are in the mobile app. Referrals are also on web."
         }
         deepPath={client ? "open/client-account" : "open/profile"}
       />
+
+      <Link
+        href="/app/referrals"
+        className="inline-flex rounded-full border border-navy/20 px-4 py-2 text-sm font-semibold text-navy"
+      >
+        Refer & Earn on web
+      </Link>
     </div>
   );
 }

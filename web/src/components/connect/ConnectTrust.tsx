@@ -342,6 +342,140 @@ function MilestonesPanel({
   );
 }
 
+function ProposalsInbox({
+  needId,
+  myUserId,
+  requestId,
+  clientUserId,
+  freelancerUserId,
+}: {
+  needId: string;
+  myUserId: string;
+  requestId?: string;
+  clientUserId: string;
+  freelancerUserId?: string;
+}) {
+  const [rows, setRows] = useState<
+    Array<{
+      id: string;
+      from_user_id: string;
+      to_user_id: string;
+      amount: number | null;
+      currency: string | null;
+      timeline_days: number | null;
+      message: string | null;
+      status: string;
+    }>
+  >([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function load() {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("connect_proposals")
+      .select("id, from_user_id, to_user_id, amount, currency, timeline_days, message, status")
+      .eq("need_id", needId)
+      .order("created_at", { ascending: false });
+    setRows(data ?? []);
+  }
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [needId]);
+
+  async function accept(proposalId: string, fromUserId: string, amount: number | null) {
+    setBusy(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const { error: err } = await supabase
+        .from("connect_proposals")
+        .update({ status: "accepted", updated_at: new Date().toISOString() })
+        .eq("id", proposalId)
+        .eq("to_user_id", myUserId);
+      if (err) throw err;
+
+      // Auto-create first milestone for the engagement
+      if (requestId) {
+        await supabase.from("connect_milestones").insert({
+          engagement_request_id: requestId,
+          client_user_id: clientUserId,
+          freelancer_user_id: freelancerUserId || fromUserId,
+          title: "Kickoff milestone",
+          amount: amount ?? 0,
+          currency: "USD",
+          status: "pending",
+        });
+      }
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not accept proposal");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function decline(proposalId: string) {
+    setBusy(true);
+    try {
+      const supabase = createClient();
+      await supabase
+        .from("connect_proposals")
+        .update({ status: "declined", updated_at: new Date().toISOString() })
+        .eq("id", proposalId)
+        .eq("to_user_id", myUserId);
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const incoming = rows.filter((r) => r.to_user_id === myUserId);
+  if (incoming.length === 0) return null;
+
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-bold text-navy">Proposals</p>
+      {error && <p className="text-xs text-error">{error}</p>}
+      <ul className="space-y-2">
+        {incoming.map((p) => (
+          <li key={p.id} className="rounded-xl border border-border bg-white px-3 py-2">
+            <p className="text-sm text-text-secondary">{p.message || "Proposal"}</p>
+            <p className="mt-1 text-xs font-semibold text-navy">
+              {p.amount != null ? `$${p.amount} ${p.currency || "USD"}` : "Amount TBD"}
+              {p.timeline_days ? ` · ${p.timeline_days} days` : ""}
+              {" · "}
+              {p.status}
+            </p>
+            {p.status === "pending" && (
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => accept(p.id, p.from_user_id, p.amount)}
+                  className="rounded-lg bg-primary px-2 py-1 text-xs font-bold text-white"
+                >
+                  Accept → milestone
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => decline(p.id)}
+                  className="rounded-lg border border-border px-2 py-1 text-xs font-bold"
+                >
+                  Decline
+                </button>
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function ConnectTrust({
   requestId,
   myUserId,
@@ -396,6 +530,15 @@ export function ConnectTrust({
           {(myReview || reviewDone) && (
             <p className="text-xs font-semibold text-green-700">✓ Review submitted</p>
           )}
+          {needId && (
+            <ProposalsInbox
+              needId={needId}
+              myUserId={myUserId}
+              requestId={requestId}
+              clientUserId={resolvedClient}
+              freelancerUserId={resolvedFreelancer}
+            />
+          )}
           <MilestonesPanel
             requestId={requestId}
             clientUserId={resolvedClient}
@@ -428,6 +571,11 @@ export function ConnectTrust({
           {proposalDone && (
             <p className="text-xs font-semibold text-green-700">✓ Proposal sent</p>
           )}
+          <ProposalsInbox
+            needId={needId}
+            myUserId={myUserId}
+            clientUserId={peerId}
+          />
         </>
       )}
     </div>

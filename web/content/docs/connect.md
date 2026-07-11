@@ -57,8 +57,10 @@ Reviews are left after an accepted Connect request (web inbox or Android inbox �
 ### Proposals & milestones
 
 - Freelancers can **submit proposals** on open jobs (Pro Plus).
-- After accept, both parties can add **milestones** and move status: pending → funded → released (or disputed).
+- Clients can **Accept → milestone** on a proposal; CLIVORA auto-creates a kickoff milestone (`pending`).
+- After accept, both parties can add more **milestones** and move status: pending → funded → released (or disputed).
 - Admins can release escrow ledger entries from the admin panel when funds are confirmed.
+- Overdue invoices can trigger **payment reminder emails** via the `send-invoice-reminders` Edge Function (Pro ops).
 
 ---
 

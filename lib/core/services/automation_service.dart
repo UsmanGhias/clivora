@@ -135,7 +135,7 @@ class AutomationService {
       final uid = SupabaseAuthHelper.currentUid;
       await SupabaseAuthHelper.client.from('automation_run_log').insert({
         if (uid != null) 'user_uid': uid,
-        'key': key,
+        'automation_key': key,
         'detail': detail,
         'created_at': DateTime.now().toUtc().toIso8601String(),
       });

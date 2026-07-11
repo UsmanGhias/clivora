@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.15 — Reminders, referrals & Hub KPIs
+
+- Overdue invoice payment reminder Edge Function (Resend + idempotent scheduling)
+- Web Refer & Earn page (`/app/referrals`)
+- Promo / referral code field on Pro checkout
+- Accept Connect proposal → auto-create kickoff milestone
+- Live Hub KPIs (overdue invoices, pending Connect, profile completeness)
+- Android Connect sort picker (Featured / Top rated / Newest)
+- Sync conflict dialogs for projects and clients (not only invoices)
+
 ## 2.14 — Trust, ranking & growth
 
 - Star ratings, review counts, and “New” badge on Connect talent cards (web + Android)

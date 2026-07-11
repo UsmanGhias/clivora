@@ -37,31 +37,68 @@ class ConnectMarketplaceService {
   /// Legacy alias — prefer [hasConnectAccess].
   bool get hasProPlus => hasConnectAccess;
 
-  Future<List<Map<String, dynamic>>> browseFreelancers({String? skill}) async {
-    return _browseProfiles(accountType: 'freelancer', skill: skill);
+  Future<List<Map<String, dynamic>>> browseFreelancers({
+    String? skill,
+    String sort = 'featured',
+  }) async {
+    return _browseProfiles(accountType: 'freelancer', skill: skill, sort: sort);
   }
 
   /// Client Pro Plus about/listings so freelancers can discover & connect.
-  Future<List<Map<String, dynamic>>> browseClients({String? skill}) async {
-    return _browseProfiles(accountType: 'client', skill: skill);
+  Future<List<Map<String, dynamic>>> browseClients({
+    String? skill,
+    String sort = 'featured',
+  }) async {
+    return _browseProfiles(accountType: 'client', skill: skill, sort: sort);
+  }
+
+  Future<void> acceptProposal({
+    required String proposalId,
+    required String requestId,
+    required String clientUserId,
+    required String freelancerUserId,
+    double amount = 0,
+  }) async {
+    final c = client;
+    final uid = c?.auth.currentUser?.id;
+    if (c == null || uid == null) throw StateError('Sign in required');
+    await c.from('connect_proposals').update({
+      'status': 'accepted',
+      'updated_at': DateTime.now().toIso8601String(),
+    }).eq('id', proposalId).eq('to_user_id', uid);
+
+    await c.from('connect_milestones').insert({
+      'engagement_request_id': requestId,
+      'client_user_id': clientUserId,
+      'freelancer_user_id': freelancerUserId,
+      'title': 'Kickoff milestone',
+      'amount': amount,
+      'currency': 'USD',
+      'status': 'pending',
+    });
   }
 
   Future<List<Map<String, dynamic>>> _browseProfiles({
     required String accountType,
     String? skill,
+    String sort = 'featured',
   }) async {
     final c = client;
     if (c == null) return [];
-    final rows = await c
+    final base = c
         .from('connect_profiles')
         .select(
           'id,user_id,display_title,headline,bio,skills,rate_band,availability,location_label,is_verified,account_type,created_at,avg_rating,review_count,completion_rate,reputation_score,profile_completeness',
         )
         .eq('account_type', accountType)
         .eq('is_listed', true)
-        .eq('moderation_status', 'approved')
-        .order('reputation_score', ascending: false)
-        .limit(50);
+        .eq('moderation_status', 'approved');
+    final ordered = sort == 'newest'
+        ? base.order('created_at', ascending: false)
+        : sort == 'rating'
+            ? base.order('avg_rating', ascending: false)
+            : base.order('reputation_score', ascending: false);
+    final rows = await ordered.limit(50);
     final list = (rows as List).cast<Map<String, dynamic>>();
     if (skill == null || skill.trim().isEmpty) return list;
     final needle = skill.trim().toLowerCase();

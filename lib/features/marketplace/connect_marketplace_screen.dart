@@ -35,6 +35,7 @@ class _ConnectMarketplaceScreenState
   List<Map<String, dynamic>> _requests = [];
   Set<String> _savedIds = {};
   String _profileFilter = 'all'; // all | verified | available
+  String _talentSort = 'featured'; // featured | rating | newest
   String _inboxFilter = 'all'; // all | pending | accepted | declined
   bool _showSavedOnly = false;
 
@@ -101,8 +102,8 @@ class _ConnectMarketplaceScreenState
       final isClient = isClientUser(user);
       // Clients browse freelancers; freelancers browse client about-listings.
       final profiles = isClient
-          ? await svc.browseFreelancers(skill: _skillCtrl.text)
-          : await svc.browseClients(skill: _skillCtrl.text);
+          ? await svc.browseFreelancers(skill: _skillCtrl.text, sort: _talentSort)
+          : await svc.browseClients(skill: _skillCtrl.text, sort: _talentSort);
       final needs = await svc.browseNeeds();
       final requests = await svc.myRequests();
       if (!mounted) return;
@@ -191,6 +192,7 @@ class _ConnectMarketplaceScreenState
                                 profiles: _profiles,
                                 skillCtrl: _skillCtrl,
                                 filter: _profileFilter,
+                                sort: _talentSort,
                                 showSavedOnly: _showSavedOnly,
                                 savedIds: _savedIds,
                                 onFilterChanged: (filter) {
@@ -198,6 +200,10 @@ class _ConnectMarketplaceScreenState
                                     _profileFilter = filter;
                                     _showSavedOnly = false;
                                   });
+                                },
+                                onSortChanged: (sort) {
+                                  setState(() => _talentSort = sort);
+                                  _reload();
                                 },
                                 onClearSavedFilter: () =>
                                     setState(() => _showSavedOnly = false),
@@ -624,9 +630,11 @@ class _TalentTab extends StatelessWidget {
     required this.profiles,
     required this.skillCtrl,
     required this.filter,
+    required this.sort,
     required this.showSavedOnly,
     required this.savedIds,
     required this.onFilterChanged,
+    required this.onSortChanged,
     required this.onClearSavedFilter,
     required this.onSearch,
     required this.onContact,
@@ -637,9 +645,11 @@ class _TalentTab extends StatelessWidget {
   final List<Map<String, dynamic>> profiles;
   final TextEditingController skillCtrl;
   final String filter;
+  final String sort;
   final bool showSavedOnly;
   final Set<String> savedIds;
   final ValueChanged<String> onFilterChanged;
+  final ValueChanged<String> onSortChanged;
   final VoidCallback onClearSavedFilter;
   final VoidCallback onSearch;
   final void Function(Map<String, dynamic>) onContact;
@@ -665,9 +675,11 @@ class _TalentTab extends StatelessWidget {
         _TalentControls(
           skillCtrl: skillCtrl,
           filter: filter,
+          sort: sort,
           showSavedOnly: showSavedOnly,
           browseClients: browseClients,
           onFilterChanged: onFilterChanged,
+          onSortChanged: onSortChanged,
           onClearSavedFilter: onClearSavedFilter,
           onSearch: onSearch,
         ),
@@ -702,18 +714,22 @@ class _TalentControls extends StatelessWidget {
   const _TalentControls({
     required this.skillCtrl,
     required this.filter,
+    required this.sort,
     required this.showSavedOnly,
     required this.browseClients,
     required this.onFilterChanged,
+    required this.onSortChanged,
     required this.onClearSavedFilter,
     required this.onSearch,
   });
 
   final TextEditingController skillCtrl;
   final String filter;
+  final String sort;
   final bool showSavedOnly;
   final bool browseClients;
   final ValueChanged<String> onFilterChanged;
+  final ValueChanged<String> onSortChanged;
   final VoidCallback onClearSavedFilter;
   final VoidCallback onSearch;
 
@@ -784,11 +800,24 @@ class _TalentControls extends StatelessWidget {
               const SizedBox(width: 8),
               Icon(Icons.sort, size: 15, color: scheme.onSurfaceVariant),
               const SizedBox(width: 3),
-              Text(
-                'Top rated',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
+              PopupMenuButton<String>(
+                initialValue: sort,
+                onSelected: onSortChanged,
+                itemBuilder: (context) => const [
+                  PopupMenuItem(value: 'featured', child: Text('Featured')),
+                  PopupMenuItem(value: 'rating', child: Text('Top rated')),
+                  PopupMenuItem(value: 'newest', child: Text('Newest')),
+                ],
+                child: Text(
+                  sort == 'rating'
+                      ? 'Top rated'
+                      : sort == 'newest'
+                          ? 'Newest'
+                          : 'Featured',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
