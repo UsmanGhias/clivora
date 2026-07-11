@@ -3,7 +3,7 @@ import { Logo } from "@/components/ui/Logo";
 import { site } from "@/lib/site";
 
 export const metadata = {
-  title: "Account blocked — CLIVORA",
+  title: "Account blocked | CLIVORA",
 };
 
 export default function BlockedPage() {

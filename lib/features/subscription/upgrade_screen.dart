@@ -13,7 +13,7 @@ import '../../core/theme/clivora_colors.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_logo.dart';
 
-/// Free vs Pro vs Pro Plus — Google Play Billing only (Play policy compliant).
+/// Free vs Pro vs Pro Plus. Google Play Billing only (Play policy compliant).
 class UpgradeScreen extends ConsumerStatefulWidget {
   const UpgradeScreen({super.key});
 
@@ -246,7 +246,7 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                   const SizedBox(height: 12),
                   Text(
                     'Payments are processed by Google Play only. '
-                    'Website /pro is for marketing and admin grants — not used for in-app checkout.',
+                    'Website /pro is for marketing and admin grants, not used for in-app checkout.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           height: 1.45,
                           color: scheme.onSurfaceVariant,

@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../constants/admin_config.dart';
 
-/// Primary authentication for CLIVORA — Supabase Auth (email + Google).
+/// Primary authentication for CLIVORA. Supabase Auth (email + Google).
 class SupabaseAuthHelper {
   static SupabaseClient get client => Supabase.instance.client;
 
@@ -88,7 +88,7 @@ class SupabaseAuthHelper {
         'p_name': name,
       });
     } catch (e) {
-      debugPrint('finalize_account_type RPC: $e — falling back to upsert');
+      debugPrint('finalize_account_type RPC: $e, falling back to upsert');
       await upsertProfile(
         email: currentEmail ?? '',
         name: name,

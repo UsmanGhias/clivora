@@ -48,7 +48,7 @@ class AppShell extends ConsumerWidget {
     _NavItem('/more', Icons.apps_outlined, Icons.apps, 'Hub'),
   ];
 
-  /// Free client: keep Account (profile/login) on the bar — Hub lives inside Account.
+  /// Free client: keep Account (profile/login) on the bar. Hub lives inside Account.
   static const _clientBaseTabs = [
     _NavItem('/client-portal', Icons.home_outlined, Icons.home_rounded, 'Home'),
     _NavItem('/client-messages', Icons.mail_outline, Icons.mail_rounded, 'Messages'),

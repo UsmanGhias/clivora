@@ -1,4 +1,4 @@
-/// Google Play product IDs — create matching subscriptions in Play Console.
+/// Google Play product IDs, create matching subscriptions in Play Console.
 abstract final class BillingProducts {
   /// Freelancer Pro monthly subscription ($9).
   static const freelancerProMonthly = 'clivora_pro_freelancer_monthly';
@@ -6,10 +6,10 @@ abstract final class BillingProducts {
   /// Client Pro monthly subscription ($9).
   static const clientProMonthly = 'clivora_pro_client_monthly';
 
-  /// Freelancer Pro Plus monthly ($19) — includes CLIVORA Connect.
+  /// Freelancer Pro Plus monthly ($19), includes CLIVORA Connect.
   static const freelancerProPlusMonthly = 'clivora_pro_plus_freelancer_monthly';
 
-  /// Client Pro Plus monthly ($19) — includes CLIVORA Connect.
+  /// Client Pro Plus monthly ($19), includes CLIVORA Connect.
   static const clientProPlusMonthly = 'clivora_pro_plus_client_monthly';
 
   static const all = {
@@ -27,7 +27,7 @@ abstract final class BillingProducts {
     return accountType == 'client' ? clientProPlusMonthly : freelancerProPlusMonthly;
   }
 
-  /// Legacy helper — Pro product for account type.
+  /// Legacy helper. Pro product for account type.
   static String forAccountType(String accountType) => proForAccountType(accountType);
 
   static bool isProPlusProduct(String? id) =>

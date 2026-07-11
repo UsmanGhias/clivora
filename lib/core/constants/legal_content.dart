@@ -79,7 +79,7 @@ You own your business data. We process it only to provide the service.
 CLIVORA branding, design, and code are owned by CODCrafters.
 
 8. Disclaimer
-CLIVORA is provided "as is". Reports are informational — consult professionals for tax or legal advice.
+CLIVORA is provided "as is". Reports are informational, consult professionals for tax or legal advice.
 
 9. Liability
 CODCrafters is not liable for indirect or consequential damages including lost data or revenue, to the extent permitted by law.

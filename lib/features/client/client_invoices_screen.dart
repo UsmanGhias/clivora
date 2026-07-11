@@ -10,7 +10,7 @@ import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 import 'client_invoice_actions.dart';
 
-/// Client invoices — cloud sync, PDF view, mark paid with payment method.
+/// Client invoices, cloud sync, PDF view, mark paid with payment method.
 class ClientInvoicesScreen extends ConsumerWidget {
   const ClientInvoicesScreen({super.key});
 

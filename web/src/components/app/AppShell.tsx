@@ -86,7 +86,7 @@ export function AppShell({
       : item,
   );
 
-  // Mobile: 5 tabs — include Connect for both roles (matches Plus mobile; Free still browses)
+  // Mobile: 5 tabs, include Connect for both roles (matches Plus mobile; Free still browses)
   const mobileNav = isClient
     ? [
         clientNav[0],

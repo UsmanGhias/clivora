@@ -14,7 +14,7 @@ final clientInviteServiceProvider = Provider<ClientInviteService>((ref) {
   return ClientInviteService(ref);
 });
 
-/// Invites a client by email — cloud message + notification when they have an account.
+/// Invites a client by email, cloud message + notification when they have an account.
 class ClientInviteService {
   ClientInviteService(this.ref);
 
@@ -60,7 +60,7 @@ class ClientInviteService {
           );
     }
 
-    // Optional external email — in-app message is the primary delivery path.
+    // Optional external email, in-app message is the primary delivery path.
     final emailErr = await ref.read(clivoraEmailServiceProvider).sendClientInviteEmail(
           to: email,
           freelancerName: businessName,

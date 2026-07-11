@@ -17,7 +17,7 @@ final billingServiceProvider = Provider<BillingService>((ref) {
   return BillingService(ref);
 });
 
-/// Google Play Billing — Pro and Pro Plus monthly subscriptions (no external web checkout in-app).
+/// Google Play Billing. Pro and Pro Plus monthly subscriptions (no external web checkout in-app).
 class BillingService {
   BillingService(this.ref);
 
@@ -115,7 +115,7 @@ class BillingService {
 
         final verify = await ref.read(playBillingVerifyServiceProvider).verifyPurchase(purchase);
         if (verify == null || !verify.active) {
-          debugPrint('Play purchase not verified — plan not activated');
+          debugPrint('Play purchase not verified, plan not activated');
           if (purchase.pendingCompletePurchase) {
             await _iap.completePurchase(purchase);
           }

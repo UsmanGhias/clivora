@@ -6,7 +6,7 @@ import '../constants/plan_features.dart';
 import '../services/biometric_service.dart';
 import '../../data/providers/app_providers.dart';
 
-/// Shown once after login for Pro users — save account with biometrics.
+/// Shown once after login for Pro users, save account with biometrics.
 Future<void> maybeShowBiometricSavePrompt(BuildContext context, WidgetRef ref) async {
   final user = ref.read(authStateProvider).valueOrNull;
   if (user == null || user.email.isEmpty) return;

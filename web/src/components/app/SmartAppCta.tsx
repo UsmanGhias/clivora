@@ -143,7 +143,7 @@ export function SmartAppCta({
               onClick={onOpenApp}
               className="rounded-full border border-navy/20 px-4 py-2 text-sm font-semibold text-navy"
             >
-              I already have the app — open it
+              I already have the app, open it
             </button>
           </>
         )}

@@ -337,7 +337,7 @@ class Products extends Table {
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
 
-/// Quotes / estimates — convert to invoice on accept.
+/// Quotes / estimates, convert to invoice on accept.
 class Quotes extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get ownerUserId => integer().references(Users, #id)();

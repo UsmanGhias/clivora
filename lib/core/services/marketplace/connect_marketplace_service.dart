@@ -34,7 +34,7 @@ class ConnectMarketplaceService {
         PlanFeatures.isProPlus(ref.read(subscriptionPlanProvider).valueOrNull);
   }
 
-  /// Legacy alias — prefer [hasConnectAccess].
+  /// Legacy alias, prefer [hasConnectAccess].
   bool get hasProPlus => hasConnectAccess;
 
   Future<List<Map<String, dynamic>>> browseFreelancers({

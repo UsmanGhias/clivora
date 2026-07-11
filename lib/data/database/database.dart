@@ -807,7 +807,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> stopActiveTimeEntry() async {
-    // Legacy global stop — only closes entries without endedAt (prefer user-scoped API).
+    // Legacy global stop, only closes entries without endedAt (prefer user-scoped API).
     final active = await getActiveTimeEntry();
     if (active != null) {
       await stopTimeEntry(active.id);

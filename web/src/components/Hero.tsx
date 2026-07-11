@@ -7,87 +7,83 @@ import { PhoneMockup } from "./PhoneMockup";
 import { site } from "@/lib/site";
 
 /**
- * Marketing hero — one composition, brand-first, mobile Chrome friendly.
+ * Marketing hero: one composition, brand-first, mobile Chrome friendly.
  * Phone mockup is desktop-only so the first viewport stays readable on phones.
  */
 export function Hero() {
   return (
-    <section className="relative min-h-[100svh] overflow-hidden pt-20 pb-10 sm:pt-24 sm:pb-14 lg:flex lg:min-h-[100svh] lg:items-center lg:pt-28 lg:pb-20">
-      {/* Full-bleed atmosphere */}
+    <section className="relative flex min-h-[100svh] items-center overflow-hidden pt-20 pb-12 sm:pt-24 sm:pb-16 lg:pt-28 lg:pb-20">
       <div className="absolute inset-0 bg-dark-bg" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_120%_80%_at_50%_-10%,rgba(13,148,136,0.35),transparent_55%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_100%_40%,rgba(15,118,110,0.2),transparent_50%)]" />
-      <div className="absolute inset-0 grid-pattern opacity-40" />
-      <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-dark-bg to-transparent" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_100%_70%_at_50%_-5%,rgba(13,148,136,0.38),transparent_58%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_45%_at_90%_60%,rgba(15,118,110,0.18),transparent_55%)]" />
+      <div className="absolute inset-0 grid-pattern opacity-30" />
+      <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-dark-bg to-transparent" />
 
       <div className="relative mx-auto w-full max-w-7xl px-5 sm:px-6 lg:px-8">
-        <div className="grid items-center gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
+        <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12">
           <div className="text-center lg:text-left">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
+            <motion.p
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45 }}
-              className="inline-flex items-center gap-2"
+              transition={{ duration: 0.4 }}
+              className="font-display text-3xl font-extrabold tracking-[0.2em] text-white sm:text-4xl lg:text-[2.75rem]"
             >
-              <span className="font-display text-2xl font-extrabold tracking-[0.18em] text-white sm:text-3xl lg:text-4xl">
-                {site.name}
-              </span>
-            </motion.div>
+              {site.name}
+            </motion.p>
 
             <motion.h1
-              initial={{ opacity: 0, y: 18 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.06 }}
-              className="mt-4 font-display text-[1.85rem] font-extrabold leading-[1.12] tracking-tight text-white sm:text-4xl lg:text-[3.25rem]"
+              transition={{ duration: 0.5, delay: 0.05 }}
+              className="mt-5 font-display text-[2rem] font-extrabold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-[3.35rem]"
             >
-              Hire & get hired
-              <br className="hidden sm:block" />{" "}
-              <span className="text-gradient">inside your business OS</span>
+              Hire freely.
+              <br />
+              <span className="text-gradient">Run the business here.</span>
             </motion.h1>
 
             <motion.p
-              initial={{ opacity: 0, y: 18 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.12 }}
-              className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-white/65 sm:text-base lg:mx-0 lg:max-w-lg"
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="mx-auto mt-5 max-w-md text-base leading-relaxed text-white/70 sm:text-lg lg:mx-0 lg:max-w-lg"
             >
-              CLIVORA Connect is a private marketplace for freelancers and clients —
-              plus CRM, projects, and invoices on web and Android. One account. No
-              spammy open contact lists.
+              Private Connect marketplace with $0 platform fees on your deals, plus CRM,
+              projects, and invoices. Web and Android. One account.
             </motion.p>
 
             <motion.div
-              initial={{ opacity: 0, y: 18 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.2 }}
-              className="mt-7 flex flex-col items-stretch gap-3 sm:mt-8 sm:flex-row sm:items-center sm:justify-center lg:justify-start"
+              transition={{ duration: 0.5, delay: 0.16 }}
+              className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center lg:justify-start"
             >
               <Link
                 href="/connect"
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-primary/25 transition hover:bg-primary-dark"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-primary/30 transition hover:bg-primary-dark"
               >
                 <Network className="h-4 w-4" />
-                Open Connect
+                Browse Connect free
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/signup"
-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/[0.06] px-6 py-3.5 text-sm font-bold text-white backdrop-blur transition hover:bg-white/10"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/25 bg-white/[0.07] px-7 py-3.5 text-sm font-bold text-white backdrop-blur transition hover:bg-white/12"
               >
-                Start free on web
+                Start free
               </Link>
             </motion.div>
 
-            <motion.div
+            <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.45, delay: 0.3 }}
-              className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-sm text-white/50 lg:justify-start"
+              transition={{ duration: 0.4, delay: 0.24 }}
+              className="mt-5 text-sm text-white/45"
             >
               <Link href="/login" className="hover:text-white">
                 Sign in
               </Link>
-              <span className="text-white/20">·</span>
+              <span className="mx-2 text-white/20">·</span>
               <a
                 href={site.playStoreUrl}
                 target="_blank"
@@ -97,41 +93,20 @@ export function Hero() {
                 <Smartphone className="h-3.5 w-3.5" />
                 Android app
               </a>
-              <span className="text-white/20">·</span>
-              <Link href="/pro" className="hover:text-white">
-                Pro from {site.pricing.proMonthlyLabel}/mo
-              </Link>
-            </motion.div>
+              <span className="mx-2 text-white/20">·</span>
+              <span className="text-teal-200/80">$0 hire fees</span>
+            </motion.p>
           </div>
 
           <motion.div
-            initial={{ opacity: 0, y: 28 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.22 }}
+            transition={{ duration: 0.65, delay: 0.18 }}
             className="relative hidden justify-center lg:flex"
           >
             <PhoneMockup />
           </motion.div>
         </div>
-
-        {/* Mobile visual strip — not a second hero column */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.35 }}
-          className="mt-8 grid grid-cols-3 gap-2 border-t border-white/10 pt-6 text-center lg:hidden"
-        >
-          {[
-            { k: "Private", v: "Contact unlock" },
-            { k: "CRM", v: "After you match" },
-            { k: "Plus", v: `${site.pricing.proPlusMonthlyLabel}/mo` },
-          ].map((item) => (
-            <div key={item.k}>
-              <p className="font-display text-sm font-bold text-teal-200">{item.k}</p>
-              <p className="mt-0.5 text-[11px] text-white/45">{item.v}</p>
-            </div>
-          ))}
-        </motion.div>
       </div>
     </section>
   );

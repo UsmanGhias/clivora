@@ -15,7 +15,7 @@ final fcmServiceProvider = Provider<FcmService>((ref) => FcmService(ref));
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Background isolate — keep minimal; OS shows the notification tray entry.
+  // Background isolate, keep minimal; OS shows the notification tray entry.
   debugPrint('FCM background: ${message.messageId}');
 }
 

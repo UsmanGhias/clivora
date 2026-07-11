@@ -370,7 +370,7 @@ export default function ProCheckout() {
           <SmartAppCta
             tone={isClient ? "client" : "freelancer"}
             title="Already on Android?"
-            body="Subscribe with Google Play Billing inside the CLIVORA app — same unlock as web grants."
+            body="Subscribe with Google Play Billing inside the CLIVORA app, same unlock as web grants."
             deepPath="open/upgrade"
           />
         )}

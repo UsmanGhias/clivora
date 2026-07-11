@@ -123,7 +123,7 @@ export function SupportClient({
               <li key={t.id} className="px-4 py-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <p className="text-sm font-semibold">{t.subject || "—"}</p>
+                    <p className="text-sm font-semibold">{t.subject || "-"}</p>
                     {t.body && (
                       <p className="mt-1 text-sm text-text-secondary line-clamp-2">{t.body}</p>
                     )}

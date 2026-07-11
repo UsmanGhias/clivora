@@ -8,7 +8,7 @@ import { SmartAppCtaButton } from "@/components/app/SmartAppCta";
 import { cn } from "@/lib/utils";
 
 /**
- * Compact shared chrome for Connect / Pro — no tall empty header band.
+ * Compact shared chrome for Connect / Pro, no tall empty header band.
  */
 export function SubPageChrome({
   title,

@@ -1,5 +1,5 @@
 /// Clivora Supabase project (CODCrafters).
-/// Database password is only for direct Postgres / dashboard — never ship in the app.
+/// Database password is only for direct Postgres / dashboard, never ship in the app.
 const kSupabaseUrl = 'https://jtzjwgovqczlccyeujhq.supabase.co';
 
 /// Legacy anon JWT (compatible with all supabase_flutter auth flows including Google ID token).

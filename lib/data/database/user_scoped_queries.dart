@@ -4,9 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'database.dart';
 import 'user_defaults.dart';
 
-/// All CRM queries scoped by [ownerUserId] — prevents cross-user data leaks on shared devices.
+/// All CRM queries scoped by [ownerUserId], prevents cross-user data leaks on shared devices.
 extension UserScopedQueries on AppDatabase {
-  // ——— Customers ———
+  //, , Customers, , 
   Stream<List<Customer>> watchCustomersForUser(int ownerUserId, {String? search}) {
     final query = select(customers)
       ..where((t) => t.ownerUserId.equals(ownerUserId))
@@ -29,7 +29,7 @@ extension UserScopedQueries on AppDatabase {
   Future<Customer?> getCustomerForUser(int ownerUserId, int id) =>
       (select(customers)..where((t) => t.id.equals(id) & t.ownerUserId.equals(ownerUserId))).getSingleOrNull();
 
-  // ——— Projects ———
+  //, , Projects, , 
   Stream<List<Project>> watchProjectsForUser(int ownerUserId, {String? search, String? status}) {
     final query = select(projects)
       ..where((t) => t.ownerUserId.equals(ownerUserId))
@@ -62,7 +62,7 @@ extension UserScopedQueries on AppDatabase {
         .then((l) => l.length);
   }
 
-  // ——— Invoices ———
+  //, , Invoices, , 
   Stream<List<Invoice>> watchInvoicesForUser(int ownerUserId, {String? status}) {
     final query = select(invoices)
       ..where((t) => t.ownerUserId.equals(ownerUserId))
@@ -122,7 +122,7 @@ extension UserScopedQueries on AppDatabase {
         .then((list) => list.length);
   }
 
-  // ——— Tasks ———
+  //, , Tasks, , 
   Stream<List<Task>> watchTasksForUser(int ownerUserId, {String? status, bool? upcoming}) {
     final query = select(tasks)
       ..where((t) => t.ownerUserId.equals(ownerUserId))
@@ -160,7 +160,7 @@ extension UserScopedQueries on AppDatabase {
       .get()
       .then((list) => list.length);
 
-  // ——— Expenses ———
+  //, , Expenses, , 
   Stream<List<Expense>> watchExpensesForUser(int ownerUserId, {String? category}) {
     final query = select(expenses)
       ..where((t) => t.ownerUserId.equals(ownerUserId))
@@ -180,7 +180,7 @@ extension UserScopedQueries on AppDatabase {
     return rows.fold<double>(0, (sum, e) => sum + e.amount);
   }
 
-  // ——— Notes ———
+  //, , Notes, , 
   Stream<List<Note>> watchNotesForUser(int ownerUserId, {String? type}) {
     final query = select(notes)
       ..where((t) => t.ownerUserId.equals(ownerUserId))
@@ -191,7 +191,7 @@ extension UserScopedQueries on AppDatabase {
     return query.watch();
   }
 
-  // ——— Per-user settings ———
+  //, , Per-user settings, , 
   Stream<BusinessProfile> watchBusinessProfileForUser(int userId) {
     return customSelect(
       'SELECT user_id FROM business_profiles WHERE user_id = ?',
@@ -330,7 +330,7 @@ extension UserScopedQueries on AppDatabase {
     );
   }
 
-  // ——— Templates & contracts ———
+  //, , Templates & contracts, , 
   Stream<List<MessageTemplate>> watchMessageTemplatesForUser(int ownerUserId, {String? category}) {
     final query = select(messageTemplates)
       ..where((t) => t.ownerUserId.equals(ownerUserId))
@@ -357,7 +357,7 @@ extension UserScopedQueries on AppDatabase {
         .getSingleOrNull();
   }
 
-  // ——— Milestones ———
+  //, , Milestones, , 
   Stream<List<ProjectMilestone>> watchMilestonesForProject(int ownerUserId, int projectId) {
     return (select(projectMilestones)
           ..where((t) => t.ownerUserId.equals(ownerUserId) & t.projectId.equals(projectId))
@@ -378,7 +378,7 @@ extension UserScopedQueries on AppDatabase {
         .getSingleOrNull();
   }
 
-  // ——— Reviews ———
+  //, , Reviews, , 
   Stream<List<ProjectReview>> watchReviewsForOwner(int ownerUserId) {
     return (select(projectReviews)
           ..where((t) => t.ownerUserId.equals(ownerUserId))
@@ -393,7 +393,7 @@ extension UserScopedQueries on AppDatabase {
         .watch();
   }
 
-  // ——— Disputes ———
+  //, , Disputes, , 
   Stream<List<InvoiceDispute>> watchDisputesForOwner(int ownerUserId) {
     return (select(invoiceDisputes)
           ..where((t) => t.ownerUserId.equals(ownerUserId))
@@ -408,7 +408,7 @@ extension UserScopedQueries on AppDatabase {
         .watch();
   }
 
-  // ——— Tracking ———
+  //, , Tracking, , 
   Stream<List<TrackingEvent>> watchTrackingEventsForUser({
     required int ownerUserId,
     required String entityType,
@@ -425,7 +425,7 @@ extension UserScopedQueries on AppDatabase {
         .watch();
   }
 
-  // ——— Time tracking ———
+  //, , Time tracking, , 
   Future<ProjectTimeEntry?> getActiveTimeEntryForUser(int ownerUserId) =>
       (select(projectTimeEntries)
             ..where((t) => t.ownerUserId.equals(ownerUserId) & t.endedAt.isNull()))
@@ -478,7 +478,7 @@ extension UserScopedQueries on AppDatabase {
         .watch();
   }
 
-  // ——— Client portal (shared projects) ———
+  //, , Client portal (shared projects), , 
   Future<void> linkProjectToClientEmail({
     required int projectId,
     required int freelancerUserId,
@@ -559,7 +559,7 @@ extension UserScopedQueries on AppDatabase {
     );
   }
 
-  // ——— Team members ———
+  //, , Team members, , 
   Stream<List<TeamMember>> watchTeamMembers(int ownerUserId) {
     return (select(teamMembers)
           ..where((t) => t.ownerUserId.equals(ownerUserId))
@@ -720,7 +720,7 @@ extension UserScopedQueries on AppDatabase {
     }
   }
 
-  // ——— Products ———
+  //, , Products, , 
   Stream<List<Product>> watchProductsForUser(int ownerUserId, {bool activeOnly = false}) {
     final q = select(products)
       ..where((t) => t.ownerUserId.equals(ownerUserId))
@@ -741,7 +741,7 @@ extension UserScopedQueries on AppDatabase {
   Future<int> deleteProductForUser(int ownerUserId, int id) =>
       (delete(products)..where((t) => t.id.equals(id) & t.ownerUserId.equals(ownerUserId))).go();
 
-  // ——— Quotes ———
+  //, , Quotes, , 
   Stream<List<Quote>> watchQuotesForUser(int ownerUserId, {String? status}) {
     final q = select(quotes)
       ..where((t) => t.ownerUserId.equals(ownerUserId))
@@ -762,7 +762,7 @@ extension UserScopedQueries on AppDatabase {
   Future<int> deleteQuoteForUser(int ownerUserId, int id) =>
       (delete(quotes)..where((t) => t.id.equals(id) & t.ownerUserId.equals(ownerUserId))).go();
 
-  // ——— Recurring invoices ———
+  //, , Recurring invoices, , 
   Stream<List<RecurringInvoice>> watchRecurringInvoicesForUser(int ownerUserId) {
     return (select(recurringInvoices)
           ..where((t) => t.ownerUserId.equals(ownerUserId))
@@ -794,7 +794,7 @@ extension UserScopedQueries on AppDatabase {
         .get();
   }
 
-  // ——— Vendors ———
+  //, , Vendors, , 
   Stream<List<Vendor>> watchVendorsForUser(int ownerUserId) {
     return (select(vendors)
           ..where((t) => t.ownerUserId.equals(ownerUserId))
@@ -812,7 +812,7 @@ extension UserScopedQueries on AppDatabase {
   Future<int> deleteVendorForUser(int ownerUserId, int id) =>
       (delete(vendors)..where((t) => t.id.equals(id) & t.ownerUserId.equals(ownerUserId))).go();
 
-  // ——— Purchase orders ———
+  //, , Purchase orders, , 
   Stream<List<PurchaseOrder>> watchPurchaseOrdersForUser(int ownerUserId) {
     return (select(purchaseOrders)
           ..where((t) => t.ownerUserId.equals(ownerUserId))
@@ -828,7 +828,7 @@ extension UserScopedQueries on AppDatabase {
 
   Future<bool> updatePurchaseOrder(PurchaseOrder entry) => update(purchaseOrders).replace(entry);
 
-  // ——— Credits ———
+  //, , Credits, , 
   Stream<List<Credit>> watchCreditsForUser(int ownerUserId) {
     return (select(credits)
           ..where((t) => t.ownerUserId.equals(ownerUserId))
@@ -855,7 +855,7 @@ extension UserScopedQueries on AppDatabase {
     return rows.fold<double>(0, (s, c) => s + c.balance);
   }
 
-  // ——— Invoice payments ———
+  //, , Invoice payments, , 
   Stream<List<InvoicePayment>> watchPaymentsForUser(int ownerUserId) {
     return (select(invoicePayments)
           ..where((t) => t.ownerUserId.equals(ownerUserId))

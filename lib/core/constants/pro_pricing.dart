@@ -30,7 +30,7 @@ abstract final class ProPricing {
   static const plusListPricePkr = plusListPriceUsd;
   @Deprecated('Use plusPriceUsd')
   static const plusPricePkr = plusPriceUsd;
-  @Deprecated('Removed — prices are USD')
+  @Deprecated('Removed, prices are USD')
   static const plusUsdApprox = plusMonthlyLabel;
 
   static const freelancerTitle = 'Freelancer Pro';

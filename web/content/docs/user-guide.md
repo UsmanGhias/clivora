@@ -1,6 +1,6 @@
 # User guide
 
-This guide explains how to use CLIVORA in plain language — for freelancers and clients.
+This guide explains how to use CLIVORA in plain language, for freelancers and clients.
 
 ---
 
@@ -98,11 +98,11 @@ Clients see a **slate-themed** portal focused on work shared with them.
 | **Pro Plus** | $19/mo | Everything in Pro + **Connect** posting & contact |
 
 - **Android:** Subscribe in app via Google Play.  
-- **Web:** [clivora.codcrafters.org/pro](https://clivora.codcrafters.org/pro) — submit payment proof (JazzCash, Easypaisa, bank). Admin approves and unlocks your plan.
+- **Web:** [clivora.codcrafters.org/pro](https://clivora.codcrafters.org/pro), submit payment proof (JazzCash, Easypaisa, bank). Admin approves and unlocks your plan.
 
-**Already on Pro?** The web checkout will not ask you to pay for Pro again — only Pro Plus upgrade if you want Connect.
+**Already on Pro?** The web checkout will not ask you to pay for Pro again, only Pro Plus upgrade if you want Connect.
 
-**Already on Pro Plus?** You see an “already unlocked” message — no extra payment.
+**Already on Pro Plus?** You see an “already unlocked” message, no extra payment.
 
 ---
 
@@ -132,7 +132,7 @@ Contact support if you believe this is a mistake: [iusmanghias@gmail.com](mailto
 
 - Use **Back to app** and breadcrumbs on Connect and Pro pages.
 - **Smart app CTA** in the header: installs Play Store app if missing, or opens app if installed.
-- Cloud CRM on web mirrors Supabase — best for quick edits; heavy work stays in Android.
+- Cloud CRM on web mirrors Supabase, best for quick edits; heavy work stays in Android.
 
 ---
 

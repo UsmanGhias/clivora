@@ -20,7 +20,7 @@ Good for trying CLIVORA or very small workloads.
 
 ---
 
-## Pro — $9/month
+## Pro, $9/month
 
 Unlimited CRM on web and app. Advanced tools mainly in **Android app**.
 
@@ -38,11 +38,11 @@ Unlimited CRM on web and app. Advanced tools mainly in **Android app**.
 
 **Billing:**
 - **Android:** Google Play subscription (`clivora_pro_freelancer_monthly` or `clivora_pro_client_monthly`)
-- **Web:** Manual checkout at [/pro](/pro) — JazzCash, Easypaisa, bank transfer
+- **Web:** Manual checkout at [/pro](/pro). JazzCash, Easypaisa, bank transfer
 
 ---
 
-## Pro Plus — $19/month
+## Pro Plus, $19/month
 
 Everything in Pro, plus **CLIVORA Connect** marketplace:
 
@@ -60,17 +60,17 @@ Everything in Pro, plus **CLIVORA Connect** marketplace:
 
 ## Important billing rules
 
-1. **One email = one account type** (freelancer or client) — chosen at signup.  
-2. **If you already have Pro**, web checkout will not charge Pro again — only Pro Plus upgrade.  
+1. **One email = one account type** (freelancer or client), chosen at signup.  
+2. **If you already have Pro**, web checkout will not charge Pro again, only Pro Plus upgrade.  
 3. **If you already have Pro Plus**, checkout shows “already unlocked.”  
-4. Web payments are **manual approval** — submit reference ID; admin grants plan in Supabase.  
+4. Web payments are **manual approval**, submit reference ID; admin grants plan in Supabase.  
 5. Android payments are **automatic** via Google Play.
 
 ---
 
 ## Referrals
 
-The Android app includes a referral program — bonus subscription days when a referred user purchases Pro or Plus (see app Referrals screen).
+The Android app includes a referral program, bonus subscription days when a referred user purchases Pro or Plus (see app Referrals screen).
 
 ---
 

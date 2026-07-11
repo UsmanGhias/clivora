@@ -33,7 +33,7 @@ final referralStatsProvider = FutureProvider<ReferralStats>((ref) async {
   return ReferralStats(code: code, count: count, bonusDays: bonusDays);
 });
 
-/// Referral program — share code, earn bonus Pro days when friends subscribe.
+/// Referral program, share code, earn bonus Pro days when friends subscribe.
 class ReferralService {
   ReferralService(this.ref);
 

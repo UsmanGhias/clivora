@@ -4,7 +4,7 @@ import { getProfile, isClientAccount } from "@/lib/profile";
 import { redirect } from "next/navigation";
 import { SmartAppCta } from "@/components/app/SmartAppCta";
 
-/** Client Updates feed — mirrors Flutter /client-activity */
+/** Client Updates feed, mirrors Flutter /client-activity */
 export default async function ActivityPage() {
   const profile = await getProfile();
   if (!isClientAccount(profile)) redirect("/app");

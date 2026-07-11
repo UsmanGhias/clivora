@@ -2,7 +2,7 @@
 
 ## Sign in with Google shows a strange supabase.co address
 
-That text is Google’s OAuth screen showing the login redirect host — **not** your database being exposed.
+That text is Google’s OAuth screen showing the login redirect host, **not** your database being exposed.
 
 - On **Android**, Google Sign-In is native and shows CLIVORA / your Google app branding.
 - On **web**, set the Google Cloud OAuth consent **App name** to **CLIVORA**, add your logo, privacy/terms links, verify `codcrafters.org`, and **Publish** the app. Details: ask support or your developer for the branding checklist.
@@ -12,7 +12,7 @@ Until Google branding is published, some browsers may still show a technical hos
 ## Getting started
 
 ### How do I create an account?
-Go to [Sign up](/signup) on the website or install the Android app from Google Play. Choose **Freelancer** or **Client** when you register — this choice stays with your email.
+Go to [Sign up](/signup) on the website or install the Android app from Google Play. Choose **Freelancer** or **Client** when you register, this choice stays with your email.
 
 ### Can I use the same account on web and Android?
 Yes. Sign in with the same email on both. Your plan and Connect data follow your account.
@@ -30,7 +30,7 @@ Only after both sides **accept** a Connect request. Until then, contact stays pr
 ### What's the difference between Pro and Pro Plus?
 **Pro** unlocks unlimited CRM tools. **Pro Plus** includes Pro plus Connect posting and contact.
 
-### I already paid — why am I asked again?
+### I already paid, why am I asked again?
 You shouldn't be. If you already have Pro or Pro Plus, the checkout page shows your active plan instead of charging again. Contact support if something looks wrong.
 
 ### How do I cancel?

@@ -18,9 +18,9 @@ export default async function AccountPage() {
         }`}
       >
         <p className="text-sm text-text-secondary">Name</p>
-        <p className="font-semibold">{profile?.name || "—"}</p>
+        <p className="font-semibold">{profile?.name || "-"}</p>
         <p className="mt-3 text-sm text-text-secondary">Email</p>
-        <p className="font-semibold">{profile?.email || "—"}</p>
+        <p className="font-semibold">{profile?.email || "-"}</p>
         <p className="mt-3 text-sm text-text-secondary">Role</p>
         <p className="font-semibold">{client ? "Client" : "Freelancer"}</p>
         <p className="mt-3 text-sm text-text-secondary">Plan</p>

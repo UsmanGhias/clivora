@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { TimeEntry } from "./page";
 
 function formatDate(iso?: string | null) {
-  if (!iso) return "—";
+  if (!iso) return "-";
   return iso.slice(0, 10);
 }
 
@@ -145,7 +145,7 @@ export function TimesheetsClient({
             {entries.map((entry) => (
               <li key={entry.id} className="flex flex-wrap items-start justify-between gap-2 px-4 py-3">
                 <div>
-                  <p className="text-sm font-medium">{entry.description || "—"}</p>
+                  <p className="text-sm font-medium">{entry.description || "-"}</p>
                   <p className="text-xs text-text-muted mt-0.5">
                     {formatDate(entry.date)}
                     {entry.hours != null ? ` · ${entry.hours}h` : ""}

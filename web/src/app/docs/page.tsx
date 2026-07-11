@@ -7,9 +7,9 @@ import { site } from "@/lib/site";
 export const metadata: Metadata = {
   title: "Documentation",
   description:
-    "Official CLIVORA documentation — user guide, Connect marketplace, plans, architecture, and AI research brief.",
+    "Official CLIVORA documentation, user guide, Connect marketplace, plans, architecture, and AI research brief.",
   openGraph: {
-    title: `Documentation — ${site.name}`,
+    title: `Documentation | ${site.name}`,
     url: `${site.url}/docs`,
   },
 };

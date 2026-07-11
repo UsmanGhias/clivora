@@ -18,7 +18,7 @@ const sizes = {
   xl: { img: 72, text: "text-3xl", gap: "gap-4" },
 };
 
-/** Canonical CLIVORA mark + wordmark — use everywhere (app, Connect, Pro, admin). */
+/** Canonical CLIVORA mark + wordmark, use everywhere (app, Connect, Pro, admin). */
 export function Logo({
   size = "md",
   showText = true,

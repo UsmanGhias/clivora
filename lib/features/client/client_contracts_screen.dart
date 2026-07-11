@@ -17,7 +17,7 @@ import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 import 'client_contract_view.dart';
 
-/// Contracts shared by freelancers — view terms, attachments, and sign.
+/// Contracts shared by freelancers, view terms, attachments, and sign.
 class ClientContractsScreen extends ConsumerWidget {
   const ClientContractsScreen({super.key});
 

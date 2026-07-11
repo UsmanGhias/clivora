@@ -7,7 +7,7 @@ import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 import '../../shared/widgets/tool_grid_tile.dart';
 
-/// Client tools hub — parity with freelancer Hub for collaboration surfaces.
+/// Client tools hub, parity with freelancer Hub for collaboration surfaces.
 class ClientHubScreen extends ConsumerWidget {
   const ClientHubScreen({super.key});
 
@@ -56,7 +56,7 @@ class ClientHubScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Quotes, payments, contracts, and Connect — everything your freelancer shares with you.',
+                    'Quotes, payments, contracts, and Connect, everything your freelancer shares with you.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Colors.white.withValues(alpha: 0.85),
                       height: 1.4,

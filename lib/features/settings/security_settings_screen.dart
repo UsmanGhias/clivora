@@ -183,7 +183,7 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
                   title: const Text('Biometric lock'),
                   subtitle: Text(
                     !isPro
-                        ? 'Pro feature — save your account with fingerprint or face'
+                        ? 'Pro feature, save your account with fingerprint or face'
                         : _biometricSupported == true
                             ? 'Require fingerprint or face when opening the app'
                             : 'Not available on this device',

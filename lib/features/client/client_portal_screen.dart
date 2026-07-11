@@ -15,7 +15,7 @@ import '../../data/database/database.dart';
 import '../../data/database/user_scoped_queries.dart';
 import '../../data/providers/app_providers.dart';
 
-/// Client home — shared projects, hours, and progress (read-only).
+/// Client home, shared projects, hours, and progress (read-only).
 class ClientPortalScreen extends ConsumerWidget {
   const ClientPortalScreen({super.key});
 

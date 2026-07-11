@@ -246,7 +246,7 @@ export default function ConnectManagePage() {
     >
       <div className="mx-auto max-w-3xl space-y-8">
         <p className="text-sm text-text-secondary">
-          Keep your listing sharp — title, rate, skills, location, and availability show on the
+          Keep your listing sharp, title, rate, skills, location, and availability show on the
           public marketplace.
         </p>
 
@@ -269,7 +269,7 @@ export default function ConnectManagePage() {
                     <span className="text-text-muted">
                       {(listing.review_count ?? 0) > 0
                         ? `★ ${Number(listing.avg_rating ?? 0).toFixed(1)} (${listing.review_count})`
-                        : "No reviews yet — New badge"}
+                        : "No reviews yet. New badge"}
                     </span>
                   </div>
                   <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-border">
@@ -301,7 +301,7 @@ export default function ConnectManagePage() {
               className="w-full rounded-xl border border-border px-3 py-2"
             />
             <textarea
-              placeholder="Bio — what you deliver, industries, tools"
+              placeholder="Bio, what you deliver, industries, tools"
               value={listing.bio}
               onChange={(e) => setListing({ ...listing, bio: e.target.value })}
               className="w-full rounded-xl border border-border px-3 py-2"

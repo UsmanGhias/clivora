@@ -10,7 +10,7 @@ export type DocMeta = {
 
 const DOCS_DIR = path.join(process.cwd(), "content", "docs");
 
-/** Public user-facing docs only — no internal research or architecture. */
+/** Public user-facing docs only, no internal research or architecture. */
 export const DOC_CATALOG: DocMeta[] = [
   { slug: "index", title: "Introduction", order: 0 },
   { slug: "product-overview", title: "Product overview", order: 1 },

@@ -1,18 +1,20 @@
 # CLIVORA Connect guide
 
-**CLIVORA Connect** is a private marketplace inside CLIVORA. It helps freelancers find clients and clients find freelancers — without exposing emails until both sides agree.
+**CLIVORA Connect** is a private marketplace inside CLIVORA. It helps freelancers find clients and clients find freelancers, without exposing emails until both sides agree.
+
+**Differentiator:** $0 platform fees on negotiated rates. No per-proposal “Connect tokens.” Monetization is Pro / Pro Plus subscription, not commission on deals.
 
 ---
 
 ## Access levels
 
-| Action | Free | Pro | Pro Plus |
-|--------|------|-----|----------|
+| Action | Guest / Free | Pro | Pro Plus |
+|--------|--------------|-----|----------|
 | Browse talent & jobs | Yes | Yes | Yes |
-| Send Connect requests | No | No | Yes |
+| Send Connect requests / proposals | No (Buy Pro Plus) | No | Yes · unlimited |
 | Publish freelancer profile | No | No | Yes |
 | Post client job needs | No | No | Yes |
-| Connect inbox (accept/decline) | Sign in required | Sign in | Yes |
+| Connect inbox (accept/decline) | Sign in | Sign in | Yes |
 
 Upgrade: [Pro Plus checkout](/pro?plan=pro_plus) or Google Play in the Android app.
 
@@ -22,7 +24,7 @@ Upgrade: [Pro Plus checkout](/pro?plan=pro_plus) or Google Play in the Android a
 
 | URL | Purpose |
 |-----|---------|
-| [/connect](/connect) | Public marketplace — Talent, Jobs, Inbox tabs |
+| [/connect](/connect) | Public marketplace. Talent, Jobs, Inbox tabs |
 | [/connect/manage](/connect/manage) | Edit your profile or post jobs (Pro Plus) |
 
 ---
@@ -31,14 +33,14 @@ Upgrade: [Pro Plus checkout](/pro?plan=pro_plus) or Google Play in the Android a
 
 When you manage your listing, fill in:
 
-- **Display title** — your name or brand  
-- **Headline** — one line pitch  
-- **Bio** — longer description  
-- **Skills** — comma-separated (e.g. Flutter, React, UI design)  
-- **Rate band** — e.g. `$50–80/hr` or `From $500/project`  
-- **Location** — city or “Remote”  
-- **Availability** — e.g. “Available now”, “2 weeks notice”  
-- **Listed** — toggle to show on public board  
+- **Display title**, your name or brand  
+- **Headline**, one line pitch  
+- **Bio**, longer description  
+- **Skills**, comma-separated (e.g. Flutter, React, UI design)  
+- **Rate band**, e.g. `$50–80/hr` or `From $500/project`  
+- **Location**, city or “Remote”  
+- **Availability**, e.g. “Available now”, “2 weeks notice”  
+- **Listed**, toggle to show on public board  
 
 Verified badge may be granted by admin after review.
 
@@ -68,10 +70,10 @@ Reviews are left after an accepted Connect request (web inbox or Android inbox �
 
 Clients can post **open needs**:
 
-- **Title** — what you need done  
-- **Summary** — scope and timeline  
-- **Skills** — what expertise you want  
-- **Budget band** — e.g. `$1k–3k`  
+- **Title**, what you need done  
+- **Summary**, scope and timeline  
+- **Skills**, what expertise you want  
+- **Budget band**, e.g. `$1k–3k`  
 
 Freelancers browse **Jobs** tab and send Connect requests to apply.
 
@@ -106,9 +108,9 @@ This is the main advantage over Upwork/Fiverr: the relationship continues in you
 
 Listings and job posts may be:
 
-- **Pending** — awaiting review  
-- **Approved** / **Auto-approved** — visible on board  
-- **Rejected** — hidden; contact support  
+- **Pending**, awaiting review  
+- **Approved** / **Auto-approved**, visible on board  
+- **Rejected**, hidden; contact support  
 
 Admins can verify profiles and toggle auto-approve in the admin panel.
 
@@ -117,7 +119,7 @@ Admins can verify profiles and toggle auto-approve in the admin panel.
 ## Tips for a strong profile
 
 1. Use specific skills (not just “design”).  
-2. Set a clear rate band — builds trust.  
+2. Set a clear rate band, builds trust.  
 3. Write a bio that mentions project types and industries.  
 4. Keep availability updated.  
-5. Respond quickly in Inbox — acceptance unlocks contact.
+5. Respond quickly in Inbox, acceptance unlocks contact.
