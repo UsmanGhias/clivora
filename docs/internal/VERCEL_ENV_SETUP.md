@@ -4,30 +4,47 @@ Project: `prj_AZuWTky7AXfyzaLkvnwK1beieGSE` (`clivora`)
 Team: `team_v88LcOy4ITTAodxJ1t9wfFip`  
 Domain: `clivora.codcrafters.org`
 
-The Vercel MCP connection in this agent **cannot write env secrets** (no env-set tool / no CLI token).  
-Set these once in **Vercel → Project → Settings → Environment Variables** (Production + Preview):
+The Vercel MCP in this agent **cannot write env secrets** (no env-set tool / no CLI token in the run).  
+Public Supabase URL + anon already fall back in code.
 
-| Name | Value | Notes |
-|------|--------|--------|
-| `NEXT_PUBLIC_SUPABASE_URL` | `https://jtzjwgovqczlccyeujhq.supabase.co` | Public |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | *(anon JWT from Supabase API settings)* | Public — also hardcoded as fallback in web |
-| `SUPABASE_URL` | same as above | Server |
-| `SUPABASE_SERVICE_ROLE_KEY` | *(service_role secret from Supabase)* | **Server only — never expose** |
-| `STRIPE_SECRET_KEY` | optional | Enables Stripe checkout |
-| `STRIPE_WEBHOOK_SECRET` | optional | Stripe webhooks |
-| `MEILI_HOST` / `MEILI_KEY` | optional | Connect search |
-| `AUTOMATION_WEBHOOK_SECRET` / `N8N_WEBHOOK_URL` | optional | Automations |
+## Required for admin / grants / escrow APIs
 
-Public URL + anon already fall back in code so the site boots even before env is set.  
-**Admin / grant-pro / escrow / Stripe webhooks need `SUPABASE_SERVICE_ROLE_KEY`.**
+| Name | Notes |
+|------|--------|
+| `SUPABASE_URL` | `https://jtzjwgovqczlccyeujhq.supabase.co` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → `service_role` (**server only**) |
+| `NEXT_PUBLIC_SUPABASE_URL` | Same URL (public) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anon / publishable key (public) |
 
-## Supabase Auth (Dashboard — MCP cannot edit)
+## Low-cost billing (recommended default)
 
-Authentication → URL Configuration:
+Keep **Google Play** (Android) + **JazzCash/manual** (web `/pro`) as primary — no Stripe fees until you need cards.
+
+| Name | Required? | Notes |
+|------|-----------|--------|
+| `STRIPE_SECRET_KEY` | Optional | Enables `/api/stripe/checkout` + `/api/stripe/portal` |
+| `STRIPE_WEBHOOK_SECRET` | Optional | Webhook signature check |
+| `STRIPE_PRICE_PRO` / `STRIPE_PRICE_PRO_PLUS` | Optional | Stripe Price IDs when using Checkout |
+
+**Do not enable Stripe Connect escrow until you have a Stripe account + compliance plan** — ledger/status UI already works without moving money.
+
+## Skip for cost (unless needed)
+
+| Name | Why skip |
+|------|----------|
+| `MEILI_HOST` / `MEILI_KEY` | Postgres `ilike` search is enough at current scale |
+| `N8N_WEBHOOK_URL` | Only if you run n8n |
+
+## Supabase (already applied by agent)
+
+- Promo `CLIVORA15` **active** (15% · max 50 uses)
+- Daily cron `clivora-invoice-reminders-daily` at **08:00 UTC**
+- Edge Function `send-invoice-reminders` ACTIVE
+- Vault secret `invoice_reminders_cron_secret`
+
+Confirm Resend secrets on the Edge Function: `RESEND_API_KEY`, `RESEND_FROM`.
+
+## Supabase Auth (Dashboard)
 
 - Site URL: `https://clivora.codcrafters.org`
 - Redirect URLs: `https://clivora.codcrafters.org/**`
-
-## Google OAuth branding
-
-See `docs/internal/GOOGLE_OAUTH_BRANDING.md` — set App name to **CLIVORA** and Publish.

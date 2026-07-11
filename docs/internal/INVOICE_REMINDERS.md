@@ -1,34 +1,28 @@
 # Invoice payment reminders (v2.15)
 
-Edge Function: `supabase/functions/send-invoice-reminders`
+Edge Function: `send-invoice-reminders` (deployed, ACTIVE)  
+Schedule: **daily 08:00 UTC** via `pg_cron` job `clivora-invoice-reminders-daily`  
+Auth: Vault secret `invoice_reminders_cron_secret` → `Authorization: Bearer …`
 
-## Behavior
+## Low cost
 
-1. Selects `crm_invoices` where `next_reminder_at <= now()` and status in `sent|overdue|partial|unpaid`.
-2. Resolves client email from `crm_customers`.
-3. Sends branded email via Resend.
-4. Sets `reminder_sent_at = now()`, `next_reminder_at = now() + 3 days` (idempotent — no spam on next tick).
-5. Logs to `automation_run_log` with `automation_key = invoice_payment_reminder`.
+- Runs **once per day** (not hourly)
+- Batch size **40** invoices max per run
+- Skips rows without client email; pushes `next_reminder_at` +7d
+- After send, next reminder is **+3 days** (no spam)
 
-## Deploy
+## Manual trigger
 
-```bash
-supabase functions deploy send-invoice-reminders --project-ref jtzjwgovqczlccyeujhq
+```sql
+select public.invoke_invoice_reminders();
 ```
 
-Secrets (already used by `send-clivora-email`):
-- `RESEND_API_KEY`
-- `RESEND_FROM`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- Optional: `CRON_SECRET`
+## Required secrets on the Edge Function (Supabase Dashboard → Edge Functions → Secrets)
 
-## Schedule (Supabase Dashboard → Edge Functions → Cron, or pg_net)
+| Secret | Notes |
+|--------|--------|
+| `RESEND_API_KEY` | Same as `send-clivora-email` |
+| `RESEND_FROM` | e.g. `CLIVORA <onboarding@resend.dev>` |
+| `CRON_SECRET` | Optional override; vault secret already matches deployed fallback |
 
-Invoke daily:
-
-```
-POST https://jtzjwgovqczlccyeujhq.supabase.co/functions/v1/send-invoice-reminders
-Authorization: Bearer <CRON_SECRET or service_role>
-```
-
-Trigger also schedules `next_reminder_at` when invoices become `sent`/`overdue` (migration `20260711_v215_reminders_proposals_promo.sql`).
+`SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_URL` are auto-injected.
