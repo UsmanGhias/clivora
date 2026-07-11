@@ -17,3 +17,4 @@ Do not copy these files into `web/content/docs/` or `web/public/`.
 
 | `RESEARCH_VS_SHIPPED_v2.15.md` | What research claimed vs what is live |
 | `INVOICE_REMINDERS.md` | Reminder Edge Function deploy + cron |
+| `CLIVORA-Status-Done-and-Next-v2.15.pdf` | Full status + next improvements PDF |
