@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { site, legalLinks } from "@/lib/site";
+import { DOC_CATALOG } from "@/lib/docs";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const pages = [
@@ -8,6 +9,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/login",
     "/signup",
     "/pro",
+    "/docs",
+    ...DOC_CATALOG.filter((d) => d.slug !== "index").map((d) => `/docs/${d.slug}`),
     legalLinks.privacy,
     legalLinks.terms,
     legalLinks.cookies,
