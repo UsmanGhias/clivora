@@ -53,10 +53,32 @@ class SyncOutboxService {
     required String cloudStatus,
     required String shareId,
   }) async {
+    await addEntityConflict(
+      entityType: 'invoice',
+      localId: localInvoiceId,
+      localStatus: localStatus,
+      cloudStatus: cloudStatus,
+      shareId: shareId,
+    );
+  }
+
+  /// Generic LWW/conflict record for any CRM entity (invoices, projects, customers, …).
+  Future<void> addEntityConflict({
+    required String entityType,
+    required int localId,
+    required String localStatus,
+    required String cloudStatus,
+    String? shareId,
+  }) async {
     final list = await pendingConflicts();
-    list.removeWhere((e) => e['localInvoiceId'] == localInvoiceId);
+    list.removeWhere(
+      (e) => e['entityType'] == entityType && e['localId'] == localId ||
+          (entityType == 'invoice' && e['localInvoiceId'] == localId),
+    );
     list.add({
-      'localInvoiceId': localInvoiceId,
+      'entityType': entityType,
+      'localId': localId,
+      'localInvoiceId': entityType == 'invoice' ? localId : null,
       'localStatus': localStatus,
       'cloudStatus': cloudStatus,
       'shareId': shareId,
@@ -64,12 +86,36 @@ class SyncOutboxService {
     });
     await _saveConflicts(list);
     ref.read(syncFailureMessageProvider.notifier).state =
-        'Invoice sync conflict — open Invoices to resolve.';
+        '${entityType[0].toUpperCase()}${entityType.substring(1)} sync conflict — resolve when online.';
+  }
+
+  Future<List<Map<String, dynamic>>> pendingByEntity(String entityType) async {
+    final all = await pendingConflicts();
+    return all
+        .where((e) => (e['entityType'] ?? 'invoice') == entityType)
+        .toList();
   }
 
   Future<void> clearConflict(int localInvoiceId) async {
     final list = await pendingConflicts();
-    list.removeWhere((e) => e['localInvoiceId'] == localInvoiceId);
+    list.removeWhere(
+      (e) =>
+          e['localInvoiceId'] == localInvoiceId ||
+          (e['entityType'] == 'invoice' && e['localId'] == localInvoiceId),
+    );
+    await _saveConflicts(list);
+  }
+
+  Future<void> clearEntityConflict({
+    required String entityType,
+    required int localId,
+  }) async {
+    final list = await pendingConflicts();
+    list.removeWhere(
+      (e) =>
+          e['entityType'] == entityType && e['localId'] == localId ||
+          (entityType == 'invoice' && e['localInvoiceId'] == localId),
+    );
     await _saveConflicts(list);
   }
 

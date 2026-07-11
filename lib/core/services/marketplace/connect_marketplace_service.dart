@@ -212,6 +212,113 @@ class ConnectMarketplaceService {
     }
   }
 
+  Future<void> leaveReview({
+    required String toUserId,
+    required int rating,
+    String body = '',
+    String? requestId,
+  }) async {
+    final c = client;
+    final uid = c?.auth.currentUser?.id;
+    if (c == null || uid == null) throw StateError('Sign in required');
+    if (rating < 1 || rating > 5) throw StateError('Rating must be 1–5');
+    await c.from('connect_reviews').insert({
+      'from_user_id': uid,
+      'to_user_id': toUserId,
+      'request_id': requestId,
+      'rating': rating,
+      'body': body.trim(),
+    });
+  }
+
+  Future<void> submitProposal({
+    required String toUserId,
+    required double amount,
+    required String message,
+    String? needId,
+    String? requestId,
+    int? timelineDays,
+    String currency = 'USD',
+  }) async {
+    final c = client;
+    final uid = c?.auth.currentUser?.id;
+    if (c == null || uid == null) throw StateError('Sign in required');
+    if (!hasConnectAccess) throw StateError('CLIVORA Connect requires Pro Plus');
+    await c.from('connect_proposals').insert({
+      'from_user_id': uid,
+      'to_user_id': toUserId,
+      'need_id': needId,
+      'request_id': requestId,
+      'amount': amount,
+      'currency': currency,
+      'timeline_days': timelineDays,
+      'message': message.trim(),
+      'status': 'pending',
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> milestonesForRequest(String requestId) async {
+    final c = client;
+    if (c == null) return [];
+    final rows = await c
+        .from('connect_milestones')
+        .select()
+        .eq('engagement_request_id', requestId)
+        .order('created_at');
+    return (rows as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<void> addMilestone({
+    required String requestId,
+    required String clientUserId,
+    required String freelancerUserId,
+    required String title,
+    required double amount,
+    String currency = 'USD',
+  }) async {
+    final c = client;
+    final uid = c?.auth.currentUser?.id;
+    if (c == null || uid == null) throw StateError('Sign in required');
+    await c.from('connect_milestones').insert({
+      'engagement_request_id': requestId,
+      'client_user_id': clientUserId,
+      'freelancer_user_id': freelancerUserId,
+      'title': title.trim(),
+      'amount': amount,
+      'currency': currency,
+      'status': 'pending',
+    });
+  }
+
+  Future<void> updateMilestoneStatus(String milestoneId, String status) async {
+    final c = client;
+    if (c == null) throw StateError('Offline');
+    final patch = <String, dynamic>{
+      'status': status,
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+    if (status == 'funded') patch['funded_at'] = DateTime.now().toIso8601String();
+    if (status == 'released') patch['released_at'] = DateTime.now().toIso8601String();
+    if (status == 'disputed') patch['disputed_at'] = DateTime.now().toIso8601String();
+    await c.from('connect_milestones').update(patch).eq('id', milestoneId);
+  }
+
+  Future<String> createMeetingRoom({String title = 'CLIVORA Meeting', String? projectId}) async {
+    final c = client;
+    final uid = c?.auth.currentUser?.id;
+    if (c == null || uid == null) throw StateError('Sign in required');
+    final slug = 'clivora-${DateTime.now().millisecondsSinceEpoch}';
+    final url = 'https://meet.jit.si/$slug';
+    await c.from('meeting_links').insert({
+      'owner_uid': uid,
+      'project_id': projectId,
+      'title': title,
+      'room_url': url,
+      'scheduled_at': DateTime.now().toIso8601String(),
+    });
+    return url;
+  }
+
   /// After mutual accept: create a local CRM customer from revealed partner identity.
   Future<int?> linkAcceptedPartnerToWorkspace(Map<String, dynamic> request) async {
     final myUid = currentUserId;

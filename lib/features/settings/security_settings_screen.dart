@@ -168,6 +168,17 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
               children: [
                 Text('Security', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 12),
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.phonelink_lock_outlined),
+                    title: const Text('Two-factor authentication (MFA)'),
+                    subtitle: const Text(
+                      'Add TOTP authenticator protection to your CLIVORA account via Supabase Auth. Biometric lock below secures this device.',
+                    ),
+                    isThreeLine: true,
+                  ),
+                ),
+                const SizedBox(height: 8),
                 SwitchListTile(
                   title: const Text('Biometric lock'),
                   subtitle: Text(

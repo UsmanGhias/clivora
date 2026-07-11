@@ -24,6 +24,7 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
   final _searchController = TextEditingController();
   String _status = 'all';
   String? _search;
+  bool _kanban = false;
 
   @override
   void dispose() {
@@ -42,9 +43,17 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
     );
   }
 
+  Future<void> _moveStatus(dynamic project, String status) async {
+    await ref.read(databaseProvider).updateProject(
+          project.copyWith(status: status, updatedAt: DateTime.now()),
+        );
+    ref.invalidate(projectsProvider(ProjectFilter(search: _search, status: _status)));
+    ref.invalidate(projectStatsProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final filter = ProjectFilter(search: _search, status: _status);
+    final filter = ProjectFilter(search: _search, status: _kanban ? 'all' : _status);
     final projectsAsync = ref.watch(projectsProvider(filter));
     final statsAsync = ref.watch(projectStatsProvider);
     final projectCountAsync = ref.watch(projectCountProvider);
@@ -52,7 +61,17 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
     return ClivoraScaffold(
       title: 'Projects',
       showMessagesButton: true,
-      action: ClivoraIconButton(icon: Icons.add, onPressed: _onAddProject),
+      action: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            tooltip: _kanban ? 'List view' : 'Pipeline view',
+            onPressed: () => setState(() => _kanban = !_kanban),
+            icon: Icon(_kanban ? Icons.view_list : Icons.view_kanban_outlined),
+          ),
+          ClivoraIconButton(icon: Icons.add, onPressed: _onAddProject),
+        ],
+      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -77,12 +96,13 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          FilterChipRow(
-            options: const ['all', 'not_started', 'in_progress', 'completed'],
-            selected: _status,
-            onSelected: (v) => setState(() => _status = v),
-          ),
-          const SizedBox(height: 8),
+          if (!_kanban)
+            FilterChipRow(
+              options: const ['all', 'not_started', 'in_progress', 'completed'],
+              selected: _status,
+              onSelected: (v) => setState(() => _status = v),
+            ),
+          if (!_kanban) const SizedBox(height: 8),
           projectCountAsync.when(
             loading: () => const SizedBox.shrink(),
             error: (_, _) => const SizedBox.shrink(),
@@ -100,7 +120,7 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
               data: (projects) {
                 if (projects.isEmpty) {
                   final total = projectCountAsync.valueOrNull ?? 0;
-                  final isFiltered = _search != null || _status != 'all';
+                  final isFiltered = _search != null || (!_kanban && _status != 'all');
                   if (isFiltered && total > 0) {
                     return EmptyState(
                       icon: Icons.folder_outlined,
@@ -112,6 +132,63 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
                     message: 'No projects yet',
                     actionLabel: 'Create project',
                     onAction: _onAddProject,
+                  );
+                }
+                if (_kanban) {
+                  const cols = [
+                    ('not_started', 'Backlog'),
+                    ('in_progress', 'In progress'),
+                    ('on_hold', 'On hold'),
+                    ('completed', 'Done'),
+                  ];
+                  return ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      for (final col in cols)
+                        SizedBox(
+                          width: 260,
+                          child: Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${col.$2} (${projects.where((p) => p.status == col.$1 || (col.$1 == 'not_started' && p.status == 'not_started')).length})',
+                                  style: const TextStyle(fontWeight: FontWeight.w700),
+                                ),
+                                const SizedBox(height: 8),
+                                Expanded(
+                                  child: ListView(
+                                    children: [
+                                      for (final p in projects.where((p) {
+                                        if (col.$1 == 'in_progress') {
+                                          return p.status == 'in_progress' || p.status == 'active';
+                                        }
+                                        return p.status == col.$1;
+                                      }))
+                                        Card(
+                                          child: ListTile(
+                                            title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                                            subtitle: Text(formatCurrency(p.budget, symbol: currencySymbol(p.currency))),
+                                            onTap: () => openFormRoute(context, '/projects/${p.id}/edit'),
+                                            trailing: PopupMenuButton<String>(
+                                              onSelected: (v) => _moveStatus(p, v),
+                                              itemBuilder: (_) => [
+                                                for (final c in cols)
+                                                  if (c.$1 != p.status)
+                                                    PopupMenuItem(value: c.$1, child: Text('Move → ${c.$2}')),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
                   );
                 }
                 return ListView.separated(
