@@ -1,0 +1,411 @@
+"use client";
+
+import { FormEvent, useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import type { ConnectMilestone, ConnectReview } from "@/lib/connect";
+
+const MILESTONE_STATUSES = ["pending", "funded", "released", "disputed"] as const;
+type MilestoneStatus = (typeof MILESTONE_STATUSES)[number];
+
+function statusBadge(s: string) {
+  const map: Record<string, string> = {
+    pending: "bg-slate-100 text-slate-700",
+    funded: "bg-blue-100 text-blue-800",
+    released: "bg-emerald-100 text-emerald-800",
+    disputed: "bg-red-100 text-red-800",
+  };
+  return map[s] ?? "bg-slate-100 text-slate-700";
+}
+
+function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button
+          key={n}
+          type="button"
+          onClick={() => onChange(n)}
+          className={`text-xl transition ${n <= value ? "text-amber-400" : "text-slate-300"}`}
+        >
+          ★
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ReviewForm({
+  requestId,
+  reviewerId,
+  revieweeId,
+  onDone,
+}: {
+  requestId: string;
+  reviewerId: string;
+  revieweeId: string;
+  onDone: () => void;
+}) {
+  const [rating, setRating] = useState(5);
+  const [body, setBody] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const { error: err } = await supabase.from("connect_reviews").insert({
+        request_id: requestId,
+        reviewer_id: reviewerId,
+        reviewee_id: revieweeId,
+        rating,
+        body: body.trim() || null,
+      });
+      if (err) throw err;
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not submit review");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-2 rounded-xl border border-border bg-surface p-4">
+      <p className="text-sm font-semibold text-navy">Leave a review</p>
+      <StarRating value={rating} onChange={setRating} />
+      <textarea
+        rows={2}
+        placeholder="Share your experience (optional)"
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        className="w-full rounded-xl border border-border px-3 py-2 text-sm"
+      />
+      {error && <p className="text-sm text-error">{error}</p>}
+      <button
+        type="submit"
+        disabled={busy}
+        className="rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+      >
+        {busy ? "Submitting…" : "Submit review"}
+      </button>
+    </form>
+  );
+}
+
+function ProposalForm({
+  needId,
+  freelancerId,
+  onDone,
+}: {
+  needId: string;
+  freelancerId: string;
+  onDone: () => void;
+}) {
+  const [amount, setAmount] = useState("");
+  const [timeline, setTimeline] = useState("");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const { error: err } = await supabase.from("connect_proposals").insert({
+        need_id: needId,
+        freelancer_id: freelancerId,
+        amount: amount ? Number(amount) : null,
+        currency: "USD",
+        timeline: timeline.trim() || null,
+        message: message.trim() || null,
+        status: "pending",
+      });
+      if (err) throw err;
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not submit proposal");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-2 rounded-xl border border-border bg-surface p-4">
+      <p className="text-sm font-semibold text-navy">Submit proposal</p>
+      <div className="grid grid-cols-2 gap-2">
+        <input
+          type="number"
+          min="1"
+          placeholder="Amount (USD)"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          className="w-full rounded-xl border border-border px-3 py-2 text-sm"
+        />
+        <input
+          placeholder="Timeline (e.g. 2 weeks)"
+          value={timeline}
+          onChange={(e) => setTimeline(e.target.value)}
+          className="w-full rounded-xl border border-border px-3 py-2 text-sm"
+        />
+      </div>
+      <textarea
+        required
+        rows={2}
+        placeholder="Message to client…"
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        className="w-full rounded-xl border border-border px-3 py-2 text-sm"
+      />
+      {error && <p className="text-sm text-error">{error}</p>}
+      <button
+        type="submit"
+        disabled={busy}
+        className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+      >
+        {busy ? "Sending…" : "Send proposal"}
+      </button>
+    </form>
+  );
+}
+
+function MilestonesPanel({
+  requestId,
+  myUserId,
+}: {
+  requestId: string;
+  myUserId: string;
+}) {
+  const [milestones, setMilestones] = useState<ConnectMilestone[]>([]);
+  const [title, setTitle] = useState("");
+  const [amount, setAmount] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function load() {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("connect_milestones")
+      .select("*")
+      .eq("request_id", requestId)
+      .order("created_at", { ascending: true });
+    setMilestones((data ?? []) as ConnectMilestone[]);
+  }
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestId]);
+
+  async function addMilestone(e: FormEvent) {
+    e.preventDefault();
+    if (!title.trim()) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const { error: err } = await supabase.from("connect_milestones").insert({
+        request_id: requestId,
+        title: title.trim(),
+        amount: amount ? Number(amount) : null,
+        currency: "USD",
+        status: "pending",
+        due_date: dueDate || null,
+      });
+      if (err) throw err;
+      setTitle("");
+      setAmount("");
+      setDueDate("");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not add milestone");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function updateStatus(id: string, status: MilestoneStatus) {
+    setBusy(true);
+    try {
+      const supabase = createClient();
+      await supabase.from("connect_milestones").update({ status }).eq("id", id);
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const nextStatus = (current: string): MilestoneStatus | null => {
+    const idx = MILESTONE_STATUSES.indexOf(current as MilestoneStatus);
+    if (idx < 0 || idx >= MILESTONE_STATUSES.length - 1) return null;
+    return MILESTONE_STATUSES[idx + 1];
+  };
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm font-bold text-navy">Milestones</p>
+      {milestones.length === 0 ? (
+        <p className="text-sm text-text-secondary">No milestones yet.</p>
+      ) : (
+        <ul className="space-y-2">
+          {milestones.map((m) => {
+            const next = nextStatus(m.status);
+            return (
+              <li
+                key={m.id}
+                className="flex flex-wrap items-start justify-between gap-2 rounded-xl border border-border bg-white px-3 py-2"
+              >
+                <div>
+                  <p className="text-sm font-semibold">{m.title}</p>
+                  <div className="mt-0.5 flex flex-wrap gap-1.5">
+                    <span className={`inline-block rounded px-2 py-0.5 text-[10px] font-bold uppercase ${statusBadge(m.status)}`}>
+                      {m.status}
+                    </span>
+                    {m.amount != null && (
+                      <span className="text-xs text-text-secondary">${m.amount} {m.currency}</span>
+                    )}
+                    {m.due_date && (
+                      <span className="text-xs text-text-muted">Due {m.due_date}</span>
+                    )}
+                  </div>
+                </div>
+                {next && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => updateStatus(m.id, next)}
+                    className="rounded-lg border border-primary px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/5 disabled:opacity-50"
+                  >
+                    → {next}
+                  </button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <form onSubmit={addMilestone} className="space-y-2 rounded-xl border border-dashed border-border bg-background p-3">
+        <p className="text-xs font-semibold text-text-secondary">Add milestone</p>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <input
+            required
+            placeholder="Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="col-span-2 rounded-xl border border-border px-3 py-1.5 text-sm sm:col-span-1"
+          />
+          <input
+            type="number"
+            min="0"
+            placeholder="Amount"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="rounded-xl border border-border px-3 py-1.5 text-sm"
+          />
+          <input
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            className="rounded-xl border border-border px-3 py-1.5 text-sm"
+          />
+        </div>
+        {error && <p className="text-xs text-error">{error}</p>}
+        <button
+          type="submit"
+          disabled={busy}
+          className="rounded-full bg-navy px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+        >
+          {busy ? "Adding…" : "Add milestone"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+export function ConnectTrust({
+  requestId,
+  myUserId,
+  peerId,
+  needId,
+  existingReviews,
+  mode,
+}: {
+  requestId: string;
+  myUserId: string;
+  peerId: string;
+  needId?: string | null;
+  existingReviews?: ConnectReview[];
+  mode: "accepted" | "jobs";
+}) {
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [showProposalForm, setShowProposalForm] = useState(false);
+  const [reviewDone, setReviewDone] = useState(false);
+  const [proposalDone, setProposalDone] = useState(false);
+
+  const myReview = existingReviews?.find((r) => r.reviewer_id === myUserId);
+
+  return (
+    <div className="mt-3 space-y-3 border-t border-border pt-3">
+      {mode === "accepted" && (
+        <>
+          {!myReview && !reviewDone && !showReviewForm && (
+            <button
+              type="button"
+              onClick={() => setShowReviewForm(true)}
+              className="rounded-xl bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100"
+            >
+              ★ Leave review
+            </button>
+          )}
+          {showReviewForm && !reviewDone && (
+            <ReviewForm
+              requestId={requestId}
+              reviewerId={myUserId}
+              revieweeId={peerId}
+              onDone={() => {
+                setReviewDone(true);
+                setShowReviewForm(false);
+              }}
+            />
+          )}
+          {(myReview || reviewDone) && (
+            <p className="text-xs text-green-700 font-semibold">✓ Review submitted</p>
+          )}
+          <MilestonesPanel requestId={requestId} myUserId={myUserId} />
+        </>
+      )}
+
+      {mode === "jobs" && needId && (
+        <>
+          {!proposalDone && !showProposalForm && (
+            <button
+              type="button"
+              onClick={() => setShowProposalForm(true)}
+              className="rounded-xl bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary-dark hover:bg-primary/20"
+            >
+              Submit proposal
+            </button>
+          )}
+          {showProposalForm && !proposalDone && (
+            <ProposalForm
+              needId={needId}
+              freelancerId={myUserId}
+              onDone={() => {
+                setProposalDone(true);
+                setShowProposalForm(false);
+              }}
+            />
+          )}
+          {proposalDone && (
+            <p className="text-xs text-green-700 font-semibold">✓ Proposal sent</p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile, isClientAccount, planLabel } from "@/lib/profile";
 import { site } from "@/lib/site";
 import { SmartAppCta } from "@/components/app/SmartAppCta";
+import { DashboardCharts } from "@/components/app/DashboardCharts";
 
 export default async function AppHomePage() {
   const profile = await getProfile();
@@ -35,6 +36,45 @@ export default async function AppHomePage() {
     notifCount = notif.count ?? 0;
   } catch {
     /* ignore */
+  }
+
+  let crmStats = {
+    clientCount: 0,
+    crmProjectCount: 0,
+    paidCount: 0,
+    outstandingCount: 0,
+    invoiceTotal: 0,
+  };
+  if (!client && uid) {
+    try {
+      const [customers, projects, invoices] = await Promise.all([
+        supabase
+          .from("crm_customers")
+          .select("id", { count: "exact", head: true })
+          .eq("owner_uid", uid),
+        supabase
+          .from("crm_projects")
+          .select("id", { count: "exact", head: true })
+          .eq("owner_uid", uid),
+        supabase
+          .from("crm_invoices")
+          .select("total, status")
+          .eq("owner_uid", uid)
+          .limit(500),
+      ]);
+      const invRows = invoices.data ?? [];
+      crmStats = {
+        clientCount: customers.count ?? 0,
+        crmProjectCount: projects.count ?? 0,
+        paidCount: invRows.filter((i) => i.status === "paid").length,
+        outstandingCount: invRows.filter(
+          (i) => i.status !== "paid" && i.status !== "cancelled",
+        ).length,
+        invoiceTotal: invRows.reduce((s, i) => s + (Number(i.total) || 0), 0),
+      };
+    } catch {
+      /* ignore */
+    }
   }
 
   return (
@@ -95,6 +135,16 @@ export default async function AppHomePage() {
           </>
         )}
       </section>
+
+      {!client && (
+        <DashboardCharts
+          invoiceTotal={crmStats.invoiceTotal}
+          projectCount={crmStats.crmProjectCount}
+          clientCount={crmStats.clientCount}
+          paidCount={crmStats.paidCount}
+          outstandingCount={crmStats.outstandingCount}
+        />
+      )}
 
       <SmartAppCta
         tone={client ? "client" : "freelancer"}

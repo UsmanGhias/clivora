@@ -1,25 +1,21 @@
 # CLIVORA Web
 
-Marketing site, web app, and documentation for [CLIVORA](https://clivora.codcrafters.org).
+Marketing site, web app, and user documentation for [CLIVORA](https://clivora.codcrafters.org).
 
 **Live:** [clivora.codcrafters.org](https://clivora.codcrafters.org)  
 **Docs:** [clivora.codcrafters.org/docs](https://clivora.codcrafters.org/docs)
 
-## Documentation
+## Documentation (public)
 
 | Resource | URL |
 |----------|-----|
 | Docs home | `/docs` |
 | User guide | `/docs/user-guide` |
 | Connect guide | `/docs/connect` |
-| AI research brief (web) | `/docs/ai-research-brief` |
-| AI research brief (PDF) | `/docs/CLIVORA-AI-Research-Brief.pdf` |
+| FAQ | `/docs/faq` |
+| Changelog | `/docs/changelog` |
 
-Markdown sources live in `content/docs/`. Regenerate the PDF:
-
-```bash
-npm run docs:pdf
-```
+Markdown sources: `content/docs/`.
 
 ## Pages
 
@@ -30,8 +26,6 @@ npm run docs:pdf
 | Web app | `/app` |
 | Pro checkout | `/pro` |
 | Documentation | `/docs` |
-| Privacy | `/privacy` |
-| Terms | `/terms` |
 
 ## Development
 

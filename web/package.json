@@ -1,6 +1,6 @@
 {
   "name": "clivora-web",
-  "version": "2.10.8",
+  "version": "2.13.0",
   "private": true,
   "engines": {
     "node": ">=20.0.0"
@@ -22,6 +22,7 @@
     "react": "^19.1.5",
     "react-dom": "^19.1.5",
     "react-markdown": "^10.1.0",
+    "recharts": "^3.9.2",
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {

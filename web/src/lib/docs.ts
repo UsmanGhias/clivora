@@ -10,7 +10,7 @@ export type DocMeta = {
 
 const DOCS_DIR = path.join(process.cwd(), "content", "docs");
 
-/** Navigation order and labels for sidebar */
+/** Public user-facing docs only — no internal research or architecture. */
 export const DOC_CATALOG: DocMeta[] = [
   { slug: "index", title: "Introduction", order: 0 },
   { slug: "product-overview", title: "Product overview", order: 1 },
@@ -18,8 +18,8 @@ export const DOC_CATALOG: DocMeta[] = [
   { slug: "connect", title: "Connect marketplace", order: 3 },
   { slug: "plans-and-billing", title: "Plans & billing", order: 4 },
   { slug: "web-and-android", title: "Web vs Android", order: 5 },
-  { slug: "architecture", title: "Architecture", order: 6 },
-  { slug: "ai-research-brief", title: "AI research brief", order: 7 },
+  { slug: "changelog", title: "Changelog", order: 6 },
+  { slug: "faq", title: "FAQ", order: 7 },
 ];
 
 export function getDocSlugs(): string[] {
@@ -49,7 +49,6 @@ export function getAllDocs() {
   }).filter(Boolean) as Array<DocMeta & { content: string }>;
 }
 
-/** Strip first # heading for cleaner page title rendering */
 export function stripLeadingH1(md: string): string {
   return md.replace(/^#\s+.+\n+/, "");
 }

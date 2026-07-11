@@ -39,6 +39,9 @@ function crumbsForPath(pathname: string, isClient: boolean): Crumb[] {
     "/app/hub": "Hub",
     "/app/account": "Account",
     "/app/notifications": "Notifications",
+    "/app/timesheets": "Timesheets",
+    "/app/meetings": "Meetings",
+    "/app/support": "Support",
   };
   if (pathname === "/app") return [{ label: "App" }, { label: "Home" }];
   const label = map[pathname] || pathname.split("/").pop() || "Page";

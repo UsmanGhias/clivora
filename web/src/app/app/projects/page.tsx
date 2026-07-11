@@ -3,6 +3,7 @@ import { getProfile, isClientAccount } from "@/lib/profile";
 import { listCustomersServer, listProjectsServer } from "@/lib/crm/server";
 import { canCreateProject } from "@/lib/plan-gates";
 import { ProjectsCrmPanel } from "@/components/crm/CrmPanels";
+import { ProjectKanban } from "@/components/crm/ProjectKanban";
 import { DownloadAppCard } from "@/components/app/DownloadAppCard";
 import { createClient } from "@/lib/supabase/server";
 
@@ -95,6 +96,11 @@ export default async function ProjectsPage() {
         gateReason={!gate.ok ? gate.reason : undefined}
         upgradeHref={!gate.ok ? gate.upgradeHref : undefined}
       />
+      {projects.length > 0 && (
+        <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+          <ProjectKanban initial={projects} />
+        </div>
+      )}
       <DownloadAppCard title="Time tracking & milestones in the app" />
     </div>
   );

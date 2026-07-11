@@ -21,12 +21,10 @@ People or businesses hiring freelancers. They get a client portal (slate theme o
 
 ## What makes CLIVORA different
 
-| Typical marketplace (Upwork, Fiverr) | CLIVORA |
-|--------------------------------------|---------|
-| Open contact — emails get scraped | **Private contact** until both sides accept |
-| Stops at the hire | **Same CRM** after you match — projects, invoices, messages |
-| Separate tools for CRM | **One OS** on web and Android |
-| Web-only or app-only | **Cloud sync** + offline Android CRM |
+- **Private contact** — emails stay hidden until both sides accept a Connect request
+- **Marketplace + CRM together** — after you match, keep working in the same clients, projects, and invoices workspace
+- **One account** — web and Android stay in sync
+- **Offline-ready Android** — keep working without a connection, then sync
 
 ---
 

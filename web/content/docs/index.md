@@ -1,10 +1,9 @@
 # CLIVORA Documentation
 
-Welcome to the official documentation for **CLIVORA** — the cloud-first business operating system for freelancers and clients.
+Welcome to the official help center for **CLIVORA** — the cloud-first business operating system for freelancers and clients.
 
 **Live app:** [clivora.codcrafters.org](https://clivora.codcrafters.org)  
-**Android app:** [Google Play](https://play.google.com/store/apps/details?id=org.codcrafters.clivora)  
-**Version:** 2.10.7
+**Android app:** [Google Play](https://play.google.com/store/apps/details?id=org.codcrafters.clivora)
 
 ---
 
@@ -17,12 +16,8 @@ Welcome to the official documentation for **CLIVORA** — the cloud-first busine
 | [Connect marketplace](/docs/connect) | Hiring, job posts, and private contact |
 | [Plans & billing](/docs/plans-and-billing) | Free, Pro, and Pro Plus |
 | [Web vs Android](/docs/web-and-android) | What works where |
-| [Architecture](/docs/architecture) | Developers and technical readers |
-| [AI research brief](/docs/ai-research-brief) | Give this to an AI to find similar GitHub repos |
-
-## Downloads
-
-- **[AI Research Brief (PDF)](/docs/CLIVORA-AI-Research-Brief.pdf)** — printable brief for repo research and feature ideas
+| [FAQ](/docs/faq) | Common questions |
+| [Changelog](/docs/changelog) | What's new |
 
 ## Support
 

@@ -13,6 +13,97 @@ import {
   type CrmInvoice,
   type CrmProject,
 } from "@/lib/crm/api";
+import { createClient } from "@/lib/supabase/client";
+
+type CustomFields = Record<string, string>;
+
+function CustomFieldsEditor({ customerId, initialFields }: { customerId: string; initialFields: CustomFields }) {
+  const [fields, setFields] = useState<CustomFields>(initialFields);
+  const [newKey, setNewKey] = useState("");
+  const [newVal, setNewVal] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [ok, setOk] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save(updated: CustomFields) {
+    setBusy(true);
+    setOk(false);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const { error: err } = await supabase
+        .from("crm_customers")
+        .update({ custom_fields: updated })
+        .eq("id", customerId);
+      if (err) throw err;
+      setFields(updated);
+      setOk(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function addField() {
+    if (!newKey.trim()) return;
+    const updated = { ...fields, [newKey.trim()]: newVal };
+    setNewKey("");
+    setNewVal("");
+    save(updated);
+  }
+
+  function removeField(key: string) {
+    const updated = { ...fields };
+    delete updated[key];
+    save(updated);
+  }
+
+  return (
+    <div className="mt-2 space-y-2 rounded-xl border border-dashed border-border bg-background p-3">
+      <p className="text-xs font-semibold text-text-secondary">Custom fields</p>
+      {Object.entries(fields).map(([k, v]) => (
+        <div key={k} className="flex items-center gap-2">
+          <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-mono text-slate-700">{k}</span>
+          <span className="flex-1 text-xs text-text-primary truncate">{v}</span>
+          <button
+            type="button"
+            onClick={() => removeField(k)}
+            disabled={busy}
+            className="text-[10px] text-error hover:underline"
+          >
+            ×
+          </button>
+        </div>
+      ))}
+      <div className="flex gap-1">
+        <input
+          placeholder="key"
+          value={newKey}
+          onChange={(e) => setNewKey(e.target.value)}
+          className="w-24 rounded-lg border border-border px-2 py-1 text-xs"
+        />
+        <input
+          placeholder="value"
+          value={newVal}
+          onChange={(e) => setNewVal(e.target.value)}
+          className="flex-1 rounded-lg border border-border px-2 py-1 text-xs"
+          onKeyDown={(e) => e.key === "Enter" && addField()}
+        />
+        <button
+          type="button"
+          onClick={addField}
+          disabled={busy || !newKey.trim()}
+          className="rounded-lg bg-navy px-2 py-1 text-[10px] font-semibold text-white disabled:opacity-50"
+        >
+          Add
+        </button>
+      </div>
+      {ok && <p className="text-[10px] text-green-700">Saved.</p>}
+      {error && <p className="text-[10px] text-error">{error}</p>}
+    </div>
+  );
+}
 
 export function CustomersCrmPanel({
   initial,
@@ -150,30 +241,69 @@ export function CustomersCrmPanel({
           {rows.map((r) => {
             const emails = asStringList(r.emails);
             return (
-              <li
+              <CustomerRow
                 key={r.id}
-                className="flex items-start justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3"
-              >
-                <div>
-                  <p className="font-semibold">{r.contact_person || "Client"}</p>
-                  <p className="text-sm text-text-secondary">
-                    {[r.company, emails[0]].filter(Boolean).join(" · ") || "No email"}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => onDelete(r.id)}
-                  className="text-xs font-semibold text-error"
-                >
-                  Delete
-                </button>
-              </li>
+                r={r}
+                busy={busy}
+                onDelete={onDelete}
+                emails={emails}
+              />
             );
           })}
         </ul>
       )}
     </div>
+  );
+}
+
+function CustomerRow({
+  r,
+  busy,
+  onDelete,
+  emails,
+}: {
+  r: CrmCustomer;
+  busy: boolean;
+  onDelete: (id: string) => void;
+  emails: string[];
+}) {
+  const [showFields, setShowFields] = useState(false);
+  const customFields =
+    r.notes && typeof r.notes === "object"
+      ? (r.notes as Record<string, string>)
+      : {};
+
+  return (
+    <li className="rounded-xl border border-border bg-surface px-4 py-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-semibold">{r.contact_person || "Client"}</p>
+          <p className="text-sm text-text-secondary">
+            {[r.company, emails[0]].filter(Boolean).join(" · ") || "No email"}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setShowFields((v) => !v)}
+            className="text-xs font-semibold text-primary"
+          >
+            {showFields ? "Hide fields" : "Custom fields"}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onDelete(r.id)}
+            className="text-xs font-semibold text-error"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+      {showFields && (
+        <CustomFieldsEditor customerId={r.id} initialFields={customFields} />
+      )}
+    </li>
   );
 }
 
