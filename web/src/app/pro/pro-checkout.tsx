@@ -125,7 +125,7 @@ export default function ProCheckout() {
       let promoMeta: Awaited<ReturnType<typeof validatePromo>> = null;
       if (promoCode.trim()) {
         promoMeta = await validatePromo(promoCode);
-        setPromoNote(promoMeta.note);
+        if (promoMeta) setPromoNote(promoMeta.note);
       }
       const noteParts = [notes.trim()];
       if (promoMeta) noteParts.push(`Promo: ${promoMeta.code} (${promoMeta.note})`);

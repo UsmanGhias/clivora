@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getProfile, isClientAccount, planLabel } from "@/lib/profile";
 import { site } from "@/lib/site";
 import { SmartAppCta } from "@/components/app/SmartAppCta";
+import { ManageBillingButton } from "@/components/app/ManageBillingButton";
 
 /** Client account + hub shortcuts (contracts, files, etc. → app). */
 export default async function AccountPage() {
@@ -58,20 +59,20 @@ export default async function AccountPage() {
         Upgrade · Pro {site.pricing.proMonthlyLabel} / Plus {site.pricing.proPlusMonthlyLabel}
       </Link>
 
+      <ManageBillingButton />
+
+      <Link
+        href="/app/referrals"
+        className="inline-flex rounded-full border border-navy/20 px-4 py-2 text-sm font-semibold text-navy"
+      >
+        Refer & Earn on web
+      </Link>
+
       <div className="rounded-2xl border border-border bg-surface p-5">
         <h2 className="font-bold text-navy">Two-factor authentication (MFA)</h2>
         <p className="mt-2 text-sm text-text-secondary leading-relaxed">
           CLIVORA uses Supabase Auth which supports TOTP-based MFA. To enable authenticator-app
-          2FA, go to your{" "}
-          <a
-            href="https://supabase.com/docs/guides/auth/auth-mfa"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold text-primary underline underline-offset-2"
-          >
-            Supabase security settings
-          </a>{" "}
-          or ask your admin to enable MFA enforcement. Once enrolled you will be prompted for a
+          2FA, ask your admin to enable MFA enforcement. Once enrolled you will be prompted for a
           6-digit code on every sign-in.
         </p>
         <p className="mt-2 text-xs text-text-muted">
@@ -90,13 +91,6 @@ export default async function AccountPage() {
         }
         deepPath={client ? "open/client-account" : "open/profile"}
       />
-
-      <Link
-        href="/app/referrals"
-        className="inline-flex rounded-full border border-navy/20 px-4 py-2 text-sm font-semibold text-navy"
-      >
-        Refer & Earn on web
-      </Link>
     </div>
   );
 }
