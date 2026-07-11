@@ -14,6 +14,11 @@ export type ConnectProfile = {
   account_type: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+  avg_rating?: number | null;
+  review_count?: number | null;
+  completion_rate?: number | null;
+  reputation_score?: number | null;
+  profile_completeness?: number | null;
 };
 
 export type ConnectNeed = {

@@ -240,6 +240,7 @@ class _ConnectMarketplaceScreenState
                                       .respondToRequest(id, accept: false);
                                   await _reload();
                                 },
+                                onReview: (row) => _leaveConnectReview(row),
                                 onLinkWorkspace: (row) async {
                                   try {
                                     final id = await ref
@@ -273,6 +274,84 @@ class _ConnectMarketplaceScreenState
               ],
             ),
     );
+  }
+
+  Future<void> _leaveConnectReview(Map<String, dynamic> row) async {
+    final myUid = ref.read(connectMarketplaceServiceProvider).currentUserId;
+    if (myUid == null) return;
+    final peerId = row['to_user_id'] == myUid
+        ? row['from_user_id'] as String?
+        : row['to_user_id'] as String?;
+    if (peerId == null) return;
+
+    var rating = 5;
+    final bodyCtrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setLocal) {
+            return AlertDialog(
+              title: const Text('Leave a Connect review'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (var i = 1; i <= 5; i++)
+                        IconButton(
+                          onPressed: () => setLocal(() => rating = i),
+                          icon: Icon(
+                            i <= rating ? Icons.star : Icons.star_border,
+                            color: Colors.amber.shade700,
+                          ),
+                        ),
+                    ],
+                  ),
+                  TextField(
+                    controller: bodyCtrl,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      hintText: 'Optional feedback',
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Submit'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    if (ok != true || !mounted) return;
+    try {
+      await ref.read(connectMarketplaceServiceProvider).leaveReview(
+            toUserId: peerId,
+            rating: rating,
+            body: bodyCtrl.text,
+            requestId: row['id'] as String?,
+          );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Review submitted. Thanks!')),
+      );
+      await _reload();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    } finally {
+      bodyCtrl.dispose();
+    }
   }
 
   Future<void> _contactProfile(Map<String, dynamic> row) async {
@@ -706,7 +785,7 @@ class _TalentControls extends StatelessWidget {
               Icon(Icons.sort, size: 15, color: scheme.onSurfaceVariant),
               const SizedBox(width: 3),
               Text(
-                'Newest',
+                'Top rated',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: scheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
@@ -799,6 +878,37 @@ class _ProfileFeedRow extends StatelessWidget {
                         color: _teal,
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      () {
+                        final count =
+                            (row['review_count'] as num?)?.toInt() ?? 0;
+                        final avg =
+                            (row['avg_rating'] as num?)?.toDouble() ?? 0;
+                        final since = row['created_at'] as String?;
+                        final parts = <String>[];
+                        if (count > 0 && avg > 0) {
+                          parts.add('★ ${avg.toStringAsFixed(1)} ($count)');
+                        } else {
+                          parts.add('New');
+                        }
+                        if (since != null && since.length >= 7) {
+                          parts.add('Since ${since.substring(0, 7)}');
+                        }
+                        final completion =
+                            (row['completion_rate'] as num?)?.toDouble() ?? 0;
+                        if (completion > 0) {
+                          parts.add('${completion.toStringAsFixed(0)}% done');
+                        }
+                        return parts.join(' · ');
+                      }(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: onSurface.withValues(alpha: 0.55),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -963,6 +1073,7 @@ class _InboxTab extends StatelessWidget {
     required this.onFilterChanged,
     required this.onAccept,
     required this.onDecline,
+    required this.onReview,
     required this.onLinkWorkspace,
   });
 
@@ -972,6 +1083,7 @@ class _InboxTab extends StatelessWidget {
   final ValueChanged<String> onFilterChanged;
   final Future<void> Function(String id) onAccept;
   final Future<void> Function(String id) onDecline;
+  final Future<void> Function(Map<String, dynamic> row) onReview;
   final Future<void> Function(Map<String, dynamic> row) onLinkWorkspace;
 
   @override
@@ -1008,6 +1120,7 @@ class _InboxTab extends StatelessWidget {
                 status: status,
                 onAccept: () => onAccept(row['id'] as String),
                 onDecline: () => onDecline(row['id'] as String),
+                onReview: () => onReview(row),
                 onLinkWorkspace: () => onLinkWorkspace(row),
               );
             }),
@@ -1054,6 +1167,7 @@ class _InboxFeedRow extends StatelessWidget {
     required this.status,
     required this.onAccept,
     required this.onDecline,
+    required this.onReview,
     required this.onLinkWorkspace,
   });
 
@@ -1062,6 +1176,7 @@ class _InboxFeedRow extends StatelessWidget {
   final String status;
   final VoidCallback onAccept;
   final VoidCallback onDecline;
+  final VoidCallback onReview;
   final VoidCallback onLinkWorkspace;
 
   @override
@@ -1136,7 +1251,13 @@ class _InboxFeedRow extends StatelessWidget {
               icon: const Icon(Icons.check, size: 18, color: _teal),
               visualDensity: VisualDensity.compact,
             ),
-          ] else if (accepted)
+          ] else if (accepted) ...[
+            IconButton(
+              tooltip: 'Leave review',
+              onPressed: onReview,
+              icon: Icon(Icons.star_outline, size: 18, color: Colors.amber.shade800),
+              visualDensity: VisualDensity.compact,
+            ),
             TextButton(
               onPressed: onLinkWorkspace,
               style: TextButton.styleFrom(
@@ -1145,8 +1266,8 @@ class _InboxFeedRow extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8),
               ),
               child: const Text('Add'),
-            )
-          else
+            ),
+          ] else
             Icon(
               Icons.chevron_right,
               color: onSurface.withValues(alpha: 0.28),

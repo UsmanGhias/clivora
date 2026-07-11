@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
             milestone_id: milestoneId,
             amount,
             currency,
-            type: "release",
+            action: "admin_release",
             notes: notes ?? "Admin release",
             created_at: new Date().toISOString(),
           }),

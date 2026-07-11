@@ -7,7 +7,7 @@ export const site = {
     "CLIVORA is the cloud-first business operating system for freelancers and clients. Discover talent and jobs on CLIVORA Connect with private contact until mutual accept, then run clients, projects, and invoices on web and Android.",
   url: "https://clivora.codcrafters.org",
   appPackage: "org.codcrafters.clivora",
-  appVersion: "2.13.0",
+  appVersion: "2.14.0",
   company: {
     name: "CODCrafters",
     url: "https://codcrafters.org",

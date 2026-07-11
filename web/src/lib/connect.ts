@@ -9,11 +9,11 @@ export async function listPublicConnectProfiles(search?: string) {
   let q = supabase
     .from("connect_profiles")
     .select(
-      "id, user_id, display_title, headline, bio, skills, rate_band, availability, location_label, is_listed, is_verified, moderation_status, account_type, created_at, updated_at",
+      "id, user_id, display_title, headline, bio, skills, rate_band, availability, location_label, is_listed, is_verified, moderation_status, account_type, created_at, updated_at, avg_rating, review_count, completion_rate, reputation_score, profile_completeness",
     )
     .eq("is_listed", true)
     .in("moderation_status", ["approved", "auto_approved", "pending"])
-    .order("updated_at", { ascending: false })
+    .order("reputation_score", { ascending: false })
     .limit(60);
   if (search?.trim()) {
     const s = `%${search.trim()}%`;
@@ -59,9 +59,9 @@ export async function listMyConnectRequests() {
 
 export type ConnectReview = {
   id: string;
-  request_id: string;
-  reviewer_id: string;
-  reviewee_id: string;
+  request_id: string | null;
+  from_user_id: string;
+  to_user_id: string;
   rating: number;
   body: string | null;
   created_at: string;
@@ -69,11 +69,12 @@ export type ConnectReview = {
 
 export type ConnectProposal = {
   id: string;
-  need_id: string;
-  freelancer_id: string;
+  need_id: string | null;
+  from_user_id: string;
+  to_user_id: string;
   amount: number | null;
   currency: string | null;
-  timeline: string | null;
+  timeline_days: number | null;
   message: string | null;
   status: string;
   created_at: string;
@@ -81,12 +82,15 @@ export type ConnectProposal = {
 
 export type ConnectMilestone = {
   id: string;
-  request_id: string;
+  engagement_request_id: string;
+  client_user_id: string;
+  freelancer_user_id: string;
   title: string;
   amount: number | null;
   currency: string | null;
   status: string;
-  due_date: string | null;
+  funded_at?: string | null;
+  released_at?: string | null;
   created_at: string;
 };
 
@@ -115,7 +119,7 @@ export async function listMilestonesForRequest(requestId: string): Promise<Conne
   const { data } = await supabase
     .from("connect_milestones")
     .select("*")
-    .eq("request_id", requestId)
+    .eq("engagement_request_id", requestId)
     .order("created_at", { ascending: true });
   return (data ?? []) as ConnectMilestone[];
 }

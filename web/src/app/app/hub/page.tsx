@@ -24,6 +24,16 @@ export default async function HubPage() {
         <p className="text-sm text-white/70">{profile?.email}</p>
         <p className="mt-1 text-xl font-extrabold">{profile?.name || "Freelancer"}</p>
         <p className="mt-2 text-sm">Plan: {plan}</p>
+        <p className="mt-3 text-xs text-white/65">
+          Today: check overdue invoices, answer Connect inbox, and keep your Connect profile complete
+          for stronger ranking.
+        </p>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <HubLink href="/app/invoices" title="What's overdue?" body="Invoices needing follow-up" />
+        <HubLink href="/connect" title="Needs action" body="Connect inbox & proposals" />
+        <HubLink href="/connect/manage" title="Trust profile" body="Ratings · completeness · listing" />
       </div>
 
       <div>

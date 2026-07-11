@@ -15,7 +15,22 @@ type ProfileRow = {
   availability: string;
   location_label: string;
   is_listed: boolean;
+  avg_rating?: number;
+  review_count?: number;
+  profile_completeness?: number;
 };
+
+function computeCompleteness(l: ProfileRow): number {
+  let score = 0;
+  if (l.display_title.trim()) score += 20;
+  if (l.headline.trim()) score += 15;
+  if (l.bio.trim()) score += 20;
+  if (l.skills.split(",").map((s) => s.trim()).filter(Boolean).length > 0) score += 15;
+  if (l.rate_band.trim()) score += 10;
+  if (l.availability.trim()) score += 10;
+  if (l.location_label.trim()) score += 10;
+  return score;
+}
 
 type NeedRow = {
   id: string;
@@ -80,7 +95,7 @@ export default function ConnectManagePage() {
       const { data: cp } = await supabase
         .from("connect_profiles")
         .select(
-          "id, display_title, headline, bio, skills, rate_band, availability, location_label, is_listed",
+          "id, display_title, headline, bio, skills, rate_band, availability, location_label, is_listed, avg_rating, review_count, profile_completeness",
         )
         .eq("user_id", user.id)
         .maybeSingle();
@@ -95,6 +110,9 @@ export default function ConnectManagePage() {
           availability: cp.availability ?? "Available now",
           location_label: cp.location_label ?? "",
           is_listed: !!cp.is_listed,
+          avg_rating: Number(cp.avg_rating ?? 0),
+          review_count: Number(cp.review_count ?? 0),
+          profile_completeness: Number(cp.profile_completeness ?? 0),
         });
       } else if (profile?.name) {
         setListing((s) => ({ ...s, display_title: profile.name as string }));
@@ -242,6 +260,32 @@ export default function ConnectManagePage() {
         {!isClient && (
           <form onSubmit={saveListing} className="space-y-3 rounded-2xl border border-border bg-surface p-5">
             <h2 className="font-bold text-navy">Freelancer profile</h2>
+            {(() => {
+              const pct = computeCompleteness(listing);
+              return (
+                <div className="rounded-xl bg-background px-3 py-2">
+                  <div className="flex items-center justify-between text-xs font-semibold text-navy">
+                    <span>Profile completeness · {pct}%</span>
+                    <span className="text-text-muted">
+                      {(listing.review_count ?? 0) > 0
+                        ? `★ ${Number(listing.avg_rating ?? 0).toFixed(1)} (${listing.review_count})`
+                        : "No reviews yet — New badge"}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-border">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  {pct < 80 && (
+                    <p className="mt-1 text-[11px] text-text-secondary">
+                      Fill title, headline, bio, skills, rate, availability, and location for stronger ranking.
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
             <input
               required
               placeholder="Display title (e.g. Full-stack developer)"

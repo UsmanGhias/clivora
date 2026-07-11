@@ -10,8 +10,8 @@ const pillars = [
   },
   {
     icon: Shield,
-    title: "Private until both say yes",
-    body: "Send a Connect request. Emails stay hidden until mutual accept. No scraped contact lists, no cold spam.",
+    title: "Hire with confidence",
+    body: "Verified badges, star ratings, completion rate, and milestone escrow status — trust signals before you pay. Contact stays private until mutual accept.",
   },
   {
     icon: Network,
@@ -22,9 +22,10 @@ const pillars = [
 
 const rows = [
   { feature: "Private contact until accept", clivora: true, others: false },
+  { feature: "Star ratings & reputation on cards", clivora: true, others: true },
+  { feature: "Milestone escrow status", clivora: true, others: true },
   { feature: "Same CRM after you hire", clivora: true, others: false },
   { feature: "Web + Android one account", clivora: true, others: false },
-  { feature: "Job posts & freelancer profiles", clivora: true, others: true },
   { feature: "High marketplace fees / take rates", clivora: false, others: true },
 ];
 
@@ -43,7 +44,8 @@ export function ConnectMarketplace() {
         </h2>
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/70 sm:text-lg">
           Upwork and Fiverr stop at the hire. CLIVORA Connect starts there — private
-          matching, then the CRM, projects, and invoices you already run your business on.
+          matching with ratings and escrow status, then the CRM, projects, and invoices you
+          already run your business on.
         </p>
 
         <div className="mt-10 grid gap-5 sm:grid-cols-3">
@@ -99,13 +101,10 @@ export function ConnectMarketplace() {
           </Link>
           <Link
             href="/pro?plan=pro_plus"
-            className="inline-flex items-center justify-center rounded-2xl border border-white/20 px-6 py-3 text-sm font-bold text-white"
+            className="inline-flex items-center justify-center rounded-2xl border border-white/20 px-6 py-3 text-sm font-semibold text-white/90"
           >
-            Unlock posting · Pro Plus {site.pricing.proPlusMonthlyLabel}/mo
+            Unlock Connect with Pro Plus · {site.pricing.proPlusMonthlyLabel}/mo
           </Link>
-          <p className="text-sm text-white/45 sm:ml-2">
-            Browse free. Contact & publish with Pro Plus.
-          </p>
         </div>
       </div>
     </section>
