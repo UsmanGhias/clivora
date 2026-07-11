@@ -11,14 +11,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
   }
 
-  let body: { plan?: string; email?: string; successUrl?: string; cancelUrl?: string };
+  let body: {
+    plan?: string;
+    email?: string;
+    successUrl?: string;
+    cancelUrl?: string;
+    promoCode?: string;
+  };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { plan = "pro", email, successUrl, cancelUrl } = body;
+  const { plan = "pro", email, successUrl, cancelUrl, promoCode } = body;
   const priceId = STRIPE_PRICE_IDS[plan];
 
   const origin = req.headers.get("origin") ?? "https://clivora.codcrafters.org";
@@ -33,6 +39,12 @@ export async function POST(req: NextRequest) {
       success_url: success,
       cancel_url: cancel,
       ...(email ? { customer_email: email } : {}),
+      ...(promoCode
+        ? {
+            "metadata[promo_code]": promoCode.trim().toUpperCase(),
+            "subscription_data[metadata][promo_code]": promoCode.trim().toUpperCase(),
+          }
+        : {}),
     });
 
     const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {

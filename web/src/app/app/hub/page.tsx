@@ -4,12 +4,16 @@ import { getProfile, isClientAccount, planLabel } from "@/lib/profile";
 import { site } from "@/lib/site";
 import { SmartAppCta } from "@/components/app/SmartAppCta";
 import { AskAi } from "@/components/app/AskAi";
+import { getHubKpis } from "@/lib/hub-kpis";
 
 /** Freelancer hub — mirrors Flutter /more with app-preferred tools called out. */
 export default async function HubPage() {
   const profile = await getProfile();
   if (isClientAccount(profile)) redirect("/app/account");
   const plan = planLabel(profile);
+  const kpis = profile?.id
+    ? await getHubKpis(profile.id)
+    : { overdueInvoices: 0, pendingConnect: 0, profileCompleteness: null };
 
   return (
     <div className="space-y-6">
@@ -25,15 +29,35 @@ export default async function HubPage() {
         <p className="mt-1 text-xl font-extrabold">{profile?.name || "Freelancer"}</p>
         <p className="mt-2 text-sm">Plan: {plan}</p>
         <p className="mt-3 text-xs text-white/65">
-          Today: check overdue invoices, answer Connect inbox, and keep your Connect profile complete
-          for stronger ranking.
+          Today: {kpis.overdueInvoices} overdue invoice{kpis.overdueInvoices === 1 ? "" : "s"},{" "}
+          {kpis.pendingConnect} Connect request{kpis.pendingConnect === 1 ? "" : "s"} waiting,{" "}
+          {kpis.profileCompleteness != null
+            ? `${kpis.profileCompleteness}% Connect profile complete`
+            : "publish a Connect listing to rank higher"}
+          .
         </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <HubLink href="/app/invoices" title="What's overdue?" body="Invoices needing follow-up" />
-        <HubLink href="/connect" title="Needs action" body="Connect inbox & proposals" />
-        <HubLink href="/connect/manage" title="Trust profile" body="Ratings · completeness · listing" />
+        <HubLink
+          href="/app/invoices"
+          title="What's overdue?"
+          body={`${kpis.overdueInvoices} invoice${kpis.overdueInvoices === 1 ? "" : "s"} past due`}
+        />
+        <HubLink
+          href="/connect"
+          title="Needs action"
+          body={`${kpis.pendingConnect} pending Connect request${kpis.pendingConnect === 1 ? "" : "s"}`}
+        />
+        <HubLink
+          href="/connect/manage"
+          title="Trust profile"
+          body={
+            kpis.profileCompleteness != null
+              ? `${kpis.profileCompleteness}% complete · ratings & listing`
+              : "Create listing · ratings · completeness"
+          }
+        />
       </div>
 
       <div>
@@ -49,6 +73,7 @@ export default async function HubPage() {
           <HubLink href="/app/meetings" title="Meetings" body="Jitsi video rooms" />
           <HubLink href="/app/support" title="Support" body="Submit a ticket" />
           <HubLink href="/connect" title="CLIVORA Connect" body="Marketplace" />
+          <HubLink href="/app/referrals" title="Refer & Earn" body="Share code · bonus Pro days" />
           <HubLink
             href="/pro"
             title="Upgrade"

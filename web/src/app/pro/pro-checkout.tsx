@@ -28,6 +28,8 @@ export default function ProCheckout() {
   const [paymentMethod, setPaymentMethod] = useState("jazzcash");
   const [paymentReference, setPaymentReference] = useState("");
   const [notes, setNotes] = useState("");
+  const [promoCode, setPromoCode] = useState(params.get("promo") ?? params.get("ref") ?? "");
+  const [promoNote, setPromoNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
@@ -75,6 +77,41 @@ export default function ProCheckout() {
   const alreadyPro = currentPlan === "pro" || alreadyProPlus;
   const wantsSameOrLower = alreadyProPlus || (alreadyPro && plan === "pro");
 
+  async function validatePromo(codeRaw: string): Promise<{
+    code: string;
+    discountType: string;
+    discountValue: number;
+    note: string;
+  } | null> {
+    const code = codeRaw.trim().toUpperCase();
+    if (!code) return null;
+    const { data } = await supabase
+      .from("promo_codes")
+      .select("code, discount_type, discount_value, applies_to, max_uses, used_count, expires_at, is_active")
+      .eq("code", code)
+      .maybeSingle();
+    if (!data || !data.is_active) throw new Error("Promo code is invalid or inactive");
+    if (data.expires_at && new Date(data.expires_at) < new Date()) {
+      throw new Error("Promo code expired");
+    }
+    if (data.max_uses != null && Number(data.used_count ?? 0) >= Number(data.max_uses)) {
+      throw new Error("Promo code usage limit reached");
+    }
+    if (data.applies_to !== "any" && data.applies_to !== plan) {
+      throw new Error(`Promo applies to ${data.applies_to} only`);
+    }
+    const note =
+      data.discount_type === "percent"
+        ? `${data.discount_value}% off ${plan === "pro_plus" ? "Pro Plus" : "Pro"}`
+        : `$${data.discount_value} off`;
+    return {
+      code: data.code,
+      discountType: data.discount_type,
+      discountValue: Number(data.discount_value),
+      note,
+    };
+  }
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (wantsSameOrLower) {
@@ -83,7 +120,15 @@ export default function ProCheckout() {
     }
     setBusy(true);
     setError("");
+    setPromoNote(null);
     try {
+      let promoMeta: Awaited<ReturnType<typeof validatePromo>> = null;
+      if (promoCode.trim()) {
+        promoMeta = await validatePromo(promoCode);
+        setPromoNote(promoMeta.note);
+      }
+      const noteParts = [notes.trim()];
+      if (promoMeta) noteParts.push(`Promo: ${promoMeta.code} (${promoMeta.note})`);
       const { error: insertError } = await supabase.from("pro_payment_requests").insert({
         email: email.trim().toLowerCase(),
         full_name: fullName.trim(),
@@ -94,10 +139,26 @@ export default function ProCheckout() {
         country,
         payment_method: paymentMethod,
         payment_reference: paymentReference.trim(),
-        notes: notes.trim(),
+        notes: noteParts.filter(Boolean).join("\n"),
+        promo_code: promoMeta?.code ?? null,
         status: "pending",
       });
       if (insertError) throw insertError;
+      if (promoMeta) {
+        try {
+          const { data: promoRow } = await supabase
+            .from("promo_codes")
+            .select("used_count")
+            .eq("code", promoMeta.code)
+            .maybeSingle();
+          await supabase
+            .from("promo_codes")
+            .update({ used_count: Number(promoRow?.used_count ?? 0) + 1 })
+            .eq("code", promoMeta.code);
+        } catch {
+          /* admin can reconcile usage from payment notes */
+        }
+      }
       setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not submit payment request");
@@ -209,6 +270,18 @@ export default function ProCheckout() {
               />
             </div>
             <label className="block text-sm font-semibold text-navy">
+              Promo / referral code (optional)
+              <input
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                className="mt-1 w-full rounded-xl border border-border px-3 py-2.5 font-mono uppercase"
+                placeholder="CLIVORA15 or CLV…"
+              />
+            </label>
+            {promoNote && (
+              <p className="text-xs font-semibold text-primary-dark">{promoNote}</p>
+            )}
+            <label className="block text-sm font-semibold text-navy">
               Full name
               <input required value={fullName} onChange={(e) => setFullName(e.target.value)} className="mt-1 w-full rounded-xl border border-border px-3 py-2.5" />
             </label>
@@ -271,7 +344,11 @@ export default function ProCheckout() {
                   const res = await fetch("/api/stripe/checkout", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ plan, email: email.trim().toLowerCase() }),
+                    body: JSON.stringify({
+                      plan,
+                      email: email.trim().toLowerCase(),
+                      promoCode: promoCode.trim() || undefined,
+                    }),
                   });
                   const json = await res.json();
                   if (!res.ok) throw new Error(json.error || "Stripe checkout unavailable");
