@@ -8,7 +8,7 @@ import {
   OFFICIAL_EMAIL,
   PRO_PLUS_PRICE_USD,
   PRO_PRICE_USD,
-} from "@/lib/admin-auth";
+} from "@/lib/pricing";
 import { SubPageChrome } from "@/components/app/SubPageChrome";
 import { Logo } from "@/components/ui/Logo";
 import { SmartAppCta } from "@/components/app/SmartAppCta";

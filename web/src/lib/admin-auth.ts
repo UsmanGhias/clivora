@@ -96,10 +96,19 @@ export async function requireAdmin(options: { requireAal2?: boolean } = {}) {
     );
   }
 
+  const level = aal.currentLevel;
+  if (level !== "aal1" && level !== "aal2") {
+    throw new AdminAuthError(
+      "Admin authentication is temporarily unavailable.",
+      503,
+      "AUTH_UNAVAILABLE",
+    );
+  }
+
   return {
     id: user.id,
     email: user.email ?? "",
-    assuranceLevel: aal.currentLevel,
+    assuranceLevel: level as AdminPrincipal["assuranceLevel"],
   } satisfies AdminPrincipal;
 }
 

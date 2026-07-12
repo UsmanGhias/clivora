@@ -61,7 +61,7 @@ export default function DeleteAccountPage() {
             {site.company.privacyEmail}
           </a>
         </li>
-        <li>Subject line: "Account Deletion Request"</li>
+        <li>Subject line: &quot;Account Deletion Request&quot;</li>
         <li>Include the email address associated with your account</li>
         <li>We will process your request within 30 days</li>
       </ul>
