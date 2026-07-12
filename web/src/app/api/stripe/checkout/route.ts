@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+const STRIPE_ENABLED = process.env.STRIPE_ENABLED === "true";
 const STRIPE_PRICE_IDS: Record<string, string> = {
   pro: process.env.STRIPE_PRICE_PRO ?? "",
   pro_plus: process.env.STRIPE_PRICE_PRO_PLUS ?? "",
 };
 
 export async function POST(req: NextRequest) {
-  if (!STRIPE_SECRET_KEY) {
+  if (!STRIPE_ENABLED || !STRIPE_SECRET_KEY) {
     return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
   }
 
@@ -24,12 +26,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { plan = "pro", email, successUrl, cancelUrl, promoCode } = body;
+  const { plan = "pro", email, promoCode } = body;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.email) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  if (email && email.trim().toLowerCase() !== user.email.toLowerCase()) {
+    return NextResponse.json({ error: "Checkout email must match the signed-in account" }, { status: 403 });
+  }
   const priceId = STRIPE_PRICE_IDS[plan];
 
-  const origin = req.headers.get("origin") ?? "https://clivora.codcrafters.org";
-  const success = successUrl ?? `${origin}/app?checkout=success`;
-  const cancel = cancelUrl ?? `${origin}/pro?checkout=cancelled`;
+  const origin = "https://clivora.codcrafters.org";
+  const success = `${origin}/app?checkout=success`;
+  const cancel = `${origin}/pro?checkout=cancelled`;
 
   try {
     const params = new URLSearchParams({
@@ -38,7 +46,9 @@ export async function POST(req: NextRequest) {
       "line_items[0][quantity]": "1",
       success_url: success,
       cancel_url: cancel,
-      ...(email ? { customer_email: email } : {}),
+      customer_email: user.email,
+      "metadata[plan]": plan,
+      "subscription_data[metadata][plan]": plan,
       ...(promoCode
         ? {
             "metadata[promo_code]": promoCode.trim().toUpperCase(),

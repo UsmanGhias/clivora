@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyStripeWebhookSignature } from "@/lib/stripe-webhook";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
+const STRIPE_ENABLED = process.env.STRIPE_ENABLED === "true";
 
 const SUPABASE_URL =
   process.env.SUPABASE_URL ?? "https://jtzjwgovqczlccyeujhq.supabase.co";
@@ -25,16 +27,14 @@ async function updateProfilePlan(email: string, plan: string) {
 }
 
 export async function POST(req: NextRequest) {
-  if (!STRIPE_SECRET_KEY) {
+  if (!STRIPE_ENABLED || !STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
     return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
   }
 
   const rawBody = await req.text();
   const signature = req.headers.get("stripe-signature") ?? "";
 
-  // Signature verification requires stripe Node SDK; we do a lightweight check here.
-  // In production, use `stripe.webhooks.constructEvent` with the full SDK.
-  if (STRIPE_WEBHOOK_SECRET && !signature) {
+  if (!verifyStripeWebhookSignature(rawBody, signature, STRIPE_WEBHOOK_SECRET)) {
     return NextResponse.json({ error: "Missing stripe-signature" }, { status: 400 });
   }
 
@@ -56,9 +56,9 @@ export async function POST(req: NextRequest) {
           ? (session.customer_details as Record<string, unknown>).email as string
           : null;
     const metadata = (session.metadata ?? {}) as Record<string, string>;
-    const plan = metadata.plan ?? "pro";
+    const plan = metadata.plan === "pro_plus" ? "pro_plus" : metadata.plan === "pro" ? "pro" : null;
 
-    if (email) {
+    if (email && plan) {
       await updateProfilePlan(email, plan);
     }
   }

@@ -8,6 +8,15 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const BATCH = 40;
 
+function secureEqual(left: string, right: string): boolean {
+  const a = new TextEncoder().encode(left);
+  const b = new TextEncoder().encode(right);
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i += 1) diff |= a[i] ^ b[i];
+  return diff === 0;
+}
+
 serve(async (req) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
@@ -19,15 +28,13 @@ serve(async (req) => {
   const resendKey = Deno.env.get("RESEND_API_KEY");
   const from = Deno.env.get("RESEND_FROM") ?? "CLIVORA <onboarding@resend.dev>";
 
-  if (!serviceKey || !supabaseUrl) {
-    return new Response(JSON.stringify({ error: "Service role not configured" }), { status: 503 });
+  if (!serviceKey || !supabaseUrl || !cronSecret) {
+    return new Response(JSON.stringify({ error: "Reminder service is not configured" }), { status: 503 });
   }
 
   const auth = req.headers.get("Authorization") ?? "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-  const ok =
-    token === serviceKey ||
-    (cronSecret.length > 0 && token === cronSecret);
+  const ok = token.length > 0 && secureEqual(token, cronSecret);
   if (!ok) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
   }

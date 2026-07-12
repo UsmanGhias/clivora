@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { assertAdminPanelAuth } from "@/lib/admin-auth";
+import { requireAdminRequest } from "@/lib/admin-auth";
 
 const SUPABASE_URL =
   process.env.SUPABASE_URL ?? "https://jtzjwgovqczlccyeujhq.supabase.co";
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     };
 
     const { action, adminEmail, adminToken } = body;
-    await assertAdminPanelAuth(adminEmail, adminToken, { preferToken: true });
+    await requireAdminRequest(req);
 
     const svcKey = serviceKey();
     if (!svcKey) {
@@ -51,46 +51,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "admin_release") {
-      const { milestoneId, amount, currency = "USD", notes } = body;
-      if (!milestoneId) {
-        return NextResponse.json({ error: "milestoneId required" }, { status: 400 });
-      }
-
-      // Update milestone status to released
-      const patchRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/connect_milestones?id=eq.${encodeURIComponent(milestoneId)}`,
-        {
-          method: "PATCH",
-          headers: { ...headers, Prefer: "return=minimal" },
-          body: JSON.stringify({ status: "released" }),
-        },
+      return NextResponse.json(
+        { error: "Live escrow release is disabled until the transactional funds RPC is deployed." },
+        { status: 410 },
       );
-      if (!patchRes.ok) {
-        const err = await patchRes.text();
-        throw new Error(err || "Milestone update failed");
-      }
-
-      // Insert escrow ledger entry
-      if (amount != null) {
-        const ledgerRes = await fetch(`${SUPABASE_URL}/rest/v1/connect_escrow_ledger`, {
-          method: "POST",
-          headers: { ...headers, Prefer: "return=minimal" },
-          body: JSON.stringify({
-            milestone_id: milestoneId,
-            amount,
-            currency,
-            action: "admin_release",
-            notes: notes ?? "Admin release",
-            created_at: new Date().toISOString(),
-          }),
-        });
-        if (!ledgerRes.ok) {
-          // Non-fatal if ledger table doesn't exist yet
-          console.warn("Escrow ledger insert failed:", await ledgerRes.text());
-        }
-      }
-
-      return NextResponse.json({ ok: true, milestoneId, status: "released" });
     }
 
     return NextResponse.json({ error: "Unknown action" }, { status: 400 });

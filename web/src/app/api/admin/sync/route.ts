@@ -1,33 +1,22 @@
-import { NextRequest, NextResponse } from "next/server";
-import { appendEvent } from "@/lib/admin-store";
-import { insertEventToSupabase } from "@/lib/supabase-admin";
+import { adminErrorResponse, adminJson, requireAdmin } from "@/lib/admin-auth";
 
-const SYNC_KEY = process.env.ADMIN_SYNC_KEY ?? "ClivoraSync2026!";
+export const dynamic = "force-dynamic";
 
-export async function POST(request: NextRequest) {
-  const key = request.headers.get("x-admin-sync-key");
-  if (key !== SYNC_KEY) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+/**
+ * The legacy shared-key sync endpoint accepted caller-supplied identities.
+ * It stays disabled until the Android client uses the authenticated database RPC.
+ */
+export async function POST() {
   try {
-    const body = await request.json();
-    const payload = {
-      eventType: String(body.eventType ?? "unknown"),
-      userEmail: String(body.userEmail ?? ""),
-      userName: String(body.userName ?? ""),
-      plan: String(body.plan ?? "free"),
-      amount: Number(body.amount ?? 0),
-      payload: String(body.payload ?? "{}"),
-      createdAt: String(body.createdAt ?? new Date().toISOString()),
-      source: String(body.source ?? "clivora_app"),
-    };
-
-    const event = appendEvent(payload);
-    await insertEventToSupabase(payload);
-
-    return NextResponse.json({ ok: true, id: event.id });
-  } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 400 });
+    await requireAdmin({ requireAal2: true });
+    return adminJson(
+      {
+        error: "Legacy admin sync has been retired. Update the app to use authenticated sync.",
+        code: "SYNC_ENDPOINT_RETIRED",
+      },
+      { status: 410 },
+    );
+  } catch (error) {
+    return adminErrorResponse(error, "Admin sync is unavailable");
   }
 }

@@ -1,5 +1,4 @@
-const SUPABASE_URL =
-  process.env.SUPABASE_URL ?? "https://jtzjwgovqczlccyeujhq.supabase.co";
+import { adminServiceHeaders, requireAdminServiceConfig } from "@/lib/admin-service";
 
 export type AdminEvent = {
   id: string;
@@ -13,25 +12,12 @@ export type AdminEvent = {
   source: string;
 };
 
-function serviceKey(): string | null {
-  return process.env.SUPABASE_SERVICE_ROLE_KEY ?? null;
-}
-
-function restHeaders(key: string) {
-  return {
-    apikey: key,
-    Authorization: `Bearer ${key}`,
-    "Content-Type": "application/json",
-  };
-}
-
 export async function fetchEventsFromSupabase(limit = 200): Promise<AdminEvent[]> {
-  const key = serviceKey();
-  if (!key) return [];
+  const { url: supabaseUrl, serviceRoleKey } = requireAdminServiceConfig();
 
-  const url = `${SUPABASE_URL}/rest/v1/clivora_events?select=id,event_type,user_email,user_name,plan,amount,payload,source,created_at&order=created_at.desc&limit=${limit}`;
+  const url = `${supabaseUrl}/rest/v1/clivora_events?select=id,event_type,user_email,user_name,plan,amount,payload,source,created_at&order=created_at.desc&limit=${limit}`;
   const res = await fetch(url, {
-    headers: restHeaders(key),
+    headers: adminServiceHeaders(serviceRoleKey),
     cache: "no-store",
   });
   if (!res.ok) return [];
@@ -51,10 +37,9 @@ export async function fetchEventsFromSupabase(limit = 200): Promise<AdminEvent[]
 }
 
 export async function insertEventToSupabase(event: Omit<AdminEvent, "id">): Promise<void> {
-  const key = serviceKey();
-  if (!key) return;
+  const { url: supabaseUrl, serviceRoleKey } = requireAdminServiceConfig();
 
-  const url = `${SUPABASE_URL}/rest/v1/clivora_events`;
+  const url = `${supabaseUrl}/rest/v1/clivora_events`;
   let payload: unknown = {};
   try {
     payload = JSON.parse(event.payload || "{}");
@@ -64,7 +49,7 @@ export async function insertEventToSupabase(event: Omit<AdminEvent, "id">): Prom
 
   await fetch(url, {
     method: "POST",
-    headers: { ...restHeaders(key), Prefer: "return=minimal" },
+    headers: adminServiceHeaders(serviceRoleKey, "return=minimal"),
     body: JSON.stringify({
       event_type: event.eventType,
       user_email: event.userEmail,
@@ -90,12 +75,11 @@ export type AdminProfile = {
 };
 
 export async function fetchProfilesFromSupabase(limit = 100): Promise<AdminProfile[]> {
-  const key = serviceKey();
-  if (!key) return [];
+  const { url: supabaseUrl, serviceRoleKey } = requireAdminServiceConfig();
 
-  const url = `${SUPABASE_URL}/rest/v1/profiles?select=id,email,name,account_type,subscription_plan,updated_at,is_blocked,is_restricted&order=updated_at.desc&limit=${limit}`;
+  const url = `${supabaseUrl}/rest/v1/profiles?select=id,email,name,account_type,subscription_plan,updated_at,is_blocked,is_restricted&order=updated_at.desc&limit=${limit}`;
   const res = await fetch(url, {
-    headers: restHeaders(key),
+    headers: adminServiceHeaders(serviceRoleKey),
     cache: "no-store",
   });
   if (!res.ok) return [];
@@ -114,12 +98,11 @@ export async function fetchProfilesFromSupabase(limit = 100): Promise<AdminProfi
 }
 
 export async function fetchProfileCount(): Promise<number> {
-  const key = serviceKey();
-  if (!key) return 0;
+  const { url: supabaseUrl, serviceRoleKey } = requireAdminServiceConfig();
 
-  const url = `${SUPABASE_URL}/rest/v1/profiles?select=id`;
+  const url = `${supabaseUrl}/rest/v1/profiles?select=id`;
   const res = await fetch(url, {
-    headers: { ...restHeaders(key), Prefer: "count=exact" },
+    headers: adminServiceHeaders(serviceRoleKey, "count=exact"),
     cache: "no-store",
   });
   if (!res.ok) return 0;
@@ -156,6 +139,6 @@ export function buildStats(
     events: generalEvents.slice(0, 150),
     auditEvents: auditEvents.slice(0, 100),
     profiles: profiles.slice(0, 100),
-    source: serviceKey() ? "supabase" : "local",
+    source: "supabase",
   };
 }

@@ -26,16 +26,37 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
   const isApp = path.startsWith("/app") || path.startsWith("/connect/manage");
+  const isAdmin = path === "/admin" || path.startsWith("/admin/");
   const isAuthPage =
     path === "/login" ||
     path === "/signup" ||
     path.startsWith("/auth/reset-password");
 
-  if (isApp && !user) {
+  if ((isApp || isAdmin) && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", path);
     return NextResponse.redirect(url);
+  }
+
+  if (isAdmin && user) {
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("role, account_type, is_blocked, is_restricted")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (
+      error ||
+      (profile?.role !== "admin" && profile?.account_type !== "admin") ||
+      profile?.is_blocked === true ||
+      profile?.is_restricted === true
+    ) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/app";
+      url.search = "";
+      url.searchParams.set("error", "admin_required");
+      return NextResponse.redirect(url);
+    }
   }
 
   if (user && isAuthPage) {

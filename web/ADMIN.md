@@ -8,14 +8,15 @@
 1. Repo: https://github.com/UsmanGhias/clivora-web (linked to Vercel)
 2. Custom domain: `clivora.codcrafters.org`
 3. Environment variables (Project → Settings → Environment Variables):
-   - `ADMIN_SYNC_KEY` = `ClivoraSync2026!`
-   - `SUPABASE_SERVICE_ROLE_KEY` = your Supabase service role key (for live profiles + events)
+   - `SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY` (server-only, never expose in browser or mobile builds)
 
 ## Admin login (web)
 
 - URL: https://clivora.codcrafters.org/admin
 - Emails: `iusmanghias@gmail.com` or `admin@codcrafters.org`
-- Password: `ClivoraAdmin2026!`
+- Sign in with Supabase Auth and complete authenticator-app MFA.
 
 ## Dashboard (v2.7.1)
 
@@ -29,10 +30,10 @@ Tabs: **Overview** | **Users** | **Payments** | **Audit** | **Events**
 
 ## Mobile app connection
 
-The Flutter app (`lib/core/constants/admin_config.dart`) points to:
+The Flutter app points to:
 
 - `kClivoraWebBaseUrl` = `https://clivora.codcrafters.org`
-- Sync: `POST /api/admin/sync` with header `X-Admin-Sync-Key: ClivoraSync2026!`
+- The legacy shared-key sync endpoint is retired. Mobile analytics must use the authenticated product-event RPC.
 
 In-app: Hub → **CodCrafters Admin** → **Sync to Web** or **Open Web Admin Panel**
 
@@ -55,7 +56,6 @@ In-app: Hub → **CodCrafters Admin** → **Sync to Web** or **Open Web Admin Pa
 
 ## API
 
-- `POST /api/admin/sync`
-- `GET /api/admin/stats?key=ClivoraSync2026!`
+- Admin APIs require the Supabase cookie session and AAL2 MFA.
 
 Events are stored in Supabase `clivora_events` when configured, with a local JSON fallback on Vercel.

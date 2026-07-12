@@ -2,7 +2,8 @@
 # Prepare android/key.properties + keystore for Play upload signing.
 # Supports Cursor Cloud secrets:
 #   ANDROID_KEYSTORE_BASE64  — base64 of clivora-upload-keystore.jks
-#   ANDROID_KEYSTORE_PASSWORD
+#   ANDROID_KEYSTORE_PASSWORD (legacy same password for store and key)
+#   ANDROID_STORE_PASSWORD / ANDROID_KEY_PASSWORD (preferred separate values)
 #   ANDROID_KEY_ALIAS        — default clivora
 set -euo pipefail
 
@@ -17,12 +18,15 @@ if [[ -n "${ANDROID_KEYSTORE_BASE64:-}" ]]; then
   echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_PATH"
 fi
 
-if [[ -f "$KEYSTORE_PATH" && -n "${ANDROID_KEYSTORE_PASSWORD:-}" ]]; then
+STORE_PASSWORD="${ANDROID_STORE_PASSWORD:-${ANDROID_KEYSTORE_PASSWORD:-}}"
+KEY_PASSWORD="${ANDROID_KEY_PASSWORD:-${ANDROID_KEYSTORE_PASSWORD:-}}"
+
+if [[ -f "$KEYSTORE_PATH" && -n "$STORE_PASSWORD" && -n "$KEY_PASSWORD" ]]; then
   cat > "$KEY_PROPS" <<EOF
-storePassword=${ANDROID_KEYSTORE_PASSWORD}
-keyPassword=${ANDROID_KEYSTORE_PASSWORD}
+storePassword=${STORE_PASSWORD}
+keyPassword=${KEY_PASSWORD}
 keyAlias=${ANDROID_KEY_ALIAS:-clivora}
-storeFile=clivora-upload-keystore.jks
+  storeFile=clivora-upload-keystore.jks
 EOF
   echo "Wrote $KEY_PROPS"
 fi
@@ -31,7 +35,7 @@ if [[ ! -f "$KEY_PROPS" || ! -f "$KEYSTORE_PATH" ]]; then
   echo ""
   echo "ERROR: Play upload keystore not configured."
   echo "Place android/clivora-upload-keystore.jks + android/key.properties"
-  echo "OR set Cursor secrets: ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD"
+  echo "OR set secrets: ANDROID_KEYSTORE_BASE64, ANDROID_STORE_PASSWORD, ANDROID_KEY_PASSWORD"
   echo "Expected upload cert SHA1: $EXPECTED_SHA1"
   exit 1
 fi
