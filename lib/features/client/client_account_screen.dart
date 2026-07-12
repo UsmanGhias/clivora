@@ -4,21 +4,21 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/auth/auth_service.dart';
-import '../../core/auth/user_roles.dart';
+import '../../core/constants/pro_pricing.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../core/utils/form_validators.dart';
 import '../../data/database/database.dart';
 import '../../core/services/app_engagement_service.dart';
-import '../../core/utils/navigation_helper.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_logo.dart';
 
-/// Client account — profile, quick links, sign out.
+/// Client account, profile, quick links, sign out.
 class ClientAccountScreen extends ConsumerStatefulWidget {
   const ClientAccountScreen({super.key});
 
   @override
-  ConsumerState<ClientAccountScreen> createState() => _ClientAccountScreenState();
+  ConsumerState<ClientAccountScreen> createState() =>
+      _ClientAccountScreenState();
 }
 
 class _ClientAccountScreenState extends ConsumerState<ClientAccountScreen> {
@@ -43,28 +43,42 @@ class _ClientAccountScreenState extends ConsumerState<ClientAccountScreen> {
 
   Future<void> _pickPhoto(ImageSource source) async {
     final picker = ImagePicker();
-    final file = await picker.pickImage(source: source, maxWidth: 1024, imageQuality: 85);
-    if (!mounted || file == null) return;
-    final error = await ref.read(authStateProvider.notifier).updateProfilePhoto(file.path);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(error ?? 'Profile photo updated')),
+    final file = await picker.pickImage(
+      source: source,
+      maxWidth: 1024,
+      imageQuality: 85,
     );
+    if (!mounted || file == null) return;
+    final error = await ref
+        .read(authStateProvider.notifier)
+        .updateProfilePhoto(file.path);
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(error ?? 'Profile photo updated')));
   }
 
   Future<void> _save() async {
-    final nameErr = FormValidators.requiredField(_nameController.text, field: 'Name');
+    final nameErr = FormValidators.requiredField(
+      _nameController.text,
+      field: 'Name',
+    );
     if (nameErr != null) {
       showFormError(context, nameErr);
       return;
     }
-    final emailErr = FormValidators.email(_emailController.text, required: true);
+    final emailErr = FormValidators.email(
+      _emailController.text,
+      required: true,
+    );
     if (emailErr != null) {
       showFormError(context, emailErr);
       return;
     }
     setState(() => _saving = true);
-    final error = await ref.read(authStateProvider.notifier).updateProfile(
+    final error = await ref
+        .read(authStateProvider.notifier)
+        .updateProfile(
           name: _nameController.text,
           email: _emailController.text,
         );
@@ -74,7 +88,9 @@ class _ClientAccountScreenState extends ConsumerState<ClientAccountScreen> {
       showFormError(context, error);
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Account updated')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Account updated')));
   }
 
   Future<void> _signOut() async {
@@ -82,10 +98,18 @@ class _ClientAccountScreenState extends ConsumerState<ClientAccountScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Sign out?'),
-        content: const Text('You can sign back in anytime with the same email.'),
+        content: const Text(
+          'You can sign back in anytime with the same email.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Sign out')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Sign out'),
+          ),
         ],
       ),
     );
@@ -97,8 +121,11 @@ class _ClientAccountScreenState extends ConsumerState<ClientAccountScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authStateProvider).valueOrNull;
-    final projectCount = ref.watch(clientSharedProjectsProvider).valueOrNull?.length ?? 0;
+    final projectCount =
+        ref.watch(clientSharedProjectsProvider).valueOrNull?.length ?? 0;
     final isPro = ref.watch(isProProvider);
+    final themeMode = ref.watch(themeModeProvider);
+    final colorScheme = Theme.of(context).colorScheme;
 
     if (!_initialized && user != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -107,14 +134,18 @@ class _ClientAccountScreenState extends ConsumerState<ClientAccountScreen> {
     }
 
     return Scaffold(
-      backgroundColor: ClivoraColors.clientSurface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
           children: [
-            const Text(
+            Text(
               'My Account',
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: ClivoraColors.clientAccent),
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                color: colorScheme.primary,
+              ),
             ),
             const SizedBox(height: 20),
             Container(
@@ -147,8 +178,15 @@ class _ClientAccountScreenState extends ConsumerState<ClientAccountScreen> {
                           right: 0,
                           child: Container(
                             padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                            child: const Icon(Icons.camera_alt, size: 14, color: ClivoraColors.clientAccent),
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt,
+                              size: 14,
+                              color: ClivoraColors.clientAccent,
+                            ),
                           ),
                         ),
                       ],
@@ -160,29 +198,47 @@ class _ClientAccountScreenState extends ConsumerState<ClientAccountScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text(
                             'CLIENT ACCOUNT',
-                            style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.6),
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.6,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           user?.name ?? 'Client',
-                          style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                         Text(
                           user?.email ?? '',
-                          style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.85),
+                            fontSize: 13,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           '$projectCount shared project${projectCount == 1 ? '' : 's'}',
-                          style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -190,14 +246,40 @@ class _ClientAccountScreenState extends ConsumerState<ClientAccountScreen> {
                 ],
               ),
             ),
-            if (!isPro) ...[
+            if (isPro) ...[
+              const SizedBox(height: 16),
+              Card(
+                color: ClivoraColors.clientAccent.withValues(alpha: 0.12),
+                child: const ListTile(
+                  leading: Icon(
+                    Icons.verified_rounded,
+                    color: ClivoraColors.clientAccent,
+                  ),
+                  title: Text(
+                    'Client Pro active',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: Text(
+                    'Verified badge, unlimited contracts and PDF downloads',
+                  ),
+                ),
+              ),
+            ] else ...[
               const SizedBox(height: 16),
               Card(
                 color: ClivoraColors.clientAccent.withValues(alpha: 0.08),
                 child: ListTile(
-                  leading: const Icon(Icons.workspace_premium, color: ClivoraColors.clientAccent),
-                  title: const Text('Upgrade to Client Pro', style: TextStyle(fontWeight: FontWeight.w700)),
-                  subtitle: const Text('Rs 2,000/mo · unlimited contracts & PDFs'),
+                  leading: const Icon(
+                    Icons.workspace_premium,
+                    color: ClivoraColors.clientAccent,
+                  ),
+                  title: const Text(
+                    'Upgrade to Client Pro',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: Text(
+                    '${ProPricing.monthlyLabel}/mo · unlimited contracts & PDFs',
+                  ),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.push('/upgrade'),
                 ),
@@ -219,7 +301,9 @@ class _ClientAccountScreenState extends ConsumerState<ClientAccountScreen> {
             _QuickLinkTile(
               icon: Icons.star_outline,
               label: 'Rate on Google Play',
-              onTap: () => ref.read(appEngagementServiceProvider).showRateDialog(context),
+              onTap: () => ref
+                  .read(appEngagementServiceProvider)
+                  .showRateDialog(context),
             ),
             const SizedBox(height: 24),
             const _SectionLabel('Quick links'),
@@ -228,6 +312,21 @@ class _ClientAccountScreenState extends ConsumerState<ClientAccountScreen> {
               icon: Icons.person_outline,
               label: 'Edit full profile',
               onTap: () => context.push('/profile'),
+            ),
+            _QuickLinkTile(
+              icon: Icons.apps_outlined,
+              label: 'Client Hub',
+              onTap: () => context.push('/client-hub'),
+            ),
+            _QuickLinkTile(
+              icon: Icons.request_quote_outlined,
+              label: 'Quotes',
+              onTap: () => context.push('/client-quotes'),
+            ),
+            _QuickLinkTile(
+              icon: Icons.timeline_outlined,
+              label: 'Updates',
+              onTap: () => context.push('/client-activity'),
             ),
             _QuickLinkTile(
               icon: Icons.folder_shared_outlined,
@@ -250,11 +349,59 @@ class _ClientAccountScreenState extends ConsumerState<ClientAccountScreen> {
               onTap: () => context.push('/client-link-freelancer'),
             ),
             const SizedBox(height: 24),
+            const _SectionLabel('Appearance'),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: colorScheme.outline),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: ClivoraColors.clientSurface,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.wb_sunny_outlined,
+                      color: ClivoraColors.clientAccent,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Dark Mode',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                  Switch(
+                    value: themeMode == ThemeMode.dark,
+                    onChanged: (v) {
+                      ref
+                          .read(themeModeProvider.notifier)
+                          .setThemeMode(v ? ThemeMode.dark : ThemeMode.light);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
             const _SectionLabel('Profile details'),
             const SizedBox(height: 10),
             Card(
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -281,7 +428,9 @@ class _ClientAccountScreenState extends ConsumerState<ClientAccountScreen> {
                       alignment: Alignment.centerLeft,
                       child: Text(
                         'Freelancers share projects and invoices with this email.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: ClivoraColors.textSecondary),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ],
@@ -294,10 +443,19 @@ class _ClientAccountScreenState extends ConsumerState<ClientAccountScreen> {
               style: FilledButton.styleFrom(
                 backgroundColor: ClivoraColors.clientAccent,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
               child: _saving
-                  ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
                   : const Text('Save changes'),
             ),
             const SizedBox(height: 12),
@@ -307,7 +465,9 @@ class _ClientAccountScreenState extends ConsumerState<ClientAccountScreen> {
                 foregroundColor: ClivoraColors.errorRed,
                 side: const BorderSide(color: ClivoraColors.errorRed),
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
               child: const Text('Sign out'),
             ),
@@ -326,20 +486,25 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Text(
       text.toUpperCase(),
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.8,
-        color: ClivoraColors.textSecondary,
+        color: colorScheme.onSurfaceVariant,
       ),
     );
   }
 }
 
 class _QuickLinkTile extends StatelessWidget {
-  const _QuickLinkTile({required this.icon, required this.label, required this.onTap});
+  const _QuickLinkTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   final IconData icon;
   final String label;
@@ -347,14 +512,28 @@ class _QuickLinkTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Card(
+      color: colorScheme.surface,
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: ListTile(
-        leading: Icon(icon, color: ClivoraColors.clientAccent),
-        title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-        trailing: const Icon(Icons.chevron_right, size: 20),
+        iconColor: colorScheme.primary,
+        textColor: colorScheme.onSurface,
+        leading: Icon(icon),
+        title: Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        trailing: Icon(
+          Icons.chevron_right,
+          size: 20,
+          color: colorScheme.onSurface.withValues(alpha: 0.45),
+        ),
         onTap: onTap,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),

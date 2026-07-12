@@ -96,7 +96,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                         _AdminStat(label: 'Users', value: '${s.totalUsers}'),
                         _AdminStat(label: 'Sign-ups', value: '${s.signups}'),
                         _AdminStat(label: 'Pro', value: '${s.proUsers}'),
-                        _AdminStat(label: 'MRR', value: 'Rs ${s.monthlyRevenue}'),
+                        _AdminStat(label: 'MRR', value: '\$${s.monthlyRevenue}'),
                       ],
                     ),
                   ),

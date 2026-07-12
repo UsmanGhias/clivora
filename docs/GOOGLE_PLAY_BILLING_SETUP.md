@@ -101,3 +101,7 @@ clivora_pro_client_monthly
 ---
 
 **No merchant ID is hardcoded in the app** — Google Play Billing uses the app's signing certificate and Play Console products. Once subscriptions are active and testers are set, purchases work without embedding a merchant ID in Flutter code.
+
+### Recorded payments profile (ops)
+
+See [docs/internal/GOOGLE_PLAY_PAYMENTS_ACCOUNT.md](internal/GOOGLE_PLAY_PAYMENTS_ACCOUNT.md) for Merchant ID `821322956506296398`, payments account `7504-8568-3035-6197`, and profile `0631-4490-8359`.

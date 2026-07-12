@@ -136,14 +136,15 @@ class PlanLimitBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isPro = ref.watch(isProProvider);
-    if (isPro || current >= max) {
+    if (isPro) {
       return const SizedBox.shrink();
     }
-    final remaining = max - current;
+    final remaining = (max - current).clamp(0, max);
+    final atLimit = current >= max;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
       child: Material(
-        color: ClivoraColors.chipBackground,
+        color: atLimit ? ClivoraColors.errorRed.withValues(alpha: 0.08) : ClivoraColors.chipBackground,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -152,11 +153,17 @@ class PlanLimitBanner extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
-                const Icon(Icons.info_outline, size: 20, color: ClivoraColors.primaryPurple),
+                Icon(
+                  atLimit ? Icons.lock_outline : Icons.info_outline,
+                  size: 20,
+                  color: atLimit ? ClivoraColors.errorRed : ClivoraColors.primaryPurple,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    '$current of $max $resource on Free plan · $remaining left',
+                    atLimit
+                        ? '$current of $max $resource used · Upgrade for unlimited'
+                        : '$current of $max $resource on Free plan · $remaining left',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ),

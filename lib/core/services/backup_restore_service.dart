@@ -166,6 +166,62 @@ class BackupRestoreService {
       imported++;
     }
 
+    // Placeholder client for restored projects/invoices/contracts that need customerId.
+    int? restoreCustomerId;
+    final existingCustomers = await db.watchCustomersForUser(ownerId).first;
+    if (existingCustomers.isNotEmpty) {
+      restoreCustomerId = existingCustomers.first.id;
+    }
+
+    for (final row in (data['projects'] as List? ?? [])) {
+      if (restoreCustomerId == null) break;
+      if (!await limits.canAddProject()) break;
+      await db.insertProject(ProjectsCompanion.insert(
+        ownerUserId: ownerId,
+        customerId: restoreCustomerId,
+        name: row['name'] as String? ?? 'Project',
+        status: Value(row['status'] as String? ?? 'active'),
+        budget: Value((row['budget'] as num?)?.toDouble() ?? 0),
+        currency: Value(row['currency'] as String? ?? 'PKR'),
+      ));
+      imported++;
+    }
+
+    for (final row in (data['invoices'] as List? ?? [])) {
+      if (restoreCustomerId == null) break;
+      if (!await limits.canAddInvoice()) break;
+      await db.insertInvoice(InvoicesCompanion.insert(
+        ownerUserId: ownerId,
+        customerId: restoreCustomerId,
+        invoiceNumber: row['invoiceNumber'] as String? ?? 'INV-${imported + 1}',
+        status: Value(row['status'] as String? ?? 'draft'),
+        total: Value((row['total'] as num?)?.toDouble() ?? 0),
+        currency: Value(row['currency'] as String? ?? 'PKR'),
+      ));
+      imported++;
+    }
+
+    for (final row in (data['tasks'] as List? ?? [])) {
+      await db.insertTask(TasksCompanion.insert(
+        ownerUserId: ownerId,
+        title: row['title'] as String? ?? 'Task',
+        completed: Value(row['completed'] as bool? ?? false),
+        priority: Value(row['priority'] as String? ?? 'medium'),
+      ));
+      imported++;
+    }
+
+    for (final row in (data['contracts'] as List? ?? [])) {
+      if (restoreCustomerId == null) break;
+      await db.insertContract(ContractsCompanion.insert(
+        ownerUserId: ownerId,
+        customerId: restoreCustomerId,
+        title: row['title'] as String? ?? 'Contract',
+        status: Value(row['status'] as String? ?? 'draft'),
+      ));
+      imported++;
+    }
+
     return imported;
   }
 

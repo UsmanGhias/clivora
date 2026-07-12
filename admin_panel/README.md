@@ -1,14 +1,10 @@
 # CLIVORA Admin Panel
 
-Standalone web dashboard for CodCrafters administrators. This is **separate from the mobile app** — users manage their CRM in the app; you manage platform analytics here.
+This legacy standalone dashboard is retired. Use `https://clivora.codcrafters.org/admin`, which requires Supabase Auth and MFA.
 
 ## Quick start
 
-1. Open `admin_panel/index.html` in Chrome, Edge, or Firefox (double-click the file).
-2. Sign in with an authorized admin email:
-   - `admin@codcrafters.org`
-   - `usmanghias1@gmail.com`
-3. Panel password: **`ClivoraAdmin2026!`**
+Do not host or open this file for production administration.
 
 ## Import data from the app
 
@@ -38,8 +34,8 @@ Update `kAdminPanelUrl` in `lib/core/constants/admin_config.dart` if you publish
 
 ## Security notes
 
-- This is a **local-first** admin tool without a backend. Change `PANEL_PASSWORD` in `index.html` before hosting publicly.
-- For production-grade global analytics, connect Firebase/Supabase (see `docs/ADMIN_SETUP.md`).
+- This local tool has no authentication backend and is not safe for administration.
+- Use the Supabase-backed web admin instead.
 - Do not commit real user passwords; app auth remains on-device SQLite.
 
 ## App vs admin

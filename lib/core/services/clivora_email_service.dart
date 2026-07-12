@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../cloud/supabase_auth_helper.dart';
 import '../constants/plan_limits.dart';
@@ -21,6 +22,7 @@ class ClivoraEmailService {
     required String htmlBody,
     required ClivoraEmailPurpose purpose,
     bool countTowardQuota = true,
+    Map<String, dynamic>? extraFields,
   }) async {
     if (countTowardQuota && purpose != ClivoraEmailPurpose.passwordReset) {
       if (!await ref.read(emailQuotaServiceProvider).canSendEmail()) {
@@ -34,32 +36,38 @@ class ClivoraEmailService {
         body: {
           'to': to.trim().toLowerCase(),
           'subject': subject,
-          'html': htmlBody,
           'purpose': purpose.name,
+          if (htmlBody.isNotEmpty) 'html': htmlBody,
+          ...?extraFields,
         },
       );
       if (response.status != 200) {
         final data = response.data;
-        return data is Map ? '${data['error'] ?? response.status}' : 'Email failed (${response.status})';
+        final detail = data is Map ? '${data['error'] ?? response.status}' : 'Email failed (${response.status})';
+        return detail;
       }
       if (countTowardQuota && purpose != ClivoraEmailPurpose.passwordReset) {
         await ref.read(emailQuotaServiceProvider).recordSent();
       }
       return null;
+    } on FunctionException catch (e) {
+      debugPrint('Clivora email FunctionException: ${e.details}');
+      final details = e.details;
+      if (details is Map && details['error'] != null) {
+        return _friendlyEmailError('${details['error']}');
+      }
+      return _friendlyEmailError('Email service error (${e.status})');
     } catch (e) {
       debugPrint('Clivora email error: $e');
-      return 'Email service unavailable. Set RESEND_API_KEY on send-clivora-email Edge Function.';
+      return 'Email delivery unavailable. Your in-app message was still sent.';
     }
   }
 
   Future<String?> sendPasswordResetNotice(String email) {
     return sendSpecialEmail(
       to: email,
-      subject: 'CLIVORA: Password reset requested',
-      htmlBody:
-          '<p>A password reset was requested for your CLIVORA account.</p>'
-          '<p>If you did not request this, ignore this email.</p>'
-          '<p>Use the reset link from the app or contact support.</p>',
+      subject: 'Reset your CLIVORA password',
+      htmlBody: '',
       purpose: ClivoraEmailPurpose.passwordReset,
       countTowardQuota: false,
     );
@@ -73,19 +81,108 @@ class ClivoraEmailService {
     return sendSpecialEmail(
       to: to,
       subject: '$freelancerName invited you to CLIVORA',
-      htmlBody:
-          '<p>Hi $clientName,</p>'
-          '<p><strong>$freelancerName</strong> added you as a client on CLIVORA.</p>'
-          '<p>Download the app, sign up as a <strong>Client</strong> with this email, and view shared projects, invoices, and messages.</p>',
+      htmlBody: '',
       purpose: ClivoraEmailPurpose.clientInvite,
+      extraFields: {
+        'freelancerName': freelancerName,
+        'clientName': clientName,
+      },
     );
   }
+
+  Future<String?> sendAdminNotice({
+    required String to,
+    required String subject,
+    required String message,
+  }) {
+    return sendSpecialEmail(
+      to: to,
+      subject: subject,
+      htmlBody: message,
+      purpose: ClivoraEmailPurpose.adminNotice,
+      extraFields: {'adminMessage': message},
+    );
+  }
+
+  Future<String?> sendTeamInviteEmail({
+    required String to,
+    required String ownerName,
+    required String inviteeName,
+    required String role,
+    String projectName = '',
+  }) {
+    return sendSpecialEmail(
+      to: to,
+      subject: '$ownerName invited you to their CLIVORA team',
+      htmlBody: '',
+      purpose: ClivoraEmailPurpose.teamInvite,
+      extraFields: {
+        'ownerName': ownerName,
+        'inviteeName': inviteeName,
+        'role': role,
+        if (projectName.isNotEmpty) 'projectName': projectName,
+      },
+    );
+  }
+
+  Future<String?> sendTaskCompletedEmail({
+    required String to,
+    required String clientName,
+    required String taskTitle,
+    required String projectName,
+  }) {
+    return sendSpecialEmail(
+      to: to,
+      subject: 'Task completed: $taskTitle',
+      htmlBody: '',
+      purpose: ClivoraEmailPurpose.taskCompleted,
+      extraFields: {
+        'clientName': clientName,
+        'taskTitle': taskTitle,
+        'projectName': projectName,
+      },
+    );
+  }
+
+  Future<String?> sendWelcomeEmail({
+    required String to,
+    required String userName,
+    required String accountType,
+  }) {
+    return sendSpecialEmail(
+      to: to,
+      subject: 'Welcome to CLIVORA',
+      htmlBody: '',
+      purpose: ClivoraEmailPurpose.welcome,
+      extraFields: {
+        'userName': userName,
+        'accountType': accountType,
+      },
+    );
+  }
+}
+
+String _friendlyEmailError(String raw) {
+  final lower = raw.toLowerCase();
+  if (lower.contains('only send testing emails') || lower.contains('verify a domain')) {
+    return 'External email pending domain setup. In-app invite was delivered.';
+  }
+  if (lower.contains('not configured') || lower.contains('resend')) {
+    return 'External email temporarily unavailable. In-app invite was delivered.';
+  }
+  if (lower.contains('monthly email limit')) {
+    return raw;
+  }
+  return 'Could not send external email. In-app invite was delivered.';
 }
 
 enum ClivoraEmailPurpose {
   passwordReset,
   adminNotice,
   clientInvite,
+  teamInvite,
+  taskCompleted,
+  welcome,
 }
 
 extension on ClivoraEmailPurpose {
@@ -97,6 +194,12 @@ extension on ClivoraEmailPurpose {
         return 'admin_notice';
       case ClivoraEmailPurpose.clientInvite:
         return 'client_invite';
+      case ClivoraEmailPurpose.teamInvite:
+        return 'team_invite';
+      case ClivoraEmailPurpose.taskCompleted:
+        return 'task_completed';
+      case ClivoraEmailPurpose.welcome:
+        return 'welcome';
     }
   }
 }

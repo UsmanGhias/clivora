@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/services/backup_restore_service.dart';
+import '../../core/services/cloud_crm_backup_service.dart';
 import '../../core/services/last_login_service.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 
@@ -16,6 +17,7 @@ class BackupRestoreScreen extends ConsumerStatefulWidget {
 class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
   final _passwordCtrl = TextEditingController();
   bool _usePassword = false;
+  bool _cloudBusy = false;
 
   @override
   void dispose() {
@@ -26,18 +28,21 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
   @override
   Widget build(BuildContext context) {
     final metaAsync = ref.watch(lastBackupMetaProvider);
+    final onSurface = Theme.of(context).colorScheme.onSurface;
 
     return ClivoraScaffold(
       title: 'Backup & Restore',
       showBackButton: true,
       body: Padding(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: ListView(
           children: [
             Text(
-              'Export your workspace as JSON. Optional password protects the file on shared storage.',
-              style: Theme.of(context).textTheme.bodyMedium,
+              'Keep your clients, projects, and invoices safe. Cloud backup restores after reinstall when you sign in again.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: onSurface.withValues(alpha: 0.75),
+                    height: 1.4,
+                  ),
             ),
             const SizedBox(height: 16),
             metaAsync.when(
@@ -49,15 +54,73 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                 return Card(
                   child: ListTile(
                     leading: const Icon(Icons.history),
-                    title: const Text('Last backup'),
+                    title: const Text('Last local backup'),
                     subtitle: Text('${DateFormat.yMMMd().add_jm().format(meta.at!.toLocal())} · $sizeKb KB'),
                   ),
                 );
               },
             ),
+            const SizedBox(height: 8),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.cloud_upload_outlined),
+                title: const Text('Cloud CRM backup'),
+                subtitle: const Text('Saved to your CLIVORA account'),
+                trailing: _cloudBusy
+                    ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))
+                    : null,
+                onTap: _cloudBusy
+                    ? null
+                    : () async {
+                        setState(() => _cloudBusy = true);
+                        try {
+                          await ref.read(cloudCrmBackupServiceProvider).uploadCurrentWorkspace();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Cloud backup saved')),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+                          }
+                        } finally {
+                          if (mounted) setState(() => _cloudBusy = false);
+                        }
+                      },
+              ),
+            ),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.cloud_download_outlined),
+                title: const Text('Restore from cloud'),
+                subtitle: const Text('Use after reinstall if local data is empty'),
+                onTap: _cloudBusy
+                    ? null
+                    : () async {
+                        setState(() => _cloudBusy = true);
+                        try {
+                          final backup = await ref.read(cloudCrmBackupServiceProvider).fetchLatestBackup();
+                          if (backup == null) throw StateError('No cloud backup found');
+                          final n = await ref.read(backupRestoreServiceProvider).importWorkspace(backup);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Restored $n records from cloud')),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+                          }
+                        } finally {
+                          if (mounted) setState(() => _cloudBusy = false);
+                        }
+                      },
+              ),
+            ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Password-protect export'),
+              title: const Text('Password-protect file export'),
               value: _usePassword,
               onChanged: (v) => setState(() => _usePassword = v),
             ),
@@ -70,7 +133,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                   hintText: 'Required to open this file later',
                 ),
               ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             FilledButton.icon(
               onPressed: () async {
                 try {
@@ -85,27 +148,15 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
                 }
               },
               icon: const Icon(Icons.upload_file),
-              label: const Text('One-tap backup'),
+              label: const Text('Share JSON backup file'),
             ),
             const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: () {
-                showDialog<void>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('Restore workspace'),
-                    content: const Text(
-                      'Import validates schema version and account ownership. '
-                      'Restore respects Free plan limits for clients and templates.',
-                    ),
-                    actions: [
-                      TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
-                    ],
+            Text(
+              'Tip: uninstalling deletes local SQLite. Use Cloud backup or a shared JSON file before switching phones.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: onSurface.withValues(alpha: 0.6),
+                    height: 1.4,
                   ),
-                );
-              },
-              icon: const Icon(Icons.download),
-              label: const Text('Restore guide'),
             ),
           ],
         ),

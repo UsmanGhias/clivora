@@ -11,6 +11,8 @@ import '../../core/services/client_invite_service.dart';
 import '../../core/constants/plan_limits.dart';
 import '../../core/utils/form_validators.dart';
 import '../../core/utils/plan_limit_dialog.dart';
+import '../../core/services/email_verification_service.dart';
+import '../../core/services/sync_outbox_service.dart';
 import '../../data/database/database.dart';
 import '../../data/database/user_scoped_queries.dart';
 import '../../data/models/invoice_line_item.dart';
@@ -143,7 +145,13 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
             updatedAt: DateTime.now(),
           ),
         );
+        await ref.read(syncOutboxServiceProvider).enqueue(
+              SyncOutboxItem(kind: 'crm_customer', payload: {'localId': widget.customerId}),
+            );
       } else {
+        if (!await requireEmailVerified(context, ref, actionLabel: 'add clients')) {
+          return;
+        }
         if (!await ref.read(planLimitServiceProvider).canAddCustomer()) {
           if (mounted) {
             final upgrade = await showPlanLimitDialog(
@@ -178,6 +186,9 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
                 clientEmail: email,
               );
         }
+        await ref.read(syncOutboxServiceProvider).enqueue(
+              SyncOutboxItem(kind: 'crm_customer', payload: {'localId': id}),
+            );
       }
 
       if (mounted) {
@@ -189,7 +200,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
             SnackBar(
               content: Text(
                 widget.customerId == null
-                    ? '${_contactController.text.trim()} added${email.isNotEmpty ? ' · invite sent to $email' : ''}'
+                    ? '${_contactController.text.trim()} added${email.isNotEmpty ? ' · in-app invite sent to $email' : ''}'
                     : '${_contactController.text.trim()} updated',
               ),
             ),

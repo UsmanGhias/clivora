@@ -13,7 +13,14 @@ import '../features/client/client_portal_screen.dart';
 import '../features/client/client_activity_screen.dart';
 import '../features/client/client_tasks_screen.dart';
 import '../features/client/client_account_screen.dart';
+import '../features/client/client_hub_screen.dart';
+import '../features/client/client_quotes_screen.dart';
+import '../features/client/client_payments_screen.dart';
+import '../features/client/client_credits_screen.dart';
+import '../features/client/client_recurring_screen.dart';
+import '../features/client/client_files_screen.dart';
 import '../features/team/team_screen.dart';
+import '../features/team/team_invites_screen.dart';
 import '../features/customers/customer_form_screen.dart';
 import '../features/customers/customers_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
@@ -23,16 +30,24 @@ import '../features/invoices/invoices_screen.dart';
 import '../features/more/more_screen.dart';
 import '../features/notes/notes_screen.dart';
 import '../features/projects/project_time_tracker_screen.dart';
+import '../features/projects/project_milestones_screen.dart';
 import '../features/projects/project_form_screen.dart';
 import '../features/projects/projects_screen.dart';
+import '../features/reviews/reviews_screen.dart';
 import '../features/analytics/analytics_dashboard_screen.dart';
 import '../features/calendar/calendar_screen.dart';
 import '../features/settings/backup_restore_screen.dart';
+import '../features/marketplace/connect_marketplace_screen.dart';
+import '../features/marketplace/connect_listing_screen.dart';
+import '../features/marketplace/connect_need_screen.dart';
 import '../features/settings/legal_document_screen.dart';
+import '../features/settings/notification_settings_screen.dart';
 import '../features/settings/security_settings_screen.dart';
+import '../features/invoices/payment_confirmations_screen.dart';
+import '../features/client/client_milestones_screen.dart';
 import '../core/constants/legal_documents.dart';
 import '../features/onboarding/onboarding_screen.dart';
-import '../features/calendar/calendar_screen.dart';
+import '../features/onboarding/value_guidelines_screen.dart';
 import '../features/reports/reports_screen.dart';
 import '../features/search/global_search_screen.dart';
 import '../features/notifications/notifications_screen.dart';
@@ -45,6 +60,10 @@ import '../features/pro/pro_screens.dart';
 import '../features/subscription/upgrade_screen.dart';
 import '../features/subscription/referral_screen.dart';
 import '../features/tasks/tasks_screen.dart';
+import '../features/products/products_screen.dart';
+import '../features/quotes/quotes_screen.dart';
+import '../features/invoices/recurring_invoices_screen.dart';
+import '../features/credits/credits_screen.dart';
 import 'app_shell.dart';
 import 'auth_refresh.dart';
 
@@ -61,6 +80,21 @@ final appRouter = GoRouter(
     loading: authSessionLoading,
   ),
   routes: [
+    GoRoute(
+      path: '/value-guidelines',
+      builder: (context, state) => Consumer(
+        builder: (context, ref, _) => ValueGuidelinesScreen(
+          onContinue: () async {
+            await ref.read(onboardingServiceProvider).markGuidelinesSeen();
+            if (context.mounted) {
+              final done = await ref.read(onboardingServiceProvider).isComplete();
+              if (!context.mounted) return;
+              context.go(done ? '/login' : '/onboarding');
+            }
+          },
+        ),
+      ),
+    ),
     GoRoute(
       path: '/onboarding',
       builder: (context, state) => Consumer(
@@ -160,6 +194,16 @@ final appRouter = GoRouter(
           pageBuilder: (context, state) =>
               const NoTransitionPage(child: MoreScreen()),
         ),
+        GoRoute(
+          path: '/connect',
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: ConnectMarketplaceScreen()),
+        ),
+        GoRoute(
+          path: '/client-hub',
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: ClientHubScreen()),
+        ),
       ],
     ),
     GoRoute(
@@ -195,6 +239,19 @@ final appRouter = GoRouter(
         final id = int.parse(state.pathParameters['id']!);
         return ProjectTimeTrackerScreen(projectId: id);
       },
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/projects/:id/milestones',
+      builder: (context, state) {
+        final id = int.parse(state.pathParameters['id']!);
+        return ProjectMilestonesScreen(projectId: id);
+      },
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/reviews',
+      builder: (context, state) => const ReviewsScreen(),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
@@ -295,6 +352,11 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
+      path: '/team-invites',
+      builder: (context, state) => const TeamInvitesScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
       path: '/profile',
       builder: (context, state) => const ProfileScreen(),
     ),
@@ -340,8 +402,82 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
+      path: '/connect/listing',
+      builder: (context, state) => const ConnectListingScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/connect/need',
+      builder: (context, state) => const ConnectNeedScreen(),
+    ),
+    GoRoute(
+      path: '/client-quotes',
+      builder: (context, state) => const ClientQuotesScreen(),
+    ),
+    GoRoute(
+      path: '/client-payments',
+      builder: (context, state) => const ClientPaymentsScreen(),
+    ),
+    GoRoute(
+      path: '/client-credits',
+      builder: (context, state) => const ClientCreditsScreen(),
+    ),
+    GoRoute(
+      path: '/client-recurring',
+      builder: (context, state) => const ClientRecurringScreen(),
+    ),
+    GoRoute(
+      path: '/client-files',
+      builder: (context, state) => const ClientFilesScreen(),
+    ),
+    GoRoute(
+      path: '/products',
+      builder: (context, state) => const ProductsScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/quotes',
+      builder: (context, state) => const QuotesScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/recurring-invoices',
+      builder: (context, state) => const RecurringInvoicesScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/vendors',
+      redirect: (_, __) => '/more',
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/purchase-orders',
+      redirect: (_, __) => '/more',
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/credits',
+      builder: (context, state) => const CreditsScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
       path: '/security',
       builder: (context, state) => const SecuritySettingsScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/notification-settings',
+      builder: (context, state) => const NotificationSettingsScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/payment-confirmations',
+      builder: (context, state) => const PaymentConfirmationsScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/client-milestones',
+      builder: (context, state) => const ClientMilestonesScreen(),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,

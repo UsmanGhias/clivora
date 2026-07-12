@@ -46,7 +46,7 @@ final permissionsServiceProvider = Provider<PermissionsService>((ref) {
 
 bool isFreelancerAccount(User? user) {
   if (user == null) return false;
-  return user.accountType == 'freelancer' || user.accountType == 'admin' || isAdminUser(user);
+  return user.accountType == kAccountFreelancer || user.accountType == 'user' || user.role == 'admin';
 }
 
 bool isClientAccount(User? user) {

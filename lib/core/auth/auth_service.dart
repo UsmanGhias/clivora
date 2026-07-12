@@ -21,9 +21,12 @@ import '../../core/cloud/supabase_sync_service.dart';
 import '../../core/constants/admin_config.dart';
 import '../../core/constants/plan_limits.dart';
 import '../../core/services/analytics_service.dart';
+import '../../core/services/admin_management_service.dart';
 import '../../core/services/automation_service.dart';
 import '../../core/services/project_time_service.dart';
+import '../../core/services/push_notification_service.dart';
 import '../../core/services/referral_service.dart';
+import '../../core/services/cloud_crm_backup_service.dart';
 import '../../data/database/database.dart';
 import '../../data/database/user_defaults.dart';
 import '../../data/database/user_scoped_queries.dart';
@@ -34,9 +37,30 @@ const _sessionUserIdKey = 'clivora_user_id';
 const kGoogleWebClientId =
     '976757530869-ap3ea6t2noq56o46tfokgdp6haj6ioqj.apps.googleusercontent.com';
 
-String hashPassword(String password) {
-  final bytes = utf8.encode(password);
-  return sha256.convert(bytes).toString();
+/// Salted SHA-256 password hash. Format: `v2:<saltHex>:<hashHex>`.
+/// Legacy unsalted hex hashes are still accepted and upgraded on next successful login.
+String hashPassword(String password, {String? saltHex}) {
+  final salt = saltHex ??
+      sha256
+          .convert(utf8.encode('${DateTime.now().microsecondsSinceEpoch}:${password.hashCode}'))
+          .toString()
+          .substring(0, 32);
+  final digest = sha256.convert(utf8.encode('$salt::$password')).toString();
+  return 'v2:$salt:$digest';
+}
+
+bool verifyPassword(String password, String stored) {
+  if (stored.isEmpty) return false;
+  if (stored.startsWith('v2:')) {
+    final parts = stored.split(':');
+    if (parts.length != 3) return false;
+    final salt = parts[1];
+    final expected = parts[2];
+    final actual = sha256.convert(utf8.encode('$salt::$password')).toString();
+    return actual == expected;
+  }
+  // Legacy unsalted SHA-256
+  return sha256.convert(utf8.encode(password)).toString() == stored;
 }
 
 final authStateProvider = StateNotifierProvider<AuthNotifier, AsyncValue<User?>>((ref) {
@@ -84,6 +108,11 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       setAuthSession(user);
       if (user != null && cloudUid != null) {
         await ref.read(supabaseSyncServiceProvider).onUserSignedIn(user);
+        try {
+          await ref.read(pushNotificationServiceProvider).onUserSignedIn();
+        } catch (e) {
+          debugPrint('Push on restore: $e');
+        }
       }
     } catch (e) {
       debugPrint('Auth restore error: $e');
@@ -200,6 +229,15 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     final cloudUid = SupabaseAuthHelper.currentUid;
     if (cloudUid == null) return 'Sign in failed: no Supabase session.';
 
+    final blockedProfile = await SupabaseAuthHelper.fetchOwnProfile();
+    if (blockedProfile?['is_blocked'] == true) {
+      await SupabaseAuthHelper.signOut();
+      final reason = (blockedProfile?['block_reason'] as String?)?.trim();
+      return (reason != null && reason.isNotEmpty)
+          ? 'Account blocked: $reason'
+          : 'This account has been blocked by CLIVORA admin.';
+    }
+
     var user = await _db.safeGetUserByEmail(trimmedEmail);
     user ??= await _db.recoverUserByEmail(trimmedEmail);
     if (user == null) {
@@ -233,24 +271,30 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     final roleErr = AccountTypeGuard.validateSignInRole(user: user, loginAsType: loginAsType);
     if (roleErr != null) return roleErr;
 
-    if (user.passwordHash.isNotEmpty && user.passwordHash != hashPassword(password)) {
-      // Supabase auth succeeded — update local hash (user may have reset password in cloud).
+    if (user.passwordHash.isNotEmpty && !verifyPassword(password, user.passwordHash)) {
+      // Supabase auth succeeded, update local hash (user may have reset password in cloud).
       await _db.updateUser(user.copyWith(passwordHash: hashPassword(password), googleId: Value(cloudUid)));
+    } else if (user.passwordHash.isNotEmpty &&
+        verifyPassword(password, user.passwordHash) &&
+        !user.passwordHash.startsWith('v2:')) {
+      // Upgrade legacy unsalted hash to salted v2.
+      await _db.updateUser(user.copyWith(passwordHash: hashPassword(password)));
     } else if (user.googleId != cloudUid) {
       await _db.updateUser(user.copyWith(googleId: Value(cloudUid)));
     }
 
     final isAdmin = kAdminEmails.contains(trimmedEmail);
     if (isAdmin) {
-      await _db.updateUser(user.copyWith(role: 'admin', accountType: kAccountAdmin));
+      await _db.updateUser(user.copyWith(role: 'admin'));
     }
 
+    await _syncCloudSubscriptionPlan(user.id);
     await _setSession(user.id);
     _invalidateUserData();
 
     if (isAdmin) {
       try {
-        await ref.read(planLimitServiceProvider).setPlan(PlanLimits.proPlan);
+        await ref.read(planLimitServiceProvider).setPlan(PlanLimits.proPlusPlan);
       } catch (_) {}
     }
     return null;
@@ -264,6 +308,10 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         scopes: const ['email', 'profile'],
       );
 
+      try {
+        await googleSignIn.signOut();
+      } catch (_) {}
+
       final googleUser = await googleSignIn.signIn();
       if (googleUser == null) return 'Sign in cancelled';
 
@@ -271,7 +319,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       if (email.isEmpty) return 'Google account has no email address.';
 
       final googleAuth = await googleUser.authentication;
-      if (googleAuth.idToken == null) return 'Google sign-in failed: no ID token.';
+      if (googleAuth.idToken == null) {
+        return 'Google sign-in failed: no ID token. Add this APK signing SHA-1 in Firebase Console.';
+      }
 
       try {
         await SupabaseAuthHelper.signInWithGoogle(
@@ -343,22 +393,27 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       }
 
       if (isAdmin) {
-        await _db.updateUser(user.copyWith(role: 'admin', accountType: kAccountAdmin));
+        await _db.updateUser(user.copyWith(role: 'admin'));
       }
 
       final sessionUser = await _db.safeGetUser(user.id);
       if (sessionUser == null) return 'Could not load your profile. Try again.';
+      await _syncCloudSubscriptionPlan(sessionUser.id);
       await _setSession(sessionUser.id);
       _invalidateUserData();
 
       if (isAdmin) {
         try {
-          await ref.read(planLimitServiceProvider).setPlan(PlanLimits.proPlan);
+          await ref.read(planLimitServiceProvider).setPlan(PlanLimits.proPlusPlan);
         } catch (_) {}
       }
       return null;
     } catch (e, st) {
       debugPrint('Google sign-in error: $e\n$st');
+      final msg = e.toString();
+      if (msg.contains('ApiException: 10') || msg.contains('sign_in_failed')) {
+        return 'Google sign-in failed. Register this APK SHA-1 in Firebase, then retry.';
+      }
       return 'Google sign-in failed. Try again or use email sign-in.';
     }
   }
@@ -432,7 +487,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
 
       if (isAdmin) {
         try {
-          await ref.read(planLimitServiceProvider).setPlan(PlanLimits.proPlan);
+          await ref.read(planLimitServiceProvider).setPlan(PlanLimits.proPlusPlan);
         } catch (_) {}
       }
 
@@ -483,6 +538,20 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     _invalidateUserData();
   }
 
+  Future<void> _syncCloudSubscriptionPlan(int userId) async {
+    try {
+      final profile = await SupabaseAuthHelper.fetchOwnProfile();
+      final cloudPlan = profile?['subscription_plan'] as String?;
+      if (cloudPlan == PlanLimits.proPlan ||
+          cloudPlan == PlanLimits.proPlusPlan ||
+          cloudPlan == PlanLimits.freePlan) {
+        await ref.read(planLimitServiceProvider).setPlanForUser(userId, cloudPlan!);
+      }
+    } catch (e) {
+      debugPrint('Cloud subscription sync: $e');
+    }
+  }
+
   void _invalidateUserData() {
     ref.invalidate(customersProvider);
     ref.invalidate(projectsProvider);
@@ -491,6 +560,8 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     ref.invalidate(businessProfileProvider);
     ref.invalidate(invoiceBrandingProvider);
     ref.invalidate(appSettingsProvider);
+    ref.invalidate(cloudSubscriptionPlanProvider);
+    ref.invalidate(serverSubscriptionProvider);
     ref.invalidate(dashboardStatsProvider);
     ref.invalidate(clientProjectsProvider);
     ref.invalidate(clientSharedProjectsProvider);
@@ -498,6 +569,10 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     ref.invalidate(freelancerMailboxProvider);
     ref.invalidate(unreadMessagesProvider);
     ref.invalidate(freelancerUnreadProvider);
+    ref.invalidate(cloudNotificationsProvider);
+    ref.invalidate(cloudUnreadCountProvider);
+    ref.invalidate(freelancerClientTasksProvider);
+    ref.invalidate(clientAssignedTasksProvider);
     ref.invalidate(projectTimeTrackerProvider);
     ref.invalidate(projectTrackedSecondsMapProvider);
   }
@@ -512,6 +587,22 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     await prefs.setInt(_sessionUserIdKey, userId);
     state = AsyncValue.data(user);
     setAuthSession(user);
+    // Sync email verification from Supabase (Google / confirmed email).
+    try {
+      final cloud = SupabaseAuthHelper.client.auth.currentUser;
+      final confirmed = cloud?.emailConfirmedAt != null ||
+          (cloud?.identities ?? const []).any((i) => i.provider == 'google') ||
+          isAdminUser(user) ||
+          user.email.toLowerCase().endsWith('@clivora.local');
+      if (confirmed && !user.emailVerified) {
+        await _db.updateUser(user.copyWith(emailVerified: true));
+        final refreshed = await _db.getUser(user.id);
+        state = AsyncValue.data(refreshed);
+        setAuthSession(refreshed);
+      }
+    } catch (e) {
+      debugPrint('Email verification sync: $e');
+    }
     if (!skipCloudSync) {
       try {
         if (finalizeCloudRole) {
@@ -530,15 +621,37 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       } catch (e) {
         debugPrint('Cloud profile sync on session: $e');
       }
+      await _syncCloudSubscriptionPlan(userId);
       try {
         await ref.read(supabaseSyncServiceProvider).onUserSignedIn(user);
       } catch (e) {
         debugPrint('Cloud sync on session: $e');
       }
       try {
+        await ref.read(pushNotificationServiceProvider).onUserSignedIn();
+      } catch (e) {
+        debugPrint('Push on session: $e');
+      }
+      try {
         await ref.read(referralServiceProvider).syncCodeToCloud();
       } catch (e) {
         debugPrint('Referral sync on session: $e');
+      }
+      try {
+        final restored = await ref.read(cloudCrmBackupServiceProvider).restoreIfLocalEmpty();
+        if (restored) {
+          _invalidateUserData();
+        } else {
+          final remind = await ref.read(cloudCrmBackupServiceProvider).shouldRemindBackup();
+          if (!remind) {
+            // Recent backup exists, quiet auto-upload to keep cloud fresh
+            try {
+              await ref.read(cloudCrmBackupServiceProvider).uploadCurrentWorkspace();
+            } catch (_) {}
+          }
+        }
+      } catch (e) {
+        debugPrint('Cloud CRM restore on session: $e');
       }
     }
   }
@@ -557,6 +670,16 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     final updated = await _db.getUser(user.id);
     state = AsyncValue.data(updated);
     return null;
+  }
+
+  Future<void> setEmailVerified(bool value) async {
+    final user = state.valueOrNull;
+    if (user == null) return;
+    if (user.emailVerified == value) return;
+    await _db.updateUser(user.copyWith(emailVerified: value));
+    final updated = await _db.getUser(user.id);
+    state = AsyncValue.data(updated);
+    setAuthSession(updated);
   }
 
   Future<String?> updateProfile({required String name, required String email}) async {
@@ -580,6 +703,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       name: name.trim(),
       accountType: user.accountType,
       role: user.role,
+
     );
     return null;
   }

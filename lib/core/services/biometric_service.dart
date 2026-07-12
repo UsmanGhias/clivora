@@ -14,19 +14,35 @@ final biometricServiceProvider = Provider<BiometricService>((ref) {
   return BiometricService(ref);
 });
 
-/// Biometric unlock (Pro) — prompts only after 30+ minutes idle or long background.
+/// Biometric unlock (Pro), prompts after configurable idle timeout.
 class BiometricService {
   BiometricService(this.ref);
 
   final Ref ref;
   final _auth = LocalAuthentication();
 
-  static const lockAfter = Duration(minutes: 30);
+  static const timeoutOptions = [5, 15, 30, 60];
+  static const _timeoutKey = 'clivora_session_timeout_min';
   static const _lastUnlockKey = 'clivora_bio_last_unlock_ms';
   static const _backgroundAtKey = 'clivora_bio_background_at_ms';
 
   bool _sessionUnlocked = false;
   bool _promptInFlight = false;
+
+  Future<int> timeoutMinutes() async {
+    final prefs = await SharedPreferences.getInstance();
+    final v = prefs.getInt(_timeoutKey) ?? 30;
+    return timeoutOptions.contains(v) ? v : 30;
+  }
+
+  Future<void> setTimeoutMinutes(int minutes) async {
+    final prefs = await SharedPreferences.getInstance();
+    final safe = timeoutOptions.contains(minutes) ? minutes : 30;
+    await prefs.setInt(_timeoutKey, safe);
+  }
+
+  Future<Duration> get lockAfterDuration async =>
+      Duration(minutes: await timeoutMinutes());
 
   Future<bool> get isSupported async {
     try {
@@ -97,12 +113,13 @@ class BiometricService {
     recordUnlock();
   }
 
-  /// True when biometric prompt is required (30+ min idle or background).
+  /// True when biometric prompt is required (idle or background past timeout).
   Future<bool> shouldPromptUnlock() async {
     if (!await isEnabled) return false;
     if (!await canUseBiometric()) return false;
     if (!await isSupported) return false;
 
+    final lockAfter = await lockAfterDuration;
     final now = DateTime.now();
     final last = await _lastUnlock();
     if (last == null) return true;

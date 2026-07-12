@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 
 import 'database.dart';
 
-/// Companions with all NOT NULL columns set — prevents Drift null-read crashes.
+/// Companions with all NOT NULL columns set, prevents Drift null-read crashes.
 extension UserDefaultsHelpers on AppDatabase {
   /// Insert companion with every NOT NULL user column explicitly set.
   UsersCompanion newUserCompanion({
@@ -86,7 +86,7 @@ extension UserDefaultsHelpers on AppDatabase {
     return false;
   }
 
-  /// Read user via raw SQL — never crashes on legacy NULL columns.
+  /// Read user via raw SQL, never crashes on legacy NULL columns.
   Future<User?> rawReadUserById(int id) async {
     try {
       final row = await customSelect(
@@ -139,7 +139,7 @@ extension UserDefaultsHelpers on AppDatabase {
     }
   }
 
-  /// Fix NULL columns in [users] — Drift crashes on read when these are null.
+  /// Fix NULL columns in [users]. Drift crashes on read when these are null.
   Future<void> repairAllUsersNulls() async {
     final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     try {
@@ -202,7 +202,7 @@ extension UserDefaultsHelpers on AppDatabase {
     }
   }
 
-  /// Run all NULL repairs — call before any Drift read on legacy databases.
+  /// Run all NULL repairs, call before any Drift read on legacy databases.
   Future<void> repairAllDatabaseNulls() async {
     await repairAllUsersNulls();
     await repairAllProfileNulls();
@@ -267,7 +267,7 @@ extension UserDefaultsHelpers on AppDatabase {
     }
   }
 
-  /// Safe per-user defaults — never throws; used during sign-up.
+  /// Safe per-user defaults, never throws; used during sign-up.
   Future<void> safeSeedUserDefaults(int userId, {String name = '', String email = ''}) async {
     await repairUserDefaultsNulls(userId);
     try {
@@ -321,7 +321,7 @@ extension UserDefaultsHelpers on AppDatabase {
     return rawReadUserById(id);
   }
 
-  /// Read user by email — raw SQL first, never throws.
+  /// Read user by email, raw SQL first, never throws.
   Future<User?> safeGetUserByEmail(String email) async {
     final normalized = email.trim().toLowerCase();
     if (normalized.isEmpty) return null;
@@ -342,7 +342,7 @@ extension UserDefaultsHelpers on AppDatabase {
     }
   }
 
-  /// Read user by id — raw SQL first, never throws.
+  /// Read user by id, raw SQL first, never throws.
   Future<User?> safeGetUser(int id) async {
     await repairUserDefaultsNulls(id);
     final raw = await rawReadUserById(id);

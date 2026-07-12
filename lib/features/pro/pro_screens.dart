@@ -14,6 +14,8 @@ import '../../core/services/clivora_ai_enhanced_service.dart';
 import '../../core/services/ai_assistant_service.dart';
 import '../../core/services/automation_service.dart';
 import '../../core/constants/plan_features.dart';
+import '../../core/cloud/supabase_auth_helper.dart';
+import '../../core/services/contract_pdf_service.dart';
 import '../../core/services/vault_service.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../core/cloud/cloud_message_repository.dart';
@@ -24,17 +26,17 @@ import '../../core/utils/navigation_helper.dart';
 import '../../core/constants/plan_limits.dart';
 import '../../core/utils/plan_limit_dialog.dart';
 import '../../core/utils/template_utils.dart';
+import '../../core/services/email_verification_service.dart';
 import '../../data/models/invoice_line_item.dart';
 import '../../data/database/database.dart';
 import '../../data/database/user_scoped_queries.dart';
 import '../../data/providers/app_providers.dart';
-import '../../shared/widgets/clivora_bottom_sheet.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 import '../../shared/widgets/filter_chip_row.dart';
 import '../../shared/widgets/step_progress_card.dart';
 import '../../features/client/client_contract_view.dart';
 
-/// Shared Pro gate banner — CLIVORA style (distinct from generic paywalls).
+/// Shared Pro gate banner | CLIVORA style (distinct from generic paywalls).
 class ProGateBanner extends ConsumerWidget {
   const ProGateBanner({
     super.key,
@@ -135,7 +137,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'Smart insights from your local business data. Private, offline, and instant.',
+                            'Works offline on your data. Private insights from your local CRM.',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ),
@@ -143,7 +145,39 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  ...?_insights?.map((i) => _InsightCard(insight: i)),
+                  if (_insights == null || _insights!.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 28),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.lightbulb_outline,
+                            size: 40,
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No CRM insights yet',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Add clients, projects, or invoices to unlock suggestions. '
+                            'Tip: use this to draft Connect proposal ideas.',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
+                              height: 1.4,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    ..._insights!.map((i) => _InsightCard(insight: i)),
                 ],
               ),
             ),
@@ -302,6 +336,9 @@ class _MessageTemplatesScreenState extends ConsumerState<MessageTemplatesScreen>
   }
 
   Future<void> _showTemplateForm(BuildContext context) async {
+    if (!await requireEmailVerified(context, ref, actionLabel: 'add templates')) {
+      return;
+    }
     if (!await ref.read(planLimitServiceProvider).canAddTemplate()) {
       if (context.mounted) {
         final upgrade = await showPlanLimitDialog(
@@ -505,7 +542,17 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
                       child: ListTile(
                         title: Text(c.title),
                         subtitle: Text(c.status.toUpperCase()),
-                        trailing: const Icon(Icons.chevron_right),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              tooltip: 'PDF',
+                              icon: const Icon(Icons.picture_as_pdf_outlined),
+                              onPressed: () => _exportContractPdf(c),
+                            ),
+                            const Icon(Icons.chevron_right),
+                          ],
+                        ),
                         onTap: () => _editContract(context, c),
                       ),
                     );
@@ -517,6 +564,15 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _exportContractPdf(Contract contract) async {
+    final ownerId = ref.read(authStateProvider).valueOrNull?.id;
+    if (ownerId == null) return;
+    final customer = await ref.read(databaseProvider).getCustomerForUser(ownerId, contract.customerId);
+    final business = await ref.read(databaseProvider).watchBusinessProfileForUser(ownerId).first;
+    if (customer == null || !mounted) return;
+    await ContractPdfService.sharePdf(contract: contract, customer: customer, business: business);
   }
 
   Future<void> _editContract(BuildContext context, Contract contract) async {
@@ -706,6 +762,21 @@ class AutomationsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(automationSettingsProvider);
+    final runsAsync = ref.watch(_automationRunsProvider);
+    final pipelines = <({String trigger, String action})>[
+      if (settings.overdueFollowUp)
+        (trigger: 'Invoice overdue', action: 'Create task + notify'),
+      if (settings.customerWelcome)
+        (trigger: 'New customer', action: 'Welcome note + onboarding task'),
+      if (settings.weeklySummary)
+        (trigger: 'Every 7 days', action: 'Revenue summary note'),
+      if (settings.taskAssignedMessage)
+        (trigger: 'Task assigned', action: 'Send client message'),
+      if (settings.contractSignedStage)
+        (trigger: 'Contract signed', action: 'Project → in progress'),
+      if (settings.inactiveClientReminder)
+        (trigger: 'Client inactive 7+ days', action: 'Create follow-up task'),
+    ];
     return ClivoraScaffold(
       title: 'Workflows',
       showBackButton: true,
@@ -717,6 +788,20 @@ class AutomationsScreen extends ConsumerWidget {
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 16),
+          Text('Active pipeline', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          if (pipelines.isEmpty)
+            Text(
+              'Enable a toggle below to build your workflow pipeline.',
+              style: Theme.of(context).textTheme.bodySmall,
+            )
+          else
+            ...pipelines.map(
+              (p) => _PipelineCard(trigger: p.trigger, action: p.action),
+            ),
+          const SizedBox(height: 20),
+          Text('Automations', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
           _AutomationTile(
             title: 'Overdue invoice follow-up',
             subtitle: 'Creates a high-priority task when an invoice is marked overdue',
@@ -753,7 +838,121 @@ class AutomationsScreen extends ConsumerWidget {
             enabled: settings.inactiveClientReminder,
             onChanged: ref.read(automationSettingsProvider.notifier).setInactiveClientReminder,
           ),
+          const SizedBox(height: 24),
+          Text('Recent runs', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          runsAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.all(12),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (_, __) => const Text('Could not load run log'),
+            data: (runs) {
+              if (runs.isEmpty) {
+                return Text('No runs logged yet.', style: Theme.of(context).textTheme.bodySmall);
+              }
+              return Column(
+                children: [
+                  for (final run in runs)
+                    ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('${run['key'] ?? 'run'}'),
+                      subtitle: Text('${run['detail'] ?? ''}'),
+                      trailing: Text(
+                        '${run['created_at'] ?? ''}'.length >= 10
+                            ? '${run['created_at']}'.substring(0, 10)
+                            : '${run['created_at'] ?? ''}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
         ],
+      ),
+    );
+  }
+}
+
+final _automationRunsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) {
+  if (SupabaseAuthHelper.currentUid == null) return Future.value([]);
+  return ref.read(automationServiceProvider).recentRuns(limit: 20);
+});
+
+class _PipelineCard extends StatelessWidget {
+  const _PipelineCard({required this.trigger, required this.action});
+
+  final String trigger;
+  final String action;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Theme.of(context).dividerColor),
+      ),
+      child: Row(
+        children: [
+          Flexible(
+            child: _PipelineChip(
+              label: trigger,
+              background: scheme.primaryContainer.withValues(alpha: 0.55),
+              foreground: scheme.onPrimaryContainer,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Icon(Icons.arrow_forward_rounded, size: 18, color: scheme.outline),
+          ),
+          Flexible(
+            child: _PipelineChip(
+              label: action,
+              background: scheme.secondaryContainer.withValues(alpha: 0.55),
+              foreground: scheme.onSecondaryContainer,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PipelineChip extends StatelessWidget {
+  const _PipelineChip({
+    required this.label,
+    required this.background,
+    required this.foreground,
+  });
+
+  final String label;
+  final Color background;
+  final Color foreground;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: foreground,
+        ),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }

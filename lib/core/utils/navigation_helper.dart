@@ -6,6 +6,7 @@ import '../auth/auth_service.dart';
 import '../auth/user_roles.dart';
 import '../constants/plan_features.dart';
 import '../constants/plan_limits.dart';
+import '../services/email_verification_service.dart';
 import 'plan_limit_dialog.dart';
 import '../../data/providers/app_providers.dart';
 
@@ -14,16 +15,12 @@ void openFormRoute(BuildContext context, String path) {
   context.push(path);
 }
 
-/// Opens notifications — client goes to Updates tab; freelancer opens full screen.
+/// Opens notifications for freelancer and client accounts.
 void openNotifications(BuildContext context, {required bool isClient}) {
-  if (isClient) {
-    context.go('/client-activity');
-  } else {
-    context.push('/notifications');
-  }
+  context.push('/notifications');
 }
 
-/// Shows upgrade dialog — works for both freelancer and client accounts.
+/// Shows upgrade dialog, works for both freelancer and client accounts.
 Future<bool> requireProFeature(
   BuildContext context, {
   required bool isPro,
@@ -35,9 +32,9 @@ Future<bool> requireProFeature(
   final result = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: Text('$featureName — $planName'),
+      title: Text('$featureName ($planName)'),
       content: Text(
-        '$featureName requires $planName (Rs 2,000/mo — limited offer from Rs 2,800). '
+        '$featureName requires $planName (\$9/mo, limited offer from \$14). '
         'Subscribe securely through Google Play.',
       ),
       actions: [
@@ -76,8 +73,16 @@ Future<bool> tryOpenWithPlanCheck(
   required String resource,
   required int max,
 }) async {
+  if (!await requireEmailVerified(context, ref, actionLabel: 'add $resource')) {
+    return false;
+  }
   if (!await canAdd()) {
     if (!context.mounted) return false;
+    // Distinguish email gate vs plan limit (canAdd already false for unverified).
+    final user = ref.read(authStateProvider).valueOrNull;
+    if (!ref.read(emailVerificationServiceProvider).isVerified(user)) {
+      return false;
+    }
     final upgrade = await showPlanLimitDialog(context, resource: resource, max: max);
     if (upgrade && context.mounted) context.push('/upgrade');
     return false;

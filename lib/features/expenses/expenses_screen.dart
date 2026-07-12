@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/auth/auth_service.dart';
+import '../../core/services/billable_to_invoice_service.dart';
+import '../../core/services/email_verification_service.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../data/database/database.dart';
@@ -37,6 +39,12 @@ class ExpensesScreen extends ConsumerStatefulWidget {
 class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   String _category = 'all';
 
+  Future<void> _openNewExpense() async {
+    if (!await requireEmailVerified(context, ref, actionLabel: 'add expenses')) return;
+    if (!mounted) return;
+    context.push('/expenses/new');
+  }
+
   @override
   Widget build(BuildContext context) {
     final expensesAsync = ref.watch(
@@ -49,7 +57,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       showBackButton: true,
       action: ClivoraIconButton(
         icon: Icons.add,
-        onPressed: () => context.push('/expenses/new'),
+        onPressed: _openNewExpense,
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,7 +107,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                     icon: Icons.receipt_outlined,
                     message: 'No expenses yet',
                     actionLabel: 'Add your first expense',
-                    onAction: () => context.push('/expenses/new'),
+                    onAction: _openNewExpense,
                   );
                 }
                 return ListView.separated(
@@ -142,9 +150,47 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                         subtitle: Text(
                           '${expense.category[0].toUpperCase()}${expense.category.substring(1)} · ${DateFormat('MMM d').format(expense.expenseDate)}',
                         ),
-                        trailing: Text(
-                          formatCurrency(expense.amount),
-                          style: const TextStyle(fontWeight: FontWeight.w700, color: ClivoraColors.errorRed),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (expense.isBillable && !expense.isInvoiced)
+                              IconButton(
+                                tooltip: 'Bill to invoice',
+                                icon: const Icon(Icons.receipt_long_outlined, size: 20),
+                                onPressed: () async {
+                                  final projectId = expense.projectId;
+                                  final customerId = expense.customerId;
+                                  if (projectId == null || customerId == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Set project + client on the expense, then bill'),
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  try {
+                                    final id = await ref.read(billableToInvoiceServiceProvider).createFromProject(
+                                          projectId: projectId,
+                                          customerId: customerId,
+                                        );
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Draft invoice #$id created')),
+                                      );
+                                      context.push('/invoices/$id/edit');
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+                                    }
+                                  }
+                                },
+                              ),
+                            Text(
+                              formatCurrency(expense.amount),
+                              style: const TextStyle(fontWeight: FontWeight.w700, color: ClivoraColors.errorRed),
+                            ),
+                          ],
                         ),
                       ),
                     );
@@ -176,6 +222,8 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
   String _category = 'other';
   String _paymentMethod = 'cash';
   DateTime _date = DateTime.now();
+  int? _vendorId;
+  bool _isBillable = false;
   bool _loading = true;
 
   @override
@@ -198,6 +246,8 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
       _category = expense.category;
       _paymentMethod = expense.paymentMethod;
       _date = expense.expenseDate;
+      _vendorId = expense.vendorId;
+      _isBillable = expense.isBillable;
     }
     if (mounted) setState(() => _loading = false);
   }
@@ -231,11 +281,16 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
           category: _category,
           paymentMethod: _paymentMethod,
           vendor: _vendorController.text.trim(),
+          vendorId: Value(_vendorId),
+          isBillable: _isBillable,
           notes: _notesController.text.trim(),
           expenseDate: _date,
         ));
       }
     } else {
+      if (!await requireEmailVerified(context, ref, actionLabel: 'add expenses')) {
+        return;
+      }
       await db.insertExpense(ExpensesCompanion.insert(
         ownerUserId: ref.read(authStateProvider).valueOrNull!.id,
         title: _titleController.text.trim(),
@@ -243,6 +298,8 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
         category: Value(_category),
         paymentMethod: Value(_paymentMethod),
         vendor: Value(_vendorController.text.trim()),
+        vendorId: Value(_vendorId),
+        isBillable: Value(_isBillable),
         notes: Value(_notesController.text.trim()),
         expenseDate: Value(_date),
       ));
@@ -301,9 +358,47 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
             onChanged: (v) => setState(() => _paymentMethod = v ?? 'cash'),
           ),
           const SizedBox(height: 16),
+          ref.watch(vendorsProvider).when(
+            loading: () => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
+            data: (vendors) {
+              if (vendors.isEmpty) {
+                return TextField(
+                  controller: _vendorController,
+                  decoration: const InputDecoration(labelText: 'VENDOR', hintText: 'Optional'),
+                );
+              }
+              return DropdownButtonFormField<int?>(
+                initialValue: _vendorId,
+                decoration: const InputDecoration(labelText: 'VENDOR'),
+                items: [
+                  const DropdownMenuItem<int?>(value: null, child: Text('None / custom')),
+                  ...vendors.map((v) => DropdownMenuItem(value: v.id, child: Text(v.name))),
+                ],
+                onChanged: (id) {
+                  setState(() {
+                    _vendorId = id;
+                    if (id != null) {
+                      final v = vendors.firstWhere((e) => e.id == id);
+                      _vendorController.text = v.name;
+                    }
+                  });
+                },
+              );
+            },
+          ),
+          const SizedBox(height: 8),
           TextField(
             controller: _vendorController,
-            decoration: const InputDecoration(labelText: 'VENDOR', hintText: 'Optional'),
+            decoration: const InputDecoration(labelText: 'VENDOR NAME', hintText: 'Optional free text'),
+          ),
+          const SizedBox(height: 8),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Billable to client'),
+            subtitle: const Text('Include when converting project work to an invoice'),
+            value: _isBillable,
+            onChanged: (v) => setState(() => _isBillable = v),
           ),
           const SizedBox(height: 16),
           TextField(

@@ -8,6 +8,7 @@ import '../../core/services/sync_outbox_service.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../core/utils/currency_formatter.dart';
+import '../../data/database/database.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 import '../../shared/widgets/clivora_bottom_sheet.dart';
@@ -31,8 +32,9 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
   void initState() {
     super.initState();
     _status = widget.initialFilter ?? 'all';
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(syncOutboxServiceProvider).reconcileInvoiceShares();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await ref.read(syncOutboxServiceProvider).reconcileInvoiceShares();
+      if (mounted) await showInvoiceConflictDialog(context, ref);
     });
   }
 
@@ -70,7 +72,7 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
         children: [
           statsAsync.when(
             loading: () => const SizedBox(height: 80),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
             data: (stats) => StatSummaryCard(
               items: [
                 StatItem(label: 'Total', value: '${stats.total}'),
@@ -85,10 +87,17 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
             selected: _status,
             onSelected: (v) => setState(() => _status = v),
           ),
-          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () => context.push('/recurring-invoices'),
+              icon: const Icon(Icons.autorenew, size: 18),
+              label: const Text('Recurring'),
+            ),
+          ),
           monthlyCountAsync.when(
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
             data: (count) => PlanLimitBanner(
               current: count,
               max: PlanLimits.freeMaxInvoicesPerMonth,
@@ -108,18 +117,20 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
                     return EmptyState(
                       icon: Icons.receipt_long_outlined,
                       message: 'No $_status invoices',
+                      actionLabel: 'Show all invoices',
+                      onAction: () => setState(() => _status = 'all'),
                     );
                   }
                   return EmptyState(
                     icon: Icons.receipt_long_outlined,
-                    message: 'No invoices yet',
+                    message: 'Create an invoice to request payment, share a PDF, and track what is due.',
                     actionLabel: 'Create invoice',
                     onAction: _onAddInvoice,
                   );
                 }
                 return ListView.separated(
                   itemCount: invoices.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final inv = invoices[index];
                     return Dismissible(
@@ -156,11 +167,24 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
                         ),
                         leading: Icon(Icons.receipt_long, color: _statusColor(inv.status)),
                         title: Text(inv.invoiceNumber, style: const TextStyle(fontWeight: FontWeight.w600)),
-                        subtitle: Text(_statusLabel(inv.status)),
+                        subtitle: Text(_invoiceSubtitle(inv)),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(formatCurrency(inv.total, symbol: currencySymbol(inv.currency))),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(formatCurrency(inv.total, symbol: currencySymbol(inv.currency))),
+                                if (inv.amountPaid > 0 && inv.status != 'paid')
+                                  Text(
+                                    'Paid ${formatCurrency(inv.amountPaid, symbol: currencySymbol(inv.currency))}',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: ClivoraColors.successGreen,
+                                        ),
+                                  ),
+                              ],
+                            ),
                             PopupMenuButton<String>(
                               icon: const Icon(Icons.more_vert, size: 20),
                               onSelected: (action) {
@@ -204,5 +228,16 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
 
   String _statusLabel(String status) {
     return status[0].toUpperCase() + status.substring(1);
+  }
+
+  String _invoiceSubtitle(Invoice inv) {
+    final status = _statusLabel(inv.status);
+    if (inv.status == 'paid' || inv.status == 'draft') return status;
+    final due = inv.dueDate ?? inv.issueDate;
+    final days = DateTime.now().difference(due).inDays;
+    if (days <= 0) return '$status · Current';
+    if (days <= 30) return '$status · ${days}d (1–30)';
+    if (days <= 60) return '$status · ${days}d (31–60)';
+    return '$status · ${days}d (60+)';
   }
 }

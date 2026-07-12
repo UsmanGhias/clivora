@@ -1,9 +1,10 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../cloud/cloud_crm_repository.dart';
 import '../cloud/cloud_invoice_repository.dart';
 import '../cloud/cloud_notification_repository.dart';
 import '../cloud/cloud_project_repository.dart';
@@ -28,6 +29,159 @@ class SyncOutboxService {
 
   final Ref ref;
   static const _storageKey = 'clivora_sync_outbox_v1';
+  static const _conflictKey = 'clivora_invoice_conflicts_v1';
+
+  Future<List<Map<String, dynamic>>> pendingConflicts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_conflictKey);
+    if (raw == null || raw.isEmpty) return [];
+    try {
+      return (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> _saveConflicts(List<Map<String, dynamic>> items) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_conflictKey, jsonEncode(items));
+  }
+
+  Future<void> addInvoiceConflict({
+    required int localInvoiceId,
+    required String localStatus,
+    required String cloudStatus,
+    required String shareId,
+  }) async {
+    await addEntityConflict(
+      entityType: 'invoice',
+      localId: localInvoiceId,
+      localStatus: localStatus,
+      cloudStatus: cloudStatus,
+      shareId: shareId,
+    );
+  }
+
+  /// Generic LWW/conflict record for any CRM entity (invoices, projects, customers, …).
+  Future<void> addEntityConflict({
+    required String entityType,
+    required int localId,
+    required String localStatus,
+    required String cloudStatus,
+    String? shareId,
+  }) async {
+    final list = await pendingConflicts();
+    list.removeWhere(
+      (e) => e['entityType'] == entityType && e['localId'] == localId ||
+          (entityType == 'invoice' && e['localInvoiceId'] == localId),
+    );
+    list.add({
+      'entityType': entityType,
+      'localId': localId,
+      'localInvoiceId': entityType == 'invoice' ? localId : null,
+      'localStatus': localStatus,
+      'cloudStatus': cloudStatus,
+      'shareId': shareId,
+      'at': DateTime.now().toIso8601String(),
+    });
+    await _saveConflicts(list);
+    ref.read(syncFailureMessageProvider.notifier).state =
+        '${entityType[0].toUpperCase()}${entityType.substring(1)} sync conflict, resolve when online.';
+  }
+
+  Future<List<Map<String, dynamic>>> pendingByEntity(String entityType) async {
+    final all = await pendingConflicts();
+    return all
+        .where((e) => (e['entityType'] ?? 'invoice') == entityType)
+        .toList();
+  }
+
+  Future<void> clearConflict(int localInvoiceId) async {
+    final list = await pendingConflicts();
+    list.removeWhere(
+      (e) =>
+          e['localInvoiceId'] == localInvoiceId ||
+          (e['entityType'] == 'invoice' && e['localId'] == localInvoiceId),
+    );
+    await _saveConflicts(list);
+  }
+
+  Future<void> clearEntityConflict({
+    required String entityType,
+    required int localId,
+  }) async {
+    final list = await pendingConflicts();
+    list.removeWhere(
+      (e) =>
+          e['entityType'] == entityType && e['localId'] == localId ||
+          (entityType == 'invoice' && e['localInvoiceId'] == localId),
+    );
+    await _saveConflicts(list);
+  }
+
+  Future<void> resolveConflictKeepLocal({
+    required int localInvoiceId,
+    required String shareId,
+    required String clientEmail,
+    String? clientUid,
+  }) async {
+    final user = ref.read(authStateProvider).valueOrNull;
+    if (user == null) return;
+    final invoice = await ref.read(databaseProvider).getInvoiceForUser(user.id, localInvoiceId);
+    if (invoice == null) return;
+    await ref.read(cloudInvoiceRepositoryProvider).syncInvoiceToClient(
+          freelancer: user,
+          invoice: invoice,
+          clientEmail: clientEmail,
+          clientUid: clientUid,
+        );
+    await clearConflict(localInvoiceId);
+  }
+
+  Future<void> resolveConflictTakeCloud({
+    required int localInvoiceId,
+    required String cloudStatus,
+  }) async {
+    final user = ref.read(authStateProvider).valueOrNull;
+    if (user == null) return;
+    final invoice = await ref.read(databaseProvider).getInvoiceForUser(user.id, localInvoiceId);
+    if (invoice == null) return;
+    await ref.read(databaseProvider).updateInvoice(
+          invoice.copyWith(status: cloudStatus, updatedAt: DateTime.now()),
+        );
+    await clearConflict(localInvoiceId);
+    ref.invalidate(invoicesProvider(null));
+  }
+
+  /// Resolve non-invoice CRM conflicts (projects / customers).
+  Future<void> resolveEntityConflict({
+    required String entityType,
+    required int localId,
+    required bool takeCloud,
+    String cloudStatus = '',
+  }) async {
+    final user = ref.read(authStateProvider).valueOrNull;
+    if (user == null) return;
+    if (takeCloud && cloudStatus.isNotEmpty) {
+      try {
+        if (entityType == 'project') {
+          final project =
+              await ref.read(databaseProvider).getProjectForUser(user.id, localId);
+          if (project != null) {
+            await ref.read(databaseProvider).updateProject(
+                  project.copyWith(status: cloudStatus, updatedAt: DateTime.now()),
+                );
+            // Family provider, callers refresh on next watch; clear conflict is enough.
+            
+          }
+        } else if (entityType == 'customer') {
+          // Customers rarely have status conflicts, clear only.
+        }
+      } catch (_) {}
+    }
+    await clearEntityConflict(entityType: entityType, localId: localId);
+  }
+
   static const _maxRetries = 8;
 
   Future<void> enqueue(SyncOutboxItem item) async {
@@ -101,8 +255,9 @@ class SyncOutboxService {
 
         if (cloudUpdated != null && cloudUpdated.isAfter(invoice.updatedAt)) {
           if (invoice.status != cloudStatus) {
-            await db.updateInvoice(invoice.copyWith(status: cloudStatus, updatedAt: cloudUpdated.toLocal()));
+            // Always auto-apply when cloud is paid.
             if (cloudStatus == 'paid') {
+              await db.updateInvoice(invoice.copyWith(status: cloudStatus, updatedAt: cloudUpdated.toLocal()));
               final method = row['payment_method'] as String? ?? '';
               final clientEmail = row['client_email'] as String? ?? '';
               await ref.read(trackingServiceProvider).logStatusChange(
@@ -115,8 +270,25 @@ class SyncOutboxService {
                     invoiceNumber: invoice.invoiceNumber,
                     clientName: clientEmail,
                   );
+              await clearConflict(invoice.id);
+              ref.invalidate(invoicesProvider(null));
+            } else if (invoice.status == 'paid') {
+              // Local paid wins over non-paid cloud, push local.
+              await ref.read(cloudInvoiceRepositoryProvider).syncInvoiceToClient(
+                    freelancer: user,
+                    invoice: invoice,
+                    clientEmail: row['client_email'] as String? ?? '',
+                    clientUid: row['client_uid'] as String?,
+                  );
+            } else {
+              // Other conflicts (e.g. local overdue vs cloud sent), defer to UI.
+              await addInvoiceConflict(
+                localInvoiceId: invoice.id,
+                localStatus: invoice.status,
+                cloudStatus: cloudStatus,
+                shareId: row['share_id'] as String? ?? '',
+              );
             }
-            ref.invalidate(invoicesProvider(null));
           }
         } else if (invoice.updatedAt.isAfter(cloudUpdated ?? DateTime(2000))) {
           await ref.read(cloudInvoiceRepositoryProvider).syncInvoiceToClient(
@@ -193,6 +365,36 @@ class SyncOutboxService {
               project: project,
             );
         return true;
+      case 'crm_customer':
+        final user = ref.read(authStateProvider).valueOrNull;
+        final localId = (item.payload['localId'] as num?)?.toInt();
+        if (user == null || localId == null) return false;
+        await ref.read(cloudCrmRepositoryProvider).pushCustomer(
+              ownerUserId: user.id,
+              localId: localId,
+            );
+        return true;
+      case 'crm_project':
+        final user = ref.read(authStateProvider).valueOrNull;
+        final localId = (item.payload['localId'] as num?)?.toInt();
+        if (user == null || localId == null) return false;
+        await ref.read(cloudCrmRepositoryProvider).pushProject(
+              ownerUserId: user.id,
+              localId: localId,
+            );
+        return true;
+      case 'crm_invoice':
+        final user = ref.read(authStateProvider).valueOrNull;
+        final localId = (item.payload['localId'] as num?)?.toInt();
+        if (user == null || localId == null) return false;
+        await ref.read(cloudCrmRepositoryProvider).pushInvoice(
+              ownerUserId: user.id,
+              localId: localId,
+            );
+        return true;
+      case 'crm_sync_all':
+        await ref.read(cloudCrmRepositoryProvider).syncAllForSignedInUser();
+        return true;
       default:
         return true;
     }
@@ -251,4 +453,93 @@ class SyncOutboxItem {
         retries: (json['retries'] as num?)?.toInt() ?? 0,
         createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
       );
+}
+
+/// Shows Keep local / Take cloud dialogs for pending sync conflicts
+/// (invoices, projects, customers).
+Future<void> showInvoiceConflictDialog(BuildContext context, WidgetRef ref) async {
+  await showEntityConflictDialog(context, ref);
+}
+
+Future<void> showEntityConflictDialog(BuildContext context, WidgetRef ref) async {
+  final outbox = ref.read(syncOutboxServiceProvider);
+  final conflicts = await outbox.pendingConflicts();
+  if (conflicts.isEmpty || !context.mounted) return;
+
+  for (final c in List<Map<String, dynamic>>.from(conflicts)) {
+    if (!context.mounted) return;
+    final entityType = (c['entityType'] as String?) ?? 'invoice';
+    final localId = (c['localId'] as num?)?.toInt() ??
+        (c['localInvoiceId'] as num?)?.toInt();
+    if (localId == null) continue;
+    final localStatus = c['localStatus'] as String? ?? '';
+    final cloudStatus = c['cloudStatus'] as String? ?? '';
+    final shareId = c['shareId'] as String? ?? '';
+    final label = entityType == 'project'
+        ? 'Project'
+        : entityType == 'customer'
+            ? 'Client'
+            : 'Invoice';
+
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('$label sync conflict'),
+        content: Text(
+          '$label #$localId differs: local is "$localStatus", cloud is "$cloudStatus".',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'local'),
+            child: const Text('Keep local'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, 'cloud'),
+            child: const Text('Take cloud'),
+          ),
+        ],
+      ),
+    );
+
+    if (entityType == 'invoice') {
+      if (choice == 'local') {
+        String clientEmail = '';
+        String? clientUid;
+        try {
+          final row = await SupabaseAuthHelper.client
+              .from('invoice_shares')
+              .select('client_email, client_uid')
+              .eq('share_id', shareId)
+              .maybeSingle();
+          clientEmail = row?['client_email'] as String? ?? '';
+          clientUid = row?['client_uid'] as String?;
+        } catch (_) {}
+        await outbox.resolveConflictKeepLocal(
+          localInvoiceId: localId,
+          shareId: shareId,
+          clientEmail: clientEmail,
+          clientUid: clientUid,
+        );
+      } else if (choice == 'cloud') {
+        await outbox.resolveConflictTakeCloud(
+          localInvoiceId: localId,
+          cloudStatus: cloudStatus,
+        );
+      }
+    } else {
+      // Projects / customers: drop the conflict after user chooses a side.
+      // Cloud-first for "Take cloud"; keep local by discarding the conflict entry.
+      await outbox.resolveEntityConflict(
+        entityType: entityType,
+        localId: localId,
+        takeCloud: choice == 'cloud',
+        cloudStatus: cloudStatus,
+      );
+    }
+  }
+
+  final remaining = await outbox.pendingConflicts();
+  if (remaining.isEmpty) {
+    ref.read(syncFailureMessageProvider.notifier).state = null;
+  }
 }

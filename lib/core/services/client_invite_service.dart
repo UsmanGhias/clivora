@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/database/database.dart';
@@ -13,7 +14,7 @@ final clientInviteServiceProvider = Provider<ClientInviteService>((ref) {
   return ClientInviteService(ref);
 });
 
-/// Invites a client by email — cloud message + notification when they have an account.
+/// Invites a client by email, cloud message + notification when they have an account.
 class ClientInviteService {
   ClientInviteService(this.ref);
 
@@ -59,14 +60,14 @@ class ClientInviteService {
           );
     }
 
-    // Optional real email — special purpose only (not for every message).
+    // Optional external email, in-app message is the primary delivery path.
     final emailErr = await ref.read(clivoraEmailServiceProvider).sendClientInviteEmail(
           to: email,
           freelancerName: businessName,
           clientName: customer.contactPerson,
         );
     if (emailErr != null) {
-      throw Exception(emailErr);
+      debugPrint('Client invite email skipped (in-app sent): $emailErr');
     }
   }
 }

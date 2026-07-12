@@ -11,10 +11,21 @@ final onboardingCompleteProvider = FutureProvider<bool>((ref) async {
 
 class OnboardingService {
   static const _key = 'clivora_onboarding_complete_v1';
+  static const _guidelinesKey = 'clivora_value_guidelines_seen_v1';
 
   Future<bool> isComplete() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_key) ?? false;
+  }
+
+  Future<bool> guidelinesSeen() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_guidelinesKey) ?? false;
+  }
+
+  Future<void> markGuidelinesSeen() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_guidelinesKey, true);
   }
 
   Future<void> markComplete() async {

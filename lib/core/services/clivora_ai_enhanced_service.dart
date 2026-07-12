@@ -11,7 +11,7 @@ final clivoraAiEnhancedProvider = Provider<ClivoraAiEnhancedService>((ref) {
   return ClivoraAiEnhancedService(ref);
 });
 
-/// Built-in CLIVORA AI — 100% on-device, no external APIs.
+/// Built-in CLIVORA AI, 100% on-device, no external APIs.
 class ClivoraAiEnhancedService {
   ClivoraAiEnhancedService(this.ref);
 

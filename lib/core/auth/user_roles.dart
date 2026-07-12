@@ -9,11 +9,10 @@ const kAccountGuest = 'guest';
 
 const kGuestEmail = 'guest@clivora.local';
 
+/// Admin is a role (profiles.role), not a replacement for client/freelancer account_type.
 bool isAdminUser(User? user) {
   if (user == null) return false;
-  return user.accountType == kAccountAdmin ||
-      user.role == 'admin' ||
-      kAdminEmails.contains(user.email.toLowerCase());
+  return user.role == 'admin' || kAdminEmails.contains(user.email.toLowerCase());
 }
 
 bool isSuperAdmin(User? user) {
@@ -33,7 +32,6 @@ bool isGuestUser(User? user) {
 
 bool isFreelancerUser(User? user) {
   if (user == null) return false;
-  if (isAdminUser(user)) return true;
   if (isGuestUser(user)) return user.accountType != kAccountClient;
   return user.accountType == kAccountFreelancer || user.accountType == 'user';
 }
@@ -46,7 +44,12 @@ bool isClientUser(User? user) {
 String accountTypeLabel(User? user) {
   if (user == null) return 'Guest';
   if (isGuestUser(user)) return 'Guest';
+  if (isClientUser(user)) {
+    return isAdminUser(user) ? 'Client (Admin)' : 'Client';
+  }
+  if (isFreelancerUser(user)) {
+    return isAdminUser(user) ? 'Freelancer (Admin)' : 'Freelancer';
+  }
   if (isAdminUser(user)) return 'Admin';
-  if (isClientUser(user)) return 'Client';
   return 'Freelancer';
 }

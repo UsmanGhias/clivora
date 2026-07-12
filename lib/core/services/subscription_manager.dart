@@ -77,10 +77,25 @@ class SubscriptionManager {
   }
 
   static Future<String> effectivePlan() async {
-    return (await isProActive()) ? PlanLimits.proPlan : PlanLimits.freePlan;
+    if (!await isProActive()) return PlanLimits.freePlan;
+    final productId = await activeProductId();
+    return BillingProducts.isProPlusProduct(productId)
+        ? PlanLimits.proPlusPlan
+        : PlanLimits.proPlan;
+  }
+
+  static Future<void> clearLocalSubscription() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kProExpires);
+    await prefs.remove(_kGraceUntil);
+    await prefs.remove(_kVerifiedPurchase);
+    await prefs.remove(_kProductId);
   }
 
   static bool isFreelancerProduct(String? id) =>
-      id == BillingProducts.freelancerProMonthly || id == null;
-  static bool isClientProduct(String? id) => id == BillingProducts.clientProMonthly;
+      id == BillingProducts.freelancerProMonthly ||
+      id == BillingProducts.freelancerProPlusMonthly ||
+      id == null;
+  static bool isClientProduct(String? id) =>
+      id == BillingProducts.clientProMonthly || id == BillingProducts.clientProPlusMonthly;
 }

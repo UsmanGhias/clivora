@@ -2,10 +2,14 @@ import 'plan_limits.dart';
 
 /// Free vs Pro feature matrix for freelancers and clients.
 abstract final class PlanFeatures {
+  /// True for Pro and higher. Already includes `pro_plus` (Plus gets all Pro features).
   static bool isPro(String? plan) =>
       plan == PlanLimits.proPlan ||
+      plan == PlanLimits.proPlusPlan ||
       plan == PlanLimits.professionalPlan ||
       plan == PlanLimits.agencyPlan;
+
+  static bool isProPlus(String? plan) => plan == PlanLimits.proPlusPlan;
 
   // ── Shared free tier ──────────────────────────────────────────────
   static bool chatTextMessages(String? plan) => true;
@@ -13,11 +17,29 @@ abstract final class PlanFeatures {
   static bool notificationsCenter(String? plan) => true;
   static bool coachMarks(String? plan) => true;
 
-  static int fileVaultLimitBytes(String? plan) =>
-      isPro(plan) ? PlanLimits.proStorageBytes : PlanLimits.freeStorageBytes;
+  /// Vault byte cap. Plus returns [PlanLimits.proPlusStorageBytes] (50 GB).
+  static int fileVaultLimitBytes(String? plan) {
+    if (isProPlus(plan)) return PlanLimits.proPlusStorageBytes;
+    if (isPro(plan)) return PlanLimits.proStorageBytes;
+    return PlanLimits.freeStorageBytes;
+  }
 
-  static int emailLimitPerMonth(String? plan) =>
-      isPro(plan) ? PlanLimits.proMaxEmailsPerMonth : PlanLimits.freeMaxEmailsPerMonth;
+  static int emailLimitPerMonth(String? plan) {
+    if (isProPlus(plan)) return PlanLimits.proPlusMaxEmailsPerMonth;
+    if (isPro(plan)) return PlanLimits.proMaxEmailsPerMonth;
+    return PlanLimits.freeMaxEmailsPerMonth;
+  }
+
+  /// Pro Plus exclusives
+  static bool whiteLabelInvoices(String? plan) => isProPlus(plan);
+  static bool prioritySupportPlus(String? plan) => isProPlus(plan);
+  static bool unlimitedTeamSeats(String? plan) => isProPlus(plan);
+  static bool advancedMilestoneAutomation(String? plan) => isProPlus(plan);
+  static bool clientBrandedPortal(String? plan) => isProPlus(plan);
+
+  /// Connect requires Pro Plus for both freelancers and clients.
+  static bool connectMarketplace(String? plan, {bool isClient = false}) =>
+      isProPlus(plan);
 
   // ── Freelancer free ───────────────────────────────────────────────
   static bool freelancerGlobalSearch(String? plan) => isPro(plan);

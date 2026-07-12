@@ -9,9 +9,11 @@ import '../../core/auth/auth_service.dart';
 import '../../core/utils/contract_content_helper.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/services/chat_attachment_service.dart';
+import '../../core/services/chat_block_service.dart';
 import '../../core/services/vault_service.dart';
 import '../../core/cloud/cloud_message_repository.dart';
 import '../../core/cloud/supabase_auth_helper.dart';
+import '../../core/cloud/supabase_sync_service.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../data/providers/app_providers.dart';
 
@@ -238,6 +240,43 @@ class _SimpleChatScreenState extends ConsumerState<SimpleChatScreen> {
                 final email = await _pickPeerEmail(context);
                 if (email != null && email.isNotEmpty) {
                   setState(() => _peerEmail = email);
+                }
+              },
+            ),
+          if (_peerEmail != null && _peerEmail!.isNotEmpty)
+            IconButton(
+              tooltip: 'Block contact',
+              icon: const Icon(Icons.block),
+              onPressed: () async {
+                final ok = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Block contact?'),
+                    content: Text('Stop messages with $_peerEmail. You can unblock later from this menu.'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                      FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Block')),
+                    ],
+                  ),
+                );
+                if (ok != true) return;
+                final myUid = SupabaseAuthHelper.currentUid;
+                if (myUid == null) return;
+                final peerUid = await ref.read(supabaseSyncServiceProvider).uidForEmail(_peerEmail!);
+                if (peerUid == null || peerUid.isEmpty) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Could not resolve contact to block')),
+                    );
+                  }
+                  return;
+                }
+                await ref.read(chatBlockServiceProvider).block(blockerUid: myUid, blockedUid: peerUid);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Contact blocked')),
+                  );
+                  setState(() => _peerEmail = null);
                 }
               },
             ),

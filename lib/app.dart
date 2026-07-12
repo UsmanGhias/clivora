@@ -4,23 +4,28 @@ import 'package:go_router/go_router.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
 import 'core/auth/auth_service.dart';
+import 'core/services/app_update_service.dart';
+import 'core/services/cloud_crm_backup_service.dart';
 import 'core/services/admin_sync_service.dart';
 import 'core/services/automation_service.dart';
 import 'core/services/billing_service.dart';
 import 'core/services/biometric_service.dart';
 import 'core/services/connectivity_service.dart';
 import 'core/services/contract_sync_service.dart';
+import 'core/services/home_widget_service.dart';
 import 'core/services/local_notification_service.dart';
+import 'core/services/overdue_invoice_service.dart';
 import 'core/services/push_notification_service.dart';
+import 'core/services/recurring_invoice_service.dart';
 import 'core/services/subscription_manager.dart';
 import 'core/services/sync_outbox_service.dart';
 import 'core/services/task_reminder_service.dart';
-import 'core/services/locale_service.dart';
 import 'core/services/telemetry_service.dart';
 import 'core/utils/crm_refresh.dart';
 import 'core/auth/user_roles.dart';
 import 'core/theme/clivora_theme.dart';
 import 'data/providers/app_providers.dart';
+import 'data/database/user_scoped_queries.dart';
 import 'l10n/app_localizations.dart';
 import 'routing/app_router.dart';
 
@@ -56,7 +61,18 @@ class _ClivoraAppState extends ConsumerState<ClivoraApp> with WidgetsBindingObse
     } else if (state == AppLifecycleState.resumed && _wasPaused) {
       _wasPaused = false;
       _handleResumeUnlock();
+      _syncPlanOnResume();
     }
+  }
+
+  Future<void> _syncPlanOnResume() async {
+    try {
+      final plan = await SubscriptionManager.effectivePlan();
+      await ref.read(planLimitServiceProvider).setPlan(plan);
+      ref.invalidate(cloudSubscriptionPlanProvider);
+      ref.invalidate(serverSubscriptionProvider);
+      ref.invalidate(subscriptionPlanProvider);
+    } catch (_) {}
   }
 
   Future<void> _handleResumeUnlock() async {
@@ -85,11 +101,46 @@ class _ClivoraAppState extends ConsumerState<ClivoraApp> with WidgetsBindingObse
     await ref.read(automationServiceProvider).runWeeklySummaryIfDue();
     await ref.read(automationServiceProvider).runInactiveClientCheckIfDue();
     await ref.read(pushNotificationServiceProvider).initialize();
+    try {
+      await ref.read(overdueInvoiceServiceProvider).scanAndPromote();
+    } catch (_) {}
     await ref.read(syncOutboxServiceProvider).processQueue();
     await ref.read(syncOutboxServiceProvider).reconcileInvoiceShares();
     await ref.read(contractSyncServiceProvider).reconcileSignedContracts();
     ref.read(adminSyncServiceProvider).syncPendingEvents();
     await ref.read(taskReminderServiceProvider).syncAllForCurrentUser();
+    try {
+      await ref.read(recurringInvoiceServiceProvider).processDue();
+    } catch (_) {}
+    try {
+      await ref.read(appUpdateServiceProvider).checkForUpdate();
+    } catch (_) {}
+    try {
+      await ref.read(cloudCrmBackupServiceProvider).restoreIfLocalEmpty();
+    } catch (_) {}
+    // Weekly cloud backup reminder snackbar (non-blocking)
+    try {
+      final user = ref.read(authStateProvider).valueOrNull;
+      if (user != null && await ref.read(cloudCrmBackupServiceProvider).shouldRemindBackup()) {
+        // Reminder surfaces on Hub; keep bootstrap quiet.
+      }
+    } catch (_) {}
+    try {
+      final stats = await ref.read(dashboardStatsProvider.future);
+      var overdueCount = 0;
+      final ownerId = ref.read(authStateProvider).valueOrNull?.id;
+      if (ownerId != null) {
+        final overdue = await ref
+            .read(databaseProvider)
+            .watchInvoicesForUser(ownerId, status: 'overdue')
+            .first;
+        overdueCount = overdue.length;
+      }
+      await HomeWidgetService.updateStats(
+        outstanding: stats.outstanding,
+        overdueCount: overdueCount,
+      );
+    } catch (_) {}
   }
 
   Future<void> _onBackOnline() async {
@@ -105,7 +156,6 @@ class _ClivoraAppState extends ConsumerState<ClivoraApp> with WidgetsBindingObse
   @override
   Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeProvider);
-    final locale = ref.watch(appLocaleProvider);
     final user = ref.watch(authStateProvider).valueOrNull;
     final portal = isClientUser(user) ? ClivoraPortal.client : ClivoraPortal.freelancer;
 
@@ -115,8 +165,8 @@ class _ClivoraAppState extends ConsumerState<ClivoraApp> with WidgetsBindingObse
       theme: ClivoraTheme.light(portal: portal),
       darkTheme: ClivoraTheme.dark(portal: portal),
       themeMode: themeMode,
-      locale: locale,
-      supportedLocales: AppLocalizations.supportedLocales,
+      locale: const Locale('en'),
+      supportedLocales: const [Locale('en')],
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       routerConfig: appRouter,
       builder: (context, child) {

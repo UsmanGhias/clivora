@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants/plan_limits.dart';
+import '../../core/services/sync_outbox_service.dart';
+import '../../core/utils/crm_refresh.dart';
 import '../../core/utils/navigation_helper.dart';
-import '../../data/models/invoice_line_item.dart';
 import '../../data/models/invoice_line_item.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_bottom_sheet.dart';
@@ -22,6 +23,15 @@ class CustomersScreen extends ConsumerStatefulWidget {
 class _CustomersScreenState extends ConsumerState<CustomersScreen> {
   final _searchController = TextEditingController();
   String? _search;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await showEntityConflictDialog(context, ref);
+    });
+  }
 
   @override
   void dispose() {
@@ -54,6 +64,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
     );
     if (confirmed == true) {
       await ref.read(databaseProvider).deleteCustomer(id);
+      invalidateCrmData(ref, customers: true);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Customer deleted')));
       }
@@ -170,11 +181,14 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                             IconButton(
                               icon: const Icon(Icons.edit_outlined, size: 20),
                               tooltip: 'Edit',
+                              visualDensity: VisualDensity.compact,
                               onPressed: () => openFormRoute(context, '/customers/${c.id}/edit'),
                             ),
+                            const SizedBox(width: 8),
                             IconButton(
                               icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
                               tooltip: 'Delete',
+                              visualDensity: VisualDensity.compact,
                               onPressed: () => _deleteCustomer(c.id, c.contactPerson),
                             ),
                           ],

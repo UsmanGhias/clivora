@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:go_router/go_router.dart';
+
 import 'package:intl/intl.dart';
 
 
@@ -66,11 +68,29 @@ class ClientMessagesScreen extends ConsumerWidget {
 
                     Text(
 
-                      'Messages from your freelancer sync across devices. Sign in with the same email on each phone.',
+                      'When your freelancer shares work, invoice notes, or project updates, the conversation will appear here.',
 
                       textAlign: TextAlign.center,
 
                       style: Theme.of(context).textTheme.bodySmall,
+
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    FilledButton.icon(
+
+                      onPressed: () => context.push('/client-link-freelancer'),
+
+                      icon: const Icon(Icons.person_add_alt_1_outlined),
+
+                      label: const Text('Add your freelancer'),
+
+                      style: FilledButton.styleFrom(
+
+                        backgroundColor: ClivoraColors.clientAccent,
+
+                      ),
 
                     ),
 

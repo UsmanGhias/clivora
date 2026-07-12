@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 
 import '../../data/database/database.dart';
+import 'cloud_crm_repository.dart';
 import 'supabase_auth_helper.dart';
 
 final supabaseClientProvider = Provider<SupabaseClient>((ref) {
@@ -30,6 +31,7 @@ class SupabaseSyncService {
     try {
       await _resolveProjectSharesForClient(uid, user.email);
       await _resolveMessagesForUser(uid, user.email);
+      await ref.read(cloudCrmRepositoryProvider).syncAllForSignedInUser();
     } catch (e) {
       debugPrint('Supabase user sync error: $e');
     }
