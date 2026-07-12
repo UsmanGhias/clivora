@@ -9,7 +9,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(
     url: kSupabaseUrl,
-    publishableKey: kSupabaseAnonKey,
+    anonKey: kSupabaseAnonKey,
   );
   runApp(const ProviderScope(child: ClivoraApp()));
 }

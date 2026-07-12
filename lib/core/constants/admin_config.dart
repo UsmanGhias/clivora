@@ -1,21 +1,25 @@
-/// CodCrafters admin emails — in-app admin + auto Pro. Never shown to other users.
+/// CodCrafters admin emails - in-app admin + auto Pro. Never shown to other users.
 const kAdminEmails = {
   'admin@codcrafters.org',
   'usmanghias1@gmail.com',
+  'iusmanghias@gmail.com',
 };
 
-/// Only this account can grant admin access to others.
-const kSuperAdminEmail = 'usmanghias1@gmail.com';
+/// Official support / contact email used across app and website.
+const kOfficialEmail = 'iusmanghias@gmail.com';
 
-/// CLIVORA web (clivora-web on Vercel) — https://clivora.codcrafters.org
+/// Only these accounts can grant admin access to others.
+const kSuperAdminEmail = 'iusmanghias@gmail.com';
+
+/// CLIVORA web (clivora-web on Vercel) - https://clivora.codcrafters.org
 const kClivoraWebBaseUrl = 'https://clivora.codcrafters.org';
 
-/// App → web admin sync API (`/api/admin/sync`).
-const kAdminApiBaseUrl = kClivoraWebBaseUrl;
-
-/// Injected at build time: `--dart-define=ADMIN_SYNC_KEY=your-secret`
-/// Must match `ADMIN_SYNC_KEY` on Vercel (clivora-web project).
-const kAdminSyncKey = String.fromEnvironment('ADMIN_SYNC_KEY', defaultValue: '');
+/// Supabase password-reset emails must redirect here (not localhost).
+/// Also add this URL under Supabase Auth → URL Configuration → Redirect URLs.
+const kPasswordResetRedirectUrl = '$kClivoraWebBaseUrl/auth/reset-password';
 
 /// Web admin dashboard.
 const kAdminPanelUrl = '$kClivoraWebBaseUrl/admin';
+
+/// Web Pro / Pro Plus checkout (Pakistan + worldwide).
+const kProCheckoutUrl = '$kClivoraWebBaseUrl/pro';

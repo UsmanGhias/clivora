@@ -4,9 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'database.dart';
 import 'user_defaults.dart';
 
-/// All CRM queries scoped by [ownerUserId] — prevents cross-user data leaks on shared devices.
+/// All CRM queries scoped by [ownerUserId], prevents cross-user data leaks on shared devices.
 extension UserScopedQueries on AppDatabase {
-  // ——— Customers ———
+  //, , Customers, , 
   Stream<List<Customer>> watchCustomersForUser(int ownerUserId, {String? search}) {
     final query = select(customers)
       ..where((t) => t.ownerUserId.equals(ownerUserId))
@@ -29,7 +29,7 @@ extension UserScopedQueries on AppDatabase {
   Future<Customer?> getCustomerForUser(int ownerUserId, int id) =>
       (select(customers)..where((t) => t.id.equals(id) & t.ownerUserId.equals(ownerUserId))).getSingleOrNull();
 
-  // ——— Projects ———
+  //, , Projects, , 
   Stream<List<Project>> watchProjectsForUser(int ownerUserId, {String? search, String? status}) {
     final query = select(projects)
       ..where((t) => t.ownerUserId.equals(ownerUserId))
@@ -62,7 +62,7 @@ extension UserScopedQueries on AppDatabase {
         .then((l) => l.length);
   }
 
-  // ——— Invoices ———
+  //, , Invoices, , 
   Stream<List<Invoice>> watchInvoicesForUser(int ownerUserId, {String? status}) {
     final query = select(invoices)
       ..where((t) => t.ownerUserId.equals(ownerUserId))
@@ -122,7 +122,7 @@ extension UserScopedQueries on AppDatabase {
         .then((list) => list.length);
   }
 
-  // ——— Tasks ———
+  //, , Tasks, , 
   Stream<List<Task>> watchTasksForUser(int ownerUserId, {String? status, bool? upcoming}) {
     final query = select(tasks)
       ..where((t) => t.ownerUserId.equals(ownerUserId))
@@ -160,7 +160,7 @@ extension UserScopedQueries on AppDatabase {
       .get()
       .then((list) => list.length);
 
-  // ——— Expenses ———
+  //, , Expenses, , 
   Stream<List<Expense>> watchExpensesForUser(int ownerUserId, {String? category}) {
     final query = select(expenses)
       ..where((t) => t.ownerUserId.equals(ownerUserId))
@@ -180,7 +180,7 @@ extension UserScopedQueries on AppDatabase {
     return rows.fold<double>(0, (sum, e) => sum + e.amount);
   }
 
-  // ——— Notes ———
+  //, , Notes, , 
   Stream<List<Note>> watchNotesForUser(int ownerUserId, {String? type}) {
     final query = select(notes)
       ..where((t) => t.ownerUserId.equals(ownerUserId))
@@ -191,7 +191,7 @@ extension UserScopedQueries on AppDatabase {
     return query.watch();
   }
 
-  // ——— Per-user settings ———
+  //, , Per-user settings, , 
   Stream<BusinessProfile> watchBusinessProfileForUser(int userId) {
     return customSelect(
       'SELECT user_id FROM business_profiles WHERE user_id = ?',
@@ -330,7 +330,7 @@ extension UserScopedQueries on AppDatabase {
     );
   }
 
-  // ——— Templates & contracts ———
+  //, , Templates & contracts, , 
   Stream<List<MessageTemplate>> watchMessageTemplatesForUser(int ownerUserId, {String? category}) {
     final query = select(messageTemplates)
       ..where((t) => t.ownerUserId.equals(ownerUserId))
@@ -357,7 +357,58 @@ extension UserScopedQueries on AppDatabase {
         .getSingleOrNull();
   }
 
-  // ——— Tracking ———
+  //, , Milestones, , 
+  Stream<List<ProjectMilestone>> watchMilestonesForProject(int ownerUserId, int projectId) {
+    return (select(projectMilestones)
+          ..where((t) => t.ownerUserId.equals(ownerUserId) & t.projectId.equals(projectId))
+          ..orderBy([(t) => OrderingTerm.asc(t.sortOrder), (t) => OrderingTerm.asc(t.id)]))
+        .watch();
+  }
+
+  Stream<List<ProjectMilestone>> watchMilestonesForOwner(int ownerUserId) {
+    return (select(projectMilestones)
+          ..where((t) => t.ownerUserId.equals(ownerUserId))
+          ..orderBy([(t) => OrderingTerm.desc(t.updatedAt)]))
+        .watch();
+  }
+
+  Future<ProjectMilestone?> getMilestoneForUser(int ownerUserId, int milestoneId) {
+    return (select(projectMilestones)
+          ..where((t) => t.ownerUserId.equals(ownerUserId) & t.id.equals(milestoneId)))
+        .getSingleOrNull();
+  }
+
+  //, , Reviews, , 
+  Stream<List<ProjectReview>> watchReviewsForOwner(int ownerUserId) {
+    return (select(projectReviews)
+          ..where((t) => t.ownerUserId.equals(ownerUserId))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .watch();
+  }
+
+  Stream<List<ProjectReview>> watchReviewsForProject(int ownerUserId, int projectId) {
+    return (select(projectReviews)
+          ..where((t) => t.ownerUserId.equals(ownerUserId) & t.projectId.equals(projectId))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .watch();
+  }
+
+  //, , Disputes, , 
+  Stream<List<InvoiceDispute>> watchDisputesForOwner(int ownerUserId) {
+    return (select(invoiceDisputes)
+          ..where((t) => t.ownerUserId.equals(ownerUserId))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .watch();
+  }
+
+  Stream<List<InvoiceDispute>> watchDisputesForInvoice(int ownerUserId, int invoiceId) {
+    return (select(invoiceDisputes)
+          ..where((t) => t.ownerUserId.equals(ownerUserId) & t.invoiceId.equals(invoiceId))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .watch();
+  }
+
+  //, , Tracking, , 
   Stream<List<TrackingEvent>> watchTrackingEventsForUser({
     required int ownerUserId,
     required String entityType,
@@ -374,7 +425,7 @@ extension UserScopedQueries on AppDatabase {
         .watch();
   }
 
-  // ——— Time tracking ———
+  //, , Time tracking, , 
   Future<ProjectTimeEntry?> getActiveTimeEntryForUser(int ownerUserId) =>
       (select(projectTimeEntries)
             ..where((t) => t.ownerUserId.equals(ownerUserId) & t.endedAt.isNull()))
@@ -427,7 +478,7 @@ extension UserScopedQueries on AppDatabase {
         .watch();
   }
 
-  // ——— Client portal (shared projects) ———
+  //, , Client portal (shared projects), , 
   Future<void> linkProjectToClientEmail({
     required int projectId,
     required int freelancerUserId,
@@ -508,7 +559,7 @@ extension UserScopedQueries on AppDatabase {
     );
   }
 
-  // ——— Team members ———
+  //, , Team members, , 
   Stream<List<TeamMember>> watchTeamMembers(int ownerUserId) {
     return (select(teamMembers)
           ..where((t) => t.ownerUserId.equals(ownerUserId))
@@ -667,5 +718,179 @@ extension UserScopedQueries on AppDatabase {
           .get();
       yield events;
     }
+  }
+
+  //, , Products, , 
+  Stream<List<Product>> watchProductsForUser(int ownerUserId, {bool activeOnly = false}) {
+    final q = select(products)
+      ..where((t) => t.ownerUserId.equals(ownerUserId))
+      ..orderBy([(t) => OrderingTerm.asc(t.name)]);
+    if (activeOnly) {
+      q.where((t) => t.ownerUserId.equals(ownerUserId) & t.isActive.equals(true));
+    }
+    return q.watch();
+  }
+
+  Future<Product?> getProductForUser(int ownerUserId, int id) =>
+      (select(products)..where((t) => t.id.equals(id) & t.ownerUserId.equals(ownerUserId))).getSingleOrNull();
+
+  Future<int> insertProduct(ProductsCompanion entry) => into(products).insert(entry);
+
+  Future<bool> updateProduct(Product entry) => update(products).replace(entry);
+
+  Future<int> deleteProductForUser(int ownerUserId, int id) =>
+      (delete(products)..where((t) => t.id.equals(id) & t.ownerUserId.equals(ownerUserId))).go();
+
+  //, , Quotes, , 
+  Stream<List<Quote>> watchQuotesForUser(int ownerUserId, {String? status}) {
+    final q = select(quotes)
+      ..where((t) => t.ownerUserId.equals(ownerUserId))
+      ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]);
+    if (status != null && status.isNotEmpty && status != 'all') {
+      q.where((t) => t.ownerUserId.equals(ownerUserId) & t.status.equals(status));
+    }
+    return q.watch();
+  }
+
+  Future<Quote?> getQuoteForUser(int ownerUserId, int id) =>
+      (select(quotes)..where((t) => t.id.equals(id) & t.ownerUserId.equals(ownerUserId))).getSingleOrNull();
+
+  Future<int> insertQuote(QuotesCompanion entry) => into(quotes).insert(entry);
+
+  Future<bool> updateQuote(Quote entry) => update(quotes).replace(entry);
+
+  Future<int> deleteQuoteForUser(int ownerUserId, int id) =>
+      (delete(quotes)..where((t) => t.id.equals(id) & t.ownerUserId.equals(ownerUserId))).go();
+
+  //, , Recurring invoices, , 
+  Stream<List<RecurringInvoice>> watchRecurringInvoicesForUser(int ownerUserId) {
+    return (select(recurringInvoices)
+          ..where((t) => t.ownerUserId.equals(ownerUserId))
+          ..orderBy([(t) => OrderingTerm.asc(t.nextRunAt)]))
+        .watch();
+  }
+
+  Future<RecurringInvoice?> getRecurringInvoiceForUser(int ownerUserId, int id) =>
+      (select(recurringInvoices)..where((t) => t.id.equals(id) & t.ownerUserId.equals(ownerUserId)))
+          .getSingleOrNull();
+
+  Future<int> insertRecurringInvoice(RecurringInvoicesCompanion entry) =>
+      into(recurringInvoices).insert(entry);
+
+  Future<bool> updateRecurringInvoice(RecurringInvoice entry) =>
+      update(recurringInvoices).replace(entry);
+
+  Future<int> deleteRecurringInvoiceForUser(int ownerUserId, int id) =>
+      (delete(recurringInvoices)..where((t) => t.id.equals(id) & t.ownerUserId.equals(ownerUserId))).go();
+
+  Future<List<RecurringInvoice>> dueRecurringInvoicesForUser(int ownerUserId, DateTime asOf) {
+    return (select(recurringInvoices)
+          ..where(
+            (t) =>
+                t.ownerUserId.equals(ownerUserId) &
+                t.isActive.equals(true) &
+                t.nextRunAt.isSmallerOrEqualValue(asOf),
+          ))
+        .get();
+  }
+
+  //, , Vendors, , 
+  Stream<List<Vendor>> watchVendorsForUser(int ownerUserId) {
+    return (select(vendors)
+          ..where((t) => t.ownerUserId.equals(ownerUserId))
+          ..orderBy([(t) => OrderingTerm.asc(t.name)]))
+        .watch();
+  }
+
+  Future<Vendor?> getVendorForUser(int ownerUserId, int id) =>
+      (select(vendors)..where((t) => t.id.equals(id) & t.ownerUserId.equals(ownerUserId))).getSingleOrNull();
+
+  Future<int> insertVendor(VendorsCompanion entry) => into(vendors).insert(entry);
+
+  Future<bool> updateVendor(Vendor entry) => update(vendors).replace(entry);
+
+  Future<int> deleteVendorForUser(int ownerUserId, int id) =>
+      (delete(vendors)..where((t) => t.id.equals(id) & t.ownerUserId.equals(ownerUserId))).go();
+
+  //, , Purchase orders, , 
+  Stream<List<PurchaseOrder>> watchPurchaseOrdersForUser(int ownerUserId) {
+    return (select(purchaseOrders)
+          ..where((t) => t.ownerUserId.equals(ownerUserId))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .watch();
+  }
+
+  Future<PurchaseOrder?> getPurchaseOrderForUser(int ownerUserId, int id) =>
+      (select(purchaseOrders)..where((t) => t.id.equals(id) & t.ownerUserId.equals(ownerUserId)))
+          .getSingleOrNull();
+
+  Future<int> insertPurchaseOrder(PurchaseOrdersCompanion entry) => into(purchaseOrders).insert(entry);
+
+  Future<bool> updatePurchaseOrder(PurchaseOrder entry) => update(purchaseOrders).replace(entry);
+
+  //, , Credits, , 
+  Stream<List<Credit>> watchCreditsForUser(int ownerUserId) {
+    return (select(credits)
+          ..where((t) => t.ownerUserId.equals(ownerUserId))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .watch();
+  }
+
+  Future<Credit?> getCreditForUser(int ownerUserId, int id) =>
+      (select(credits)..where((t) => t.id.equals(id) & t.ownerUserId.equals(ownerUserId))).getSingleOrNull();
+
+  Future<int> insertCredit(CreditsCompanion entry) => into(credits).insert(entry);
+
+  Future<bool> updateCredit(Credit entry) => update(credits).replace(entry);
+
+  Future<double> openCreditBalanceForCustomer(int ownerUserId, int customerId) async {
+    final rows = await (select(credits)
+          ..where(
+            (t) =>
+                t.ownerUserId.equals(ownerUserId) &
+                t.customerId.equals(customerId) &
+                t.status.equals('open'),
+          ))
+        .get();
+    return rows.fold<double>(0, (s, c) => s + c.balance);
+  }
+
+  //, , Invoice payments, , 
+  Stream<List<InvoicePayment>> watchPaymentsForUser(int ownerUserId) {
+    return (select(invoicePayments)
+          ..where((t) => t.ownerUserId.equals(ownerUserId))
+          ..orderBy([(t) => OrderingTerm.desc(t.paidAt)]))
+        .watch();
+  }
+
+  Stream<List<InvoicePayment>> watchPaymentsForInvoice(int ownerUserId, int invoiceId) {
+    return (select(invoicePayments)
+          ..where((t) => t.ownerUserId.equals(ownerUserId) & t.invoiceId.equals(invoiceId))
+          ..orderBy([(t) => OrderingTerm.desc(t.paidAt)]))
+        .watch();
+  }
+
+  Future<int> insertInvoicePayment(InvoicePaymentsCompanion entry) =>
+      into(invoicePayments).insert(entry);
+
+  Future<List<Expense>> billableExpensesForUser(int ownerUserId, {int? customerId}) {
+    final q = select(expenses)
+      ..where(
+        (t) =>
+            t.ownerUserId.equals(ownerUserId) &
+            t.isBillable.equals(true) &
+            t.isInvoiced.equals(false),
+      )
+      ..orderBy([(t) => OrderingTerm.desc(t.expenseDate)]);
+    if (customerId != null) {
+      q.where(
+        (t) =>
+            t.ownerUserId.equals(ownerUserId) &
+            t.isBillable.equals(true) &
+            t.isInvoiced.equals(false) &
+            t.customerId.equals(customerId),
+      );
+    }
+    return q.get();
   }
 }

@@ -1,12 +1,55 @@
-// CLIVORA transactional email — Resend API (Supabase secrets).
-// Set secrets: RESEND_API_KEY, RESEND_FROM (e.g. "CLIVORA <onboarding@resend.dev>")
-// Optional: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (auto in edge runtime)
+// CLIVORA transactional email — Resend API with branded HTML templates.
+// Secrets: RESEND_API_KEY, RESEND_FROM (e.g. "CLIVORA <onboarding@resend.dev>")
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { renderTemplate } from "./email_brand.ts";
 
-const ALLOWED = new Set(["password_reset", "admin_notice", "client_invite"]);
+const ALLOWED = new Set([
+  "password_reset",
+  "admin_notice",
+  "client_invite",
+  "team_invite",
+  "task_completed",
+  "welcome",
+]);
 const MONTHLY_LIMIT = 3000;
+
+type EmailBody = {
+  to?: string;
+  subject?: string;
+  html?: string;
+  purpose?: string;
+  freelancerName?: string;
+  clientName?: string;
+  ownerName?: string;
+  inviteeName?: string;
+  projectName?: string;
+  role?: string;
+  taskTitle?: string;
+  userName?: string;
+  accountType?: string;
+  adminMessage?: string;
+  wrapBrand?: boolean;
+};
+
+function parseResendError(raw: string): { message: string; status: number } {
+  try {
+    const parsed = JSON.parse(raw);
+    const message = String(parsed.message ?? parsed.error ?? raw);
+    const lower = message.toLowerCase();
+    if (lower.includes("only send testing emails") || lower.includes("verify a domain")) {
+      return {
+        message:
+          "Resend sandbox: verify a domain and use a matching from address to email any recipient. In-app delivery still works.",
+        status: 422,
+      };
+    }
+    return { message, status: 502 };
+  } catch {
+    return { message: raw.slice(0, 240), status: 502 };
+  }
+}
 
 serve(async (req) => {
   if (req.method !== "POST") {
@@ -19,7 +62,7 @@ serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
   if (!resendKey) {
-    return new Response(JSON.stringify({ error: "Email not configured (RESEND_API_KEY)" }), { status: 503 });
+    return new Response(JSON.stringify({ error: "Email not configured" }), { status: 503 });
   }
 
   const authHeader = req.headers.get("Authorization");
@@ -35,7 +78,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: "Invalid session" }), { status: 401 });
   }
 
-  let body: { to?: string; subject?: string; html?: string; purpose?: string };
+  let body: EmailBody;
   try {
     body = await req.json();
   } catch {
@@ -44,14 +87,35 @@ serve(async (req) => {
 
   const to = (body.to ?? "").trim().toLowerCase();
   const subject = (body.subject ?? "").trim();
-  const html = (body.html ?? "").trim();
   const purpose = (body.purpose ?? "").trim();
 
-  if (!to.includes("@") || !subject || !html) {
-    return new Response(JSON.stringify({ error: "Missing to, subject, or html" }), { status: 400 });
+  if (!to.includes("@") || !subject) {
+    return new Response(JSON.stringify({ error: "Missing to or subject" }), { status: 400 });
   }
   if (!ALLOWED.has(purpose)) {
     return new Response(JSON.stringify({ error: "Purpose not allowed" }), { status: 403 });
+  }
+
+  if (purpose === "admin_notice") {
+    if (!serviceKey) {
+      return new Response(JSON.stringify({ error: "Admin email not configured" }), { status: 503 });
+    }
+    const adminCheck = createClient(supabaseUrl, serviceKey);
+    const { data: profile } = await adminCheck
+      .from("profiles")
+      .select("role, account_type")
+      .eq("id", userData.user.id)
+      .maybeSingle();
+    const isAdmin =
+      profile?.role === "admin" || profile?.account_type === "admin";
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: "Admin only" }), { status: 403 });
+    }
+  }
+
+  const html = renderTemplate(purpose, body);
+  if (!html) {
+    return new Response(JSON.stringify({ error: "Missing template fields or html" }), { status: 400 });
   }
 
   const adminClient = serviceKey ? createClient(supabaseUrl, serviceKey) : null;
@@ -79,7 +143,8 @@ serve(async (req) => {
     });
     if (!res.ok) {
       const errText = await res.text();
-      return new Response(JSON.stringify({ error: errText }), { status: 500 });
+      const parsed = parseResendError(errText);
+      return new Response(JSON.stringify({ error: parsed.message }), { status: parsed.status });
     }
 
     if (adminClient) {

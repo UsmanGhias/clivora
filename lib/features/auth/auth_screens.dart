@@ -100,30 +100,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  Future<void> _forgotPassword() async {
-    final email = _emailController.text.trim();
-    if (email.isEmpty || !email.contains('@')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter your email above, then tap Forgot password')),
-      );
-      return;
-    }
-    setState(() => _loading = true);
-    try {
-      final error = await ref.read(authStateProvider.notifier).resetPasswordForEmail(email);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            error ?? 'Password reset email sent. Check your inbox for $email',
-          ),
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
   Future<void> _googleSignIn() async {
     setState(() => _loading = true);
     try {
@@ -153,38 +129,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            const SizedBox(height: 40),
-            const Center(child: ClivoraLogo(size: 88, borderRadius: 24)),
-            const SizedBox(height: 16),
-            Text(
-              'CLIVORA — your business OS for freelancers and clients',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(color: ClivoraColors.primaryPurple),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Welcome back',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _accountType == kAccountClient
-                  ? 'Sign in to view shared projects'
-                  : 'Sign in to manage your business',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: ClivoraColors.textSecondary),
-            ),
-            const SizedBox(height: 24),
-            AccountTypeSelector(
-              selected: _accountType,
-              onChanged: (v) => setState(() => _accountType = v),
-              compact: true,
-            ),
-            const SizedBox(height: 24),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 8),
+              const Center(child: ClivoraLogo(size: 64, borderRadius: 18)),
+              const SizedBox(height: 16),
+              Text(
+                'Sign in',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 16),
+              AccountTypeSelector(
+                selected: _accountType,
+                onChanged: (v) => setState(() => _accountType = v),
+                compact: true,
+              ),
+              const SizedBox(height: 16),
             TextField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
@@ -207,21 +171,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
             ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: _loading ? null : _forgotPassword,
-                child: const Text('Forgot password?'),
-              ),
-            ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _loading ? null : _login,
               child: _loading
                   ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : const Text('Sign In'),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(child: Divider(color: Theme.of(context).dividerColor)),
@@ -260,6 +217,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 }
@@ -278,6 +236,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _referralController = TextEditingController();
   bool _loading = false;
   bool _obscure = true;
+  bool _referralExpanded = false;
   String _accountType = kAccountFreelancer;
 
   @override
@@ -304,7 +263,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         return;
       }
       if (_referralController.text.trim().isNotEmpty) {
-        await ref.read(referralServiceProvider).applyReferralCode(_referralController.text);
+        final refErr = await ref.read(referralServiceProvider).applyReferralCode(_referralController.text);
+        if (refErr != null && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(refErr)));
+        }
       }
       final user = ref.read(authStateProvider).valueOrNull;
       if (user != null && !isAdminUser(user) && !isGuestUser(user)) {
@@ -312,6 +274,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         if (expectedClient != isClientUser(user)) {
           ClivoraUserMessages.showRoleMismatch(context, actualRole: accountTypeLabel(user));
         }
+      }
+      if (mounted && user != null && !isGuestUser(user) && !user.emailVerified) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Account created. Check your inbox to verify your email before creating clients, invoices, or projects.',
+            ),
+            duration: Duration(seconds: 6),
+          ),
+        );
       }
       navigateAfterAuth(context, ref);
     } catch (e) {
@@ -367,7 +339,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         return;
       }
       if (_referralController.text.trim().isNotEmpty) {
-        await ref.read(referralServiceProvider).applyReferralCode(_referralController.text);
+        final refErr = await ref.read(referralServiceProvider).applyReferralCode(_referralController.text);
+        if (refErr != null && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(refErr)));
+        }
       }
       final user = ref.read(authStateProvider).valueOrNull;
       if (user != null && !isAdminUser(user) && !isGuestUser(user)) {
@@ -392,30 +367,36 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                IconButton(
-                  onPressed: () => context.go('/login'),
-                  icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-                ),
-                const Expanded(
-                  child: Text('Create Account', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                ),
-                const SizedBox(width: 48),
-              ],
-            ),
-            const SizedBox(height: 24),
-            const Center(child: ClivoraLogo(size: 72, borderRadius: 20)),
-            const SizedBox(height: 24),
-            AccountTypeSelector(
-              selected: _accountType,
-              onChanged: (v) => setState(() => _accountType = v),
-            ),
-            const SizedBox(height: 24),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () => context.go('/login'),
+                    icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                  ),
+                  const Spacer(),
+                  const SizedBox(width: 48),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Center(child: ClivoraLogo(size: 64, borderRadius: 18)),
+              const SizedBox(height: 12),
+              Text(
+                'Create account',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 12),
+              AccountTypeSelector(
+                selected: _accountType,
+                onChanged: (v) => setState(() => _accountType = v),
+                compact: true,
+              ),
+              const SizedBox(height: 12),
             TextField(
               controller: _nameController,
               textCapitalization: TextCapitalization.words,
@@ -442,30 +423,48 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(top: 6),
+              padding: const EdgeInsets.only(top: 4),
               child: Text(
-                'Use 6+ characters with letters and numbers for a stronger password.',
+                'Use 6+ characters with letters and numbers.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(color: ClivoraColors.textSecondary),
               ),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _referralController,
-              textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(
-                labelText: 'REFERRAL CODE (optional)',
-                hintText: 'CLIVORAXXXXXX',
-                prefixIcon: Icon(Icons.card_giftcard_outlined),
+            const SizedBox(height: 8),
+            Theme(
+              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                title: Text(
+                  'Have a referral code?',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                trailing: Icon(
+                  _referralExpanded ? Icons.expand_less : Icons.expand_more,
+                  color: ClivoraColors.textSecondary,
+                ),
+                onExpansionChanged: (v) => setState(() => _referralExpanded = v),
+                children: [
+                  TextField(
+                    controller: _referralController,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: const InputDecoration(
+                      labelText: 'REFERRAL CODE',
+                      hintText: 'CLVXXXXXXXXXX',
+                      prefixIcon: Icon(Icons.card_giftcard_outlined),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loading ? null : _signup,
               child: _loading
                   ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : const Text('Create Account'),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(child: Divider(color: Theme.of(context).dividerColor)),
@@ -501,6 +500,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 }

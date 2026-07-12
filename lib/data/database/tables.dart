@@ -47,8 +47,11 @@ class Invoices extends Table {
   RealColumn get taxRate => real().withDefault(const Constant(0))();
   RealColumn get discount => real().withDefault(const Constant(0))();
   RealColumn get total => real().withDefault(const Constant(0))();
+  RealColumn get amountPaid => real().withDefault(const Constant(0))();
   TextColumn get currency => text().withDefault(const Constant('USD'))();
   TextColumn get lineItems => text().withDefault(const Constant('[]'))();
+  IntColumn get recurringInvoiceId => integer().nullable()();
+  IntColumn get quoteId => integer().nullable()();
   DateTimeColumn get issueDate => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get dueDate => dateTime().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
@@ -125,6 +128,10 @@ class Expenses extends Table {
   IntColumn get projectId => integer().nullable().references(Projects, #id)();
   IntColumn get customerId => integer().nullable().references(Customers, #id)();
   TextColumn get vendor => text().withDefault(const Constant(''))();
+  IntColumn get vendorId => integer().nullable()();
+  BoolColumn get isBillable => boolean().withDefault(const Constant(false))();
+  BoolColumn get isInvoiced => boolean().withDefault(const Constant(false))();
+  IntColumn get invoiceId => integer().nullable().references(Invoices, #id)();
   TextColumn get notes => text().withDefault(const Constant(''))();
   DateTimeColumn get expenseDate => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
@@ -268,5 +275,166 @@ class TeamMembers extends Table {
   TextColumn get name => text()();
   TextColumn get email => text()();
   TextColumn get role => text().withDefault(const Constant('member'))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Project payment milestones (Upwork-style deliverable checkpoints).
+class ProjectMilestones extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get ownerUserId => integer().references(Users, #id)();
+  IntColumn get projectId => integer().references(Projects, #id)();
+  TextColumn get title => text()();
+  TextColumn get description => text().withDefault(const Constant(''))();
+  RealColumn get amount => real().withDefault(const Constant(0))();
+  TextColumn get currency => text().withDefault(const Constant('USD'))();
+  TextColumn get status => text().withDefault(const Constant('pending'))();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+  DateTimeColumn get dueDate => dateTime().nullable()();
+  IntColumn get invoiceId => integer().nullable().references(Invoices, #id)();
+  DateTimeColumn get completedAt => dateTime().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Post-project client feedback (1–5 stars).
+class ProjectReviews extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get ownerUserId => integer().references(Users, #id)();
+  IntColumn get projectId => integer().references(Projects, #id)();
+  IntColumn get customerId => integer().nullable().references(Customers, #id)();
+  TextColumn get clientEmail => text().withDefault(const Constant(''))();
+  IntColumn get rating => integer().withDefault(const Constant(5))();
+  TextColumn get comment => text().withDefault(const Constant(''))();
+  BoolColumn get fromClient => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Invoice dispute notes (client raise / freelancer resolve).
+class InvoiceDisputes extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get ownerUserId => integer().references(Users, #id)();
+  IntColumn get invoiceId => integer().references(Invoices, #id)();
+  TextColumn get reason => text()();
+  TextColumn get status => text().withDefault(const Constant('open'))();
+  TextColumn get resolution => text().withDefault(const Constant(''))();
+  TextColumn get raisedByEmail => text().withDefault(const Constant(''))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get resolvedAt => dateTime().nullable()();
+}
+
+/// Reusable product / service catalog for invoices and quotes.
+class Products extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get ownerUserId => integer().references(Users, #id)();
+  TextColumn get name => text()();
+  TextColumn get description => text().withDefault(const Constant(''))();
+  TextColumn get sku => text().withDefault(const Constant(''))();
+  RealColumn get unitPrice => real().withDefault(const Constant(0))();
+  RealColumn get taxRate => real().withDefault(const Constant(0))();
+  BoolColumn get isService => boolean().withDefault(const Constant(true))();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Quotes / estimates, convert to invoice on accept.
+class Quotes extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get ownerUserId => integer().references(Users, #id)();
+  TextColumn get quoteNumber => text()();
+  IntColumn get customerId => integer().references(Customers, #id)();
+  IntColumn get projectId => integer().nullable().references(Projects, #id)();
+  TextColumn get status => text().withDefault(const Constant('draft'))();
+  RealColumn get subtotal => real().withDefault(const Constant(0))();
+  RealColumn get taxRate => real().withDefault(const Constant(0))();
+  RealColumn get discount => real().withDefault(const Constant(0))();
+  RealColumn get total => real().withDefault(const Constant(0))();
+  TextColumn get currency => text().withDefault(const Constant('USD'))();
+  TextColumn get lineItems => text().withDefault(const Constant('[]'))();
+  TextColumn get notes => text().withDefault(const Constant(''))();
+  DateTimeColumn get issueDate => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get validUntil => dateTime().nullable()();
+  IntColumn get convertedInvoiceId => integer().nullable().references(Invoices, #id)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Recurring invoice templates that spawn invoices on a schedule.
+class RecurringInvoices extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get ownerUserId => integer().references(Users, #id)();
+  TextColumn get title => text()();
+  IntColumn get customerId => integer().references(Customers, #id)();
+  IntColumn get projectId => integer().nullable().references(Projects, #id)();
+  TextColumn get frequency => text().withDefault(const Constant('monthly'))();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  RealColumn get subtotal => real().withDefault(const Constant(0))();
+  RealColumn get taxRate => real().withDefault(const Constant(0))();
+  RealColumn get discount => real().withDefault(const Constant(0))();
+  RealColumn get total => real().withDefault(const Constant(0))();
+  TextColumn get currency => text().withDefault(const Constant('USD'))();
+  TextColumn get lineItems => text().withDefault(const Constant('[]'))();
+  IntColumn get dueDays => integer().withDefault(const Constant(14))();
+  DateTimeColumn get nextRunAt => dateTime()();
+  DateTimeColumn get lastRunAt => dateTime().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Vendors for expenses and purchase orders.
+class Vendors extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get ownerUserId => integer().references(Users, #id)();
+  TextColumn get name => text()();
+  TextColumn get email => text().withDefault(const Constant(''))();
+  TextColumn get phone => text().withDefault(const Constant(''))();
+  TextColumn get website => text().withDefault(const Constant(''))();
+  TextColumn get notes => text().withDefault(const Constant(''))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Lightweight purchase orders.
+class PurchaseOrders extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get ownerUserId => integer().references(Users, #id)();
+  TextColumn get poNumber => text()();
+  IntColumn get vendorId => integer().references(Vendors, #id)();
+  TextColumn get status => text().withDefault(const Constant('draft'))();
+  RealColumn get total => real().withDefault(const Constant(0))();
+  TextColumn get currency => text().withDefault(const Constant('USD'))();
+  TextColumn get lineItems => text().withDefault(const Constant('[]'))();
+  TextColumn get notes => text().withDefault(const Constant(''))();
+  DateTimeColumn get issueDate => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Client credits applied against invoices.
+class Credits extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get ownerUserId => integer().references(Users, #id)();
+  IntColumn get customerId => integer().references(Customers, #id)();
+  TextColumn get creditNumber => text()();
+  RealColumn get amount => real().withDefault(const Constant(0))();
+  RealColumn get balance => real().withDefault(const Constant(0))();
+  TextColumn get currency => text().withDefault(const Constant('USD'))();
+  TextColumn get notes => text().withDefault(const Constant(''))();
+  TextColumn get status => text().withDefault(const Constant('open'))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Payment records allocated to invoices (supports partial payments).
+class InvoicePayments extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get ownerUserId => integer().references(Users, #id)();
+  IntColumn get invoiceId => integer().references(Invoices, #id)();
+  IntColumn get customerId => integer().nullable().references(Customers, #id)();
+  RealColumn get amount => real()();
+  TextColumn get currency => text().withDefault(const Constant('USD'))();
+  TextColumn get method => text().withDefault(const Constant('other'))();
+  TextColumn get reference => text().withDefault(const Constant(''))();
+  TextColumn get notes => text().withDefault(const Constant(''))();
+  DateTimeColumn get paidAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }

@@ -1,14 +1,8 @@
-import 'dart:convert';
-
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
 
-import '../constants/admin_config.dart';
 import '../../data/database/database.dart';
 import '../../data/providers/app_providers.dart';
-import 'cloud_write_guard.dart';
 import 'connectivity_service.dart';
 import 'sync_outbox_service.dart';
 
@@ -47,38 +41,9 @@ class AdminSyncService {
   }
 
   Future<bool> _postEvent(AppAnalytic event) async {
-    if (kAdminSyncKey.isEmpty) {
-      if (kDebugMode) debugPrint('Admin sync skipped: ADMIN_SYNC_KEY not configured');
-      return false;
-    }
-    try {
-      final uri = Uri.parse('$kAdminApiBaseUrl/api/admin/sync');
-      final response = await http
-          .post(
-            uri,
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Admin-Sync-Key': kAdminSyncKey,
-            },
-            body: jsonEncode({
-              'eventType': event.eventType,
-              'userEmail': event.userEmail,
-              'userName': event.userName,
-              'plan': event.plan,
-              'amount': event.amount,
-              'payload': event.payload,
-              'createdAt': event.createdAt.toIso8601String(),
-              'source': 'clivora_app',
-            }),
-          )
-          .timeout(const Duration(seconds: 12));
-
-      return response.statusCode >= 200 && response.statusCode < 300;
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Admin sync failed: $e');
-      }
-      return false;
-    }
+    // Legacy shared-key sync is retired. Events will be sent through the
+    // authenticated product-event RPC in the next sync implementation.
+    if (kDebugMode) debugPrint('Admin sync deferred: authenticated RPC not configured (${event.id})');
+    return false;
   }
 }

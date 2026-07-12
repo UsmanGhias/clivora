@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/auth/auth_service.dart';
 import '../../core/auth/user_roles.dart';
@@ -13,7 +14,6 @@ import '../../core/cloud/cloud_project_repository.dart';
 import '../../core/cloud/supabase_auth_helper.dart';
 import '../../core/services/admin_management_service.dart';
 import '../../core/services/client_pdf_quota_service.dart';
-import '../../core/cloud/supabase_auth_helper.dart';
 import '../../core/constants/plan_limits.dart';
 import '../../core/constants/plan_features.dart';
 import '../../core/utils/duration_formatter.dart';
@@ -49,7 +49,7 @@ final clientProjectsProvider = StreamProvider<List<Project>>((ref) {
   return ref.watch(databaseProvider).watchProjectsForClient(user.id);
 });
 
-/// Client portal — merges local SQLite links + Supabase cross-device shares.
+/// Client portal, merges local SQLite links + Supabase cross-device shares.
 final clientSharedProjectsProvider = StreamProvider<List<ClientSharedProjectView>>((ref) {
   final user = ref.watch(authStateProvider).valueOrNull;
   if (user == null) return const Stream.empty();
@@ -66,15 +66,32 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
     _load();
   }
 
+  static const _prefsKey = 'clivora_theme_mode';
+
   final Ref ref;
 
   Future<void> _load() async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getString(_prefsKey);
+      if (stored == 'dark') {
+        if (!mounted) return;
+        state = ThemeMode.dark;
+        return;
+      }
+      if (stored == 'light') {
+        if (!mounted) return;
+        state = ThemeMode.light;
+        return;
+      }
+
       final userId = ref.read(authStateProvider).valueOrNull?.id;
       if (userId == null) return;
       final settings = await ref.read(databaseProvider).watchAppSettingsForUser(userId).first;
       if (!mounted) return;
-      state = settings.themeMode == 'dark' ? ThemeMode.dark : ThemeMode.light;
+      final mode = settings.themeMode == 'dark' ? ThemeMode.dark : ThemeMode.light;
+      state = mode;
+      await prefs.setString(_prefsKey, mode == ThemeMode.dark ? 'dark' : 'light');
     } catch (_) {
       if (!mounted) return;
       state = ThemeMode.light;
@@ -82,9 +99,12 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
+    state = mode;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefsKey, mode == ThemeMode.dark ? 'dark' : 'light');
+
     final userId = ref.read(authStateProvider).valueOrNull?.id;
     if (userId == null) return;
-    state = mode;
     await ref.read(databaseProvider).saveAppSettingsForUser(
           userId,
           AppSettingsTableCompanion(
@@ -101,16 +121,22 @@ final customersProvider =
   return ref.watch(databaseProvider).watchCustomersForUser(ownerId, search: search);
 });
 
-final customerCountProvider = FutureProvider<int>((ref) async {
+final customerCountProvider = StreamProvider<int>((ref) {
   final ownerId = _ownerId(ref);
-  if (ownerId == null) return 0;
-  return ref.watch(databaseProvider).countCustomersForUser(ownerId);
+  if (ownerId == null) return const Stream.empty();
+  return ref
+      .watch(databaseProvider)
+      .watchCustomersForUser(ownerId)
+      .map((list) => list.length);
 });
 
-final projectCountProvider = FutureProvider<int>((ref) async {
+final projectCountProvider = StreamProvider<int>((ref) {
   final ownerId = _ownerId(ref);
-  if (ownerId == null) return 0;
-  return ref.watch(databaseProvider).countProjectsForUser(ownerId);
+  if (ownerId == null) return const Stream.empty();
+  return ref
+      .watch(databaseProvider)
+      .watchProjectsForUser(ownerId)
+      .map((list) => list.length);
 });
 
 final projectsProvider =
@@ -220,6 +246,7 @@ final monthlyInvoiceCountProvider = FutureProvider<int>((ref) async {
 });
 
 final dashboardStatsProvider = FutureProvider<DashboardStats>((ref) async {
+  ref.watch(authStateProvider);
   final ownerId = _ownerId(ref);
   if (ownerId == null) {
     return const DashboardStats(revenue: 0, totalInvoiced: 0, outstanding: 0, customers: 0, activeProjects: 0);
@@ -272,6 +299,7 @@ class PlanLimitService {
   }
 
   Future<bool> canAddCustomer() async {
+    if (!await _emailOk()) return false;
     if (await _isPro()) return true;
     final ownerId = ref.read(authStateProvider).valueOrNull?.id;
     if (ownerId == null) return false;
@@ -280,6 +308,7 @@ class PlanLimitService {
   }
 
   Future<bool> canAddProject() async {
+    if (!await _emailOk()) return false;
     if (await _isPro()) return true;
     final ownerId = ref.read(authStateProvider).valueOrNull?.id;
     if (ownerId == null) return false;
@@ -288,12 +317,14 @@ class PlanLimitService {
   }
 
   Future<bool> canAddInvoice() async {
+    if (!await _emailOk()) return false;
     if (await _isPro()) return true;
     final count = await ref.read(monthlyInvoiceCountProvider.future);
     return count < PlanLimits.freeMaxInvoicesPerMonth;
   }
 
   Future<bool> canAddTemplate() async {
+    if (!await _emailOk()) return false;
     if (await _isPro()) return true;
     final ownerId = ref.read(authStateProvider).valueOrNull?.id;
     if (ownerId == null) return false;
@@ -302,6 +333,7 @@ class PlanLimitService {
   }
 
   Future<bool> canAddTaskToProject(int? projectId) async {
+    if (!await _emailOk()) return false;
     if (await _isPro()) return true;
     if (projectId == null) return true;
     final ownerId = ref.read(authStateProvider).valueOrNull?.id;
@@ -311,9 +343,13 @@ class PlanLimitService {
   }
 
   Future<bool> canAddClientContract(int currentCount) async {
+    if (!await _emailOk()) return false;
     if (await _isPro()) return true;
     return currentCount < PlanLimits.freeMaxClientContracts;
   }
+
+  /// Soft gate for create actions that do not have a free-tier count limit.
+  Future<bool> canCreateWork() async => _emailOk();
 
   Future<bool> canDownloadClientInvoicePdf() async {
     if (await _isPro()) return true;
@@ -339,14 +375,33 @@ class PlanLimitService {
     return PlanFeatures.isPro(await currentPlan());
   }
 
+  Future<bool> _emailOk() async {
+    final user = ref.read(authStateProvider).valueOrNull;
+    if (user == null) return false;
+    if (isAdminUser(user)) return true;
+    if (user.email.toLowerCase().endsWith('@clivora.local')) return true;
+    if (user.emailVerified) return true;
+    final cloud = SupabaseAuthHelper.client.auth.currentUser;
+    if (cloud?.emailConfirmedAt != null) return true;
+    if ((cloud?.identities ?? const []).any((i) => i.provider == 'google')) return true;
+    return false;
+  }
+
   Future<void> setPlan(String plan) async {
     final userId = ref.read(authStateProvider).valueOrNull?.id;
     if (userId == null) return;
+    await setPlanForUser(userId, plan);
+  }
+
+  Future<void> setPlanForUser(int userId, String plan) async {
     await ref.read(databaseProvider).saveAppSettingsForUser(
           userId,
           AppSettingsTableCompanion(subscriptionPlan: Value(plan)),
         );
-    ref.invalidate(appSettingsProvider);
+    final currentId = ref.read(authStateProvider).valueOrNull?.id;
+    if (currentId == userId) {
+      ref.invalidate(appSettingsProvider);
+    }
   }
 }
 
@@ -356,8 +411,27 @@ final isProProvider = Provider<bool>((ref) {
   if (isAdminUser(user)) return true;
   final serverSub = ref.watch(serverSubscriptionProvider).valueOrNull;
   if (serverSub == true) return true;
+  final cloudPlan = ref.watch(cloudSubscriptionPlanProvider).valueOrNull;
+  if (cloudPlan == PlanLimits.proPlan || cloudPlan == PlanLimits.proPlusPlan) return true;
   final plan = ref.watch(subscriptionPlanProvider).valueOrNull;
   return PlanFeatures.isPro(plan);
+});
+
+/// True when cloud/local plan is Pro Plus (admins always have Plus).
+final isProPlusProvider = Provider<bool>((ref) {
+  final user = ref.watch(authStateProvider).valueOrNull;
+  if (isAdminUser(user)) return true;
+  final cloudPlan = ref.watch(cloudSubscriptionPlanProvider).valueOrNull;
+  if (cloudPlan == PlanLimits.proPlusPlan) return true;
+  final plan = ref.watch(subscriptionPlanProvider).valueOrNull;
+  return PlanFeatures.isProPlus(plan);
+});
+
+/// Supabase profiles.subscription_plan (admin grants, server truth when online).
+final cloudSubscriptionPlanProvider = FutureProvider<String?>((ref) async {
+  ref.watch(authStateProvider);
+  final profile = await SupabaseAuthHelper.fetchOwnProfile();
+  return profile?['subscription_plan'] as String?;
 });
 
 /// Server-verified subscription from Supabase (when online).
@@ -401,17 +475,18 @@ final clientInboxProvider = StreamProvider<List<ClientMessage>>((ref) {
   return ref.watch(databaseProvider).watchInboxForUser(userId);
 });
 
-/// Client inbox — local + Supabase (cross-device).
+/// Client inbox, local + Supabase (cross-device).
 final unifiedClientInboxProvider = StreamProvider<List<ClientInboxEntry>>((ref) {
   final user = ref.watch(authStateProvider).valueOrNull;
   if (user == null) return const Stream.empty();
   return watchUnifiedClientInbox(ref, user);
 });
 
-/// Freelancer mailbox — sent + received (Supabase).
+/// Freelancer mailbox, sent + received (Supabase).
 final freelancerMailboxProvider = StreamProvider<List<CloudMessage>>((ref) {
+  ref.watch(authStateProvider);
   final uid = SupabaseAuthHelper.currentUid;
-  if (uid == null || uid.isEmpty) return const Stream.empty();
+  if (uid == null || uid.isEmpty) return Stream.value(const <CloudMessage>[]);
   return ref.watch(cloudMessageRepositoryProvider).watchFreelancerMailbox(uid: uid);
 });
 
@@ -653,6 +728,7 @@ final reportsProvider = FutureProvider<ReportData>((ref) async {
     return const ReportData(
       revenue: 0, outstanding: 0, monthlyExpenses: 0, totalExpenses: 0,
       profit: 0, monthlyProfit: 0, customers: 0, projects: 0, pendingTasks: 0,
+      agingCurrent: 0, aging30: 0, aging60: 0, aging90: 0, taxCollected: 0,
     );
   }
   final db = ref.watch(databaseProvider);
@@ -665,6 +741,29 @@ final reportsProvider = FutureProvider<ReportData>((ref) async {
   final customers = await db.countCustomersForUser(ownerId);
   final projects = await db.countProjectsForUser(ownerId);
   final pendingTasks = await db.countPendingTasksForUser(ownerId);
+
+  final invoices = await db.watchInvoicesForUser(ownerId).first;
+  var agingCurrent = 0.0, aging30 = 0.0, aging60 = 0.0, aging90 = 0.0, taxCollected = 0.0;
+  for (final inv in invoices) {
+    if (inv.status == 'paid') {
+      taxCollected += inv.subtotal * (inv.taxRate / 100);
+      continue;
+    }
+    if (inv.status != 'sent' && inv.status != 'overdue') continue;
+    final balance = (inv.total - inv.amountPaid).clamp(0, double.infinity);
+    final due = inv.dueDate ?? inv.issueDate;
+    final days = now.difference(due).inDays;
+    if (days <= 0) {
+      agingCurrent += balance;
+    } else if (days <= 30) {
+      aging30 += balance;
+    } else if (days <= 60) {
+      aging60 += balance;
+    } else {
+      aging90 += balance;
+    }
+  }
+
   return ReportData(
     revenue: paid,
     outstanding: outstanding,
@@ -675,6 +774,11 @@ final reportsProvider = FutureProvider<ReportData>((ref) async {
     customers: customers,
     projects: projects,
     pendingTasks: pendingTasks,
+    agingCurrent: agingCurrent,
+    aging30: aging30,
+    aging60: aging60,
+    aging90: aging90,
+    taxCollected: taxCollected,
   );
 });
 
@@ -689,6 +793,11 @@ class ReportData {
     required this.customers,
     required this.projects,
     required this.pendingTasks,
+    this.agingCurrent = 0,
+    this.aging30 = 0,
+    this.aging60 = 0,
+    this.aging90 = 0,
+    this.taxCollected = 0,
   });
 
   final double revenue;
@@ -700,6 +809,11 @@ class ReportData {
   final int customers;
   final int projects;
   final int pendingTasks;
+  final double agingCurrent;
+  final double aging30;
+  final double aging60;
+  final double aging90;
+  final double taxCollected;
 }
 
 // Notifications
@@ -868,3 +982,64 @@ class CalendarEvent {
   final String type;
   final Color color;
 }
+
+final productsProvider = StreamProvider<List<Product>>((ref) {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchProductsForUser(ownerId);
+});
+
+final quotesProvider = StreamProvider.family<List<Quote>, String?>((ref, status) {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchQuotesForUser(ownerId, status: status);
+});
+
+final recurringInvoicesProvider = StreamProvider<List<RecurringInvoice>>((ref) {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchRecurringInvoicesForUser(ownerId);
+});
+
+final vendorsProvider = StreamProvider<List<Vendor>>((ref) {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchVendorsForUser(ownerId);
+});
+
+final purchaseOrdersProvider = StreamProvider<List<PurchaseOrder>>((ref) {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchPurchaseOrdersForUser(ownerId);
+});
+
+final creditsProvider = StreamProvider<List<Credit>>((ref) {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchCreditsForUser(ownerId);
+});
+
+final invoicePaymentsProvider = StreamProvider<List<InvoicePayment>>((ref) {
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return const Stream.empty();
+  return ref.watch(databaseProvider).watchPaymentsForUser(ownerId);
+});
+
+/// 30-day revenue series for dashboard sparkline (paid invoice totals by day).
+final revenueSparklineProvider = FutureProvider<List<double>>((ref) async {
+  // Recompute whenever auth owner changes (sign-out / sign-in).
+  ref.watch(authStateProvider);
+  final ownerId = _ownerId(ref);
+  if (ownerId == null) return List.filled(30, 0);
+  final invoices = await ref.read(databaseProvider).watchInvoicesForUser(ownerId).first;
+  final now = DateTime.now();
+  final start = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 29));
+  final series = List<double>.filled(30, 0);
+  for (final inv in invoices) {
+    if (inv.status != 'paid') continue;
+    final day = DateTime(inv.updatedAt.year, inv.updatedAt.month, inv.updatedAt.day);
+    final idx = day.difference(start).inDays;
+    if (idx >= 0 && idx < 30) series[idx] += inv.total;
+  }
+  return series;
+});

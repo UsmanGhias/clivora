@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart' show Value;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,6 +23,8 @@ import '../../data/models/invoice_line_item.dart';
 import '../../core/constants/plan_limits.dart';
 import '../../core/utils/crm_refresh.dart';
 import '../../core/utils/plan_limit_dialog.dart';
+import '../../core/services/email_verification_service.dart';
+import '../../core/services/sync_outbox_service.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/step_progress_card.dart';
 import '../../shared/widgets/entity_activity_timeline.dart';
@@ -49,6 +52,7 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
   String _currency = kDefaultCurrency;
   DateTime? _dueDate;
   bool _loading = true;
+  final List<InvoiceLineItem> _lineItems = [];
 
   @override
   void initState() {
@@ -81,6 +85,9 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
       _discountController.text = invoice.discount.toString();
       _dueDate = invoice.dueDate;
       final items = parseLineItems(invoice.lineItems);
+      _lineItems
+        ..clear()
+        ..addAll(items);
       if (items.isNotEmpty) {
         _descriptionController.text = items.first.description;
         _amountController.text = items.first.unitPrice.toString();
@@ -99,13 +106,30 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
     super.dispose();
   }
 
+  double _lineSubtotal() {
+    if (_lineItems.isNotEmpty) {
+      return _lineItems.fold<double>(0, (s, i) => s + i.amount);
+    }
+    return double.tryParse(_amountController.text.trim()) ?? 0;
+  }
+
   double _calculateTotal() {
-    final amount = double.tryParse(_amountController.text.trim()) ?? 0;
     final taxRate = double.tryParse(_taxController.text.trim()) ?? 0;
     final discount = double.tryParse(_discountController.text.trim()) ?? 0;
-    final subtotal = amount;
+    final subtotal = _lineSubtotal();
     final tax = subtotal * (taxRate / 100);
     return subtotal + tax - discount;
+  }
+
+  void _addLineFromFields() {
+    final desc = _descriptionController.text.trim().isEmpty ? 'Service' : _descriptionController.text.trim();
+    final amount = double.tryParse(_amountController.text.trim()) ?? 0;
+    if (amount <= 0) return;
+    setState(() {
+      _lineItems.add(InvoiceLineItem(description: desc, quantity: 1, unitPrice: amount));
+      _descriptionController.clear();
+      _amountController.clear();
+    });
   }
 
   Future<void> _save() async {
@@ -116,24 +140,27 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
       return;
     }
 
-    final amount = double.tryParse(_amountController.text.trim()) ?? 0;
-    final taxRate = double.tryParse(_taxController.text.trim()) ?? 0;
-    final discount = double.tryParse(_discountController.text.trim()) ?? 0;
-    final subtotal = amount;
-    final total = _calculateTotal();
-    final lineItems = encodeLineItems([
-      InvoiceLineItem(
+    // Flush current fields into lines if empty list
+    if (_lineItems.isEmpty) {
+      final amount = double.tryParse(_amountController.text.trim()) ?? 0;
+      _lineItems.add(InvoiceLineItem(
         description: _descriptionController.text.trim().isEmpty ? 'Service' : _descriptionController.text.trim(),
         quantity: 1,
         unitPrice: amount,
-      ),
-    ]);
+      ));
+    }
+    final taxRate = double.tryParse(_taxController.text.trim()) ?? 0;
+    final discount = double.tryParse(_discountController.text.trim()) ?? 0;
+    final subtotal = _lineSubtotal();
+    final total = _calculateTotal();
+    final lineItems = encodeLineItems(List.of(_lineItems));
 
     final db = ref.read(databaseProvider);
     final ownerId = ref.read(authStateProvider).valueOrNull!.id;
     int? savedId = widget.invoiceId;
 
-    if (widget.invoiceId != null) {
+    try {
+      if (widget.invoiceId != null) {
       final existing = await db.getInvoiceForUser(ownerId, widget.invoiceId!);
       if (existing != null) {
         await db.updateInvoice(
@@ -154,6 +181,9 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
         );
       }
     } else {
+      if (!await requireEmailVerified(context, ref, actionLabel: 'add invoices')) {
+        return;
+      }
       if (!await ref.read(planLimitServiceProvider).canAddInvoice()) {
         if (mounted) {
           final upgrade = await showPlanLimitDialog(
@@ -202,23 +232,30 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
 
     final savedInvoice = await db.getInvoiceForUser(ownerId, savedId!);
     if (savedInvoice != null) {
+      await ref.read(syncOutboxServiceProvider).enqueue(
+            SyncOutboxItem(kind: 'crm_invoice', payload: {'localId': savedId}),
+          );
       await ref.read(automationServiceProvider).onInvoiceSaved(
             savedInvoice,
             previousStatus: _previousStatus,
           );
 
       if (savedInvoice.status == 'sent' || savedInvoice.status == 'overdue' || savedInvoice.status == 'paid') {
-        final customer = await db.getCustomerForUser(ownerId, savedInvoice.customerId);
-        final emails = customer != null ? parseStringList(customer.emails) : <String>[];
-        final freelancer = ref.read(authStateProvider).valueOrNull;
-        if (freelancer != null && emails.isNotEmpty) {
-          final clientUid = await ref.read(supabaseSyncServiceProvider).uidForEmail(emails.first);
-          await ref.read(cloudInvoiceRepositoryProvider).syncInvoiceToClient(
-                freelancer: freelancer,
-                invoice: savedInvoice,
-                clientEmail: emails.first,
-                clientUid: clientUid,
-              );
+        try {
+          final customer = await db.getCustomerForUser(ownerId, savedInvoice.customerId);
+          final emails = customer != null ? parseStringList(customer.emails) : <String>[];
+          final freelancer = ref.read(authStateProvider).valueOrNull;
+          if (freelancer != null && emails.isNotEmpty) {
+            final clientUid = await ref.read(supabaseSyncServiceProvider).uidForEmail(emails.first);
+            await ref.read(cloudInvoiceRepositoryProvider).syncInvoiceToClient(
+                  freelancer: freelancer,
+                  invoice: savedInvoice,
+                  clientEmail: emails.first,
+                  clientUid: clientUid,
+                );
+          }
+        } catch (e) {
+          debugPrint('Invoice cloud sync: $e');
         }
       }
     }
@@ -238,6 +275,13 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
         ),
       );
       context.pop();
+    }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not save invoice: $e')),
+        );
+      }
     }
   }
 
@@ -426,7 +470,74 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                           onChanged: (v) => setState(() => _currency = v ?? kDefaultCurrency),
                         ),
                         const SizedBox(height: 16),
+                        const ClivoraFieldLabel(label: 'From catalog'),
+                        ref.watch(productsProvider).when(
+                          loading: () => const SizedBox.shrink(),
+                          error: (_, _) => const SizedBox.shrink(),
+                          data: (products) {
+                            if (products.isEmpty) {
+                              return TextButton(
+                                onPressed: () => context.push('/products'),
+                                child: const Text('Add products to catalog'),
+                              );
+                            }
+                            return DropdownButtonFormField<int>(
+                              decoration: const InputDecoration(hintText: 'Pick a product or service'),
+                              items: [
+                                const DropdownMenuItem(value: -1, child: Text('Custom line')),
+                                ...products.map(
+                                  (p) => DropdownMenuItem(
+                                    value: p.id,
+                                    child: Text('${p.name} · ${formatCurrency(p.unitPrice)}'),
+                                  ),
+                                ),
+                              ],
+                              onChanged: (id) {
+                                if (id == null || id < 0) return;
+                                final p = products.firstWhere((e) => e.id == id);
+                                setState(() {
+                                  _descriptionController.text = p.name;
+                                  _amountController.text = p.unitPrice.toString();
+                                  _taxController.text = p.taxRate.toString();
+                                });
+                              },
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        if (_lineItems.isNotEmpty) ...[
+                          Text('Line items', style: Theme.of(context).textTheme.titleSmall),
+                          const SizedBox(height: 8),
+                          ..._lineItems.asMap().entries.map((e) {
+                            final i = e.key;
+                            final item = e.value;
+                            return ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(item.description),
+                              subtitle: Text('Qty ${item.quantity}'),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(formatCurrency(item.amount)),
+                                  IconButton(
+                                    icon: const Icon(Icons.close, size: 18),
+                                    onPressed: () => setState(() => _lineItems.removeAt(i)),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                          const Divider(),
+                        ],
                         ClivoraTextField(controller: _descriptionController, label: 'Description', hint: 'Service or item description'),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton.icon(
+                            onPressed: _addLineFromFields,
+                            icon: const Icon(Icons.add, size: 18),
+                            label: const Text('Add line'),
+                          ),
+                        ),
                         const SizedBox(height: 16),
                         ClivoraTextField(controller: _amountController, label: 'Amount', hint: '0', keyboardType: TextInputType.number, required: true),
                         const SizedBox(height: 16),

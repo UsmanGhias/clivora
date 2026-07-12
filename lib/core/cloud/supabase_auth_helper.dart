@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Primary authentication for CLIVORA — Supabase Auth (email + Google).
+import '../constants/admin_config.dart';
+
+/// Primary authentication for CLIVORA. Supabase Auth (email + Google).
 class SupabaseAuthHelper {
   static SupabaseClient get client => Supabase.instance.client;
 
@@ -64,7 +66,9 @@ class SupabaseAuthHelper {
     try {
       return await client
           .from('profiles')
-          .select('id, email, name, account_type, account_type_locked, role')
+          .select(
+            'id, email, name, account_type, account_type_locked, role, subscription_plan, is_blocked, is_restricted, block_reason',
+          )
           .eq('id', uid)
           .maybeSingle();
     } catch (e) {
@@ -84,7 +88,7 @@ class SupabaseAuthHelper {
         'p_name': name,
       });
     } catch (e) {
-      debugPrint('finalize_account_type RPC: $e — falling back to upsert');
+      debugPrint('finalize_account_type RPC: $e, falling back to upsert');
       await upsertProfile(
         email: currentEmail ?? '',
         name: name,
@@ -130,7 +134,10 @@ class SupabaseAuthHelper {
 
   static Future<String?> resetPasswordForEmail(String email) async {
     try {
-      await client.auth.resetPasswordForEmail(email.trim().toLowerCase());
+      await client.auth.resetPasswordForEmail(
+        email.trim().toLowerCase(),
+        redirectTo: kPasswordResetRedirectUrl,
+      );
       return null;
     } catch (e) {
       return 'Could not send reset email: $e';

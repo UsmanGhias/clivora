@@ -65,3 +65,10 @@ app.*.map.json
 *.jks
 *.keystore
 key.properties
+
+.tmp_secrets/
+
+
+supabase/.temp/
+.tmp_secrets/
+

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/constants/plan_features.dart';
+import '../../core/utils/navigation_helper.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
@@ -24,6 +27,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final now = DateTime.now();
     _focusedMonth = DateTime(now.year, now.month);
     _selectedDay = DateTime(now.year, now.month, now.day);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _guardPro());
+  }
+
+  Future<void> _guardPro() async {
+    final isPro = ref.read(isProProvider);
+    if (isPro || !mounted) return;
+    final allowed = await requireProFeature(context, isPro: false, featureName: 'Calendar');
+    if (!allowed && mounted) context.pop();
   }
 
   DateTime get _effectiveSelected {

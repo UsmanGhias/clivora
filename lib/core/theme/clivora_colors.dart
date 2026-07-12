@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 abstract final class ClivoraColors {
-  // CLIVORA brand — teal + slate (distinct from purple CRM clones)
+  // CLIVORA brand, teal + slate (distinct from purple CRM clones)
   static const primary = Color(0xFF0D9488);
   static const primaryDark = Color(0xFF0F766E);
   static const primaryLight = Color(0xFFCCFBF1);
@@ -36,7 +36,7 @@ abstract final class ClivoraColors {
   // Legacy alias for gradual migration
   static const primaryPurple = primary;
 
-  /// Client portal — minimal slate palette (distinct from freelancer teal).
+  /// Client portal, minimal slate palette (distinct from freelancer teal).
   static const clientAccent = Color(0xFF475569);
   static const clientAccentLight = Color(0xFFF8FAFC);
   static const clientSurface = Color(0xFFF1F5F9);

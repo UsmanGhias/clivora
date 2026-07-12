@@ -1,11 +1,14 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:drift/drift.dart' show Value;
 
 import '../../core/cloud/cloud_message_repository.dart';
 import '../../core/cloud/cloud_notification_repository.dart';
+import '../../core/cloud/supabase_auth_helper.dart';
 import '../../core/services/audit_log_service.dart';
 import '../../core/services/push_notification_service.dart';
+import '../../core/services/recurring_invoice_service.dart';
 import '../../core/services/tracking_service.dart';
 import '../../core/auth/auth_service.dart';
 import '../../core/utils/template_utils.dart';
@@ -127,6 +130,42 @@ class AutomationService {
 
   final Ref ref;
 
+  Future<void> logRun(String key, String detail) async {
+    try {
+      final uid = SupabaseAuthHelper.currentUid;
+      await SupabaseAuthHelper.client.from('automation_run_log').insert({
+        if (uid != null) 'user_uid': uid,
+        'automation_key': key,
+        'detail': detail,
+        'created_at': DateTime.now().toUtc().toIso8601String(),
+      });
+    } catch (e) {
+      debugPrint('automation_run_log write failed: $e');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> recentRuns({int limit = 20}) async {
+    try {
+      final uid = SupabaseAuthHelper.currentUid;
+      final rows = uid != null
+          ? await SupabaseAuthHelper.client
+              .from('automation_run_log')
+              .select()
+              .eq('user_uid', uid)
+              .order('created_at', ascending: false)
+              .limit(limit)
+          : await SupabaseAuthHelper.client
+              .from('automation_run_log')
+              .select()
+              .order('created_at', ascending: false)
+              .limit(limit);
+      return (rows as List).cast<Map<String, dynamic>>();
+    } catch (e) {
+      debugPrint('automation_run_log read failed: $e');
+      return [];
+    }
+  }
+
   Future<void> onCustomerCreated(Customer customer) async {
     if (!ref.read(automationSettingsProvider).customerWelcome) return;
     final ownerId = ref.read(authStateProvider).valueOrNull?.id;
@@ -153,6 +192,7 @@ class AutomationService {
         priority: Value('medium'),
       ),
     );
+    await logRun('customer_welcome', 'Welcome flow for ${customer.contactPerson}');
     // Welcome / invite message is sent via ClientInviteService when the customer is created.
   }
 
@@ -238,7 +278,15 @@ class AutomationService {
     }
   }
 
+  /// Generates due recurring invoices and surfaces upcoming reminders.
+  Future<void> processRecurringInvoices() async {
+    try {
+      await ref.read(recurringInvoiceServiceProvider).processDue();
+    } catch (_) {}
+  }
+
   Future<void> runWeeklySummaryIfDue() async {
+    await processRecurringInvoices();
     if (!ref.read(automationSettingsProvider).weeklySummary) return;
     final ownerId = ref.read(authStateProvider).valueOrNull?.id;
     if (ownerId == null) return;

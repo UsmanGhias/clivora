@@ -21,7 +21,7 @@ import '../../core/theme/clivora_colors.dart';
 import '../../data/database/database.dart';
 import '../../data/providers/app_providers.dart';
 
-/// Super-admin command center — full platform control.
+/// Super-admin command center, full platform control.
 class AdminConsoleScreen extends ConsumerStatefulWidget {
   const AdminConsoleScreen({super.key});
 
@@ -32,6 +32,7 @@ class AdminConsoleScreen extends ConsumerStatefulWidget {
 class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> with SingleTickerProviderStateMixin {
   late final TabController _tabs;
   final _adminEmailCtrl = TextEditingController();
+  final _proEmailCtrl = TextEditingController();
   final _resetEmailCtrl = TextEditingController();
 
   @override
@@ -44,6 +45,7 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> with Si
   void dispose() {
     _tabs.dispose();
     _adminEmailCtrl.dispose();
+    _proEmailCtrl.dispose();
     _resetEmailCtrl.dispose();
     super.dispose();
   }
@@ -145,13 +147,35 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> with Si
           const _PlansTab(),
           _ControlsTab(
             adminEmailCtrl: _adminEmailCtrl,
+            proEmailCtrl: _proEmailCtrl,
             resetEmailCtrl: _resetEmailCtrl,
             onGrantAdmin: () async {
               final err = await ref.read(adminManagementServiceProvider).grantAdminByEmail(_adminEmailCtrl.text);
               if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err ?? 'Admin granted')));
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err ?? 'Admin granted (account type preserved)')));
               if (err == null) {
                 _adminEmailCtrl.clear();
+                await _refresh();
+              }
+            },
+            onGrantPro: () async {
+              final err = await ref.read(adminManagementServiceProvider).grantProByEmail(_proEmailCtrl.text);
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err ?? 'Pro granted (freelancer or client)')));
+              if (err == null) {
+                _proEmailCtrl.clear();
+                await _refresh();
+              }
+            },
+            onRevokePro: () async {
+              final err = await ref.read(adminManagementServiceProvider).grantProByEmail(
+                    _proEmailCtrl.text,
+                    revoke: true,
+                  );
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err ?? 'Pro revoked')));
+              if (err == null) {
+                _proEmailCtrl.clear();
                 await _refresh();
               }
             },
@@ -259,7 +283,7 @@ class _OverviewTab extends StatelessWidget {
                 _MetricCard(label: 'Local users', value: '${s.totalUsers}'),
                 _MetricCard(label: 'Sign-ups', value: '${s.signups}'),
                 _MetricCard(label: 'Pro users', value: '${s.proUsers}'),
-                _MetricCard(label: 'MRR (PKR)', value: 'Rs ${s.monthlyRevenue}'),
+                _MetricCard(label: 'MRR (USD)', value: '\$${s.monthlyRevenue}'),
               ],
             ),
           ),
@@ -429,9 +453,9 @@ class _PlansTab extends StatelessWidget {
         _PlanRow('Invoices / month', '${PlanLimits.freeMaxInvoicesPerMonth}', 'Unlimited'),
         _PlanRow('Emails / month', '${PlanLimits.freeMaxEmailsPerMonth}', '${PlanLimits.proMaxEmailsPerMonth}'),
         _PlanRow('Storage', '100 MB', '5 GB'),
-        _PlanRow('Biometric lock', '—', '✓'),
-        _PlanRow('Verified badge', '—', '✓'),
-        _PlanRow('Custom workflows', '—', '✓'),
+        _PlanRow('Biometric lock', '-', '✓'),
+        _PlanRow('Verified badge', '-', '✓'),
+        _PlanRow('Custom workflows', '-', '✓'),
         _PlanRow('CLIVORA AI Pro', 'Local only', 'Cloud + local'),
         _PlanRow('Advanced analytics', 'Basic', 'Full trends'),
         const SizedBox(height: 20),
@@ -480,15 +504,21 @@ class _PlanRow extends StatelessWidget {
 class _ControlsTab extends StatelessWidget {
   const _ControlsTab({
     required this.adminEmailCtrl,
+    required this.proEmailCtrl,
     required this.resetEmailCtrl,
     required this.onGrantAdmin,
+    required this.onGrantPro,
+    required this.onRevokePro,
     required this.onResetPassword,
     required this.onSync,
   });
 
   final TextEditingController adminEmailCtrl;
+  final TextEditingController proEmailCtrl;
   final TextEditingController resetEmailCtrl;
   final VoidCallback onGrantAdmin;
+  final VoidCallback onGrantPro;
+  final VoidCallback onRevokePro;
   final VoidCallback onResetPassword;
   final VoidCallback onSync;
 
@@ -499,13 +529,51 @@ class _ControlsTab extends StatelessWidget {
       children: [
         const Text('Grant admin access', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
+        const Text(
+          'Keeps client or freelancer account type. Only adds admin role.',
+          style: TextStyle(color: Colors.white54, fontSize: 12),
+        ),
+        const SizedBox(height: 8),
         TextField(
           controller: adminEmailCtrl,
           style: const TextStyle(color: Colors.white),
           decoration: const InputDecoration(labelText: 'User email', hintText: 'user@example.com'),
         ),
         const SizedBox(height: 10),
-        ElevatedButton.icon(onPressed: onGrantAdmin, icon: const Icon(Icons.admin_panel_settings_outlined), label: const Text('Grant admin + Pro')),
+        ElevatedButton.icon(
+          onPressed: onGrantAdmin,
+          icon: const Icon(Icons.admin_panel_settings_outlined),
+          label: const Text('Grant admin role'),
+        ),
+        const SizedBox(height: 24),
+        const Text('Grant Pro (freelancer or client)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 8),
+        TextField(
+          controller: proEmailCtrl,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(labelText: 'User email for Pro', hintText: 'client@example.com'),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: onGrantPro,
+                icon: const Icon(Icons.verified_rounded),
+                label: const Text('Grant Pro'),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: onRevokePro,
+                icon: const Icon(Icons.remove_circle_outline),
+                label: const Text('Revoke Pro'),
+                style: OutlinedButton.styleFrom(foregroundColor: Colors.white70),
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 24),
         const Text('Password reset', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),

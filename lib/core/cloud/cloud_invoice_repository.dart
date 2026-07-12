@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
@@ -8,7 +10,6 @@ import '../services/cloud_write_guard.dart';
 import 'cloud_notification_repository.dart';
 import 'cloud_message_repository.dart';
 import 'supabase_auth_helper.dart';
-import 'supabase_sync_service.dart';
 
 final cloudInvoiceRepositoryProvider = Provider<CloudInvoiceRepository>((ref) {
   return CloudInvoiceRepository(ref);
@@ -29,6 +30,9 @@ class CloudInvoiceShare {
     this.dueDate,
     this.paymentMethod = '',
     this.paymentNote = '',
+    this.paymentReference = '',
+    this.publicToken,
+    this.freelancerConfirmed = false,
     this.clientPaidAt,
     this.updatedAt,
     this.expiresAt,
@@ -47,6 +51,9 @@ class CloudInvoiceShare {
   final DateTime? dueDate;
   final String paymentMethod;
   final String paymentNote;
+  final String paymentReference;
+  final String? publicToken;
+  final bool freelancerConfirmed;
   final DateTime? clientPaidAt;
   final DateTime? updatedAt;
   final DateTime? expiresAt;
@@ -71,11 +78,20 @@ class CloudInvoiceShare {
       dueDate: row['due_date'] != null ? DateTime.tryParse(row['due_date'] as String) : null,
       paymentMethod: row['payment_method'] as String? ?? '',
       paymentNote: row['payment_note'] as String? ?? '',
+      paymentReference: row['payment_reference'] as String? ?? '',
+      publicToken: row['public_token'] as String?,
+      freelancerConfirmed: row['freelancer_confirmed'] as bool? ?? false,
       clientPaidAt: row['client_paid_at'] != null ? DateTime.tryParse(row['client_paid_at'] as String) : null,
       updatedAt: row['updated_at'] != null ? DateTime.tryParse(row['updated_at'] as String) : null,
       expiresAt: row['expires_at'] != null ? DateTime.tryParse(row['expires_at'] as String) : null,
     );
   }
+}
+
+String _randomPublicToken() {
+  final rng = Random.secure();
+  final bytes = List<int>.generate(16, (_) => rng.nextInt(256));
+  return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
 }
 
 class CloudInvoiceRepository {
@@ -127,6 +143,17 @@ class CloudInvoiceRepository {
   }) async {
     try {
       final expiresAt = DateTime.now().toUtc().add(const Duration(days: 90));
+      String? publicToken;
+      try {
+        final existing = await _db
+            .from('invoice_shares')
+            .select('public_token')
+            .eq('share_id', shareId)
+            .maybeSingle();
+        publicToken = existing?['public_token'] as String?;
+      } catch (_) {}
+      publicToken ??= _randomPublicToken();
+
       await _db.from('invoice_shares').upsert({
         'share_id': shareId,
         'freelancer_uid': uid,
@@ -140,6 +167,7 @@ class CloudInvoiceRepository {
         'total': invoice.total,
         'currency': invoice.currency,
         if (invoice.dueDate != null) 'due_date': invoice.dueDate!.toUtc().toIso8601String(),
+        'public_token': publicToken,
         'expires_at': expiresAt.toIso8601String(),
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       });
@@ -182,6 +210,16 @@ class CloudInvoiceRepository {
       ..sort((a, b) => (b.updatedAt ?? DateTime(2000)).compareTo(a.updatedAt ?? DateTime(2000)));
   }
 
+  Future<void> updateShareStatus({
+    required String shareId,
+    required String status,
+  }) async {
+    await _db.from('invoice_shares').update({
+      'status': status,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('share_id', shareId);
+  }
+
   Future<void> confirmPaymentByClient({
     required CloudInvoiceShare share,
     required User client,
@@ -193,6 +231,7 @@ class CloudInvoiceRepository {
       'status': 'paid',
       'payment_method': paymentMethod,
       'payment_note': paymentNote,
+      if (paymentNote.isNotEmpty) 'payment_reference': paymentNote,
       'client_paid_at': now,
       'updated_at': now,
     }).eq('share_id', share.shareId);
@@ -203,7 +242,7 @@ class CloudInvoiceRepository {
             toEmail: freelancerEmail,
             title: 'Payment received: ${share.invoiceNumber}',
             body: '${client.name} marked invoice as paid via $paymentMethod.',
-            kind: 'invoice',
+            kind: 'payment',
           );
       await ref.read(cloudMessageRepositoryProvider).sendHybrid(
             fromUser: client,
@@ -213,6 +252,32 @@ class CloudInvoiceRepository {
                 '${paymentNote.isNotEmpty ? '\nNote: $paymentNote' : ''}',
           );
     }
+  }
+
+  /// Freelancer acknowledges a client-marked payment (status stays paid).
+  Future<void> confirmPaymentByFreelancer(String shareId) async {
+    final now = DateTime.now().toUtc().toIso8601String();
+    await _db.from('invoice_shares').update({
+      'freelancer_confirmed': true,
+      'freelancer_confirmed_at': now,
+      'updated_at': now,
+    }).eq('share_id', shareId);
+  }
+
+  Stream<List<CloudInvoiceShare>> watchUnconfirmedPayments({required String freelancerUid}) {
+    return _db
+        .from('invoice_shares')
+        .stream(primaryKey: ['share_id'])
+        .eq('freelancer_uid', freelancerUid)
+        .map((rows) {
+      final list = rows
+          .map(CloudInvoiceShare.fromRow)
+          .where((s) => s.status == 'paid' && !s.freelancerConfirmed)
+          .toList();
+      list.sort((a, b) => (b.clientPaidAt ?? b.updatedAt ?? DateTime(2000))
+          .compareTo(a.clientPaidAt ?? a.updatedAt ?? DateTime(2000)));
+      return list;
+    });
   }
 
   Future<String?> _emailForUid(String uid) async {

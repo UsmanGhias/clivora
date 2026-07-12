@@ -11,15 +11,17 @@ import '../../core/utils/greeting.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/services/admin_management_service.dart';
 import '../../core/services/coach_marks_service.dart';
+import '../../core/services/email_verification_service.dart';
 import '../../data/database/database.dart';
 import '../../data/providers/app_providers.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/widgets/clivora_logo.dart';
-import '../../shared/widgets/coach_mark_overlay.dart';
+import '../../shared/widgets/simple_coach_tour.dart';
 import '../../shared/widgets/messages_icon_button.dart';
 import '../../shared/widgets/notification_icon_button.dart';
 import '../../shared/widgets/skeleton_loading.dart';
 import '../../shared/widgets/today_overdue_card.dart';
+import 'priority_strips.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -30,10 +32,6 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   final _scrollController = ScrollController();
-  final _statsKey = GlobalKey();
-  final _quickKey = GlobalKey();
-  final _searchKey = GlobalKey();
-  bool _showCoachMarks = false;
 
   @override
   void dispose() {
@@ -48,20 +46,36 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Future<void> _maybeShowCoachMarks() async {
-    final userId = ref.read(authStateProvider).valueOrNull?.id;
-    if (userId == null) return;
-    final show = await ref.read(coachMarksServiceProvider).shouldShowForUser(userId);
-    if (!show) return;
+    final user = ref.read(authStateProvider).valueOrNull;
+    if (user == null || isClientUser(user)) return;
+    final show = await ref.read(coachMarksServiceProvider).shouldShowForRole(isClient: false);
+    if (!show || !mounted) return;
     try {
       await ref.read(dashboardStatsProvider.future);
     } catch (_) {}
-    await Future<void>.delayed(const Duration(milliseconds: 350));
-    if (mounted) setState(() => _showCoachMarks = true);
-  }
-
-  Future<void> _finishCoachMarks(int userId) async {
-    await ref.read(coachMarksServiceProvider).markDashboardCompleteForUser(userId);
-    if (mounted) setState(() => _showCoachMarks = false);
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    await showSimpleCoachTour(
+      context,
+      steps: [
+        SimpleCoachStep(
+          icon: Icons.insights_outlined,
+          title: l10n.coachMarkStatsTitle,
+          body: l10n.coachMarkStatsBody,
+        ),
+        SimpleCoachStep(
+          icon: Icons.bolt_outlined,
+          title: l10n.coachMarkQuickTitle,
+          body: l10n.coachMarkQuickBody,
+        ),
+        SimpleCoachStep(
+          icon: Icons.search_rounded,
+          title: l10n.coachMarkSearchTitle,
+          body: l10n.coachMarkSearchBody,
+        ),
+      ],
+      onComplete: () => ref.read(coachMarksServiceProvider).markDashboardCompleteForRole(isClient: false),
+    );
   }
 
   @override
@@ -84,38 +98,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: _showCoachMarks && authUser != null
-            ? CoachMarkOverlay(
-                scrollController: _scrollController,
-                bottomInset: CoachMarkOverlay.shellBottomInset(context),
-                steps: [
-                  CoachMarkStep(
-                    targetKey: _statsKey,
-                    title: l10n.coachMarkStatsTitle,
-                    body: l10n.coachMarkStatsBody,
-                    padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
-                  ),
-                  CoachMarkStep(
-                    targetKey: _quickKey,
-                    title: l10n.coachMarkQuickTitle,
-                    body: l10n.coachMarkQuickBody,
-                    padding: const EdgeInsets.all(6),
-                  ),
-                  CoachMarkStep(
-                    targetKey: _searchKey,
-                    title: l10n.coachMarkSearchTitle,
-                    body: l10n.coachMarkSearchBody,
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                  ),
-                ],
-                nextLabel: l10n.coachMarkNext,
-                doneLabel: l10n.coachMarkDone,
-                skipLabel: 'Skip tour',
-                onComplete: () => _finishCoachMarks(authUser.id),
-                onSkip: () => _finishCoachMarks(authUser.id),
-                child: _dashboardBody(context, l10n, statsAsync, profileAsync, authUser, projectsAsync, customersAsync, ownerName, photoPath, isGuest),
-              )
-            : _dashboardBody(context, l10n, statsAsync, profileAsync, authUser, projectsAsync, customersAsync, ownerName, photoPath, isGuest),
+        child: _dashboardBody(context, l10n, statsAsync, profileAsync, authUser, projectsAsync, customersAsync, ownerName, photoPath, isGuest),
       ),
     );
   }
@@ -211,9 +194,38 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ],
                 ),
               ),
+              if (authUser != null &&
+                  !isGuestUser(authUser) &&
+                  !ref.watch(emailVerificationServiceProvider).isVerified(authUser)) ...[
+                const SizedBox(height: 12),
+                Material(
+                  color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(16),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () => openFormRoute(context, '/profile'),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      child: Row(
+                        children: [
+                          Icon(Icons.mark_email_unread_outlined, color: Theme.of(context).colorScheme.error),
+                          const SizedBox(width: 10),
+                          const Expanded(
+                            child: Text(
+                              'Verify your email to create clients, invoices, and projects. Tap to open Profile.',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
+              const FreelancerPriorityStrip(),
               Container(
-                key: _statsKey,
                 width: double.infinity,
                 child: statsAsync.when(
                   loading: () => const _StatsGridPlaceholder(),
@@ -221,16 +233,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   data: (stats) => _StatsGrid(stats: stats, onNavigate: context.go),
                 ),
               ),
+              const SizedBox(height: 12),
+              const _RevenueSparklineCard(),
+              const SizedBox(height: 14),
               const TodayOverdueCard(),
               const SizedBox(height: 8),
               Container(
-                key: _quickKey,
                 width: double.infinity,
                 child: _QuickActions(ref: ref, l10n: l10n),
               ),
               const SizedBox(height: 12),
               Container(
-                key: _searchKey,
                 width: double.infinity,
                 child: OutlinedButton.icon(
                   onPressed: () => openFormRoute(context, '/search'),
@@ -359,7 +372,7 @@ class _StatsGrid extends StatelessWidget {
                 title: '${stats.customers}',
                 subtitle: 'Customers',
                 background: Theme.of(context).cardColor,
-                foreground: ClivoraColors.textPrimary,
+                foreground: Theme.of(context).colorScheme.onSurface,
                 icon: Icons.people_outline,
                 iconColor: ClivoraColors.primaryPurple,
                 bordered: true,
@@ -372,7 +385,7 @@ class _StatsGrid extends StatelessWidget {
                 title: '${stats.activeProjects}',
                 subtitle: 'Active Projects',
                 background: Theme.of(context).cardColor,
-                foreground: ClivoraColors.textPrimary,
+                foreground: Theme.of(context).colorScheme.onSurface,
                 icon: Icons.work_outline,
                 iconColor: ClivoraColors.warningOrange,
                 bordered: true,
@@ -419,7 +432,13 @@ class _StatCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            border: bordered ? Border.all(color: ClivoraColors.borderLight) : null,
+            border: bordered
+                ? Border.all(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? ClivoraColors.darkBorder
+                        : ClivoraColors.borderLight,
+                  )
+                : null,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -479,7 +498,10 @@ class _QuickActions extends ConsumerWidget {
       _QuickAction(Icons.person_add_outlined, l10n.quickActionClient, ClivoraColors.iconPurple, ClivoraColors.primaryPurple, () => addCustomer()),
       _QuickAction(Icons.create_new_folder_outlined, l10n.quickActionProject, ClivoraColors.iconOrange, ClivoraColors.warningOrange, () => addProject()),
       _QuickAction(Icons.receipt_long_outlined, l10n.quickActionInvoice, ClivoraColors.iconGreen, ClivoraColors.successGreen, () => addInvoice()),
-      _QuickAction(Icons.task_alt_outlined, l10n.quickActionTask, ClivoraColors.iconBlue, Colors.blue, () => openFormRoute(context, '/tasks/new')),
+      _QuickAction(Icons.task_alt_outlined, l10n.quickActionTask, ClivoraColors.iconBlue, Colors.blue, () async {
+        if (!await requireEmailVerified(context, ref, actionLabel: 'create tasks')) return;
+        if (context.mounted) openFormRoute(context, '/tasks/new');
+      }),
     ];
 
     return Row(
@@ -714,6 +736,85 @@ class _CustomerTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _RevenueSparklineCard extends ConsumerWidget {
+  const _RevenueSparklineCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final seriesAsync = ref.watch(revenueSparklineProvider);
+    return seriesAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (series) {
+        final max = series.fold<double>(0, (m, v) => v > m ? v : m);
+        final total = series.fold<double>(0, (s, v) => s + v);
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? ClivoraColors.darkBorder
+                  : ClivoraColors.borderLight,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Paid revenue · 30 days',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    formatCurrency(total),
+                    style: const TextStyle(fontWeight: FontWeight.w800, color: ClivoraColors.primary),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 48,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    for (final v in series)
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 1),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 350),
+                            height: max <= 0 ? 4 : (8 + (v / max) * 40),
+                            decoration: BoxDecoration(
+                              color: v > 0
+                                  ? ClivoraColors.primary.withValues(alpha: 0.85)
+                                  : (Theme.of(context).brightness == Brightness.dark
+                                      ? Colors.white24
+                                      : ClivoraColors.borderLight),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

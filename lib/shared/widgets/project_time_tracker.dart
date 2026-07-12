@@ -16,7 +16,7 @@ class ProjectTimeTrackerCard extends ConsumerWidget {
     final tracker = ref.watch(projectTimeTrackerProvider);
     final totalsAsync = ref.watch(projectTrackedSecondsMapProvider);
     final totals = totalsAsync.valueOrNull ?? {};
-    // ignore: unused_local_variable — tick drives rebuild every second
+    // ignore: unused_local_variable, tick drives rebuild every second
     final _ = tracker.tick;
     final seconds = tracker.elapsedSecondsFor(projectId, totals);
     final isActive = tracker.activeProjectId == projectId;

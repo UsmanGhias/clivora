@@ -8,7 +8,9 @@ import '../../core/auth/auth_service.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../core/constants/plan_limits.dart';
 import '../../core/utils/plan_limit_dialog.dart';
+import '../../core/services/email_verification_service.dart';
 import '../../core/services/task_reminder_service.dart';
+import '../../core/services/tracking_service.dart';
 import '../../data/database/database.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
@@ -25,6 +27,12 @@ class TasksScreen extends ConsumerStatefulWidget {
 class _TasksScreenState extends ConsumerState<TasksScreen> {
   String _status = 'all';
 
+  Future<void> _openNewTask() async {
+    if (!await requireEmailVerified(context, ref, actionLabel: 'create tasks')) return;
+    if (!mounted) return;
+    context.push('/tasks/new');
+  }
+
   @override
   Widget build(BuildContext context) {
     final tasksAsync = ref.watch(tasksProvider(TaskFilter(status: _status)));
@@ -34,7 +42,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
       showBackButton: true,
       action: ClivoraIconButton(
         icon: Icons.add,
-        onPressed: () => context.push('/tasks/new'),
+        onPressed: _openNewTask,
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,7 +63,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                     icon: Icons.task_alt_outlined,
                     message: 'No tasks yet',
                     actionLabel: 'Create your first task',
-                    onAction: () => context.push('/tasks/new'),
+                    onAction: _openNewTask,
                   );
                 }
                 return ListView.separated(
@@ -97,13 +105,16 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                           value: task.completed,
                           activeColor: ClivoraColors.successGreen,
                           onChanged: (v) async {
-                            await ref.read(databaseProvider).updateTask(
-                                  task.copyWith(
-                                    completed: v ?? false,
-                                    status: (v ?? false) ? 'completed' : 'pending',
-                                    updatedAt: DateTime.now(),
-                                  ),
-                                );
+                            final completed = v ?? false;
+                            final updated = task.copyWith(
+                              completed: completed,
+                              status: completed ? 'completed' : 'pending',
+                              updatedAt: DateTime.now(),
+                            );
+                            await ref.read(databaseProvider).updateTask(updated);
+                            if (completed) {
+                              await ref.read(trackingServiceProvider).notifyTaskCompleted(updated);
+                            }
                           },
                         ),
                         title: Text(
@@ -215,6 +226,9 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
         await ref.read(taskReminderServiceProvider).scheduleForTask(updated);
       }
     } else {
+      if (!await requireEmailVerified(context, ref, actionLabel: 'create tasks')) {
+        return;
+      }
       if (!await ref.read(planLimitServiceProvider).canAddTaskToProject(_selectedProjectId)) {
         if (mounted) {
           final upgrade = await showPlanLimitDialog(

@@ -9,7 +9,7 @@ String homeRouteForUser(User? user) {
   return '/dashboard';
 }
 
-const _publicRoutes = {'/', '/login', '/signup'};
+const _publicRoutes = {'/', '/login', '/signup', '/value-guidelines', '/onboarding'};
 
 /// Routes only freelancers (and admin/guest preview as freelancer) may access.
 const freelancerShellRoutes = {
@@ -18,6 +18,7 @@ const freelancerShellRoutes = {
   '/projects',
   '/invoices',
   '/more',
+  '/connect',
 };
 
 const freelancerExtraRoutes = {
@@ -40,8 +41,18 @@ const freelancerExtraRoutes = {
   '/admin',
   '/admin-console',
   '/team',
+  '/team-invites',
   '/storage',
   '/freelancer-messages',
+  '/products',
+  '/quotes',
+  '/recurring-invoices',
+  '/credits',
+  '/payment-confirmations',
+  '/security',
+  '/notification-settings',
+  '/reviews',
+  '/referral',
 };
 
 /// Routes only clients may access.
@@ -54,7 +65,18 @@ const clientShellRoutes = {
   '/client-link-freelancer',
   '/client-account',
   '/client-tasks',
+  '/client-hub',
+  '/client-quotes',
+  '/client-payments',
+  '/client-credits',
+  '/client-recurring',
+  '/client-files',
   '/notifications',
+  '/profile',
+  '/upgrade',
+  '/referral',
+  '/team-invites',
+  '/connect',
 };
 
 bool isPublicRoute(String location) {
@@ -87,6 +109,9 @@ bool isClientRoute(String location) {
 bool isRouteAllowedForUser(User? user, String location) {
   if (user == null) return isPublicRoute(location);
   if (isPublicRoute(location)) return true;
+  if (isAdminUser(user) && (location == '/admin-console' || location == '/admin')) {
+    return true;
+  }
   if (isClientUser(user)) return isClientRoute(location);
   return isFreelancerRoute(location);
 }
@@ -116,8 +141,11 @@ String? authRedirect({required String location, required User? user, required bo
     return homeRouteForUser(user);
   }
 
-  // Shared routes (e.g. /notifications) are in both lists — do not redirect clients away.
+  // Shared routes (e.g. /notifications) are in both lists, do not redirect clients away.
   if (isClientUser(user) && isFreelancerRoute(path) && !isClientRoute(path)) {
+    if (isAdminUser(user) && (path == '/admin-console' || path == '/admin')) {
+      return null;
+    }
     return '/client-portal';
   }
 
@@ -125,7 +153,12 @@ String? authRedirect({required String location, required User? user, required bo
     return null;
   }
 
-  if (!isClientUser(user) && !isAdminUser(user) && isClientRoute(path)) {
+  // Shared routes (e.g. /profile, /upgrade, /connect) are in both lists
+  // do not redirect freelancers away from them.
+  if (!isClientUser(user) &&
+      !isAdminUser(user) &&
+      isClientRoute(path) &&
+      !isFreelancerRoute(path)) {
     return '/dashboard';
   }
 

@@ -26,7 +26,7 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
   bool? _biometricSupported;
   bool _biometricEnabled = false;
   bool _coachMarksEnabled = true;
-  String _locale = 'en';
+  int _timeoutMinutes = 30;
   bool _loading = true;
 
   @override
@@ -39,13 +39,13 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
     final bio = ref.read(biometricServiceProvider);
     final supported = await bio.isSupported;
     final enabled = await bio.isEnabled;
-    final locale = await ref.read(localeServiceProvider).getLocaleCode();
+    final timeout = await bio.timeoutMinutes();
     final coachEnabled = await ref.read(coachMarksServiceProvider).isEnabled();
     if (mounted) {
       setState(() {
         _biometricSupported = supported;
         _biometricEnabled = enabled;
-        _locale = locale;
+        _timeoutMinutes = timeout;
         _coachMarksEnabled = coachEnabled;
         _loading = false;
       });
@@ -168,11 +168,22 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
               children: [
                 Text('Security', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 12),
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.phonelink_lock_outlined),
+                    title: const Text('Two-factor authentication (MFA)'),
+                    subtitle: const Text(
+                      'Add TOTP authenticator protection to your CLIVORA account via Supabase Auth. Biometric lock below secures this device.',
+                    ),
+                    isThreeLine: true,
+                  ),
+                ),
+                const SizedBox(height: 8),
                 SwitchListTile(
                   title: const Text('Biometric lock'),
                   subtitle: Text(
                     !isPro
-                        ? 'Pro feature — save your account with fingerprint or face'
+                        ? 'Pro feature, save your account with fingerprint or face'
                         : _biometricSupported == true
                             ? 'Require fingerprint or face when opening the app'
                             : 'Not available on this device',
@@ -180,6 +191,30 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
                   value: _biometricEnabled && (_biometricSupported ?? false) && isPro,
                   onChanged: isPro && (_biometricSupported ?? false) ? _toggleBiometric : null,
                 ),
+                if (_biometricEnabled && (_biometricSupported ?? false) && isPro)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: DropdownButtonFormField<int>(
+                      value: _timeoutMinutes,
+                      decoration: const InputDecoration(
+                        labelText: 'Lock after idle',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: BiometricService.timeoutOptions
+                          .map(
+                            (m) => DropdownMenuItem(
+                              value: m,
+                              child: Text('$m minutes'),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) async {
+                        if (v == null) return;
+                        await ref.read(biometricServiceProvider).setTimeoutMinutes(v);
+                        setState(() => _timeoutMinutes = v);
+                      },
+                    ),
+                  ),
                 SwitchListTile(
                   title: const Text('Dashboard tips'),
                   subtitle: const Text('Show one-time guide highlights on Home'),
@@ -187,21 +222,6 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
                   onChanged: (v) async {
                     await ref.read(coachMarksServiceProvider).setEnabled(v);
                     setState(() => _coachMarksEnabled = v);
-                  },
-                ),
-                const Divider(height: 32),
-                Text('Language', style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
-                SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'en', label: Text('English')),
-                    ButtonSegment(value: 'ur', label: Text('Urdu')),
-                  ],
-                  selected: {_locale},
-                  onSelectionChanged: (s) async {
-                    final code = s.first;
-                    await ref.read(appLocaleProvider.notifier).setLocaleCode(code);
-                    setState(() => _locale = code);
                   },
                 ),
                 const Divider(height: 32),

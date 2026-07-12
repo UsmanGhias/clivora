@@ -69,9 +69,17 @@ serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
   const saJson = Deno.env.get("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON") ?? "";
 
-  const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
+  if (!supabaseUrl || !serviceKey || !anonKey || !saJson) {
+    return new Response(
+      JSON.stringify({ error: "Play purchase verification is not configured" }),
+      { status: 503, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  const userClient = createClient(supabaseUrl, anonKey, {
     global: { headers: { Authorization: authHeader } },
   });
   const { data: userData, error: userErr } = await userClient.auth.getUser();
@@ -94,17 +102,11 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: "Missing productId or purchaseToken" }), { status: 400 });
   }
 
-  if (!saJson) {
-    return new Response(
-      JSON.stringify({
-        active: true,
-        expiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
-        productId,
-        verified: false,
-        note: "Server verify not configured — dev fallback",
-      }),
-      { status: 200 },
-    );
+  if (packageName !== PACKAGE_NAME) {
+    return new Response(JSON.stringify({ error: "Invalid package name" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   let sa: ServiceAccount;
@@ -132,9 +134,12 @@ serve(async (req) => {
   const active = expiryMs > Date.now() && playData.paymentState !== 0;
   const expiresAt = expiryMs > 0 ? new Date(expiryMs).toISOString() : null;
   const status = active ? "active" : "expired";
+  const isPlus =
+    productId.includes("pro_plus") || productId.includes("plus");
+  const plan = active ? (isPlus ? "pro_plus" : "pro") : "free";
 
   const admin = createClient(supabaseUrl, serviceKey);
-  await admin.from("subscriptions").upsert(
+  const { error: subscriptionError } = await admin.from("subscriptions").upsert(
     {
       user_id: userData.user.id,
       product_id: productId,
@@ -147,14 +152,26 @@ serve(async (req) => {
     },
     { onConflict: "purchase_token" },
   );
+  if (subscriptionError) {
+    return new Response(JSON.stringify({ error: "Could not persist verified purchase" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
-  await admin.from("profiles").update({ subscription_plan: active ? "pro" : "free" }).eq(
+  const { error: profileError } = await admin.from("profiles").update({ subscription_plan: plan }).eq(
     "id",
     userData.user.id,
   );
+  if (profileError) {
+    return new Response(JSON.stringify({ error: "Could not update verified plan" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
   return new Response(
-    JSON.stringify({ active, expiresAt, productId, verified: true, status }),
+    JSON.stringify({ active, expiresAt, productId, verified: true, status, plan }),
     { status: 200, headers: { "Content-Type": "application/json" } },
   );
 });

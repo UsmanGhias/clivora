@@ -34,7 +34,7 @@ class AnalyticsExportService {
       'exportedAt': DateTime.now().toIso8601String(),
       'app': 'CLIVORA',
       'version': '1.5.5',
-      'proPricePkr': ProPricing.monthlyPkr,
+      'proPriceUsd': ProPricing.monthlyUsd,
       'subscriptionPlan': subscriptionPlan,
       'users': users
           .map((u) => {
@@ -61,7 +61,7 @@ class AnalyticsExportService {
         'totalUsers': users.length,
         'signups': events.where((e) => e.eventType == 'signup').length,
         'proActivations': events.where((e) => e.eventType == 'pro_activate').length,
-        'estimatedMrrPkr': events.where((e) => e.eventType == 'pro_activate').length * ProPricing.monthlyPkr,
+        'estimatedMrrUsd': events.where((e) => e.eventType == 'pro_activate').length * ProPricing.monthlyUsd,
       },
     };
 

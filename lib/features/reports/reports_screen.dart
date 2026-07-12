@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
-import '../../core/services/analytics_export_service.dart';
+import '../../core/services/crm_report_export_service.dart';
+import '../../core/services/payment_allocation_service.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../data/database/database.dart';
@@ -44,7 +44,7 @@ class ReportsScreen extends ConsumerWidget {
             return;
           }
           try {
-            await ref.read(analyticsExportServiceProvider).exportAndShare();
+            await ref.read(crmReportExportServiceProvider).exportAndShare();
           } catch (e) {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Export failed: $e')));
@@ -88,6 +88,37 @@ class ReportsScreen extends ConsumerWidget {
               color: ClivoraColors.primaryPurple,
               icon: Icons.account_balance_wallet_outlined,
             ),
+            _ReportCard(
+              title: 'Tax on paid invoices',
+              value: formatCurrency(data.taxCollected),
+              subtitle: 'Estimated from line tax rates',
+              color: ClivoraColors.primary,
+              icon: Icons.percent_outlined,
+            ),
+            const SizedBox(height: 16),
+            _SectionTitle(title: 'Invoice aging'),
+            Row(
+              children: [
+                Expanded(child: _MiniStat(label: 'Current', value: formatCurrency(data.agingCurrent))),
+                const SizedBox(width: 8),
+                Expanded(child: _MiniStat(label: '1–30', value: formatCurrency(data.aging30))),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(child: _MiniStat(label: '31–60', value: formatCurrency(data.aging60))),
+                const SizedBox(width: 8),
+                Expanded(child: _MiniStat(label: '60+', value: formatCurrency(data.aging90))),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+            _SectionTitle(title: 'Expenses by category'),
+            ..._expenseBreakdown(ref, byCategory: true),
+            const SizedBox(height: 16),
+            _SectionTitle(title: 'Expenses by vendor'),
+            ..._expenseBreakdown(ref, byCategory: false),
             const SizedBox(height: 16),
             _SectionTitle(title: 'This Month'),
             Row(
@@ -229,6 +260,40 @@ class _MiniStat extends StatelessWidget {
   }
 }
 
+List<Widget> _expenseBreakdown(WidgetRef ref, {required bool byCategory}) {
+  final expenses = ref.watch(expensesProvider(null)).valueOrNull ?? [];
+  if (expenses.isEmpty) {
+    return [
+      const Padding(
+        padding: EdgeInsets.only(bottom: 8),
+        child: Text('No expenses yet', style: TextStyle(color: ClivoraColors.textSecondary)),
+      ),
+    ];
+  }
+  final map = <String, double>{};
+  for (final e in expenses) {
+    final key = byCategory ? e.category : (e.vendor.isNotEmpty ? e.vendor : 'Unassigned');
+    map[key] = (map[key] ?? 0) + e.amount;
+  }
+  final entries = map.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+  return [
+    for (final e in entries.take(8))
+      Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                e.key.isEmpty ? 'Other' : '${e.key[0].toUpperCase()}${e.key.substring(1)}',
+              ),
+            ),
+            Text(formatCurrency(e.value), style: const TextStyle(fontWeight: FontWeight.w700)),
+          ],
+        ),
+      ),
+  ];
+}
+
 class PaymentsScreen extends ConsumerWidget {
   const PaymentsScreen({super.key});
 
@@ -290,16 +355,28 @@ class _PaymentTile extends ConsumerWidget {
   final bool showMarkPaid;
 
   Future<void> _confirmPaid(BuildContext context, WidgetRef ref) async {
+    final remaining = (invoice.total - invoice.amountPaid).clamp(0.0, double.infinity).toDouble();
+    final amountCtrl = TextEditingController(text: remaining.toStringAsFixed(2));
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Mark as paid?'),
-        content: Text(
-          'Confirm that ${invoice.invoiceNumber} (${formatCurrency(invoice.total)}) has been received.',
+        title: const Text('Record payment'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${invoice.invoiceNumber} · balance ${formatCurrency(remaining)}'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: amountCtrl,
+              decoration: const InputDecoration(labelText: 'Amount received'),
+              keyboardType: TextInputType.number,
+            ),
+          ],
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Mark paid')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Save payment')),
         ],
       ),
     );
@@ -307,34 +384,44 @@ class _PaymentTile extends ConsumerWidget {
 
     final user = ref.read(authStateProvider).valueOrNull;
     if (user == null) return;
-
-    final updated = invoice.copyWith(status: 'paid', updatedAt: DateTime.now());
-    await ref.read(databaseProvider).updateInvoice(updated);
-    await ref.read(trackingServiceProvider).logStatusChange(
-          entityType: 'invoice',
-          entityId: invoice.id,
-          status: 'paid',
-          note: 'Payment recorded from Hub',
-        );
-
-    final customer = await ref.read(databaseProvider).getCustomerForUser(user.id, invoice.customerId);
-    if (customer != null && customer.emails.isNotEmpty) {
-      await ref.read(cloudInvoiceRepositoryProvider).syncInvoiceToClient(
-            freelancer: user,
-            invoice: updated,
-            clientEmail: customer.emails.split(',').first.trim(),
+    final amount = double.tryParse(amountCtrl.text.trim()) ?? remaining;
+    try {
+      await ref.read(paymentAllocationServiceProvider).recordPayment(
+            invoiceId: invoice.id,
+            amount: amount,
+            method: 'manual',
+            notes: 'Payment recorded from Hub',
           );
-    }
-
-    ref.invalidate(invoicesProvider(null));
-    ref.invalidate(invoicesProvider('sent'));
-    ref.invalidate(invoicesProvider('paid'));
-    await ref.read(syncOutboxServiceProvider).reconcileInvoiceShares();
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${invoice.invoiceNumber} marked as paid')),
-      );
+      await ref.read(trackingServiceProvider).logStatusChange(
+            entityType: 'invoice',
+            entityId: invoice.id,
+            status: 'payment',
+            note: 'Payment ${formatCurrency(amount)}',
+          );
+      final updated = await ref.read(databaseProvider).getInvoiceForUser(user.id, invoice.id);
+      if (updated != null) {
+        final customer = await ref.read(databaseProvider).getCustomerForUser(user.id, invoice.customerId);
+        if (customer != null && customer.emails.isNotEmpty) {
+          await ref.read(cloudInvoiceRepositoryProvider).syncInvoiceToClient(
+                freelancer: user,
+                invoice: updated,
+                clientEmail: customer.emails.split(',').first.trim(),
+              );
+        }
+      }
+      ref.invalidate(invoicesProvider(null));
+      ref.invalidate(invoicesProvider('sent'));
+      ref.invalidate(invoicesProvider('paid'));
+      await ref.read(syncOutboxServiceProvider).reconcileInvoiceShares();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Recorded ${formatCurrency(amount)} on ${invoice.invoiceNumber}')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      }
     }
   }
 
@@ -354,11 +441,18 @@ class _PaymentTile extends ConsumerWidget {
           color: showMarkPaid ? ClivoraColors.warningOrange : ClivoraColors.successGreen,
         ),
         title: Text(invoice.invoiceNumber, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(showMarkPaid ? 'Tap to record payment' : 'Paid'),
+        subtitle: Text(
+          showMarkPaid
+              ? 'Balance ${formatCurrency((invoice.total - invoice.amountPaid).clamp(0.0, double.infinity))}'
+              : 'Paid ${formatCurrency(invoice.total)}',
+        ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(formatCurrency(invoice.total), style: const TextStyle(fontWeight: FontWeight.w700)),
+            Text(
+              formatCurrency(showMarkPaid ? (invoice.total - invoice.amountPaid).clamp(0.0, double.infinity) : invoice.total),
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
             if (showMarkPaid) ...[
               const SizedBox(width: 8),
               Icon(Icons.chevron_right, color: ClivoraColors.labelGray.withValues(alpha: 0.8)),

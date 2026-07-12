@@ -6,6 +6,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/database/database.dart';
 import '../../data/models/invoice_line_item.dart';
@@ -19,6 +20,7 @@ class InvoicePdfService {
     required BusinessProfile business,
     required InvoiceBranding branding,
     Project? project,
+    String documentLabel = 'INVOICE',
   }) async {
     final bytes = await buildPdf(
       invoice: invoice,
@@ -26,6 +28,7 @@ class InvoicePdfService {
       business: business,
       branding: branding,
       project: project,
+      documentLabel: documentLabel,
     );
     final safeName = _safeFilename(invoice.invoiceNumber);
     try {
@@ -37,7 +40,7 @@ class InvoicePdfService {
       await SharePlus.instance.share(
         ShareParams(
           files: [XFile(file.path, mimeType: 'application/pdf', name: '$safeName.pdf')],
-          subject: 'Invoice ${invoice.invoiceNumber}',
+          subject: '$documentLabel ${invoice.invoiceNumber}',
         ),
       );
     }
@@ -49,6 +52,7 @@ class InvoicePdfService {
     required BusinessProfile business,
     required InvoiceBranding branding,
     Project? project,
+    String documentLabel = 'INVOICE',
   }) async {
     final bytes = await buildPdf(
       invoice: invoice,
@@ -56,6 +60,7 @@ class InvoicePdfService {
       business: business,
       branding: branding,
       project: project,
+      documentLabel: documentLabel,
     );
     await Printing.layoutPdf(onLayout: (_) async => bytes);
   }
@@ -66,6 +71,7 @@ class InvoicePdfService {
     required BusinessProfile business,
     required InvoiceBranding branding,
     Project? project,
+    String documentLabel = 'INVOICE',
   }) async {
     final accent = _hexToPdfColor(branding.accentColor);
     final items = parseLineItems(invoice.lineItems);
@@ -76,6 +82,10 @@ class InvoicePdfService {
         logoImage = pw.MemoryImage(await file.readAsBytes());
       }
     }
+
+    final prefs = await SharedPreferences.getInstance();
+    final ntn = prefs.getString('branding_ntn')?.trim() ?? '';
+    final paymentInstructions = prefs.getString('branding_payment_instructions')?.trim() ?? '';
 
     final doc = pw.Document();
     final template = branding.templateStyle;
@@ -88,14 +98,14 @@ class InvoicePdfService {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              _header(business, logoImage, accent, template),
+              _header(business, logoImage, accent, template, documentLabel),
               pw.SizedBox(height: 24),
               pw.Row(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
                   pw.Expanded(child: _billTo(customer)),
                   pw.SizedBox(width: 24),
-                  pw.Expanded(child: _invoiceMeta(invoice, project)),
+                  pw.Expanded(child: _invoiceMeta(invoice, project, documentLabel)),
                 ],
               ),
               pw.SizedBox(height: 24),
@@ -106,9 +116,49 @@ class InvoicePdfService {
                 child: _totals(invoice, accent),
               ),
               pw.Spacer(),
+              pw.Container(
+                width: double.infinity,
+                padding: const pw.EdgeInsets.all(12),
+                decoration: pw.BoxDecoration(
+                  color: PdfColor.fromInt(0xFFF8FAFC),
+                  borderRadius: pw.BorderRadius.circular(8),
+                  border: pw.Border.all(color: PdfColors.grey300),
+                ),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(documentLabel == 'QUOTE' ? 'Quote notes' : 'Payment & notes', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: accent)),
+                    pw.SizedBox(height: 4),
+                    pw.Text(
+                      documentLabel == 'QUOTE'
+                          ? 'This quote is valid until the date shown. Reference ${invoice.invoiceNumber} when accepting.'
+                          : 'Please pay by the due date. Reference invoice ${invoice.invoiceNumber} with your transfer.',
+                      style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+                    ),
+                    if (paymentInstructions.isNotEmpty) ...[
+                      pw.SizedBox(height: 4),
+                      pw.Text(paymentInstructions, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                    ],
+                    if (ntn.isNotEmpty) ...[
+                      pw.SizedBox(height: 4),
+                      pw.Text('NTN: $ntn', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                    ],
+                    if (business.businessAddress.isNotEmpty)
+                      pw.Text(business.businessAddress, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                    if (business.businessCity.isNotEmpty || business.businessCountry.isNotEmpty)
+                      pw.Text(
+                        [business.businessCity, business.businessPostalCode, business.businessCountry]
+                            .where((s) => s.isNotEmpty)
+                            .join(', '),
+                        style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+                      ),
+                  ],
+                ),
+              ),
+              pw.SizedBox(height: 12),
               pw.Text(
-                'Thank you for your business.',
-                style: pw.TextStyle(color: PdfColors.grey700, fontSize: 10),
+                'Thank you for your business · Powered by CLIVORA',
+                style: pw.TextStyle(color: PdfColors.grey700, fontSize: 9),
               ),
             ],
           );
@@ -128,7 +178,49 @@ class InvoicePdfService {
     pw.ImageProvider? logo,
     PdfColor accent,
     String template,
+    String documentLabel,
   ) {
+    if (template == 'bold') {
+      return pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Container(width: double.infinity, height: 10, color: accent),
+          pw.SizedBox(height: 12),
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              if (logo != null)
+                pw.Container(
+                  width: 56,
+                  height: 56,
+                  margin: const pw.EdgeInsets.only(right: 14),
+                  child: pw.Image(logo, fit: pw.BoxFit.contain),
+                ),
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      business.businessName.isNotEmpty ? business.businessName : 'CLIVORA',
+                      style: pw.TextStyle(fontSize: 28, fontWeight: pw.FontWeight.bold, color: accent),
+                    ),
+                    if (business.businessEmail.isNotEmpty)
+                      pw.Text(business.businessEmail, style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                    if (business.businessPhone.isNotEmpty)
+                      pw.Text(business.businessPhone, style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                  ],
+                ),
+              ),
+              pw.Text(
+                documentLabel,
+                style: pw.TextStyle(fontSize: 28, fontWeight: pw.FontWeight.bold, color: accent),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+
     final bg = _templateHeaderBg(template);
     return pw.Container(
       width: double.infinity,
@@ -162,7 +254,7 @@ class InvoicePdfService {
               ],
             ),
           ),
-          pw.Text('INVOICE', style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold, color: accent)),
+          pw.Text(documentLabel, style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold, color: accent)),
         ],
       ),
     );
@@ -186,11 +278,12 @@ class InvoicePdfService {
     );
   }
 
-  static pw.Widget _invoiceMeta(Invoice invoice, Project? project) {
+  static pw.Widget _invoiceMeta(Invoice invoice, Project? project, [String documentLabel = 'INVOICE']) {
+    final numLabel = documentLabel == 'QUOTE' ? 'Quote #' : 'Invoice #';
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.end,
       children: [
-        _metaRow('Invoice #', invoice.invoiceNumber),
+        _metaRow(numLabel, invoice.invoiceNumber),
         _metaRow('Issue Date', formatDisplayDate(invoice.issueDate)),
         if (invoice.dueDate != null) _metaRow('Due Date', formatDisplayDate(invoice.dueDate!)),
         _metaRow('Status', invoice.status.toUpperCase()),
@@ -305,6 +398,8 @@ class InvoicePdfService {
         return PdfColor.fromInt(0xFFEFF6FF);
       case 'minimal':
         return PdfColors.white;
+      case 'bold':
+        return PdfColors.white;
       default:
         return PdfColor.fromInt(0xFFF3F4F6);
     }
@@ -316,6 +411,8 @@ class InvoicePdfService {
         return PdfColor(accent.red, accent.green, accent.blue, 0.15);
       case 'minimal':
         return PdfColors.grey100;
+      case 'bold':
+        return PdfColor(accent.red, accent.green, accent.blue, 0.22);
       default:
         return PdfColor.fromInt(0xFFE5E7EB);
     }

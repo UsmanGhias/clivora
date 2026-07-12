@@ -7,6 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 import '../../data/database/database.dart';
 import '../../data/database/user_scoped_queries.dart';
 import '../../data/providers/database_provider.dart';
+import '../services/chat_block_service.dart';
+import 'cloud_notification_repository.dart';
 import 'supabase_auth_helper.dart';
 import 'supabase_sync_service.dart';
 
@@ -14,7 +16,7 @@ final cloudMessageRepositoryProvider = Provider<CloudMessageRepository>((ref) {
   return CloudMessageRepository(ref);
 });
 
-/// Cross-device inbox — stored in Supabase Postgres.
+/// Cross-device inbox, stored in Supabase Postgres.
 class CloudMessage {
   CloudMessage({
     required this.id,
@@ -95,16 +97,45 @@ class CloudMessageRepository {
     required String body,
     String? projectShareId,
   }) async {
+    var resolvedToUid = toUid;
+    if (resolvedToUid == null || resolvedToUid.isEmpty) {
+      resolvedToUid = await ref.read(supabaseSyncServiceProvider).uidForEmail(toEmail);
+    }
+
+    if (resolvedToUid != null && resolvedToUid.isNotEmpty) {
+      final blocked = await ref.read(chatBlockServiceProvider).isEitherBlocked(fromUid, resolvedToUid);
+      if (blocked) {
+        debugPrint('Message blocked: chat_block between $fromUid and $resolvedToUid');
+        throw StateError('Messaging is blocked with this contact');
+      }
+    }
+
     await _db.from('client_messages').insert({
       'from_uid': fromUid,
       'from_email': fromEmail.trim().toLowerCase(),
       'to_email': toEmail.trim().toLowerCase(),
-      if (toUid != null && toUid.isNotEmpty) 'to_uid': toUid,
+      if (resolvedToUid != null && resolvedToUid.isNotEmpty) 'to_uid': resolvedToUid,
       'subject': subject,
       'body': body,
       'is_read': false,
       if (projectShareId != null) 'project_share_id': projectShareId,
     });
+
+    if (resolvedToUid != null && resolvedToUid.isNotEmpty) {
+      final preview = subject.trim().isNotEmpty
+          ? subject.trim()
+          : (body.length > 80 ? '${body.substring(0, 80)}…' : body);
+      try {
+        await ref.read(cloudNotificationRepositoryProvider).sendToUid(
+              toUid: resolvedToUid,
+              title: 'New message',
+              body: preview,
+              kind: 'message',
+            );
+      } catch (e) {
+        debugPrint('Message notification failed: $e');
+      }
+    }
   }
 
   Stream<List<CloudMessage>> watchClientMailbox({required String uid, required String email}) {
@@ -112,22 +143,53 @@ class CloudMessageRepository {
     var received = <CloudMessage>[];
 
     final controller = StreamController<List<CloudMessage>>();
+    // Never leave UI in perpetual loading, emit immediately, then bootstrap + realtime.
+    controller.add(const <CloudMessage>[]);
+
+    Future<void> bootstrap() async {
+      try {
+        final rows = await _db
+            .from('client_messages')
+            .select()
+            .or('from_uid.eq.$uid,to_uid.eq.$uid')
+            .order('created_at', ascending: false)
+            .limit(200);
+        final all = (rows as List)
+            .map((r) => CloudMessage.fromRow(Map<String, dynamic>.from(r as Map)))
+            .toList();
+        sent = all.where((m) => m.fromUid == uid).toList();
+        received = all.where((m) => m.toUid == uid).toList();
+        if (!controller.isClosed) controller.add(_mergeMailbox(sent, received));
+      } catch (e) {
+        debugPrint('Mailbox bootstrap failed: $e');
+        if (!controller.isClosed) controller.add(const <CloudMessage>[]);
+      }
+    }
+
+    unawaited(bootstrap());
+
     final sentSub = _db
         .from('client_messages')
         .stream(primaryKey: ['id'])
         .eq('from_uid', uid)
         .listen((rows) {
       sent = rows.map(CloudMessage.fromRow).toList();
-      controller.add(_mergeMailbox(sent, received));
-    }, onError: controller.addError);
+      if (!controller.isClosed) controller.add(_mergeMailbox(sent, received));
+    }, onError: (e) {
+      debugPrint('Sent mailbox stream error: $e');
+      if (!controller.isClosed) controller.add(_mergeMailbox(sent, received));
+    });
     final recvSub = _db
         .from('client_messages')
         .stream(primaryKey: ['id'])
         .eq('to_uid', uid)
         .listen((rows) {
       received = rows.map(CloudMessage.fromRow).toList();
-      controller.add(_mergeMailbox(sent, received));
-    }, onError: (e) => debugPrint('Client mailbox error: $e'));
+      if (!controller.isClosed) controller.add(_mergeMailbox(sent, received));
+    }, onError: (e) {
+      debugPrint('Client mailbox error: $e');
+      if (!controller.isClosed) controller.add(_mergeMailbox(sent, received));
+    });
 
     controller.onCancel = () {
       sentSub.cancel();
@@ -159,29 +221,8 @@ class CloudMessageRepository {
     await _db.from('client_messages').update({'is_read': true}).eq('id', messageId);
   }
 
-  Stream<List<CloudMessage>> watchFreelancerMailbox({required String uid}) async* {
-    var sent = <CloudMessage>[];
-    var received = <CloudMessage>[];
-
-    final controller = StreamController<List<CloudMessage>>();
-    final sentSub = _db
-        .from('client_messages')
-        .stream(primaryKey: ['id'])
-        .eq('from_uid', uid)
-        .listen((rows) {
-      sent = rows.map(CloudMessage.fromRow).toList();
-      controller.add(_mergeMailbox(sent, received));
-    }, onError: controller.addError);
-    final recvSub = _db
-        .from('client_messages')
-        .stream(primaryKey: ['id'])
-        .eq('to_uid', uid)
-        .listen((rows) {
-      received = rows.map(CloudMessage.fromRow).toList();
-      controller.add(_mergeMailbox(sent, received));
-    }, onError: (e) => debugPrint('Freelancer inbox error: $e'));
-
-    yield* controller.stream;
+  Stream<List<CloudMessage>> watchFreelancerMailbox({required String uid}) {
+    return watchClientMailbox(uid: uid, email: '');
   }
 
   List<CloudMessage> _mergeMailbox(List<CloudMessage> sent, List<CloudMessage> received) {
@@ -242,6 +283,13 @@ class CloudMessageRepository {
 
     try {
       final toUid = await ref.read(supabaseSyncServiceProvider).uidForEmail(toEmail);
+      if (toUid != null && toUid.isNotEmpty) {
+        final blocked = await ref.read(chatBlockServiceProvider).isEitherBlocked(fromUid, toUid);
+        if (blocked) {
+          debugPrint('Hybrid message blocked: chat_block between $fromUid and $toUid');
+          return;
+        }
+      }
       await sendMessage(
             fromUid: fromUid,
             fromEmail: fromUser.email,

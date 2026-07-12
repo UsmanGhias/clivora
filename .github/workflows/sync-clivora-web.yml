@@ -1,0 +1,44 @@
+name: Sync web to clivora-web
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["web/**", ".github/workflows/sync-clivora-web.yml"]
+
+concurrency:
+  group: clivora-web-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout monorepo
+        uses: actions/checkout@v4
+
+      - name: Checkout generated web mirror
+        uses: actions/checkout@v4
+        with:
+          repository: UsmanGhias/clivora-web
+          ref: main
+          path: mirror
+          token: ${{ secrets.CLIVORA_WEB_SYNC_TOKEN }}
+
+      - name: Synchronize tested web source without force-push
+        env:
+          SYNC_TOKEN: ${{ secrets.CLIVORA_WEB_SYNC_TOKEN }}
+        run: |
+          test -n "$SYNC_TOKEN" || { echo "CLIVORA_WEB_SYNC_TOKEN is required" >&2; exit 1; }
+          rsync -a --delete --exclude='.git/' web/ mirror/
+          git -C mirror config user.email 'github-actions[bot]@users.noreply.github.com'
+          git -C mirror config user.name 'github-actions[bot]'
+          git -C mirror add -A
+          if git -C mirror diff --cached --quiet; then
+            echo 'Mirror already matches web/'
+            exit 0
+          fi
+          git -C mirror commit -m "Sync from clivora@${GITHUB_SHA::7}"
+          git -C mirror push origin main

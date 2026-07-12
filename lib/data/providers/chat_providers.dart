@@ -82,7 +82,7 @@ final chatThreadProvider = StreamProvider.family<List<ChatBubble>, ChatThreadKey
   final user = ref.watch(authStateProvider).valueOrNull;
   final uid = SupabaseAuthHelper.currentUid;
   if (user == null || uid == null || key.peerEmail.isEmpty) {
-    return const Stream.empty();
+    return Stream.value(const <ChatBubble>[]);
   }
 
   final repo = ref.watch(cloudMessageRepositoryProvider);

@@ -306,6 +306,9 @@ abstract final class ClivoraTheme {
           backgroundColor: iconButtonBg,
           foregroundColor: colorScheme.onSurface,
           minimumSize: Size(layout.minTouchTarget, layout.minTouchTarget),
+          // Keep soft chrome, but leave breathing room so adjacent icons don't merge.
+          padding: const EdgeInsets.all(10),
+          tapTargetSize: MaterialTapTargetSize.padded,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(ClivoraRadii.sm + 2),
           ),
@@ -354,7 +357,7 @@ abstract final class ClivoraTheme {
         : Colors.white;
     final secondary = brightness == Brightness.light
         ? ClivoraColors.textSecondary
-        : ClivoraColors.labelGray;
+        : const Color(0xFFCBD5E1);
 
     return TextTheme(
       headlineLarge: GoogleFonts.inter(
@@ -384,7 +387,7 @@ abstract final class ClivoraTheme {
         fontSize: 11,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.8,
-        color: ClivoraColors.labelGray,
+        color: brightness == Brightness.light ? ClivoraColors.labelGray : const Color(0xFF94A3B8),
       ),
     );
   }

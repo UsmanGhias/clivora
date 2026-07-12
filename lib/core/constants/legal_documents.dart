@@ -40,7 +40,7 @@ CHILDREN'S PRIVACY
 CLIVORA is not intended for users under 13.
 
 CONTACT
-support@codcrafters.org
+iusmanghias@gmail.com
 ''';
 
   static const termsTitle = 'Terms of Service';
@@ -77,6 +77,6 @@ CHANGES
 We may update these Terms. Continued use after updates constitutes acceptance.
 
 CONTACT
-support@codcrafters.org
+iusmanghias@gmail.com
 ''';
 }

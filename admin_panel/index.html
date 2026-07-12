@@ -115,14 +115,13 @@
   <div id="login-screen">
     <div class="login-card">
       <h1>CLIVORA Admin</h1>
-      <p>CodCrafters platform dashboard. Sign in with your admin email.</p>
+      <p>This legacy local panel is retired. Use the authenticated CLIVORA web admin with Supabase MFA.</p>
       <div id="login-error" class="error hidden"></div>
       <label for="email">Admin Email</label>
       <input id="email" type="email" placeholder="admin@codcrafters.org" autocomplete="username" />
       <label for="password">Panel Password</label>
       <input id="password" type="password" placeholder="Panel password" autocomplete="current-password" />
       <button type="button" id="login-btn" style="width:100%">Sign In</button>
-      <p style="margin-top:16px;font-size:0.8rem;color:var(--slate)">Default password: <code>REDACTED_PASSWORD</code></p>
     </div>
   </div>
 
@@ -239,7 +238,7 @@
 
   <script>
     const ADMIN_EMAILS = ['admin@codcrafters.org', 'usmanghias1@gmail.com'];
-    const PANEL_PASSWORD = 'REDACTED_PASSWORD';
+    const PANEL_PASSWORD = null;
     const PRO_PRICE_PKR = 2000;
     const STORAGE_KEY = 'clivora_admin_data_v1';
     const SESSION_KEY = 'clivora_admin_session';
