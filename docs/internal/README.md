@@ -1,3 +1,7 @@
+# Internal docs
+
+**Start here on a new machine:** [LOCALHOST_HANDOFF.md](./LOCALHOST_HANDOFF.md)
+
 # Internal only — NOT published to clivora.codcrafters.org/docs
 
 This folder holds private research briefs and internal notes.
