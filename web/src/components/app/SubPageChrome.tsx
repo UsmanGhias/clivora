@@ -16,7 +16,7 @@ export function SubPageChrome({
   backHref = "/app",
   backLabel = "Back to app",
   isClient = false,
-  showOpenApp = true,
+  showOpenApp = false,
   children,
   rightSlot,
 }: {

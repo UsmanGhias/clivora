@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MessageSquare, Network, Send } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -112,35 +112,44 @@ function ComposeForm({
         </div>
       )}
       {!parentId && (
-        <input
-          required
-          type="email"
-          placeholder={isClient ? "Freelancer email" : "Client email"}
-          value={toEmail}
-          onChange={(e) => setToEmail(e.target.value)}
-          className="w-full rounded-xl border border-border px-3 py-2 text-sm"
-        />
+        <label className="block text-xs font-semibold text-text-secondary">
+          {isClient ? "Freelancer email" : "Client email"}
+          <input
+            required
+            type="email"
+            placeholder={isClient ? "freelancer@example.com" : "client@example.com"}
+            value={toEmail}
+            onChange={(e) => setToEmail(e.target.value)}
+            className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
+          />
+        </label>
       )}
       {!parentId && (
-        <input
-          placeholder="Subject"
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-          className="w-full rounded-xl border border-border px-3 py-2 text-sm"
-        />
+        <label className="block text-xs font-semibold text-text-secondary">
+          Subject
+          <input
+            placeholder="Project update, invoice question, or next step"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
+          />
+        </label>
       )}
-      <textarea
-        required
-        rows={compact ? 2 : 3}
-        placeholder={parentId ? "Reply…" : "Write your message"}
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-        className="w-full rounded-xl border border-border px-3 py-2 text-sm"
-      />
+      <label className="block text-xs font-semibold text-text-secondary">
+        {parentId ? "Reply" : "Message"}
+        <textarea
+          required
+          rows={compact ? 2 : 3}
+          placeholder={parentId ? "Write a reply" : "Write your message"}
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
+        />
+      </label>
       {error && <p className="text-sm text-error">{error}</p>}
       {ok && (
         <p className="text-sm text-green-700">
-          {parentId ? "Reply sent." : "Sent. Live chat and push alerts are richer in the Android app."}
+          {parentId ? "Reply sent." : "Message sent."}
         </p>
       )}
       <button
@@ -203,6 +212,7 @@ export function MessagesThreadView({
 }) {
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "unread">("all");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const topLevel = useMemo(() => {
     const roots = rows.filter((r) => !r.parent_message_id);
@@ -221,6 +231,14 @@ export function MessagesThreadView({
   const unreadCount = rows.filter(
     (r) => !r.parent_message_id && r.from_uid !== myUid && !r.read_at,
   ).length;
+  const selectedThread = topLevel.find((r) => r.id === selectedId) ?? topLevel[0] ?? null;
+
+  useEffect(() => {
+    if (selectedId && !topLevel.some((r) => r.id === selectedId)) {
+      setSelectedId(null);
+      setReplyTo(null);
+    }
+  }, [selectedId, topLevel]);
 
   if (rows.length === 0) {
     return (
@@ -236,7 +254,9 @@ export function MessagesThreadView({
           </p>
           <Link
             href="/connect"
-            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white"
+            className={`mt-4 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white ${
+              isClient ? "bg-client-accent" : "bg-primary"
+            }`}
           >
             <Network className="h-4 w-4" />
             Open Connect
@@ -247,45 +267,97 @@ export function MessagesThreadView({
   }
 
   return (
-    <div className="space-y-4">
-      <ComposeForm fromEmail={fromEmail} isClient={isClient} />
-      <div className="flex flex-wrap items-center gap-2 text-xs">
-        <button
-          type="button"
-          onClick={() => setFilter("all")}
-          className={`rounded-lg px-2.5 py-1 font-semibold ${
-            filter === "all" ? "bg-navy text-white" : "bg-background text-text-secondary"
-          }`}
-        >
-          All threads
-        </button>
-        <button
-          type="button"
-          onClick={() => setFilter("unread")}
-          className={`rounded-lg px-2.5 py-1 font-semibold ${
-            filter === "unread" ? "bg-navy text-white" : "bg-background text-text-secondary"
-          }`}
-        >
-          Unread ({unreadCount})
-        </button>
-      </div>
-      {topLevel.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-sm text-text-secondary">
-          No unread messages.
-        </p>
-      ) : (
-        <ul className="space-y-3">
-          {topLevel.map((r) => {
-            const replies = repliesFor(r.id);
-            const isReplying = replyTo === r.id;
-            const isIncoming = r.from_uid !== myUid;
-            return (
-              <li key={r.id} className="rounded-2xl border border-border bg-surface">
-                <div className="px-4 py-3">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.5fr)]">
+      <aside className="space-y-4">
+        <ComposeForm fromEmail={fromEmail} isClient={isClient} />
+        <div className="rounded-2xl border border-border bg-surface p-3 shadow-sm">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <button
+              type="button"
+              onClick={() => setFilter("all")}
+              className={`rounded-lg px-2.5 py-1 font-semibold ${
+                filter === "all" ? "bg-navy text-white" : "bg-background text-text-secondary"
+              }`}
+            >
+              All threads
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilter("unread")}
+              className={`rounded-lg px-2.5 py-1 font-semibold ${
+                filter === "unread" ? "bg-navy text-white" : "bg-background text-text-secondary"
+              }`}
+            >
+              Unread ({unreadCount})
+            </button>
+          </div>
+          {topLevel.length === 0 ? (
+            <p className="mt-3 rounded-xl border border-dashed border-border px-4 py-6 text-center text-sm text-text-secondary">
+              No unread messages.
+            </p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {topLevel.map((r) => {
+                const isIncoming = r.from_uid !== myUid;
+                const active = selectedThread?.id === r.id;
+                return (
+                  <li key={r.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedId(r.id);
+                        setReplyTo(null);
+                      }}
+                      className={`w-full rounded-xl border px-3 py-2 text-left transition ${
+                        active
+                          ? "border-navy bg-navy text-white"
+                          : "border-border bg-background hover:border-navy/30"
+                      }`}
+                    >
+                      <span className="flex items-center justify-between gap-2">
+                        <span className="truncate text-sm font-bold">
+                          {r.subject || (isIncoming ? "Incoming message" : "Sent message")}
+                        </span>
                         {isIncoming && !r.read_at && (
+                          <span
+                            className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${
+                              active ? "bg-white/15 text-white" : "bg-primary/15 text-primary-dark"
+                            }`}
+                          >
+                            New
+                          </span>
+                        )}
+                      </span>
+                      <span
+                        className={`mt-1 block truncate text-xs ${
+                          active ? "text-white/70" : "text-text-muted"
+                        }`}
+                      >
+                        {r.from_email || "CLIVORA"}
+                        {r.created_at ? ` · ${formatTime(r.created_at)}` : ""}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </aside>
+
+      <section className="rounded-2xl border border-border bg-surface shadow-sm">
+        {selectedThread ? (
+          (() => {
+            const replies = repliesFor(selectedThread.id);
+            const isReplying = replyTo === selectedThread.id;
+            const isIncoming = selectedThread.from_uid !== myUid;
+            return (
+              <div>
+                <div className="border-b border-border px-4 py-3">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {isIncoming && !selectedThread.read_at && (
                           <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-primary-dark">
                             New
                           </span>
@@ -294,23 +366,25 @@ export function MessagesThreadView({
                           {isIncoming ? "Incoming" : "Sent"}
                         </span>
                       </div>
-                      {r.subject && (
-                        <p className="mt-1 text-xs font-semibold text-text-secondary">{r.subject}</p>
-                      )}
-                      <p className="text-sm text-text-primary">{r.body || "(empty)"}</p>
-                      <p className="mt-1 text-xs text-text-muted">
-                        {r.from_email || "CLIVORA"}
-                        {r.created_at ? ` · ${formatTime(r.created_at)}` : ""}
-                        {r.read_at ? ` · Read ${formatTime(r.read_at)}` : ""}
+                      <h2 className="mt-1 font-bold text-navy">
+                        {selectedThread.subject || "Message thread"}
+                      </h2>
+                      <p className="text-xs text-text-muted">
+                        {selectedThread.from_email || "CLIVORA"}
+                        {selectedThread.created_at ? ` · ${formatTime(selectedThread.created_at)}` : ""}
+                        {selectedThread.read_at ? ` · Read ${formatTime(selectedThread.read_at)}` : ""}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {isIncoming && !r.read_at && (
-                        <MarkReadButton messageId={r.id} readAt={r.read_at} />
+                      {isIncoming && !selectedThread.read_at && (
+                        <MarkReadButton
+                          messageId={selectedThread.id}
+                          readAt={selectedThread.read_at}
+                        />
                       )}
                       <button
                         type="button"
-                        onClick={() => setReplyTo(isReplying ? null : r.id)}
+                        onClick={() => setReplyTo(isReplying ? null : selectedThread.id)}
                         className="rounded-lg bg-navy/5 px-2.5 py-1 text-[11px] font-semibold text-navy"
                       >
                         {isReplying ? "Cancel" : "Reply"}
@@ -318,46 +392,55 @@ export function MessagesThreadView({
                     </div>
                   </div>
                 </div>
-
-                {replies.length > 0 && (
-                  <ul className="ml-4 border-l-2 border-border sm:ml-6">
-                    {replies.map((rep) => {
-                      const repIncoming = rep.from_uid !== myUid;
-                      return (
-                        <li key={rep.id} className="px-4 py-2">
-                          <p className="text-sm text-text-primary">{rep.body || "(empty)"}</p>
-                          <div className="mt-1 flex items-center gap-2">
-                            <p className="text-xs text-text-muted">
-                              {rep.from_email || "CLIVORA"}
-                              {rep.created_at ? ` · ${formatTime(rep.created_at)}` : ""}
-                            </p>
-                            {repIncoming && !rep.read_at && (
-                              <MarkReadButton messageId={rep.id} readAt={rep.read_at} />
-                            )}
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-
-                {isReplying && (
-                  <div className="border-t border-border p-3">
+                <div className="space-y-3 px-4 py-4">
+                  <div className="rounded-xl bg-background px-4 py-3">
+                    <p className="text-sm text-text-primary">{selectedThread.body || "(empty)"}</p>
+                  </div>
+                  {replies.length > 0 && (
+                    <ul className="space-y-2 border-l-2 border-border pl-3">
+                      {replies.map((rep) => {
+                        const repIncoming = rep.from_uid !== myUid;
+                        return (
+                          <li key={rep.id} className="rounded-xl bg-background px-4 py-3">
+                            <p className="text-sm text-text-primary">{rep.body || "(empty)"}</p>
+                            <div className="mt-1 flex flex-wrap items-center gap-2">
+                              <p className="text-xs text-text-muted">
+                                {rep.from_email || "CLIVORA"}
+                                {rep.created_at ? ` · ${formatTime(rep.created_at)}` : ""}
+                              </p>
+                              {repIncoming && !rep.read_at && (
+                                <MarkReadButton messageId={rep.id} readAt={rep.read_at} />
+                              )}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                  {isReplying && (
                     <ComposeForm
                       fromEmail={fromEmail}
-                      parentId={r.id}
-                      parentSubject={r.subject ?? undefined}
+                      parentId={selectedThread.id}
+                      parentSubject={selectedThread.subject ?? undefined}
                       compact
                       isClient={isClient}
                       onSent={() => setReplyTo(null)}
                     />
-                  </div>
-                )}
-              </li>
+                  )}
+                </div>
+              </div>
             );
-          })}
-        </ul>
-      )}
+          })()
+        ) : (
+          <div className="p-8 text-center">
+            <MessageSquare className="mx-auto h-8 w-8 text-text-muted" />
+            <p className="mt-3 font-semibold text-navy">No thread selected</p>
+            <p className="mt-2 text-sm text-text-secondary">
+              Choose a thread or switch back to all messages.
+            </p>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

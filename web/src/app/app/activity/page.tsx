@@ -2,7 +2,6 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile, isClientAccount } from "@/lib/profile";
 import { redirect } from "next/navigation";
-import { SmartAppCta } from "@/components/app/SmartAppCta";
 
 /** Client Updates feed, mirrors Flutter /client-activity */
 export default async function ActivityPage() {
@@ -37,7 +36,7 @@ export default async function ActivityPage() {
       <div>
         <h1 className="text-2xl font-extrabold text-navy">Updates</h1>
         <p className="text-sm text-text-secondary">
-          Activity from freelancers you work with. Richer timelines live in the app.
+          Activity from freelancers you work with across messages, projects, and invoices.
         </p>
       </div>
 
@@ -70,13 +69,6 @@ export default async function ActivityPage() {
           ))}
         </ul>
       )}
-
-      <SmartAppCta
-        tone="client"
-        title="Live updates & push alerts in the app"
-        body="The client portal on Android shows milestones, contracts, and push notifications the moment something changes."
-        deepPath="open/client-activity"
-      />
     </div>
   );
 }

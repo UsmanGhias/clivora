@@ -17,6 +17,58 @@ import { createClient } from "@/lib/supabase/client";
 
 type CustomFields = Record<string, string>;
 
+const PROJECT_STATUS_LABELS: Record<string, string> = {
+  not_started: "Backlog",
+  in_progress: "In progress",
+  on_hold: "On hold",
+  completed: "Done",
+};
+
+const PROJECT_PROGRESS: Record<string, number> = {
+  not_started: 10,
+  in_progress: 55,
+  on_hold: 35,
+  completed: 100,
+};
+
+function normalizeProjectStatus(status?: string | null) {
+  const value = (status || "not_started").toLowerCase().replace(/\s+/g, "_");
+  if (value === "active" || value === "ongoing") return "in_progress";
+  if (value === "done" || value === "complete") return "completed";
+  if (value in PROJECT_STATUS_LABELS) return value;
+  return "not_started";
+}
+
+function ProjectStatusPill({ status }: { status?: string | null }) {
+  const normalized = normalizeProjectStatus(status);
+  const className =
+    normalized === "completed"
+      ? "bg-success/10 text-success"
+      : normalized === "in_progress"
+        ? "bg-primary/10 text-primary-dark"
+        : normalized === "on_hold"
+          ? "bg-amber-100 text-amber-900"
+          : "bg-slate-100 text-slate-700";
+  return (
+    <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${className}`}>
+      {PROJECT_STATUS_LABELS[normalized]}
+    </span>
+  );
+}
+
+function ProjectProgress({ status }: { status?: string | null }) {
+  const normalized = normalizeProjectStatus(status);
+  const pct = PROJECT_PROGRESS[normalized] ?? 10;
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <div className="h-1.5 w-28 overflow-hidden rounded-full bg-background">
+        <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-[11px] font-semibold text-text-muted">{pct}%</span>
+    </div>
+  );
+}
+
 function CustomFieldsEditor({ customerId, initialFields }: { customerId: string; initialFields: CustomFields }) {
   const [fields, setFields] = useState<CustomFields>(initialFields);
   const [newKey, setNewKey] = useState("");
@@ -195,29 +247,38 @@ export function CustomersCrmPanel({
           </p>
         )}
         <div className="grid gap-2 sm:grid-cols-3">
-          <input
-            required
-            disabled={!canCreate || busy}
-            placeholder="Contact name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="rounded-xl border border-border px-3 py-2 text-sm"
-          />
-          <input
-            disabled={!canCreate || busy}
-            placeholder="Company"
-            value={company}
-            onChange={(e) => setCompany(e.target.value)}
-            className="rounded-xl border border-border px-3 py-2 text-sm"
-          />
-          <input
-            type="email"
-            disabled={!canCreate || busy}
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="rounded-xl border border-border px-3 py-2 text-sm"
-          />
+          <label className="block text-xs font-semibold text-text-secondary">
+            Contact name
+            <input
+              required
+              disabled={!canCreate || busy}
+              placeholder="Jane Client"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block text-xs font-semibold text-text-secondary">
+            Company
+            <input
+              disabled={!canCreate || busy}
+              placeholder="Company name"
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block text-xs font-semibold text-text-secondary">
+            Email
+            <input
+              type="email"
+              disabled={!canCreate || busy}
+              placeholder="client@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
+            />
+          </label>
         </div>
         {error && <p className="text-sm text-error">{error}</p>}
         <button
@@ -398,37 +459,47 @@ export function ProjectsCrmPanel({
           </p>
         )}
         <div className="grid gap-2 sm:grid-cols-3">
-          <input
-            required
-            disabled={!canCreate || busy}
-            placeholder="Project name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="rounded-xl border border-border px-3 py-2 text-sm"
-          />
-          <select
-            disabled={!canCreate || busy || customers.length === 0}
-            value={customerId}
-            onChange={(e) => setCustomerId(e.target.value)}
-            className="rounded-xl border border-border px-3 py-2 text-sm"
-          >
-            {customers.length === 0 ? (
-              <option value="">Add a client first</option>
-            ) : (
-              customers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.contact_person}
-                </option>
-              ))
-            )}
-          </select>
-          <input
-            disabled={!canCreate || busy}
-            placeholder="Budget"
-            value={budget}
-            onChange={(e) => setBudget(e.target.value)}
-            className="rounded-xl border border-border px-3 py-2 text-sm"
-          />
+          <label className="block text-xs font-semibold text-text-secondary">
+            Project name
+            <input
+              required
+              disabled={!canCreate || busy}
+              placeholder="Website redesign"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block text-xs font-semibold text-text-secondary">
+            Client
+            <select
+              disabled={!canCreate || busy || customers.length === 0}
+              value={customerId}
+              onChange={(e) => setCustomerId(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
+            >
+              {customers.length === 0 ? (
+                <option value="">Add a client first</option>
+              ) : (
+                customers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.contact_person}
+                  </option>
+                ))
+              )}
+            </select>
+          </label>
+          <label className="block text-xs font-semibold text-text-secondary">
+            Budget
+            <input
+              disabled={!canCreate || busy}
+              inputMode="decimal"
+              placeholder="2500"
+              value={budget}
+              onChange={(e) => setBudget(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
+            />
+          </label>
         </div>
         {error && <p className="text-sm text-error">{error}</p>}
         <button
@@ -452,11 +523,15 @@ export function ProjectsCrmPanel({
               className="flex items-start justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3"
             >
               <div>
-                <p className="font-semibold">{r.name}</p>
-                <p className="text-sm text-text-secondary">
-                  {customerName(r.customer_id)} · {r.status}
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-semibold">{r.name}</p>
+                  <ProjectStatusPill status={r.status} />
+                </div>
+                <p className="mt-1 text-sm text-text-secondary">
+                  {customerName(r.customer_id)}
                   {r.budget ? ` · ${r.currency} ${r.budget}` : ""}
                 </p>
+                <ProjectProgress status={r.status} />
               </div>
               <button
                 type="button"
@@ -567,50 +642,63 @@ export function InvoicesCrmPanel({
           </p>
         )}
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <input
-            required
-            disabled={!canCreate || busy}
-            placeholder="Invoice #"
-            value={number}
-            onChange={(e) => setNumber(e.target.value)}
-            className="rounded-xl border border-border px-3 py-2 text-sm"
-          />
-          <select
-            disabled={!canCreate || busy || customers.length === 0}
-            value={customerId}
-            onChange={(e) => setCustomerId(e.target.value)}
-            className="rounded-xl border border-border px-3 py-2 text-sm"
-          >
-            {customers.length === 0 ? (
-              <option value="">Add a client first</option>
-            ) : (
-              customers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.contact_person}
+          <label className="block text-xs font-semibold text-text-secondary">
+            Invoice number
+            <input
+              required
+              disabled={!canCreate || busy}
+              placeholder="INV-001"
+              value={number}
+              onChange={(e) => setNumber(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block text-xs font-semibold text-text-secondary">
+            Client
+            <select
+              disabled={!canCreate || busy || customers.length === 0}
+              value={customerId}
+              onChange={(e) => setCustomerId(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
+            >
+              {customers.length === 0 ? (
+                <option value="">Add a client first</option>
+              ) : (
+                customers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.contact_person}
+                  </option>
+                ))
+              )}
+            </select>
+          </label>
+          <label className="block text-xs font-semibold text-text-secondary">
+            Project
+            <select
+              disabled={!canCreate || busy}
+              value={projectId}
+              onChange={(e) => setProjectId(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
+            >
+              <option value="">No project</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
                 </option>
-              ))
-            )}
-          </select>
-          <select
-            disabled={!canCreate || busy}
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-            className="rounded-xl border border-border px-3 py-2 text-sm"
-          >
-            <option value="">No project</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          <input
-            disabled={!canCreate || busy}
-            placeholder="Total"
-            value={total}
-            onChange={(e) => setTotal(e.target.value)}
-            className="rounded-xl border border-border px-3 py-2 text-sm"
-          />
+              ))}
+            </select>
+          </label>
+          <label className="block text-xs font-semibold text-text-secondary">
+            Total
+            <input
+              disabled={!canCreate || busy}
+              inputMode="decimal"
+              placeholder="1200"
+              value={total}
+              onChange={(e) => setTotal(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
+            />
+          </label>
         </div>
         {error && <p className="text-sm text-error">{error}</p>}
         <button

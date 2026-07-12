@@ -4,8 +4,57 @@ import { listCustomersServer, listProjectsServer } from "@/lib/crm/server";
 import { canCreateProject } from "@/lib/plan-gates";
 import { ProjectsCrmPanel } from "@/components/crm/CrmPanels";
 import { ProjectKanban } from "@/components/crm/ProjectKanban";
-import { DownloadAppCard } from "@/components/app/DownloadAppCard";
 import { createClient } from "@/lib/supabase/server";
+
+const STATUS_LABELS: Record<string, string> = {
+  not_started: "Backlog",
+  in_progress: "In progress",
+  on_hold: "On hold",
+  completed: "Done",
+  active: "Active",
+};
+
+const STATUS_PROGRESS: Record<string, number> = {
+  not_started: 10,
+  in_progress: 55,
+  on_hold: 35,
+  completed: 100,
+  active: 55,
+};
+
+function normalizeStatus(status?: string | null) {
+  const value = (status || "active").toLowerCase().replace(/\s+/g, "_");
+  if (value === "ongoing") return "in_progress";
+  if (value === "done" || value === "complete") return "completed";
+  return value in STATUS_LABELS ? value : "active";
+}
+
+function StatusChip({ status }: { status?: string | null }) {
+  const normalized = normalizeStatus(status);
+  const className =
+    normalized === "completed"
+      ? "bg-success/10 text-success"
+      : normalized === "on_hold"
+        ? "bg-amber-100 text-amber-900"
+        : "bg-client-surface text-client-accent";
+  return (
+    <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${className}`}>
+      {STATUS_LABELS[normalized] ?? status ?? "Active"}
+    </span>
+  );
+}
+
+function Progress({ status }: { status?: string | null }) {
+  const pct = STATUS_PROGRESS[normalizeStatus(status)] ?? 35;
+  return (
+    <div className="flex items-center gap-2">
+      <div className="h-1.5 w-24 overflow-hidden rounded-full bg-client-surface">
+        <div className="h-full rounded-full bg-client-accent" style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-[11px] font-semibold text-text-muted">{pct}%</span>
+    </div>
+  );
+}
 
 export default async function ProjectsPage() {
   const profile = await getProfile();
@@ -36,6 +85,7 @@ export default async function ProjectsPage() {
       status?: string | null;
       budget?: number | null;
       currency?: string | null;
+      updated_at?: string | null;
     }> = [];
     try {
       const { data } = await supabase
@@ -52,7 +102,9 @@ export default async function ProjectsPage() {
       <div className="space-y-4">
         <div>
           <h1 className="text-2xl font-extrabold">Work / Projects</h1>
-          <p className="text-sm text-text-secondary">Projects shared with you by freelancers.</p>
+          <p className="text-sm text-text-secondary">
+            Projects shared with you by freelancers, with current status and budget context.
+          </p>
         </div>
         {rows.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center">
@@ -62,19 +114,29 @@ export default async function ProjectsPage() {
             </Link>
           </div>
         ) : (
-          <ul className="space-y-2">
+          <ul className="grid gap-2">
             {rows.map((r) => (
-              <li key={r.share_id} className="rounded-xl border border-border bg-surface px-4 py-3">
-                <p className="font-semibold">{r.project_name || "Project"}</p>
-                <p className="text-sm text-text-secondary">
-                  {r.freelancer_email || "Freelancer"} · {r.status || "active"}
-                  {r.budget != null ? ` · ${r.currency || ""} ${r.budget}` : ""}
-                </p>
+              <li
+                key={r.share_id}
+                className="grid gap-3 rounded-xl border border-border bg-surface px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto]"
+              >
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-semibold text-navy">{r.project_name || "Project"}</p>
+                    <StatusChip status={r.status} />
+                  </div>
+                  <p className="mt-1 text-sm text-text-secondary">
+                    {r.freelancer_email || "Freelancer"}
+                    {r.budget != null ? ` · ${r.currency || ""} ${r.budget}` : ""}
+                  </p>
+                </div>
+                <div className="flex items-center sm:justify-end">
+                  <Progress status={r.status} />
+                </div>
               </li>
             ))}
           </ul>
         )}
-        <DownloadAppCard title="Track milestones in the app" tone="client" />
       </div>
     );
   }
@@ -86,7 +148,7 @@ export default async function ProjectsPage() {
       <div>
         <h1 className="text-2xl font-extrabold">Work / Projects</h1>
         <p className="text-sm text-text-secondary">
-          Cloud CRM projects synced with the app. Time tracking & rich editing are app-preferred.
+          Cloud CRM projects with pipeline status, budgets, and client links.
         </p>
       </div>
       <ProjectsCrmPanel
@@ -101,7 +163,6 @@ export default async function ProjectsPage() {
           <ProjectKanban initial={projects} />
         </div>
       )}
-      <DownloadAppCard title="Time tracking & milestones in the app" />
     </div>
   );
 }

@@ -397,6 +397,60 @@ export function ConnectBoard({
           </div>
         )}
 
+        {tab !== "inbox" && (query.trim() || categoryFilter || skillFilter || sort !== "featured") && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-xs">
+            <span className="font-bold text-navy">Applied filters</span>
+            {query.trim() && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="rounded-lg bg-white px-2 py-1 font-semibold text-text-secondary hover:text-navy"
+              >
+                Search: {query.trim()} ×
+              </button>
+            )}
+            {categoryFilter && (
+              <button
+                type="button"
+                onClick={() => setCategoryFilter(null)}
+                className="rounded-lg bg-white px-2 py-1 font-semibold text-text-secondary hover:text-navy"
+              >
+                Category: {categoryFilter} ×
+              </button>
+            )}
+            {skillFilter && (
+              <button
+                type="button"
+                onClick={() => setSkillFilter(null)}
+                className="rounded-lg bg-white px-2 py-1 font-semibold text-text-secondary hover:text-navy"
+              >
+                Skill: {skillFilter} ×
+              </button>
+            )}
+            {sort !== "featured" && (
+              <button
+                type="button"
+                onClick={() => setSort("featured")}
+                className="rounded-lg bg-white px-2 py-1 font-semibold text-text-secondary hover:text-navy"
+              >
+                Sort: {sort === "rating" ? "Top rated" : sort === "rate" ? "Rate" : "Newest"} ×
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setQuery("");
+                setCategoryFilter(null);
+                setSkillFilter(null);
+                setSort("featured");
+              }}
+              className="ml-auto rounded-lg bg-navy px-2 py-1 font-bold text-white"
+            >
+              Clear all
+            </button>
+          </div>
+        )}
+
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-text-secondary">
           <span className="rounded-lg bg-primary/10 px-2.5 py-1 font-semibold text-primary-dark">
             {filteredProfiles.length} freelancers

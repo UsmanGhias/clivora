@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 import { getProfile, isClientAccount } from "@/lib/profile";
-import { DownloadAppCard } from "@/components/app/DownloadAppCard";
 
 export default async function TasksPage() {
   const profile = await getProfile();
@@ -31,7 +30,7 @@ export default async function TasksPage() {
       <div>
         <h1 className="text-2xl font-extrabold">Tasks</h1>
         <p className="text-sm text-text-secondary">
-          Shared client tasks from Supabase. Create and assign tasks in the mobile app.
+          Shared client tasks from your freelancer/client workspace.
         </p>
       </div>
       {rows.length === 0 ? (
@@ -51,7 +50,6 @@ export default async function TasksPage() {
           ))}
         </ul>
       )}
-      <DownloadAppCard title="Manage tasks in the app" />
     </div>
   );
 }
