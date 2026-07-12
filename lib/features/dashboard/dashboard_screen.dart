@@ -21,6 +21,7 @@ import '../../shared/widgets/messages_icon_button.dart';
 import '../../shared/widgets/notification_icon_button.dart';
 import '../../shared/widgets/skeleton_loading.dart';
 import '../../shared/widgets/today_overdue_card.dart';
+import 'priority_strips.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -223,6 +224,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
               ],
               const SizedBox(height: 20),
+              const FreelancerPriorityStrip(),
               Container(
                 width: double.infinity,
                 child: statsAsync.when(

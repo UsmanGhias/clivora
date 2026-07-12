@@ -39,7 +39,10 @@ export async function POST(req: NextRequest) {
   const querySecret = req.nextUrl.searchParams.get("secret");
   const providedSecret = authHeader ?? querySecret;
 
-  if (AUTOMATION_WEBHOOK_SECRET && providedSecret !== AUTOMATION_WEBHOOK_SECRET) {
+  if (!AUTOMATION_WEBHOOK_SECRET) {
+    return NextResponse.json({ error: "Automation webhook is not configured" }, { status: 503 });
+  }
+  if (providedSecret !== AUTOMATION_WEBHOOK_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

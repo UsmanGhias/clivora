@@ -14,6 +14,7 @@ import '../../core/auth/user_roles.dart';
 import '../../data/database/database.dart';
 import '../../data/database/user_scoped_queries.dart';
 import '../../data/providers/app_providers.dart';
+import '../dashboard/priority_strips.dart';
 
 /// Client home, shared projects, hours, and progress (read-only).
 class ClientPortalScreen extends ConsumerWidget {
@@ -74,7 +75,9 @@ class ClientPortalScreen extends ConsumerWidget {
                     projectCount: projects.length,
                     isGuest: isGuest,
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
+                  const ClientPriorityStrip(),
+                  const SizedBox(height: 12),
                   _ClientStatsRow(projects: projects, clientUserId: user?.id),
                   const SizedBox(height: 12),
                   Row(

@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { CONNECT_CREDIT_COSTS, parseConnectCreditError } from "@/lib/connect-credits";
 import type { ConnectMilestone, ConnectReview } from "@/lib/connect";
 
 const MILESTONE_STATUSES = ["pending", "funded", "released", "disputed"] as const;
@@ -58,17 +59,16 @@ function ReviewForm({
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Sign in required");
-      const { error: err } = await supabase.from("connect_reviews").insert({
-        request_id: requestId,
-        from_user_id: user.id,
-        to_user_id: revieweeId,
-        rating,
-        body: body.trim() || "",
+      const { error: err } = await supabase.rpc("connect_submit_review", {
+        p_to_user_id: revieweeId,
+        p_request_id: requestId,
+        p_rating: rating,
+        p_body: body.trim() || "",
       });
       if (err) throw err;
       onDone();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not submit review");
+      setError(parseConnectCreditError(err).message);
     } finally {
       setBusy(false);
     }
@@ -122,20 +122,18 @@ function ProposalForm({
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Sign in required");
-      const { error: err } = await supabase.from("connect_proposals").insert({
-        need_id: needId,
-        from_user_id: user.id,
-        to_user_id: toUserId,
-        amount: amount ? Number(amount) : 0,
-        currency: "USD",
-        timeline_days: timelineDays ? Number(timelineDays) : null,
-        message: message.trim() || "",
-        status: "pending",
+      const { error: err } = await supabase.rpc("connect_submit_proposal", {
+        p_to_user_id: toUserId,
+        p_need_id: needId,
+        p_amount: amount ? Number(amount) : 0,
+        p_currency: "USD",
+        p_timeline_days: timelineDays ? Number(timelineDays) : null,
+        p_message: message.trim() || "",
       });
       if (err) throw err;
       onDone();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not submit proposal");
+      setError(parseConnectCreditError(err).message);
     } finally {
       setBusy(false);
     }
@@ -250,7 +248,11 @@ function MilestonesPanel({
       if (status === "funded") patch.funded_at = new Date().toISOString();
       if (status === "released") patch.released_at = new Date().toISOString();
       if (status === "disputed") patch.disputed_at = new Date().toISOString();
-      await supabase.from("connect_milestones").update(patch).eq("id", id);
+      const { error: msErr } = await supabase.rpc("connect_transition_milestone", {
+        p_milestone_id: id,
+        p_status: patch.status,
+      });
+      if (msErr) throw msErr;
       await load();
     } finally {
       setBusy(false);
@@ -265,7 +267,7 @@ function MilestonesPanel({
 
   return (
     <div className="space-y-3">
-      <p className="text-sm font-bold text-navy">Milestones & escrow status</p>
+      <p className="text-sm font-bold text-navy">Milestones & payment tracking</p>
       {milestones.length === 0 ? (
         <p className="text-sm text-text-secondary">No milestones yet.</p>
       ) : (
@@ -390,14 +392,12 @@ function ProposalsInbox({
     setError(null);
     try {
       const supabase = createClient();
-      const { error: err } = await supabase
-        .from("connect_proposals")
-        .update({ status: "accepted", updated_at: new Date().toISOString() })
-        .eq("id", proposalId)
-        .eq("to_user_id", myUserId);
+      const { error: err } = await supabase.rpc("connect_accept_proposal", {
+        p_proposal_id: proposalId,
+      });
       if (err) throw err;
 
-      // Auto-create first milestone for the engagement
+      // Auto-create first milestone for the engagement (free — tracking only)
       if (requestId) {
         await supabase.from("connect_milestones").insert({
           engagement_request_id: requestId,
