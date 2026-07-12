@@ -107,7 +107,7 @@ export default async function AppHomePage() {
   return (
     <div className="space-y-6">
       <section
-        className={`rounded-2xl p-6 text-white shadow-lg ${
+        className={`rounded-2xl p-5 text-white shadow-sm ${
           client ? "bg-client-gradient" : "bg-brand-gradient"
         }`}
       >
@@ -175,6 +175,13 @@ export default async function AppHomePage() {
           href="/app/messages"
           client={client}
         />
+      </section>
+
+      <section className="grid gap-3 sm:grid-cols-4">
+        <QuickLink title="Projects" href="/app/projects" client={client} />
+        <QuickLink title="Messages" href="/app/messages" client={client} />
+        <QuickLink title="Invoices" href="/app/invoices" client={client} />
+        <QuickLink title="Connect" href="/connect" client={client} />
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2">
@@ -254,6 +261,29 @@ function PriorityCard({
       <p className={`mt-1 text-2xl font-extrabold ${client ? "text-client-accent" : "text-primary"}`}>
         {value}
       </p>
+    </Link>
+  );
+}
+
+function QuickLink({
+  title,
+  href,
+  client,
+}: {
+  title: string;
+  href: string;
+  client?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={`rounded-2xl border bg-surface px-4 py-3 text-sm font-bold shadow-sm transition ${
+        client
+          ? "border-border text-client-accent hover:border-client-accent/50"
+          : "border-border text-primary-dark hover:border-primary/40"
+      }`}
+    >
+      {title}
     </Link>
   );
 }

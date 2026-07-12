@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 import { getProfile, isClientAccount } from "@/lib/profile";
-import { DownloadAppCard } from "@/components/app/DownloadAppCard";
 import { MessagesThreadView } from "./MessagesThreadView";
 
 export type MessageRow = {
@@ -43,8 +42,8 @@ export default async function MessagesPage() {
         <h1 className="text-2xl font-extrabold">Messages</h1>
         <p className="text-sm text-text-secondary">
           {isClient
-            ? "Talk with freelancers after Connect accept or on shared work. Live chat is richer in the app."
-            : "Cloud inbox for clients and Connect matches. Realtime chat and push alerts are richer in the mobile app."}
+            ? "Talk with freelancers after Connect accept or on shared work."
+            : "Cloud inbox for clients, CRM contacts, and Connect matches."}
         </p>
       </div>
       <MessagesThreadView
@@ -53,7 +52,6 @@ export default async function MessagesPage() {
         myUid={uid}
         isClient={isClient}
       />
-      <DownloadAppCard title="Chat live in the CLIVORA app" />
     </div>
   );
 }
