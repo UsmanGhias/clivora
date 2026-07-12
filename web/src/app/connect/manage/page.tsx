@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { CONNECT_CREDIT_COSTS, parseConnectCreditError } from "@/lib/connect-credits";
 import { SubPageChrome } from "@/components/app/SubPageChrome";
 
 type ProfileRow = {
@@ -169,15 +170,33 @@ export default function ConnectManagePage() {
       moderation_status: "pending",
       updated_at: new Date().toISOString(),
     };
+    const firstPublish = listing.is_listed && !listing.id;
+    if (firstPublish && accountType === "freelancer") {
+      const { error: rpcErr } = await supabase.rpc("connect_publish_profile", {
+        p_headline: listing.headline.trim() || listing.display_title.trim(),
+        p_bio: listing.bio.trim(),
+        p_skills: skills,
+        p_rate: Number(String(listing.rate_band).replace(/[^0-9.]/g, "")) || 0,
+      });
+      if (rpcErr) {
+        setSaving(false);
+        setError(parseConnectCreditError(rpcErr).message);
+        return;
+      }
+    }
     const { error: err } = listing.id
       ? await supabase.from("connect_profiles").update(payload).eq("id", listing.id)
-      : await supabase.from("connect_profiles").insert(payload);
+      : await supabase.from("connect_profiles").upsert(payload, { onConflict: "user_id" });
     setSaving(false);
     if (err) {
       setError(err.message);
       return;
     }
-    setMessage("Profile saved. It may appear after moderation.");
+    setMessage(
+      firstPublish
+        ? `Profile published (−${CONNECT_CREDIT_COSTS.publish_profile} credits). It may appear after moderation.`
+        : "Profile saved. Editing an active listing is free.",
+    );
   }
 
   async function createNeed(e: FormEvent) {
@@ -198,21 +217,18 @@ export default function ConnectManagePage() {
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
-    const { error: err } = await supabase.from("connect_need_posts").insert({
-      client_user_id: user.id,
-      title: need.title.trim(),
-      summary: need.summary.trim(),
-      skills,
-      budget_band: need.budget_band.trim(),
-      is_open: true,
-      moderation_status: "pending",
+    const { error: err } = await supabase.rpc("connect_publish_need", {
+      p_title: need.title.trim(),
+      p_summary: need.summary.trim(),
+      p_skills: skills,
+      p_budget_band: need.budget_band.trim(),
     });
     setSaving(false);
     if (err) {
-      setError(err.message);
+      setError(parseConnectCreditError(err).message);
       return;
     }
-    setMessage("Job posted.");
+    setMessage(`Job posted (−${CONNECT_CREDIT_COSTS.publish_need} credits).`);
     setNeed({ title: "", summary: "", skills: "", budget_band: "" });
     router.refresh();
   }

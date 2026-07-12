@@ -2,7 +2,7 @@
 
 Maps the 30+ marketplace requirements (competitor brief + internal v2.15 status) to shipped code.
 
-**USP:** $0 platform fees on negotiated rates. Unlimited proposals with Pro Plus. No Upwork-style Connect tokens.
+**USP:** $0 platform fees on negotiated rates. Monthly Connect credits with Pro Plus (100/mo). No Upwork-style Connect tokens.
 
 | Area | Capability | Status | Notes |
 |------|------------|--------|-------|
@@ -16,7 +16,7 @@ Maps the 30+ marketplace requirements (competitor brief + internal v2.15 status)
 | Jobs | Contests | Later | — |
 | Jobs | Attachments on posts | Later | — |
 | Proposals | Submit + status | Done | Web ConnectTrust + mobile detail |
-| Proposals | Unlimited free bids (subscription) | Done | Product rule + microcopy |
+| Proposals | Monthly credits (subscription) | Done | Product rule + microcopy |
 | Messaging | CRM messages web + mobile | Partial | Role-aware web inbox improved |
 | Messaging | Realtime + Chatwoot | Later | App-first live chat |
 | Contracts | Proposal → milestone | Done | Kickoff on accept |

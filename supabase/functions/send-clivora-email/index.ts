@@ -96,6 +96,23 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: "Purpose not allowed" }), { status: 403 });
   }
 
+  if (purpose === "admin_notice") {
+    if (!serviceKey) {
+      return new Response(JSON.stringify({ error: "Admin email not configured" }), { status: 503 });
+    }
+    const adminCheck = createClient(supabaseUrl, serviceKey);
+    const { data: profile } = await adminCheck
+      .from("profiles")
+      .select("role, account_type")
+      .eq("id", userData.user.id)
+      .maybeSingle();
+    const isAdmin =
+      profile?.role === "admin" || profile?.account_type === "admin";
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: "Admin only" }), { status: 403 });
+    }
+  }
+
   const html = renderTemplate(purpose, body);
   if (!html) {
     return new Response(JSON.stringify({ error: "Missing template fields or html" }), { status: 400 });

@@ -35,8 +35,24 @@ export default async function HubPage() {
       <div>
         <h1 className="text-2xl font-extrabold">Hub</h1>
         <p className="text-sm text-text-secondary">
-          Web shortcuts plus tools that open best in the CLIVORA app.
+          Command center · plan {plan}. Alerts first, then quick create and tools.
         </p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl border border-border bg-surface p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Overdue invoices</p>
+          <p className="mt-1 text-2xl font-extrabold text-primary">{kpis.overdueInvoices}</p>
+        </div>
+        <div className="rounded-2xl border border-border bg-surface p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Connect pending</p>
+          <p className="mt-1 text-2xl font-extrabold text-primary">{kpis.pendingConnect}</p>
+        </div>
+        <div className="rounded-2xl border border-border bg-surface p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Profile readiness</p>
+          <p className="mt-1 text-2xl font-extrabold text-primary">
+            {kpis.profileCompleteness == null ? "—" : `${kpis.profileCompleteness}%`}
+          </p>
+        </div>
       </div>
 
       <div className="rounded-2xl bg-navy p-5 text-white">

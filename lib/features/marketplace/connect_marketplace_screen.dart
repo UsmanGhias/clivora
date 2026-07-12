@@ -149,7 +149,7 @@ class _ConnectMarketplaceScreenState
           ? const _ConnectGate()
           : Column(
               children: [
-                const _SlimConnectBanner(),
+                const _ConnectCreditsBanner(),
                 _QuickActionsRow(
                   isClient: isClient,
                   savedCount: _savedIds.length,
@@ -551,7 +551,7 @@ class _ConnectGate extends ConsumerWidget {
             Icon(Icons.hub_outlined, size: 56, color: scheme.primary),
             const SizedBox(height: 14),
             Text(
-              'Buy Pro Plus for unlimited Connect access',
+              'Buy Pro Plus for monthly Connect credits',
               style: Theme.of(
                 context,
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
@@ -587,7 +587,7 @@ class _ConnectGate extends ConsumerWidget {
             Text(
               guest
                   ? 'Create a free account, then upgrade to Pro Plus '
-                      '(${ProPricing.plusMonthlyLabel}/mo) for unlimited contact, proposals, and posting.'
+                      '(${ProPricing.plusMonthlyLabel}/mo) for 100 monthly Connect credits (contact, proposals, posting).'
                   : 'Connect is included with Pro Plus (${ProPricing.plusMonthlyLabel}/mo) and appears as a bottom tab.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: scheme.onSurface.withValues(alpha: 0.65),
@@ -635,32 +635,50 @@ class _ConnectGate extends ConsumerWidget {
   }
 }
 
-class _SlimConnectBanner extends StatelessWidget {
-  const _SlimConnectBanner();
+
+class _ConnectCreditsBanner extends ConsumerStatefulWidget {
+  const _ConnectCreditsBanner();
+  @override
+  ConsumerState<_ConnectCreditsBanner> createState() => _ConnectCreditsBannerState();
+}
+
+class _ConnectCreditsBannerState extends ConsumerState<_ConnectCreditsBanner> {
+  String _label = 'Loading credits…';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        final s = await ref.read(connectMarketplaceServiceProvider).creditSummary();
+        if (!mounted) return;
+        setState(() => _label = s?.label ?? 'Credits unavailable · complete profile to unlock');
+      } catch (_) {
+        if (!mounted) return;
+        setState(() => _label = 'Complete profile to view Connect credits');
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: ClivoraColors.navyDark,
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.hub_outlined, color: Colors.white, size: 16),
+          Icon(Icons.toll_outlined, size: 18, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Private marketplace: skills first, identity after mutual accept.',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white.withValues(alpha: 0.9),
-                fontWeight: FontWeight.w600,
-              ),
+              '$_label · contact/proposal 1 · publish 3 · \$0 fee',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
         ],

@@ -10,6 +10,7 @@ import '../../../data/database/database.dart';
 import '../../../data/database/user_scoped_queries.dart';
 import '../../../data/models/invoice_line_item.dart';
 import '../../../data/providers/app_providers.dart';
+import 'connect_credits.dart';
 
 final connectMarketplaceServiceProvider = Provider<ConnectMarketplaceService>((ref) {
   return ConnectMarketplaceService(ref);
@@ -52,6 +53,30 @@ class ConnectMarketplaceService {
     return _browseProfiles(accountType: 'client', skill: skill, sort: sort);
   }
 
+  Future<ConnectCreditSummary?> creditSummary() async {
+    final c = client;
+    if (c == null || c.auth.currentUser == null) return null;
+    try {
+      final rows = await c.rpc('connect_credit_summary');
+      final list = (rows as List?) ?? const [];
+      if (list.isEmpty) return null;
+      return ConnectCreditSummary.fromRow(Map<String, dynamic>.from(list.first as Map));
+    } catch (e) {
+      // Fall back to account row when eligibility blocks summary RPC.
+      try {
+        final row = await c
+            .from('connect_credit_accounts')
+            .select()
+            .eq('user_id', c.auth.currentUser!.id)
+            .maybeSingle();
+        if (row == null) return null;
+        return ConnectCreditSummary.fromRow(Map<String, dynamic>.from(row));
+      } catch (_) {
+        throw mapConnectRpcError(e);
+      }
+    }
+  }
+
   Future<void> acceptProposal({
     required String proposalId,
     required String requestId,
@@ -62,11 +87,12 @@ class ConnectMarketplaceService {
     final c = client;
     final uid = c?.auth.currentUser?.id;
     if (c == null || uid == null) throw StateError('Sign in required');
-    await c.from('connect_proposals').update({
-      'status': 'accepted',
-      'updated_at': DateTime.now().toIso8601String(),
-    }).eq('id', proposalId).eq('to_user_id', uid);
-
+    try {
+      await c.rpc('connect_accept_proposal', params: {'p_proposal_id': proposalId});
+    } catch (e) {
+      throw mapConnectRpcError(e);
+    }
+    // Kickoff milestone remains a free follow-up after accept.
     await c.from('connect_milestones').insert({
       'engagement_request_id': requestId,
       'client_user_id': clientUserId,
@@ -151,6 +177,22 @@ class ConnectMarketplaceService {
 
     final user = ref.read(authStateProvider).valueOrNull;
     final accountType = isClientUser(user) ? 'client' : 'freelancer';
+    final existing = await myListing();
+    final wasListed = existing?['is_listed'] == true;
+
+    // First publish/relist of a freelancer profile costs credits via RPC.
+    if (isListed && !wasListed && accountType == 'freelancer') {
+      try {
+        await c.rpc('connect_publish_profile', params: {
+          'p_headline': headline.trim().isEmpty ? displayTitle.trim() : headline.trim(),
+          'p_bio': bio.trim(),
+          'p_skills': skills,
+          'p_rate': double.tryParse(rateBand.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0,
+        });
+      } catch (e) {
+        throw mapConnectRpcError(e);
+      }
+    }
 
     await c.from('connect_profiles').upsert({
       'user_id': uid,
@@ -179,15 +221,16 @@ class ConnectMarketplaceService {
     if (!hasConnectAccess) {
       throw StateError('CLIVORA Connect requires Pro Plus');
     }
-
-    await c.from('connect_need_posts').insert({
-      'client_user_id': uid,
-      'title': title.trim(),
-      'summary': summary.trim(),
-      'skills': skills,
-      'budget_band': budgetBand,
-      'is_open': true,
-    });
+    try {
+      await c.rpc('connect_publish_need', params: {
+        'p_title': title.trim(),
+        'p_summary': summary.trim(),
+        'p_skills': skills,
+        'p_budget_band': budgetBand,
+      });
+    } catch (e) {
+      throw mapConnectRpcError(e);
+    }
   }
 
   Future<void> sendContactRequest({
@@ -203,21 +246,16 @@ class ConnectMarketplaceService {
       throw StateError('CLIVORA Connect requires Pro Plus');
     }
     if (toUserId == uid) throw StateError('Cannot contact yourself');
-
-    final payload = <String, dynamic>{
-      'from_user_id': uid,
-      'to_user_id': toUserId,
-      'message': message.trim(),
-      'status': 'pending',
-    };
-    if (targetProfileId != null) {
-      payload['target_profile_id'] = targetProfileId;
+    try {
+      await c.rpc('connect_send_request', params: {
+        'p_to_user_id': toUserId,
+        'p_target_profile_id': targetProfileId,
+        'p_target_need_id': targetNeedId,
+        'p_message': message.trim(),
+      });
+    } catch (e) {
+      throw mapConnectRpcError(e);
     }
-    if (targetNeedId != null) {
-      payload['target_need_id'] = targetNeedId;
-    }
-
-    await c.from('connect_requests').insert(payload);
   }
 
   Future<List<Map<String, dynamic>>> myRequests() async {
@@ -259,13 +297,19 @@ class ConnectMarketplaceService {
     final uid = c?.auth.currentUser?.id;
     if (c == null || uid == null) throw StateError('Sign in required');
     if (rating < 1 || rating > 5) throw StateError('Rating must be 1–5');
-    await c.from('connect_reviews').insert({
-      'from_user_id': uid,
-      'to_user_id': toUserId,
-      'request_id': requestId,
-      'rating': rating,
-      'body': body.trim(),
-    });
+    if (requestId == null || requestId.isEmpty) {
+      throw StateError('A released milestone engagement is required to leave a review');
+    }
+    try {
+      await c.rpc('connect_submit_review', params: {
+        'p_to_user_id': toUserId,
+        'p_request_id': requestId,
+        'p_rating': rating,
+        'p_body': body.trim(),
+      });
+    } catch (e) {
+      throw mapConnectRpcError(e);
+    }
   }
 
   Future<void> submitProposal({
@@ -281,17 +325,18 @@ class ConnectMarketplaceService {
     final uid = c?.auth.currentUser?.id;
     if (c == null || uid == null) throw StateError('Sign in required');
     if (!hasConnectAccess) throw StateError('CLIVORA Connect requires Pro Plus');
-    await c.from('connect_proposals').insert({
-      'from_user_id': uid,
-      'to_user_id': toUserId,
-      'need_id': needId,
-      'request_id': requestId,
-      'amount': amount,
-      'currency': currency,
-      'timeline_days': timelineDays,
-      'message': message.trim(),
-      'status': 'pending',
-    });
+    try {
+      await c.rpc('connect_submit_proposal', params: {
+        'p_to_user_id': toUserId,
+        'p_need_id': needId,
+        'p_amount': amount,
+        'p_currency': currency,
+        'p_timeline_days': timelineDays,
+        'p_message': message.trim(),
+      });
+    } catch (e) {
+      throw mapConnectRpcError(e);
+    }
   }
 
   Future<List<Map<String, dynamic>>> milestonesForRequest(String requestId) async {
@@ -330,14 +375,26 @@ class ConnectMarketplaceService {
   Future<void> updateMilestoneStatus(String milestoneId, String status) async {
     final c = client;
     if (c == null) throw StateError('Offline');
-    final patch = <String, dynamic>{
-      'status': status,
-      'updated_at': DateTime.now().toIso8601String(),
-    };
-    if (status == 'funded') patch['funded_at'] = DateTime.now().toIso8601String();
-    if (status == 'released') patch['released_at'] = DateTime.now().toIso8601String();
-    if (status == 'disputed') patch['disputed_at'] = DateTime.now().toIso8601String();
-    await c.from('connect_milestones').update(patch).eq('id', milestoneId);
+    try {
+      await c.rpc('connect_transition_milestone', params: {
+        'p_milestone_id': milestoneId,
+        'p_status': status,
+      });
+    } catch (e) {
+      throw mapConnectRpcError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> homeSummary({required bool client}) async {
+    final c = this.client;
+    if (c == null || c.auth.currentUser == null) return {};
+    try {
+      final data = await c.rpc(client ? 'client_home_summary' : 'freelancer_home_summary');
+      if (data is Map) return Map<String, dynamic>.from(data);
+      return {};
+    } catch (e) {
+      throw mapConnectRpcError(e);
+    }
   }
 
   Future<String> createMeetingRoom({String title = 'CLIVORA Meeting', String? projectId}) async {

@@ -2,7 +2,7 @@
 
 **CLIVORA Connect** is a private marketplace inside CLIVORA. It helps freelancers find clients and clients find freelancers, without exposing emails until both sides agree.
 
-**Differentiator:** $0 platform fees on negotiated rates. No per-proposal “Connect tokens.” Monetization is Pro / Pro Plus subscription, not commission on deals.
+**Differentiator:** $0 platform fees on negotiated rates. Monetization is Pro / Pro Plus subscription plus monthly **Connect credits**, not commission on deals.
 
 ---
 
@@ -11,10 +11,21 @@
 | Action | Guest / Free | Pro | Pro Plus |
 |--------|--------------|-----|----------|
 | Browse talent & jobs | Yes | Yes | Yes |
-| Send Connect requests / proposals | No (Buy Pro Plus) | No | Yes · unlimited |
-| Publish freelancer profile | No | No | Yes |
-| Post client job needs | No | No | Yes |
-| Connect inbox (accept/decline) | Sign in | Sign in | Yes |
+| Send Connect requests / proposals | No (Buy Pro Plus) | Uses credits if entitled | Yes · **100 credits / month** |
+| Publish freelancer profile | No | — | **3 credits** to publish/relist |
+| Post client job needs | No | — | **3 credits** to publish/relist |
+| Connect inbox (accept/decline) | Sign in | Sign in | Free |
+| Messaging after accept / milestones / reviews | — | — | Free |
+
+### Monthly credit allowances
+
+| Plan | Credits / UTC month | Notes |
+|------|---------------------|-------|
+| Free | 5 | Limited entitlement when eligible |
+| Pro | 30 | |
+| Pro Plus | 100 | Existing Pro Plus users may be grandfathered unlimited for 90 days |
+
+Costs: contact **1**, proposal **1**, publish job/profile **3**. No paid credit packs in this release. Editing an active listing is free.
 
 Upgrade: [Pro Plus checkout](/pro?plan=pro_plus) or Google Play in the Android app.
 
@@ -38,88 +49,13 @@ When you manage your listing, fill in:
 - **Bio**, longer description  
 - **Skills**, comma-separated (e.g. Flutter, React, UI design)  
 - **Rate band**, e.g. `$50–80/hr` or `From $500/project`  
-- **Location**, city or “Remote”  
-- **Availability**, e.g. “Available now”, “2 weeks notice”  
-- **Listed**, toggle to show on public board  
-
-Verified badge may be granted by admin after review.
-
-### Trust signals on talent cards
-
-Public talent cards show:
-
-- **Star rating + review count** (or a **New** badge when there are no reviews yet)
-- **Verified** badge when admin-approved
-- **Member since** date
-- **Completion rate** when milestone history exists
-- Sort options: Featured, Top rated, Newest, Rate
-
-Reviews are left after an accepted Connect request (web inbox or Android inbox ★).
-
-### Proposals & milestones
-
-- Freelancers can **submit proposals** on open jobs (Pro Plus).
-- Clients can **Accept → milestone** on a proposal; CLIVORA auto-creates a kickoff milestone (`pending`).
-- After accept, both parties can add more **milestones** and move status: pending → funded → released (or disputed).
-- Admins can release escrow ledger entries from the admin panel when funds are confirmed.
-- Overdue invoices can trigger **payment reminder emails** via the `send-invoice-reminders` Edge Function (Pro ops).
+- **Availability** and **location / timezone**  
+- Profile completeness must reach **60%** before spending credits  
 
 ---
 
-## Client job posts
+## Trust & milestones
 
-Clients can post **open needs**:
+After mutual accept, emails unlock and you continue work inside CLIVORA. Milestone statuses are **payment tracking** labels (pending / funded / released / disputed). Live money-moving escrow funding remains disabled until Stripe Connect compliance work is approved.
 
-- **Title**, what you need done  
-- **Summary**, scope and timeline  
-- **Skills**, what expertise you want  
-- **Budget band**, e.g. `$1k–3k`  
-
-Freelancers browse **Jobs** tab and send Connect requests to apply.
-
----
-
-## Connect request flow
-
-```
-Browse → Send request + message → Other party sees Inbox
-       → Accept → Emails revealed → Work in CRM
-       → Decline → No contact shared
-```
-
-### Rules
-- You cannot contact yourself.
-- Restricted accounts cannot send requests (browse only).
-- Blocked accounts cannot use Connect at all.
-
----
-
-## After you match
-
-1. Add them as a **client** in CRM (app can auto-link on accept).
-2. Create a **project** and **invoice** in the same CLIVORA workspace.
-3. Use **Messages** for ongoing chat.
-
-This is the main advantage over Upwork/Fiverr: the relationship continues in your OS, not only on the marketplace.
-
----
-
-## Moderation
-
-Listings and job posts may be:
-
-- **Pending**, awaiting review  
-- **Approved** / **Auto-approved**, visible on board  
-- **Rejected**, hidden; contact support  
-
-Admins can verify profiles and toggle auto-approve in the admin panel.
-
----
-
-## Tips for a strong profile
-
-1. Use specific skills (not just “design”).  
-2. Set a clear rate band, builds trust.  
-3. Write a bio that mentions project types and industries.  
-4. Keep availability updated.  
-5. Respond quickly in Inbox, acceptance unlocks contact.
+Reviews require a released milestone on the engagement.

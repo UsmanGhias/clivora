@@ -13,6 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { CONNECT_CREDIT_COSTS, parseConnectCreditError } from "@/lib/connect-credits";
 import {
   skillsList,
   type ConnectNeed,
@@ -239,20 +240,18 @@ export function ConnectBoard({
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Sign in required");
       if (compose.toUserId === user.id) throw new Error("You cannot contact yourself");
-      const { error: err } = await supabase.from("connect_requests").insert({
-        from_user_id: user.id,
-        to_user_id: compose.toUserId,
-        target_profile_id: compose.targetProfileId || null,
-        target_need_id: compose.targetNeedId || null,
-        message: message.trim() || "I'd like to connect on CLIVORA.",
-        status: "pending",
+      const { error: err } = await supabase.rpc("connect_send_request", {
+        p_to_user_id: compose.toUserId,
+        p_target_profile_id: compose.targetProfileId || null,
+        p_target_need_id: compose.targetNeedId || null,
+        p_message: message.trim() || "I'd like to connect on CLIVORA.",
       });
       if (err) throw err;
-      setOk("Request sent. Contact details unlock after they accept.");
+      setOk(`Request sent (−${CONNECT_CREDIT_COSTS.contact} credit). Contact unlocks after they accept.`);
       setCompose(null);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not send request");
+      setError(parseConnectCreditError(err).message);
     } finally {
       setBusyId(null);
     }
@@ -824,7 +823,7 @@ export function ConnectBoard({
             <p className="mt-1 text-sm text-text-secondary">
               $0 platform fees on your deals (no Upwork-style Connect tokens), private contact until
               mutual accept, milestone escrow status, star ratings on talent cards, and the same CRM
-              after you match. One Pro Plus plan unlocks Connect plus unlimited clients, projects,
+              after you match. Pro Plus includes monthly Connect credits plus unlimited clients, projects,
               and invoices.
             </p>
           </div>
