@@ -36,12 +36,7 @@ class ClientHubScreen extends ConsumerWidget {
               margin: const EdgeInsets.symmetric(horizontal: 12),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    ClivoraColors.navyDark,
-                    const Color(0xFF0F766E).withValues(alpha: 0.9),
-                  ],
-                ),
+                gradient: ClivoraColors.clientGradient,
                 borderRadius: BorderRadius.circular(18),
               ),
               child: Column(
@@ -56,23 +51,30 @@ class ClientHubScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Quotes, payments, contracts, and Connect, everything your freelancer shares with you.',
+                    'A command center for invoices, files, contracts, and updates from your freelancer.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Colors.white.withValues(alpha: 0.85),
                       height: 1.4,
                     ),
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: const [
+                      _HubPill(icon: Icons.receipt_long_outlined, label: 'Pay'),
+                      _HubPill(icon: Icons.folder_open_outlined, label: 'Review'),
+                      _HubPill(icon: Icons.mail_outline, label: 'Reply'),
+                    ],
                   ),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 22),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              'Money',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+          _HubSectionHeader(
+            title: 'Money',
+            subtitle: 'Review balances, invoices, and payment records.',
           ),
           const SizedBox(height: 12),
           _ClientHubGrid(
@@ -80,7 +82,7 @@ class ClientHubScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.request_quote_outlined,
                 label: 'Quotes',
-                iconBackground: ClivoraColors.iconTeal,
+                iconBackground: ClivoraColors.clientSurface,
                 iconColor: ClivoraColors.clientAccent,
                 onTap: () => context.push('/client-quotes'),
               ),
@@ -101,26 +103,23 @@ class ClientHubScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.autorenew,
                 label: 'Recurring',
-                iconBackground: ClivoraColors.iconPurple,
-                iconColor: ClivoraColors.primaryPurple,
+                iconBackground: ClivoraColors.clientSurface,
+                iconColor: ClivoraColors.clientAccent,
                 onTap: () => context.push('/client-recurring'),
               ),
               ToolGridTile(
                 icon: Icons.receipt_long_outlined,
                 label: 'Invoices',
-                iconBackground: ClivoraColors.iconTeal,
+                iconBackground: ClivoraColors.clientSurface,
                 iconColor: ClivoraColors.clientAccent,
                 onTap: () => context.go('/client-invoices'),
               ),
             ],
           ),
           const SizedBox(height: 22),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              'Work together',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+          _HubSectionHeader(
+            title: 'Work together',
+            subtitle: 'Find the latest files, decisions, and progress.',
           ),
           const SizedBox(height: 12),
           _ClientHubGrid(
@@ -128,8 +127,8 @@ class ClientHubScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.description_outlined,
                 label: 'Contracts',
-                iconBackground: ClivoraColors.iconPurple,
-                iconColor: ClivoraColors.primaryPurple,
+                iconBackground: ClivoraColors.clientSurface,
+                iconColor: ClivoraColors.clientAccent,
                 onTap: () => context.push('/client-contracts'),
               ),
               ToolGridTile(
@@ -149,7 +148,7 @@ class ClientHubScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.timeline_outlined,
                 label: 'Updates',
-                iconBackground: ClivoraColors.iconTeal,
+                iconBackground: ClivoraColors.clientSurface,
                 iconColor: ClivoraColors.clientAccent,
                 onTap: () => context.push('/client-activity'),
               ),
@@ -171,8 +170,8 @@ class ClientHubScreen extends ConsumerWidget {
                 ToolGridTile(
                   icon: Icons.hub_outlined,
                   label: 'Connect',
-                  iconBackground: ClivoraColors.iconTeal,
-                  iconColor: ClivoraColors.primary,
+                  iconBackground: ClivoraColors.clientSurface,
+                  iconColor: ClivoraColors.clientAccent,
                   onTap: () => context.go('/connect'),
                 )
               else
@@ -207,6 +206,58 @@ class _ClientHubGrid extends StatelessWidget {
       childAspectRatio: 1.3,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       children: children,
+    );
+  }
+}
+
+class _HubSectionHeader extends StatelessWidget {
+  const _HubSectionHeader({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 3),
+          Text(
+            subtitle,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: ClivoraColors.clientMuted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HubPill extends StatelessWidget {
+  const _HubPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.13),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.white, size: 14),
+          const SizedBox(width: 5),
+          Text(label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+        ],
+      ),
     );
   }
 }

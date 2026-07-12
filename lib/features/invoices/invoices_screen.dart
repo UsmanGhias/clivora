@@ -72,7 +72,7 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
         children: [
           statsAsync.when(
             loading: () => const SizedBox(height: 80),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
             data: (stats) => StatSummaryCard(
               items: [
                 StatItem(label: 'Total', value: '${stats.total}'),
@@ -97,7 +97,7 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
           ),
           monthlyCountAsync.when(
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
             data: (count) => PlanLimitBanner(
               current: count,
               max: PlanLimits.freeMaxInvoicesPerMonth,
@@ -117,18 +117,20 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
                     return EmptyState(
                       icon: Icons.receipt_long_outlined,
                       message: 'No $_status invoices',
+                      actionLabel: 'Show all invoices',
+                      onAction: () => setState(() => _status = 'all'),
                     );
                   }
                   return EmptyState(
                     icon: Icons.receipt_long_outlined,
-                    message: 'No invoices yet',
+                    message: 'Create an invoice to request payment, share a PDF, and track what is due.',
                     actionLabel: 'Create invoice',
                     onAction: _onAddInvoice,
                   );
                 }
                 return ListView.separated(
                   itemCount: invoices.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final inv = invoices[index];
                     return Dismissible(

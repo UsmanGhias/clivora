@@ -96,7 +96,7 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
           const SizedBox(height: 16),
           statsAsync.when(
             loading: () => const SizedBox(height: 80),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
             data: (stats) => StatSummaryCard(
               items: [
                 StatItem(label: 'Active', value: '${stats.active}'),
@@ -134,12 +134,20 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
                   if (isFiltered && total > 0) {
                     return EmptyState(
                       icon: Icons.folder_outlined,
-                      message: _search != null ? 'No projects match your search' : 'No $_status projects',
+                      message: _search != null ? 'No projects match your search' : 'No ${_statusLabel(_status).toLowerCase()} projects',
+                      actionLabel: 'Show all projects',
+                      onAction: () {
+                        _searchController.clear();
+                        setState(() {
+                          _search = null;
+                          _status = 'all';
+                        });
+                      },
                     );
                   }
                   return EmptyState(
                     icon: Icons.folder_outlined,
-                    message: 'No projects yet',
+                    message: 'Create a project to track scope, milestones, and billable time.',
                     actionLabel: 'Create project',
                     onAction: _onAddProject,
                   );
@@ -203,7 +211,7 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
                 }
                 return ListView.separated(
                   itemCount: projects.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final p = projects[index];
                     return Dismissible(
@@ -250,9 +258,15 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
                         isThreeLine: true,
                         trailing: PopupMenuButton<String>(
                           onSelected: (v) {
-                            if (v == 'milestones') context.push('/projects/${p.id}/milestones');
-                            if (v == 'time') context.push('/projects/${p.id}/time');
-                            if (v == 'edit') openFormRoute(context, '/projects/${p.id}/edit');
+                            if (v == 'milestones') {
+                              context.push('/projects/${p.id}/milestones');
+                            }
+                            if (v == 'time') {
+                              context.push('/projects/${p.id}/time');
+                            }
+                            if (v == 'edit') {
+                              openFormRoute(context, '/projects/${p.id}/edit');
+                            }
                           },
                           itemBuilder: (_) => const [
                             PopupMenuItem(value: 'milestones', child: Text('Milestones')),

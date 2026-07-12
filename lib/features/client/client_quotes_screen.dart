@@ -56,7 +56,8 @@ class ClientQuotesScreen extends ConsumerWidget {
                         Chip(
                           label: Text(q.status),
                           visualDensity: VisualDensity.compact,
-                          backgroundColor: ClivoraColors.iconTeal,
+                          backgroundColor: ClivoraColors.clientSurface,
+                          labelStyle: const TextStyle(color: ClivoraColors.clientAccent),
                         ),
                       ],
                     ),

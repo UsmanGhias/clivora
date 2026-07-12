@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/cloud/cloud_invoice_repository.dart';
@@ -47,9 +48,18 @@ class ClientInvoicesScreen extends ConsumerWidget {
                             Text('No invoices yet', style: Theme.of(context).textTheme.titleMedium),
                             const SizedBox(height: 8),
                             Text(
-                              'When your freelancer sends an invoice, it will appear here for review and payment confirmation.',
+                              'When your freelancer sends an invoice, it will appear here with payment details and confirmations.',
                               textAlign: TextAlign.center,
                               style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            const SizedBox(height: 20),
+                            FilledButton.icon(
+                              onPressed: () => context.push('/client-link-freelancer'),
+                              icon: const Icon(Icons.person_add_alt_1_outlined),
+                              label: const Text('Add your freelancer'),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: ClivoraColors.clientAccent,
+                              ),
                             ),
                           ],
                         ),
