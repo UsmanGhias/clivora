@@ -364,12 +364,12 @@ class _ClientAccountScreenState extends ConsumerState<ClientAccountScreen> {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: ClivoraColors.iconPurple,
+                      color: ClivoraColors.clientSurface,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
                       Icons.wb_sunny_outlined,
-                      color: ClivoraColors.primaryPurple,
+                      color: ClivoraColors.clientAccent,
                       size: 20,
                     ),
                   ),

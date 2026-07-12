@@ -599,6 +599,16 @@ class _EmptyProjects extends StatelessWidget {
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall,
           ),
+          const SizedBox(height: 18),
+          OutlinedButton.icon(
+            onPressed: () => openFormRoute(context, '/client-link-freelancer'),
+            icon: const Icon(Icons.person_add_alt_1_outlined, size: 18),
+            label: const Text('Add your freelancer'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: ClivoraColors.clientAccent,
+              side: const BorderSide(color: ClivoraColors.clientAccent),
+            ),
+          ),
         ],
       ),
     );

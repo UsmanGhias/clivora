@@ -48,6 +48,7 @@ class MoreScreen extends ConsumerWidget {
     }
     var projectId = active.first.id;
     final rateCtrl = TextEditingController(text: '0');
+    if (!context.mounted) return;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -59,7 +60,7 @@ class MoreScreen extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: spacedDialogFields([
                 DropdownButtonFormField<int>(
-                  value: projectId,
+                  initialValue: projectId,
                   decoration: clivoraDialogFieldDecoration(ctx, 'Project'),
                   items: active.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))).toList(),
                   onChanged: (v) => setLocal(() => projectId = v ?? projectId),
@@ -114,7 +115,7 @@ class MoreScreen extends ConsumerWidget {
     final backupRemindAsync = ref.watch(cloudBackupReminderProvider);
 
     return ClivoraScaffold(
-      title: 'Hub',
+      title: 'Command Center',
       showMessagesButton: true,
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
@@ -136,7 +137,7 @@ class MoreScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           statsAsync.when(
             loading: () => const SizedBox(height: 80),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
             data: (stats) => _StatsBar(stats: stats),
           ),
           if (backupRemindAsync.valueOrNull == true) ...[
@@ -286,7 +287,7 @@ class MoreScreen extends ConsumerWidget {
               opacity: t,
               child: Transform.translate(offset: Offset(0, 8 * (1 - t)), child: child),
             ),
-            child: const SectionHeader(title: 'Money & catalog'),
+            child: const SectionHeader(title: 'Money command center'),
           ),
           GridView.count(
             crossAxisCount: 2,
@@ -320,7 +321,7 @@ class MoreScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 24),
-          const SectionHeader(title: 'Business Tools'),
+          const SectionHeader(title: 'Work command center'),
           GridView.count(
             crossAxisCount: 2,
             shrinkWrap: true,
@@ -333,11 +334,15 @@ class MoreScreen extends ConsumerWidget {
                 ToolGridTile(icon: Icons.view_kanban_outlined, label: 'Work', iconBackground: ClivoraColors.iconIndigo, iconColor: Colors.indigo, onTap: () => context.go('/projects')),
               ToolGridTile(icon: Icons.task_alt_outlined, label: 'Tasks', iconBackground: ClivoraColors.iconOrange, iconColor: ClivoraColors.warningOrange, onTap: () => context.push('/tasks')),
               ToolGridTile(icon: Icons.calendar_today_outlined, label: 'Calendar', iconBackground: ClivoraColors.iconGreen, iconColor: ClivoraColors.successGreen, onTap: () async {
-                if (!PlanFeatures.calendarView(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'Calendar', isClient: false)) return;
+                if (!PlanFeatures.calendarView(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'Calendar', isClient: false)) {
+                  return;
+                }
                 if (context.mounted) context.push('/calendar');
               }),
               ToolGridTile(icon: Icons.people_outline, label: 'Team', iconBackground: ClivoraColors.iconBlue, iconColor: Colors.blue, onTap: () async {
-                if (!PlanFeatures.teamCollaboration(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'Team')) return;
+                if (!PlanFeatures.teamCollaboration(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'Team')) {
+                  return;
+                }
                 if (context.mounted) context.push('/team');
               }),
               ToolGridTile(icon: Icons.forum_outlined, label: 'Messages', iconBackground: ClivoraColors.iconTeal, iconColor: ClivoraColors.primary, onTap: () => context.go('/freelancer-messages')),
@@ -357,7 +362,9 @@ class MoreScreen extends ConsumerWidget {
             childAspectRatio: 1.3,
             children: [
               ToolGridTile(icon: Icons.cloud_outlined, label: 'File Vault', iconBackground: ClivoraColors.iconBlue, iconColor: Colors.blue, onTap: () async {
-                if (!PlanFeatures.fileVault(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'File Vault')) return;
+                if (!PlanFeatures.fileVault(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'File Vault')) {
+                  return;
+                }
                 if (context.mounted) context.push('/storage');
               }),
               ToolGridTile(icon: Icons.note_outlined, label: 'Notes', iconBackground: ClivoraColors.iconOrange, iconColor: ClivoraColors.warningOrange, onTap: () => context.push('/notes')),
@@ -370,7 +377,9 @@ class MoreScreen extends ConsumerWidget {
                 iconBackground: ClivoraColors.iconGreen,
                 iconColor: ClivoraColors.successGreen,
                 onTap: () async {
-                  if (!PlanFeatures.dataExport(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'Data export')) return;
+                  if (!PlanFeatures.dataExport(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'Data export')) {
+                    return;
+                  }
                   try {
                     await ref.read(analyticsExportServiceProvider).exportAndShare();
                   } catch (e) {
@@ -383,18 +392,22 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(icon: Icons.receipt_outlined, label: 'Expenses', iconBackground: ClivoraColors.iconRed, iconColor: ClivoraColors.errorRed, onTap: () => context.push('/expenses')),
               ToolGridTile(icon: Icons.forum_outlined, label: 'Templates', iconBackground: ClivoraColors.iconTeal, iconColor: Colors.teal, onTap: () => context.push('/templates')),
               ToolGridTile(icon: Icons.auto_awesome_outlined, label: 'CLIVORA AI', iconBackground: ClivoraColors.iconPurple, iconColor: ClivoraColors.primaryPurple, onTap: () async {
-                if (!PlanFeatures.aiAssistant(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'CLIVORA AI')) return;
+                if (!PlanFeatures.aiAssistant(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'CLIVORA AI')) {
+                  return;
+                }
                 if (context.mounted) context.push('/ai-assistant');
               }),
               ToolGridTile(icon: Icons.description_outlined, label: 'Contracts', iconBackground: ClivoraColors.iconPurple, iconColor: ClivoraColors.primaryPurple, onTap: () => context.push('/contracts')),
               ToolGridTile(icon: Icons.bolt_outlined, label: 'Workflows', iconBackground: ClivoraColors.iconYellow, iconColor: Colors.amber, onTap: () async {
-                if (!PlanFeatures.automations(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'Workflows')) return;
+                if (!PlanFeatures.automations(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'Workflows')) {
+                  return;
+                }
                 if (context.mounted) context.push('/automations');
               }),
             ],
           ),
           const SizedBox(height: 24),
-          const SectionHeader(title: 'Settings'),
+          const SectionHeader(title: 'Workspace settings'),
           _SettingsTile(
             icon: Icons.person_outline,
             label: 'My Profile',
