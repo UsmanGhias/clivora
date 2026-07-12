@@ -1,6 +1,7 @@
 # Internal docs
 
-**Start here on a new machine:** [LOCALHOST_HANDOFF.md](./LOCALHOST_HANDOFF.md)
+**Start here on a new machine:** [LOCALHOST_HANDOFF.md](./LOCALHOST_HANDOFF.md)  
+**Train your AI / full project notes:** [CLIVORA-COMPLETE-AI-TRAINING-NOTES.md](./CLIVORA-COMPLETE-AI-TRAINING-NOTES.md)
 
 # Internal only — NOT published to clivora.codcrafters.org/docs
 
