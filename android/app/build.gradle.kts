@@ -46,13 +46,23 @@ android {
 
     buildTypes {
         release {
-            require(keystorePropertiesFile.exists()) {
-                "Release signing is required. android/key.properties is missing."
+            // Fail only when a release artifact is requested, so debug builds work without secrets.
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
             }
-            signingConfig = signingConfigs.getByName("release")
             // R8 was stripping plugin classes and causing release APK crashes on launch.
             isMinifyEnabled = false
             isShrinkResources = false
+        }
+    }
+}
+
+afterEvaluate {
+    listOf("assembleRelease", "bundleRelease", "assembleReleaseUnitTest").forEach { taskName ->
+        tasks.findByName(taskName)?.doFirst {
+            require(keystorePropertiesFile.exists()) {
+                "Release signing is required. android/key.properties is missing."
+            }
         }
     }
 }
