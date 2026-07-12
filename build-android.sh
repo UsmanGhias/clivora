@@ -36,10 +36,12 @@ if [[ -z "$APKSIGNER" ]]; then
 fi
 
 echo "Verifying APK certificate..."
-APK_SHA1=$("$APKSIGNER" verify --print-certs "$APK" | awk -F': ' '/Signer #1 certificate SHA-1 digest:/{print toupper($2); exit}')
+APK_SHA1_RAW=$("$APKSIGNER" verify --print-certs "$APK" | awk -F': ' '/Signer #1 certificate SHA-1 digest:/{print toupper($2); exit}')
+APK_SHA1=$(echo "${APK_SHA1_RAW:-}" | tr -d ':' | sed 's/../&:/g;s/:$//')
 echo "APK signing SHA1: ${APK_SHA1:-unknown}"
 if [[ "$APK_SHA1" != "$EXPECTED_SHA1" ]]; then
   echo "ERROR: APK is not signed with the Play upload key." >&2
+  echo "  raw=$APK_SHA1_RAW" >&2
   exit 1
 fi
 
