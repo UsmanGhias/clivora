@@ -38,7 +38,7 @@ android {
             create("release") {
                 keyAlias = keystoreProperties["keyAlias"] as String
                 keyPassword = keystoreProperties["keyPassword"] as String
-                storeFile = file(keystoreProperties["storeFile"] as String)
+                storeFile = rootProject.file(keystoreProperties["storeFile"] as String)
                 storePassword = keystoreProperties["storePassword"] as String
             }
         }
@@ -46,11 +46,10 @@ android {
 
     buildTypes {
         release {
-            signingConfig = if (keystorePropertiesFile.exists()) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
+            require(keystorePropertiesFile.exists()) {
+                "Release signing is required. android/key.properties is missing."
             }
+            signingConfig = signingConfigs.getByName("release")
             // R8 was stripping plugin classes and causing release APK crashes on launch.
             isMinifyEnabled = false
             isShrinkResources = false

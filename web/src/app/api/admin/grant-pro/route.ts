@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { assertAdminPanelAuth } from "@/lib/admin-auth";
+import { requireAdminRequest } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 
@@ -24,10 +24,7 @@ function headers(key: string, prefer = "return=minimal") {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    await assertAdminPanelAuth(
-      String(body.adminEmail ?? ""),
-      String(body.adminToken ?? body.adminPassword ?? ""),
-    );
+    await requireAdminRequest(req);
 
     const target = String(body.email ?? "").trim().toLowerCase();
     const revoke = Boolean(body.revoke);

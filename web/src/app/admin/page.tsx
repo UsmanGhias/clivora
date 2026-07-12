@@ -1,17 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import {
-  ADMIN_EMAILS,
-  ADMIN_SESSION_EMAIL,
-  ADMIN_SESSION_FLAG,
-  ADMIN_SESSION_PASS,
-  ADMIN_SESSION_TOKEN,
-  PRO_PLUS_PRICE_USD,
-  PRO_PRICE_USD,
-  SYNC_KEY,
-} from "@/lib/admin-auth";
 import { Logo } from "@/components/ui/Logo";
+import { createBrowserSupabaseClient } from "@/lib/supabase-browser";
+
+const PRO_PRICE_USD = 9;
+const PRO_PLUS_PRICE_USD = 19;
 
 type AdminEvent = {
   id: string;
@@ -223,23 +217,14 @@ export default function AdminPage() {
   const [confirmPanelPassword, setConfirmPanelPassword] = useState("");
 
   const adminAuthBody = useCallback(() => {
-    const adminEmail =
-      (typeof window !== "undefined" ? sessionStorage.getItem(ADMIN_SESSION_EMAIL) : null) ||
-      email;
-    const adminToken =
-      (typeof window !== "undefined" ? sessionStorage.getItem(ADMIN_SESSION_TOKEN) : null) ||
-      sessionToken;
-    return {
-      adminEmail: adminEmail.trim().toLowerCase(),
-      adminToken,
-    };
-  }, [email, sessionToken]);
+    return { adminEmail: email.trim().toLowerCase(), adminToken: "" };
+  }, [email]);
 
   const loadStats = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`/api/admin/stats?key=${encodeURIComponent(SYNC_KEY)}`, {
+      const res = await fetch("/api/admin/stats", {
         cache: "no-store",
       });
       if (!res.ok) throw new Error(`Stats request failed (${res.status})`);
@@ -260,7 +245,6 @@ export default function AdminPage() {
   const loadPayments = useCallback(async () => {
     try {
       const auth = adminAuthBody();
-      if (!auth.adminEmail || !auth.adminToken) return;
       const res = await fetch("/api/admin/payment-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -278,7 +262,6 @@ export default function AdminPage() {
     setEscrowBusy(true);
     try {
       const auth = adminAuthBody();
-      if (!auth.adminEmail || !auth.adminToken) return;
       const res = await fetch("/api/admin/escrow", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -298,7 +281,6 @@ export default function AdminPage() {
     setFlagsBusy(true);
     try {
       const auth = adminAuthBody();
-      if (!auth.adminEmail || !auth.adminToken) return;
       const res = await fetch("/api/admin/feature-flags", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -317,7 +299,6 @@ export default function AdminPage() {
   const loadConnect = useCallback(async () => {
     try {
       const auth = adminAuthBody();
-      if (!auth.adminEmail || !auth.adminToken) return;
       const [marketplaceRes, settingsRes] = await Promise.all([
         fetch("/api/admin/marketplace", {
           method: "POST",
@@ -369,9 +350,6 @@ export default function AdminPage() {
     setActionMsg("");
     try {
       const auth = adminAuthBody();
-      if (!auth.adminEmail || !auth.adminToken) {
-        throw new Error("Session expired. Sign out and sign in again.");
-      }
       const res = await fetch("/api/admin/grant-pro", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -401,9 +379,6 @@ export default function AdminPage() {
     setActionMsg("");
     try {
       const auth = adminAuthBody();
-      if (!auth.adminEmail || !auth.adminToken) {
-        throw new Error("Session expired. Sign out and sign in again.");
-      }
       const res = await fetch("/api/admin/grant-admin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -432,9 +407,6 @@ export default function AdminPage() {
     setActionMsg("");
     try {
       const auth = adminAuthBody();
-      if (!auth.adminEmail || !auth.adminToken) {
-        throw new Error("Session expired. Sign out and sign in again.");
-      }
       const res = await fetch("/api/admin/moderation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -457,20 +429,12 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const flag = sessionStorage.getItem(ADMIN_SESSION_FLAG);
-    const savedEmail = sessionStorage.getItem(ADMIN_SESSION_EMAIL) ?? "";
-    const savedToken = sessionStorage.getItem(ADMIN_SESSION_TOKEN) ?? "";
-    // Clear legacy plaintext password if present
-    sessionStorage.removeItem(ADMIN_SESSION_PASS);
-    if (flag === "1" && ADMIN_EMAILS.includes(savedEmail.toLowerCase()) && savedToken) {
-      setEmail(savedEmail);
-      setSessionToken(savedToken);
-      setLoggedIn(true);
-    } else {
-      sessionStorage.removeItem(ADMIN_SESSION_FLAG);
-      sessionStorage.removeItem(ADMIN_SESSION_EMAIL);
-      sessionStorage.removeItem(ADMIN_SESSION_TOKEN);
-    }
+    createBrowserSupabaseClient().auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setEmail(data.user.email ?? "");
+        setLoggedIn(true);
+      }
+    });
   }, []);
 
   async function runConnectAction(body: Record<string, unknown>) {
@@ -478,9 +442,6 @@ export default function AdminPage() {
     setActionMsg("");
     try {
       const auth = adminAuthBody();
-      if (!auth.adminEmail || !auth.adminToken) {
-        throw new Error("Session expired. Sign out and sign in again.");
-      }
       const res = await fetch("/api/admin/marketplace", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -502,9 +463,6 @@ export default function AdminPage() {
     setActionMsg("");
     try {
       const auth = adminAuthBody();
-      if (!auth.adminEmail || !auth.adminToken) {
-        throw new Error("Session expired. Sign out and sign in again.");
-      }
       const res = await fetch("/api/admin/moderation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -537,73 +495,15 @@ export default function AdminPage() {
   }, [loggedIn, loadStats, loadPayments, loadConnect, loadFlags, loadEscrow]);
 
   async function login() {
-    const normalized = email.trim().toLowerCase();
-    if (!ADMIN_EMAILS.includes(normalized)) {
-      setError("This admin email is not authorized. Use iusmanghias@gmail.com.");
-      return;
-    }
-    setError("");
-    try {
-      const res = await fetch("/api/admin/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "login", adminEmail: normalized, adminPassword: password }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Login failed");
-      sessionStorage.setItem(ADMIN_SESSION_FLAG, "1");
-      sessionStorage.setItem(ADMIN_SESSION_EMAIL, normalized);
-      sessionStorage.setItem(ADMIN_SESSION_TOKEN, json.token);
-      sessionStorage.removeItem(ADMIN_SESSION_PASS);
-      setSessionToken(json.token);
-      setEmail(normalized);
-      setPassword("");
-      setLoggedIn(true);
-      setActionMsg("");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Login failed");
-    }
+    window.location.href = "/login?next=%2Fadmin";
   }
 
   async function changePanelPassword() {
-    setActionMsg("");
-    if (newPanelPassword.length < 10) {
-      setActionMsg("New password must be at least 10 characters.");
-      return;
-    }
-    if (newPanelPassword !== confirmPanelPassword) {
-      setActionMsg("Password confirmation does not match.");
-      return;
-    }
-    try {
-      const auth = adminAuthBody();
-      const res = await fetch("/api/admin/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "change_password",
-          adminEmail: auth.adminEmail,
-          adminToken: auth.adminToken,
-          newPassword: newPanelPassword,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Password change failed");
-      sessionStorage.setItem(ADMIN_SESSION_TOKEN, json.token);
-      setSessionToken(json.token);
-      setNewPanelPassword("");
-      setConfirmPanelPassword("");
-      setActionMsg(json.message || "Panel password updated.");
-    } catch (e) {
-      setActionMsg(e instanceof Error ? e.message : "Password change failed");
-    }
+    setActionMsg("Admin passwords are managed by Supabase Auth. Use the account security settings.");
   }
 
   function logout() {
-    sessionStorage.removeItem(ADMIN_SESSION_FLAG);
-    sessionStorage.removeItem(ADMIN_SESSION_EMAIL);
-    sessionStorage.removeItem(ADMIN_SESSION_TOKEN);
-    sessionStorage.removeItem(ADMIN_SESSION_PASS);
+    void createBrowserSupabaseClient().auth.signOut();
     setSessionToken("");
     setLoggedIn(false);
     setPassword("");
@@ -799,10 +699,10 @@ export default function AdminPage() {
             </div>
 
             <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-              <h2 className="font-semibold text-slate-900 mb-2">Admin panel password</h2>
+              <h2 className="font-semibold text-slate-900 mb-2">Admin account security</h2>
               <p className="text-sm text-slate-600 mb-3">
-                Stored as a hash in Supabase <code className="text-xs">app_settings</code>. Session uses a
-                signed token, the password is never kept in sessionStorage.
+                Admin access uses Supabase Auth and authenticator-app MFA. Password changes belong in
+                the account security flow; this legacy panel-password form is disabled.
               </p>
               <div className="flex flex-col sm:flex-row gap-2">
                 <input

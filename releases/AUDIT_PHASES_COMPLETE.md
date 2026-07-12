@@ -23,7 +23,7 @@ All five audit phases are implemented. **No APK/AAB build** was produced in this
 
 ## Phase 3 — Security (done)
 
-- `ADMIN_SYNC_KEY` via `--dart-define` (no hardcoded key in APK)
+- Legacy shared-key admin sync retired; product events must use authenticated Supabase RPCs
 - Private chat storage migration `010_chat_storage_private.sql`
 - Chat attachments use signed URLs only
 - Admin routes guarded in `auth_route_helper.dart`
@@ -62,8 +62,8 @@ Implemented deduplicated audit items across modules:
 1. Apply Supabase migrations `010`–`013` in production
 2. Deploy `verify-play-purchase` edge function
 3. Set `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` in Supabase secrets
-4. Set `ADMIN_SYNC_KEY` at build: `--dart-define=ADMIN_SYNC_KEY=...`
-5. Rotate any previously exposed admin sync key on Vercel
+4. Configure Supabase Auth MFA for administrators
+5. Rotate any previously exposed admin/session credentials on Vercel
 
 ## Regression matrix
 

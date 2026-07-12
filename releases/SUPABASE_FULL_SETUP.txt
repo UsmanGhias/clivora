@@ -13,7 +13,7 @@ Optional wipe (only if you need a clean cloud): see comment at top of 003.
 
 PART 2 — WEB ADMIN (Vercel clivora-web)
 ---------------------------------------
-  ADMIN_SYNC_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+  SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
 
 PART 3 — APP v2.2.0
 -------------------

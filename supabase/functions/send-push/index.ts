@@ -70,8 +70,22 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: "POST only" }), { status: 405 });
   }
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+  if (!supabaseUrl || !serviceKey || !anonKey) {
+    return new Response(JSON.stringify({ error: "Push service is not configured" }), {
+      status: 503,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+  if (!bearer) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+  }
+
   const admin = createClient(supabaseUrl, serviceKey);
 
   let payload: PushBody;
@@ -86,6 +100,19 @@ Deno.serve(async (req: Request) => {
   const body = payload.body?.trim() || "";
   if (!userUid) {
     return new Response(JSON.stringify({ error: "user_uid required" }), { status: 400 });
+  }
+
+  if (bearer !== serviceKey) {
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userData, error: userError } = await userClient.auth.getUser();
+    if (userError || !userData.user) {
+      return new Response(JSON.stringify({ error: "Invalid session" }), { status: 401 });
+    }
+    if (userData.user.id !== userUid) {
+      return new Response(JSON.stringify({ error: "Target is not authorized" }), { status: 403 });
+    }
   }
 
   const { data: tokenRows, error: tokenErr } = await admin
@@ -105,8 +132,8 @@ Deno.serve(async (req: Request) => {
   const sa = await loadServiceAccount(admin);
   if (!sa?.private_key || !sa.client_email || !sa.project_id) {
     return new Response(
-      JSON.stringify({ sent: 0, reason: "firebase_service_account_missing", tokens: tokens.length }),
-      { headers: { "Content-Type": "application/json" } },
+      JSON.stringify({ error: "Push provider is not configured" }),
+      { status: 503, headers: { "Content-Type": "application/json" } },
     );
   }
 
@@ -144,7 +171,7 @@ Deno.serve(async (req: Request) => {
       },
     );
     if (res.ok) sent++;
-    else errors.push(await res.text());
+    else errors.push(`FCM request failed (${res.status})`);
   }
 
   return new Response(JSON.stringify({ sent, errors }), {

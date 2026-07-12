@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { assertAdminPanelAuth } from "@/lib/admin-auth";
+import { requireAdminRequest } from "@/lib/admin-auth";
 
 const SUPABASE_URL =
   process.env.SUPABASE_URL ?? "https://jtzjwgovqczlccyeujhq.supabase.co";
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     };
 
     const { action, adminEmail, adminToken } = body;
-    await assertAdminPanelAuth(adminEmail, adminToken, { preferToken: true });
+    await requireAdminRequest(req);
 
     const svcKey = serviceKey();
     if (!svcKey) {

@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function POST(req: NextRequest) {
   const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
-  if (!STRIPE_SECRET_KEY) {
+  if (process.env.STRIPE_ENABLED !== "true" || !STRIPE_SECRET_KEY) {
     return NextResponse.json(
       {
         error: "Stripe Customer Portal not configured",

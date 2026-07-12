@@ -18,13 +18,6 @@ const kClivoraWebBaseUrl = 'https://clivora.codcrafters.org';
 /// Also add this URL under Supabase Auth → URL Configuration → Redirect URLs.
 const kPasswordResetRedirectUrl = '$kClivoraWebBaseUrl/auth/reset-password';
 
-/// App → web admin sync API (`/api/admin/sync`).
-const kAdminApiBaseUrl = kClivoraWebBaseUrl;
-
-/// Injected at build time: `--dart-define=ADMIN_SYNC_KEY=your-secret`
-/// Must match `ADMIN_SYNC_KEY` on Vercel (clivora-web project).
-const kAdminSyncKey = String.fromEnvironment('ADMIN_SYNC_KEY', defaultValue: '');
-
 /// Web admin dashboard.
 const kAdminPanelUrl = '$kClivoraWebBaseUrl/admin';
 
