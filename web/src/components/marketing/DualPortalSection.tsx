@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { marketing } from "@/lib/marketing";
 import { cn } from "@/lib/utils";
-import { ShowcaseImage } from "./ShowcaseImage";
+import { DualPortalMock } from "./mockups/DualPortalMock";
 
 const toneIconBg: Record<string, string> = {
   violet: "bg-violet-100 text-violet-600",
@@ -76,7 +76,6 @@ export function DualPortalSection() {
         </div>
       </div>
 
-      {/* Desktop: side cards + full platform showcase image */}
       <div className="mx-auto mt-12 hidden max-w-[1400px] items-stretch gap-4 px-5 lg:grid lg:grid-cols-[200px_minmax(0,1fr)_200px] lg:px-8 xl:gap-5">
         <div className="flex flex-col justify-center gap-3">
           {d.sideFeatures.left.map((f, i) => {
@@ -97,11 +96,7 @@ export function DualPortalSection() {
         </div>
 
         <div className="min-w-0">
-          <ShowcaseImage
-            src="/showcase/platform.png"
-            alt="CLIVORA freelancer and client portals side by side"
-            priority
-          />
+          <DualPortalMock focus={tab} />
         </div>
 
         <div className="flex flex-col justify-center gap-3">
@@ -123,13 +118,8 @@ export function DualPortalSection() {
         </div>
       </div>
 
-      {/* Mobile / tablet */}
       <div className="mx-auto mt-10 max-w-5xl px-5 lg:hidden">
-        <ShowcaseImage
-          src="/showcase/platform.png"
-          alt="CLIVORA freelancer and client portals"
-          priority
-        />
+        <DualPortalMock focus={tab} />
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
           {[...d.sideFeatures.left, ...d.sideFeatures.right].map((f, i) => {
             const Icon = [...leftIcons, ...rightIcons][i] ?? LayoutDashboard;

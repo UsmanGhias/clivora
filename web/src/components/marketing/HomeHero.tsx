@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Check, Sparkles } from "lucide-react";
 import { marketing } from "@/lib/marketing";
-import { ShowcaseImage } from "./ShowcaseImage";
+import { ClientDashMock } from "./mockups/ClientDashMock";
 
 export function HomeHero() {
   const h = marketing.hero;
@@ -13,7 +13,7 @@ export function HomeHero() {
     <section className="relative overflow-hidden pb-16 pt-10 lg:pb-24 lg:pt-14">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_10%_-10%,rgba(13,148,136,0.14),transparent_55%)]" />
 
-      <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-5 lg:grid-cols-[1fr_1.15fr] lg:gap-10 lg:px-8">
+      <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-5 lg:grid-cols-[1fr_1.12fr] lg:gap-10 lg:px-8">
         <div>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -88,11 +88,10 @@ export function HomeHero() {
           transition={{ duration: 0.65, delay: 0.12 }}
           className="relative"
         >
-          <ShowcaseImage
-            src="/showcase/hero.png"
-            alt="CLIVORA earnings and freelancer dashboard"
-            priority
-          />
+          <div className="pointer-events-none absolute -inset-4 rounded-[2rem] bg-gradient-to-tr from-teal-100/40 to-slate-100/30 blur-2xl" />
+          <div className="relative">
+            <ClientDashMock />
+          </div>
         </motion.div>
       </div>
     </section>

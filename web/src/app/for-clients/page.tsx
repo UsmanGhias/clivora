@@ -6,7 +6,7 @@ import { SocialProofSection } from "@/components/marketing/SocialProofSection";
 import { ConnectSection } from "@/components/marketing/ConnectSection";
 import { FAQSection } from "@/components/marketing/FAQSection";
 import { CTASection } from "@/components/marketing/CTASection";
-import { ShowcaseImage } from "@/components/marketing/ShowcaseImage";
+import { ClientDashMock } from "@/components/marketing/mockups/ClientDashMock";
 import { marketing } from "@/lib/marketing";
 
 export const metadata: Metadata = {
@@ -45,11 +45,7 @@ export default function ForClientsPage() {
               </Link>
             </div>
           </div>
-          <ShowcaseImage
-            src="/showcase/platform.png"
-            alt="CLIVORA client portal dashboard"
-            priority
-          />
+          <ClientDashMock />
         </div>
       </section>
       <SocialProofSection />

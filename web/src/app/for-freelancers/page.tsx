@@ -6,6 +6,7 @@ import { FreelancerOSSection } from "@/components/marketing/FreelancerOSSection"
 import { WorkspaceSection } from "@/components/marketing/WorkspaceSection";
 import { CTASection } from "@/components/marketing/CTASection";
 import { ShowcaseImage } from "@/components/marketing/ShowcaseImage";
+import { FreelancerDashMock } from "@/components/marketing/mockups/FreelancerDashMock";
 import { marketing } from "@/lib/marketing";
 
 export const metadata: Metadata = {
@@ -44,11 +45,7 @@ export default function ForFreelancersPage() {
               </Link>
             </div>
           </div>
-          <ShowcaseImage
-            src="/showcase/freelancer-os.png"
-            alt="CLIVORA freelancer dashboard"
-            priority
-          />
+          <FreelancerDashMock />
         </div>
       </section>
       <FreelancerOSSection />

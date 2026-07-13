@@ -7,7 +7,7 @@ export const site = {
     "CLIVORA is the world's Freelancer OS for freelancers and clients. Discover talent and jobs on CLIVORA Connect with private contact until mutual accept, then run clients, projects, invoices, and payments on web and Android — one powerful platform.",
   url: "https://clivora.codcrafters.org",
   appPackage: "org.codcrafters.clivora",
-  appVersion: "2.19.0",
+  appVersion: "2.20.0",
   company: {
     name: "CODCrafters",
     url: "https://codcrafters.org",

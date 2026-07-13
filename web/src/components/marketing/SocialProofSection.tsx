@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { marketing } from "@/lib/marketing";
 import { cn } from "@/lib/utils";
-import { ShowcaseImage } from "./ShowcaseImage";
+import { TrustedNetworkMock } from "./mockups/TrustedNetworkMock";
 
 const toneBg: Record<string, string> = {
   violet: "bg-violet-100 text-violet-600",
@@ -64,7 +64,7 @@ export function SocialProofSection() {
           </div>
         </div>
 
-        <ShowcaseImage src="/showcase/trusted.png" alt="CLIVORA trusted worldwide network" />
+        <TrustedNetworkMock />
       </div>
 
       <div className="relative mx-auto mt-16 max-w-7xl px-5 lg:px-8">

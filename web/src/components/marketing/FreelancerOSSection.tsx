@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Check, ArrowRight } from "lucide-react";
 import { marketing } from "@/lib/marketing";
-import { ShowcaseImage } from "./ShowcaseImage";
+import { FreelancerDashMock } from "./mockups/FreelancerDashMock";
 
 export function FreelancerOSSection() {
   const s = marketing.freelancerOs;
@@ -10,7 +10,9 @@ export function FreelancerOSSection() {
     <section id="freelancer-os" className="border-t border-slate-200/80 bg-white py-20 lg:py-28">
       <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16 lg:px-8">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Freelancer operating system</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+            Freelancer operating system
+          </p>
           <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight tracking-tight text-navy sm:text-4xl lg:text-[2.65rem]">
             {s.headline}
           </h2>
@@ -42,11 +44,7 @@ export function FreelancerOSSection() {
         <div className="relative">
           <div className="pointer-events-none absolute -inset-6 rounded-[2.5rem] bg-gradient-to-tr from-teal-100/60 via-slate-100/30 to-transparent blur-2xl" />
           <div className="relative">
-            <ShowcaseImage
-              src="/showcase/freelancer-os.png"
-              alt="CLIVORA freelancer operating system dashboard"
-              priority
-            />
+            <FreelancerDashMock />
           </div>
         </div>
       </div>

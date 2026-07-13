@@ -39,7 +39,7 @@ function NavItem({ label, active, badge }: { label: string; active?: boolean; ba
   );
 }
 
-export function FreelancerDashMock() {
+export function FreelancerDashMock({ compact = false }: { compact?: boolean }) {
   const projects = [
     { name: "SaaS Dashboard", pct: 72 },
     { name: "Mobile App UI", pct: 45 },
@@ -52,9 +52,9 @@ export function FreelancerDashMock() {
   ];
 
   return (
-    <div className="w-full max-w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60">
-      <div className="flex h-[480px]">
-        <aside className="flex w-[132px] shrink-0 flex-col bg-[#0F172A] p-2.5 text-white">
+    <div className={`w-full max-w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60 ${compact ? "text-[95%]" : ""}`}>
+      <div className={compact ? "flex h-[380px]" : "flex h-[480px]"}>
+        <aside className={`flex shrink-0 flex-col bg-[#0F172A] p-2.5 text-white ${compact ? "w-[108px]" : "w-[132px]"}`}>
           <p className="text-[10px] font-black tracking-wide">CLIVORA</p>
           <div className="mt-3 flex items-center gap-1.5">
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#0D9488] text-[8px] font-bold">UG</span>
@@ -78,7 +78,7 @@ export function FreelancerDashMock() {
           <p className="text-[9px] text-[#475569]">Here&apos;s your freelance overview.</p>
 
           <div className="mt-2 grid grid-cols-4 gap-1.5">
-            <Stat label="Total Earnings" value="$4,180" trend="+12.4%" />
+            <Stat label="Total Earnings" value="$24,560" trend={compact ? undefined : "+12.4%"} />
             <Stat label="Active Projects" value="6" />
             <Stat label="Pending Proposals" value="5" />
             <Stat label="Unread Messages" value="4" />

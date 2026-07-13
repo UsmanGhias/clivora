@@ -1,9 +1,37 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import { ShowcaseImage } from "@/components/marketing/ShowcaseImage";
+import {
+  ArrowRight,
+  Briefcase,
+  DollarSign,
+  FileText,
+  Globe2,
+  ShieldCheck,
+  Star,
+  Zap,
+} from "lucide-react";
 import { marketing } from "@/lib/marketing";
+import { cn } from "@/lib/utils";
+import { ConnectJobsMock } from "./mockups/ConnectJobsMock";
+
+const ribbonIcons = [Briefcase, UsersIcon, Star, Globe2, FileText];
+const toneCard: Record<string, string> = {
+  green: "bg-emerald-50 text-emerald-600",
+  violet: "bg-violet-50 text-violet-600",
+  orange: "bg-orange-50 text-orange-600",
+  blue: "bg-sky-50 text-sky-600",
+};
+
+function UsersIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
 
 export function ConnectSection() {
   const c = marketing.connect;
@@ -22,36 +50,93 @@ export function ConnectSection() {
           <p className="mt-4 text-base leading-relaxed text-slate-600 sm:text-lg">{c.body}</p>
         </div>
 
-        <div className="mt-10">
-          <ShowcaseImage
-            src="/showcase/marketplace.png"
-            alt="CLIVORA Connect marketplace — jobs, proposals, and hiring in one place"
-          />
-        </div>
+        <div className="mt-10 overflow-hidden rounded-2xl border border-slate-200 bg-[#F8FAFC] p-4 shadow-lg shadow-slate-200/50 sm:p-6">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+            {c.ribbon.map((item, i) => {
+              const Icon = ribbonIcons[i] ?? Briefcase;
+              return (
+                <div
+                  key={item.label}
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-center shadow-sm"
+                >
+                  <Icon className="mx-auto h-4 w-4 text-primary" />
+                  <p className="mt-1 font-display text-sm font-extrabold text-navy">{item.value}</p>
+                  <p className="text-[10px] text-slate-500">{item.label}</p>
+                </div>
+              );
+            })}
+          </div>
 
-        <div className="mt-10 grid gap-6 sm:grid-cols-3">
-          {c.features.map((point) => (
-            <div key={point.title} className="rounded-2xl border border-slate-200 bg-[#F8FAFC] p-5">
-              <h3 className="text-base font-bold text-navy">{point.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-500">{point.description}</p>
+          <div className="mt-5 grid items-start gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)]">
+            <div>
+              <h3 className="font-display text-xl font-extrabold text-navy sm:text-2xl">
+                Find Work. Hire Talent.{" "}
+                <span className="text-primary">Grow Together.</span>
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                Access verified freelancers and serious projects — without platform fees on negotiated rates.
+              </p>
+              <ul className="mt-5 space-y-3">
+                {[
+                  { icon: DollarSign, title: "No Platform Fees", tone: "text-emerald-600 bg-emerald-50" },
+                  { icon: ShieldCheck, title: "Verified Professionals", tone: "text-violet-600 bg-violet-50" },
+                  { icon: Zap, title: "Smart Matching", tone: "text-orange-600 bg-orange-50" },
+                ].map((f) => (
+                  <li key={f.title} className="flex items-center gap-3">
+                    <span className={cn("flex h-8 w-8 items-center justify-center rounded-lg", f.tone)}>
+                      <f.icon className="h-4 w-4" />
+                    </span>
+                    <span className="text-sm font-semibold text-navy">{f.title}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-6 flex flex-wrap gap-2">
+                <Link
+                  href={c.secondaryCta.href}
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-teal-500/20"
+                >
+                  Browse Jobs
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link
+                  href={c.primaryCta.href}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-navy"
+                >
+                  Find Freelancers
+                </Link>
+              </div>
             </div>
-          ))}
-        </div>
 
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-          <Link
-            href={c.primaryCta.href}
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-lg shadow-teal-500/25 transition hover:bg-teal-700"
-          >
-            {c.primaryCta.label}
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-          <Link
-            href={c.secondaryCta.href}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-navy transition hover:bg-slate-50"
-          >
-            {c.secondaryCta.label}
-          </Link>
+            <ConnectJobsMock />
+          </div>
+
+          <div className="mt-6 border-t border-slate-200 pt-5">
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-sm font-bold text-navy">Explore Top Categories</p>
+              <Link href="/connect" className="text-xs font-semibold text-primary hover:underline">
+                View all categories
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {c.categories.map((cat) => (
+                <div
+                  key={cat.title}
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm"
+                >
+                  <span
+                    className={cn(
+                      "inline-flex rounded-md px-1.5 py-0.5 text-[10px] font-bold",
+                      toneCard[cat.tone],
+                    )}
+                  >
+                    •
+                  </span>
+                  <p className="mt-1 text-xs font-bold text-navy">{cat.title}</p>
+                  <p className="text-[10px] text-slate-500">{cat.jobs}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </section>

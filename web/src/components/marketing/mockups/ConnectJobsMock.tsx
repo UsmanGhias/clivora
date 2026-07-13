@@ -17,7 +17,7 @@ function NavItem({ label, active }: { label: string; active?: boolean }) {
 export function ConnectJobsMock() {
   return (
     <div className="w-full max-w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60">
-      <div className="flex h-[420px]">
+      <div className="flex h-[460px]">
         <aside className="flex w-[120px] shrink-0 flex-col bg-[#0F172A] p-2.5 text-white">
           <p className="text-[9px] font-black tracking-wide">CLIVORA</p>
           <p className="text-[8px] font-bold text-[#0D9488]">CONNECT</p>
