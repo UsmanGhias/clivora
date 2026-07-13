@@ -4,6 +4,7 @@ export type PortalNavCounts = {
   proposals: number;
   messages: number;
   notifications: number;
+  projects: number;
 };
 
 export async function getPortalNavCounts(
@@ -11,11 +12,11 @@ export async function getPortalNavCounts(
   isClient: boolean,
 ): Promise<PortalNavCounts> {
   const supabase = await createClient();
-  const counts: PortalNavCounts = { proposals: 0, messages: 0, notifications: 0 };
+  const counts: PortalNavCounts = { proposals: 0, messages: 0, notifications: 0, projects: 0 };
   if (!uid) return counts;
 
   try {
-    const [proposals, messages, notifications] = await Promise.all([
+    const [proposals, notifications, projects] = await Promise.all([
       supabase
         .from("connect_proposals")
         .select("id", { count: "exact", head: true })
@@ -27,14 +28,14 @@ export async function getPortalNavCounts(
         .eq("user_uid", uid)
         .eq("is_read", false),
       supabase
-        .from("notifications")
-        .select("id", { count: "exact", head: true })
-        .eq("user_uid", uid)
-        .eq("is_read", false),
+        .from("project_shares")
+        .select("share_id", { count: "exact", head: true })
+        .eq(isClient ? "client_uid" : "freelancer_uid", uid),
     ]);
     counts.proposals = proposals.count ?? 0;
     counts.notifications = notifications.count ?? 0;
-    counts.messages = messages.count ?? 0;
+    counts.messages = notifications.count ?? 0;
+    counts.projects = projects.count ?? 0;
   } catch {
     /* ignore */
   }

@@ -10,19 +10,35 @@ const ICONS: Record<string, typeof DollarSign> = {
   default: CheckCircle2,
 };
 
-export function ActivityFeed({ items, viewAllHref }: { items: Item[]; viewAllHref: string }) {
+export function ActivityFeed({
+  items,
+  viewAllHref,
+  accent = "teal",
+}: {
+  items: Item[];
+  viewAllHref: string;
+  accent?: "teal" | "slate";
+}) {
+  const iconTone =
+    accent === "slate" ? "bg-client-surface text-client-accent" : "bg-primary/10 text-primary";
+  const linkTone = accent === "slate" ? "text-client-accent" : "text-primary";
+
   return (
     <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
       <h2 className="font-display text-lg font-bold text-navy">Recent activity</h2>
       {items.length === 0 ? (
-        <p className="mt-4 text-sm text-text-secondary">No recent activity yet. Start a project or message a client.</p>
+        <p className="mt-4 text-sm text-text-secondary">
+          No recent activity yet. Start a project or send a message.
+        </p>
       ) : (
         <ul className="mt-4 space-y-3">
           {items.map((item) => {
             const Icon = ICONS[item.kind] ?? ICONS.default;
             return (
               <li key={item.id} className="flex gap-3 rounded-xl border border-border/60 px-3 py-2.5">
-                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <span
+                  className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${iconTone}`}
+                >
                   <Icon className="h-4 w-4" />
                 </span>
                 <div className="min-w-0 flex-1">
@@ -35,7 +51,7 @@ export function ActivityFeed({ items, viewAllHref }: { items: Item[]; viewAllHre
           })}
         </ul>
       )}
-      <Link href={viewAllHref} className="mt-4 inline-block text-sm font-semibold text-primary hover:underline">
+      <Link href={viewAllHref} className={`mt-4 inline-block text-sm font-semibold hover:underline ${linkTone}`}>
         View all activity →
       </Link>
     </div>

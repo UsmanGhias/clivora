@@ -98,8 +98,9 @@ export function AppShell({
 
   const freelancerNav: NavItem[] = [
     { href: "/app", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/app/connect", label: "Find jobs (Connect)", icon: Network },
     { href: "/app/proposals", label: "Proposals", icon: FileText, badge: counts?.proposals },
-    { href: "/app/projects", label: "Projects", icon: FolderKanban },
+    { href: "/app/projects", label: "Projects", icon: FolderKanban, badge: counts?.projects },
     { href: "/app/messages", label: "Messages", icon: MessageSquare, badge: counts?.messages },
     { href: "/app/invoices", label: "Earnings", icon: Receipt },
     { href: "/app/invoices", label: "Invoices", icon: FileText },
@@ -107,12 +108,14 @@ export function AppShell({
     { href: "/app/clients", label: "Clients", icon: Users },
     { href: "/app/hub", label: "Reviews", icon: Star },
     { href: "/app/account", label: "My profile", icon: UserCircle },
+    { href: "/app/hub", label: "Bookmarks", icon: Bookmark },
+    { href: "/app/hub", label: "Analytics", icon: Briefcase },
     { href: "/app/account", label: "Settings", icon: Settings },
   ];
 
   const clientNav: NavItem[] = [
     { href: "/app", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/connect/manage", label: "Post a job", icon: Plus, cta: true },
+    { href: "/connect/manage", label: "Post a job", icon: Plus },
     { href: "/app/connect", label: "Marketplace / Connect", icon: Network },
     { href: "/app/proposals", label: "Proposals", icon: FileText, badge: counts?.proposals },
     { href: "/app/projects", label: "Projects", icon: FolderKanban },
@@ -122,6 +125,8 @@ export function AppShell({
     { href: "/app/hub", label: "My team", icon: Users },
     { href: "/app/hub", label: "Bookmarks", icon: Bookmark },
     { href: "/app/hub", label: "Reviews", icon: Star },
+    { href: "/app/timesheets", label: "Time tracking", icon: Clock },
+    { href: "/app/hub", label: "Reports", icon: Briefcase },
     { href: "/app/account", label: "Settings", icon: Settings },
   ];
 
@@ -185,9 +190,21 @@ export function AppShell({
         <div className="border-b border-white/10 px-4 py-4">
           <p className="truncate font-semibold">{profile.name || profile.email}</p>
           {plus && (
-            <span className="mt-1 inline-flex items-center gap-1 rounded-lg bg-primary/20 px-2 py-0.5 text-[10px] font-bold uppercase text-primary-light">
+            <span
+              className={cn(
+                "mt-1 inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase",
+                isClient
+                  ? "bg-white/15 text-white"
+                  : "bg-primary/20 text-primary-light",
+              )}
+            >
               <Diamond className="h-3 w-3" />
               {plan}
+            </span>
+          )}
+          {!plus && (
+            <span className="mt-1 inline-block text-[10px] font-semibold uppercase tracking-wide text-white/50">
+              Free plan
             </span>
           )}
         </div>
@@ -204,7 +221,15 @@ export function AppShell({
         </nav>
 
         <div className="border-t border-white/10 p-4">
-          {!isClient && (
+          {isClient ? (
+            <Link
+              href="/connect/manage"
+              className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl bg-client-accent px-3 py-2.5 text-sm font-bold text-white hover:bg-client-header"
+            >
+              <Plus className="h-4 w-4" />
+              Post a job
+            </Link>
+          ) : (
             <Link
               href="/app/connect"
               className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-sm font-bold text-white hover:bg-primary-dark"
@@ -214,8 +239,8 @@ export function AppShell({
             </Link>
           )}
           <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-            <p className="text-xs font-bold text-white/80">{plus ? "Pro Plus plan" : "Free plan"}</p>
-            <p className="mt-1 text-[10px] text-white/50">Renews Aug 1, 2026</p>
+            <p className="text-xs font-bold text-white/80">{plus ? `${plan} plan` : "Free plan"}</p>
+            <p className="mt-1 text-[10px] text-white/50">Manage billing & credits</p>
             <Link
               href="/pro?plan=pro_plus"
               className={cn(
@@ -240,8 +265,12 @@ export function AppShell({
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
               <input
                 readOnly
-                placeholder="Search…"
-                className="w-full rounded-xl border border-border bg-background py-2 pl-10 pr-16 text-sm text-text-secondary"
+                placeholder={
+                  isClient
+                    ? "Search freelancers, projects, invoices..."
+                    : "Search anything..."
+                }
+                className="w-full rounded-full border border-border bg-background py-2 pl-10 pr-16 text-sm text-text-secondary"
               />
               <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md bg-surface px-1.5 py-0.5 text-[10px] font-bold text-text-muted">
                 ⌘K
