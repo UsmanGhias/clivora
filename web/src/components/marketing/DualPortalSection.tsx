@@ -1,9 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import {
   BarChart3,
   Bot,
-  Cloud,
+  Briefcase,
   FileText,
   FolderKanban,
   LayoutDashboard,
@@ -11,13 +12,14 @@ import {
   Network,
   Settings2,
   Shield,
+  Sparkles,
   Timer,
+  UserRound,
   Wallet,
 } from "lucide-react";
 import { marketing } from "@/lib/marketing";
 import { cn } from "@/lib/utils";
-import { FreelancerDashMock } from "./mockups/FreelancerDashMock";
-import { ClientDashMock } from "./mockups/ClientDashMock";
+import { ShowcaseImage } from "./ShowcaseImage";
 
 const toneIconBg: Record<string, string> = {
   violet: "bg-violet-100 text-violet-600",
@@ -33,12 +35,13 @@ const stripIcons = [BarChart3, Wallet, FileText, Timer, Shield, Settings2];
 
 export function DualPortalSection() {
   const d = marketing.dualPortal;
+  const [tab, setTab] = useState<"freelancer" | "client">("freelancer");
 
   return (
-    <section id="platform" className="relative overflow-hidden py-20 lg:py-28">
+    <section id="platform" className="relative overflow-hidden bg-[#F8FAFC] py-20 lg:py-28">
       <div className="mx-auto max-w-7xl px-5 text-center lg:px-8">
-        <span className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
-          <Cloud className="h-3.5 w-3.5" />
+        <span className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
+          <Sparkles className="h-3.5 w-3.5" />
           {d.badge}
         </span>
         <h2 className="mt-5 font-display text-3xl font-extrabold tracking-tight text-navy sm:text-4xl lg:text-5xl">
@@ -48,36 +51,42 @@ export function DualPortalSection() {
           </span>
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-base text-slate-600 sm:text-lg">{d.body}</p>
-        <div className="mt-6 inline-flex gap-2 text-xs font-semibold">
-          <span className="rounded-full bg-primary px-3 py-1.5 text-white">For Freelancers</span>
-          <span className="rounded-full border border-navy/20 bg-white px-3 py-1.5 text-navy">
-            For Clients
-          </span>
+
+        <div className="mt-8 inline-flex rounded-full border border-slate-200 bg-white p-1.5 shadow-sm">
+          {d.tabs.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition",
+                tab === t.id
+                  ? "bg-primary text-white shadow-md shadow-primary/25"
+                  : "text-navy hover:bg-slate-50",
+              )}
+            >
+              {t.id === "freelancer" ? (
+                <UserRound className="h-4 w-4" />
+              ) : (
+                <Briefcase className="h-4 w-4" />
+              )}
+              {t.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="mx-auto mt-12 grid max-w-7xl items-start gap-6 px-5 lg:grid-cols-2 lg:px-8">
-        <div className="overflow-hidden">
-          <p className="mb-2 text-center text-xs font-bold uppercase tracking-[0.14em] text-primary">
-            Freelancer dashboard
-          </p>
-          <FreelancerDashMock />
-        </div>
-        <div className="overflow-hidden">
-          <p className="mb-2 text-center text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
-            Client portal
-          </p>
-          <ClientDashMock />
-        </div>
-      </div>
-
-      <div className="mx-auto mt-8 hidden max-w-7xl grid-cols-2 gap-6 px-5 lg:grid lg:px-8">
-        <div className="grid grid-cols-3 gap-3">
+      {/* Desktop: side cards + full platform showcase image */}
+      <div className="mx-auto mt-12 hidden max-w-[1400px] items-stretch gap-4 px-5 lg:grid lg:grid-cols-[200px_minmax(0,1fr)_200px] lg:px-8 xl:gap-5">
+        <div className="flex flex-col justify-center gap-3">
           {d.sideFeatures.left.map((f, i) => {
             const Icon = leftIcons[i] ?? LayoutDashboard;
             return (
-              <div key={f.title} className="rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm">
-                <div className={cn("mb-3 inline-flex rounded-xl p-2", toneIconBg[f.tone])}>
+              <div
+                key={f.title}
+                className="rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm"
+              >
+                <div className={cn("mb-2.5 inline-flex rounded-xl p-2", toneIconBg[f.tone])}>
                   <Icon className="h-4 w-4" />
                 </div>
                 <p className="text-sm font-bold text-navy">{f.title}</p>
@@ -86,12 +95,24 @@ export function DualPortalSection() {
             );
           })}
         </div>
-        <div className="grid grid-cols-3 gap-3">
+
+        <div className="min-w-0">
+          <ShowcaseImage
+            src="/showcase/platform.png"
+            alt="CLIVORA freelancer and client portals side by side"
+            priority
+          />
+        </div>
+
+        <div className="flex flex-col justify-center gap-3">
           {d.sideFeatures.right.map((f, i) => {
             const Icon = rightIcons[i] ?? MessageSquare;
             return (
-              <div key={f.title} className="rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm">
-                <div className={cn("mb-3 inline-flex rounded-xl p-2", toneIconBg[f.tone])}>
+              <div
+                key={f.title}
+                className="rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm"
+              >
+                <div className={cn("mb-2.5 inline-flex rounded-xl p-2", toneIconBg[f.tone])}>
                   <Icon className="h-4 w-4" />
                 </div>
                 <p className="text-sm font-bold text-navy">{f.title}</p>
@@ -102,26 +123,65 @@ export function DualPortalSection() {
         </div>
       </div>
 
-      <div className="mx-auto mt-10 max-w-6xl overflow-x-auto px-5 lg:px-8">
-        <div className="flex min-w-max flex-nowrap items-center justify-center gap-2 sm:gap-3">
+      {/* Mobile / tablet */}
+      <div className="mx-auto mt-10 max-w-5xl px-5 lg:hidden">
+        <ShowcaseImage
+          src="/showcase/platform.png"
+          alt="CLIVORA freelancer and client portals"
+          priority
+        />
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          {[...d.sideFeatures.left, ...d.sideFeatures.right].map((f, i) => {
+            const Icon = [...leftIcons, ...rightIcons][i] ?? LayoutDashboard;
+            return (
+              <div key={f.title} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className={cn("mb-2 inline-flex rounded-xl p-2", toneIconBg[f.tone])}>
+                  <Icon className="h-4 w-4" />
+                </div>
+                <p className="text-sm font-bold text-navy">{f.title}</p>
+                <p className="mt-1 text-xs text-slate-500">{f.description}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mx-auto mt-10 max-w-6xl px-5 lg:px-8">
+        <div className="flex flex-wrap items-center justify-center gap-x-1 gap-y-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm sm:gap-x-0 sm:px-2">
           {d.bottomStrip.map((label, i) => {
             const Icon = stripIcons[i] ?? Settings2;
             return (
               <div
                 key={label}
-                className="inline-flex shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 shadow-sm"
+                className="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-600 sm:px-3.5"
               >
-                <Icon className="h-3.5 w-3.5 text-primary" />
-                {label}
+                <Icon className="h-3.5 w-3.5 shrink-0 text-primary" />
+                <span className="whitespace-nowrap">{label}</span>
+                {i < d.bottomStrip.length - 1 && (
+                  <span className="ml-3 hidden h-4 w-px bg-slate-200 sm:inline-block" aria-hidden />
+                )}
               </div>
             );
           })}
         </div>
       </div>
 
-      <div className="mx-auto mt-10 flex max-w-3xl flex-col items-center justify-between gap-4 rounded-2xl border border-teal-100 bg-gradient-to-r from-teal-50 to-white px-6 py-4 sm:flex-row">
-        <p className="text-sm font-semibold text-navy">{d.socialProof}</p>
-        <span className="inline-flex items-center gap-2 rounded-full bg-primary px-3.5 py-1.5 text-xs font-bold text-white">
+      <div className="mx-auto mt-8 flex max-w-5xl flex-col items-center justify-between gap-4 rounded-2xl border border-teal-100 bg-gradient-to-r from-teal-50 via-white to-emerald-50/50 px-6 py-4 sm:flex-row">
+        <p className="inline-flex items-center gap-2 text-sm font-semibold text-navy">
+          <Sparkles className="h-4 w-4 text-primary" />
+          {d.socialProof}
+        </p>
+        <span className="inline-flex items-center gap-2.5 rounded-full bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm">
+          <span className="flex -space-x-2">
+            {["UG", "MA", "SK", "NR", "RL"].map((c) => (
+              <span
+                key={c}
+                className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-emerald-500 bg-navy text-[8px] font-bold"
+              >
+                {c}
+              </span>
+            ))}
+          </span>
           {d.activeUsers}
         </span>
       </div>

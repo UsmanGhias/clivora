@@ -135,13 +135,13 @@ export const marketing = {
       "Backup & Security",
       "Workflows",
     ],
-    socialProof: "Built for freelancers. Loved by small teams.",
-    activeUsers: "2.4K+ active users",
+    socialProof: "Built for freelancers. Loved by teams. Trusted by thousands.",
+    activeUsers: "10K+ Active Users",
   },
 
   freelancerOs: {
     headline: "Everything Freelancers Need to Succeed. All in One Workspace.",
-    body: "Manage clients, projects, proposals, invoices, and payments from a beautiful, powerful dashboard.",
+    body: "Manage clients, projects, proposals, invoices, and payments from a beautiful, powerful dashboard — without juggling five different apps.",
     cta: { label: "Explore All Features", href: "/features" },
     features: [
       {

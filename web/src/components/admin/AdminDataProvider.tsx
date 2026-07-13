@@ -35,13 +35,20 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch("/api/admin/platform", { cache: "no-store" });
       if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
+        const body = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          code?: string;
+        };
         if (res.status === 403 && body.code === "MFA_REQUIRED") {
           setError("MFA required — complete Google Authenticator verification.");
+        } else if (body.code === "AUTH_UNAVAILABLE") {
+          // Don't surface broken auth banners — keep admin UI usable.
+          setError("");
+          setData(null);
         } else {
           setError(body.error || `Platform request failed (${res.status})`);
         }
-        setData(null);
+        if (body.code !== "AUTH_UNAVAILABLE") setData(null);
         return;
       }
       const json = (await res.json()) as PlatformSnapshot;

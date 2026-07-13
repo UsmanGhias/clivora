@@ -1,51 +1,38 @@
 import Link from "next/link";
-import {
-  Bot,
-  CheckCircle2,
-  FileText,
-  FolderKanban,
-  LayoutDashboard,
-  Timer,
-  Users,
-  ArrowRight,
-} from "lucide-react";
+import { Check, ArrowRight } from "lucide-react";
 import { marketing } from "@/lib/marketing";
-import { AnalyticsPreviewMock } from "./mockups/AnalyticsPreviewMock";
-
-const icons = [LayoutDashboard, FolderKanban, FileText, Timer, Users, Bot];
+import { ShowcaseImage } from "./ShowcaseImage";
 
 export function FreelancerOSSection() {
   const s = marketing.freelancerOs;
 
   return (
     <section id="freelancer-os" className="border-t border-slate-200/80 bg-white py-20 lg:py-28">
-      <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 lg:grid-cols-[0.95fr_1.05fr] lg:gap-14 lg:px-8">
+      <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16 lg:px-8">
         <div>
-          <h2 className="font-display text-3xl font-extrabold leading-tight tracking-tight text-navy sm:text-4xl">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Freelancer operating system</p>
+          <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight tracking-tight text-navy sm:text-4xl lg:text-[2.65rem]">
             {s.headline}
           </h2>
           <p className="mt-4 text-base leading-relaxed text-slate-600 sm:text-lg">{s.body}</p>
 
-          <ul className="mt-8 space-y-4">
-            {s.features.map((f, i) => {
-              const Icon = icons[i] ?? CheckCircle2;
-              return (
-                <li key={f.title} className="flex gap-3">
-                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-primary">
-                    <Icon className="h-4 w-4" />
-                  </span>
-                  <div>
-                    <p className="text-sm font-bold text-navy">{f.title}</p>
-                    <p className="mt-0.5 text-sm text-slate-500">{f.description}</p>
-                  </div>
-                </li>
-              );
-            })}
+          <ul className="mt-8 space-y-3.5">
+            {s.features.map((f) => (
+              <li key={f.title} className="flex gap-3">
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-50 text-primary">
+                  <Check className="h-3.5 w-3.5" strokeWidth={2.75} />
+                </span>
+                <div>
+                  <p className="text-sm font-bold text-navy">{f.title}</p>
+                  <p className="mt-0.5 text-sm leading-relaxed text-slate-500">{f.description}</p>
+                </div>
+              </li>
+            ))}
           </ul>
 
           <Link
             href={s.cta.href}
-            className="mt-8 inline-flex items-center gap-2 rounded-xl border-2 border-primary bg-white px-5 py-3 text-sm font-bold text-primary transition hover:bg-teal-50"
+            className="mt-9 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-teal-500/25 transition hover:bg-teal-700"
           >
             {s.cta.label}
             <ArrowRight className="h-4 w-4" />
@@ -53,15 +40,19 @@ export function FreelancerOSSection() {
         </div>
 
         <div className="relative">
-          <div className="absolute -inset-3 rounded-[28px] bg-gradient-to-tr from-teal-100/60 to-slate-200/40 blur-xl" />
+          <div className="pointer-events-none absolute -inset-6 rounded-[2.5rem] bg-gradient-to-tr from-teal-100/60 via-slate-100/30 to-transparent blur-2xl" />
           <div className="relative">
-            <AnalyticsPreviewMock />
+            <ShowcaseImage
+              src="/showcase/freelancer-os.png"
+              alt="CLIVORA freelancer operating system dashboard"
+              priority
+            />
           </div>
         </div>
       </div>
 
-      <div className="mx-auto mt-14 max-w-7xl px-5 lg:px-8">
-        <div className="grid grid-cols-2 gap-4 rounded-2xl border border-slate-200 bg-[#F8FAFC] p-5 sm:grid-cols-3 lg:grid-cols-6 lg:p-6">
+      <div className="mx-auto mt-16 max-w-7xl px-5 lg:px-8">
+        <div className="grid grid-cols-2 gap-6 rounded-2xl border border-slate-200 bg-[#F8FAFC] px-4 py-6 sm:grid-cols-3 lg:grid-cols-6 lg:px-8">
           {s.stats.map((stat) => (
             <div key={stat.label} className="text-center">
               <p className="font-display text-2xl font-extrabold text-navy sm:text-3xl">{stat.value}</p>
