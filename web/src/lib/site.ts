@@ -1,10 +1,10 @@
 export const site = {
   name: "CLIVORA",
-  tagline: "Connect marketplace + business OS",
+  tagline: "Freelancer OS — Connect, CRM & Invoices",
   shortDescription:
-    "Private Connect marketplace plus CRM, projects, and invoices, web and Android, one account.",
+    "All-in-one Freelancer OS: private Connect marketplace, CRM, projects, invoices, and payments. Web and Android, one account.",
   description:
-    "CLIVORA is the cloud-first business operating system for freelancers and clients. Discover talent and jobs on CLIVORA Connect with private contact until mutual accept, then run clients, projects, and invoices on web and Android.",
+    "CLIVORA is the world's Freelancer OS for freelancers and clients. Discover talent and jobs on CLIVORA Connect with private contact until mutual accept, then run clients, projects, invoices, and payments on web and Android — one powerful platform.",
   url: "https://clivora.codcrafters.org",
   appPackage: "org.codcrafters.clivora",
   appVersion: "2.19.0",

@@ -13,10 +13,13 @@ export default function SignupForm() {
   const router = useRouter();
   const search = useSearchParams();
   const next = search.get("next") || "/app";
+  const roleParam = search.get("role");
+  const initialRole =
+    roleParam === "client" || roleParam === "freelancer" ? roleParam : "freelancer";
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [accountType, setAccountType] = useState<"freelancer" | "client">("freelancer");
+  const [accountType, setAccountType] = useState<"freelancer" | "client">(initialRole);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [awaitingVerify, setAwaitingVerify] = useState(false);
