@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/constants/plan_limits.dart';
 import '../../core/services/invoice_share_helper.dart';
@@ -27,6 +28,7 @@ class InvoicesScreen extends ConsumerStatefulWidget {
 
 class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
   late String _status;
+  String _sort = 'newest';
 
   @override
   void initState() {
@@ -57,14 +59,31 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
     );
   }
 
+  List<Invoice> _sorted(List<Invoice> invoices) {
+    final list = [...invoices];
+    switch (_sort) {
+      case 'oldest':
+        list.sort((a, b) => a.issueDate.compareTo(b.issueDate));
+        break;
+      case 'amount':
+        list.sort((a, b) => b.total.compareTo(a.total));
+        break;
+      default:
+        list.sort((a, b) => b.issueDate.compareTo(a.issueDate));
+    }
+    return list;
+  }
+
   @override
   Widget build(BuildContext context) {
     final invoicesAsync = ref.watch(invoicesProvider(_status == 'all' ? null : _status));
     final statsAsync = ref.watch(invoiceStatsProvider);
     final monthlyCountAsync = ref.watch(monthlyInvoiceCountProvider);
+    final customersAsync = ref.watch(customersProvider(null));
 
     return ClivoraScaffold(
       title: 'Invoices',
+      subtitle: 'Manage and track all your invoices',
       showMessagesButton: true,
       action: ClivoraIconButton(icon: Icons.add, onPressed: _onAddInvoice),
       body: Column(
@@ -75,25 +94,69 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
             error: (_, _) => const SizedBox.shrink(),
             data: (stats) => StatSummaryCard(
               items: [
-                StatItem(label: 'Total', value: '${stats.total}'),
-                StatItem(label: 'Outstanding', value: formatCurrency(stats.outstanding), valueColor: ClivoraColors.warningOrange),
-                StatItem(label: 'Paid', value: formatCurrency(stats.paid), valueColor: ClivoraColors.successGreen),
+                StatItem(
+                  label: 'Total Invoices',
+                  value: '${stats.total}',
+                  icon: Icons.description_outlined,
+                  iconColor: ClivoraColors.primary,
+                ),
+                StatItem(
+                  label: 'Outstanding Amount',
+                  value: formatCurrency(stats.outstanding),
+                  valueColor: ClivoraColors.warningOrange,
+                  icon: Icons.error_outline,
+                  iconColor: ClivoraColors.warningOrange,
+                ),
+                StatItem(
+                  label: 'Paid Amount',
+                  value: formatCurrency(stats.paid),
+                  valueColor: ClivoraColors.successGreen,
+                  icon: Icons.check_circle_outline,
+                  iconColor: ClivoraColors.primary,
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           FilterChipRow(
-            options: const ['all', 'draft', 'sent', 'paid', 'overdue', 'outstanding'],
+            options: const ['all', 'draft', 'sent', 'viewed', 'paid'],
             selected: _status,
             onSelected: (v) => setState(() => _status = v),
           ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: () => context.push('/recurring-invoices'),
-              icon: const Icon(Icons.autorenew, size: 18),
-              label: const Text('Recurring'),
-            ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              PopupMenuButton<String>(
+                onSelected: (v) => setState(() => _sort = v),
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'newest', child: Text('Newest')),
+                  PopupMenuItem(value: 'oldest', child: Text('Oldest')),
+                  PopupMenuItem(value: 'amount', child: Text('Amount')),
+                ],
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Sort by: ${_sort[0].toUpperCase()}${_sort.substring(1)}',
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
+                      const Icon(Icons.keyboard_arrow_down, size: 18),
+                    ],
+                  ),
+                ),
+              ),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: () => context.push('/recurring-invoices'),
+                icon: const Icon(Icons.autorenew, size: 18, color: ClivoraColors.primary),
+                label: const Text(
+                  'Recurring Invoices',
+                  style: TextStyle(color: ClivoraColors.primary, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
           ),
           monthlyCountAsync.when(
             loading: () => const SizedBox.shrink(),
@@ -104,7 +167,7 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
               resource: 'invoices this month',
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           Expanded(
             child: invoicesAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -112,6 +175,9 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
               data: (invoices) {
                 final total = statsAsync.valueOrNull?.total ?? invoices.length;
                 final isFiltered = _status != 'all';
+                final customerMap = {
+                  for (final c in customersAsync.valueOrNull ?? <Customer>[]) c.id: c,
+                };
                 if (invoices.isEmpty) {
                   if (isFiltered && total > 0) {
                     return EmptyState(
@@ -121,25 +187,46 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
                       onAction: () => setState(() => _status = 'all'),
                     );
                   }
-                  return EmptyState(
-                    icon: Icons.receipt_long_outlined,
-                    message: 'Create an invoice to request payment, share a PDF, and track what is due.',
-                    actionLabel: 'Create invoice',
-                    onAction: _onAddInvoice,
+                  return ListView(
+                    children: [
+                      const SizedBox(height: 24),
+                      EmptyState(
+                        icon: Icons.receipt_long_outlined,
+                        message: 'Create an invoice to request payment, share a PDF, and track what is due.',
+                        actionLabel: 'Create invoice',
+                        onAction: _onAddInvoice,
+                      ),
+                      const SizedBox(height: 16),
+                      _CreateInvoiceCta(onTap: _onAddInvoice),
+                    ],
                   );
                 }
+                final sorted = _sorted(invoices);
                 return ListView.separated(
-                  itemCount: invoices.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  itemCount: sorted.length + 1,
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
                   itemBuilder: (context, index) {
-                    final inv = invoices[index];
+                    if (index == sorted.length) {
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8, bottom: 16),
+                        child: _CreateInvoiceCta(onTap: _onAddInvoice),
+                      );
+                    }
+                    final inv = sorted[index];
+                    final client = customerMap[inv.customerId];
+                    final clientName = client == null
+                        ? 'Client'
+                        : (client.company.isNotEmpty ? client.company : client.contactPerson);
                     return Dismissible(
                       key: ValueKey(inv.id),
                       direction: DismissDirection.endToStart,
                       background: Container(
                         alignment: Alignment.centerRight,
                         padding: const EdgeInsets.only(right: 20),
-                        color: Colors.red,
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         child: const Icon(Icons.delete, color: Colors.white),
                       ),
                       confirmDismiss: (_) async {
@@ -158,49 +245,11 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
                       onDismissed: (_) {
                         ref.read(databaseProvider).deleteInvoice(inv.id);
                       },
-                      child: ListTile(
+                      child: _InvoiceCard(
+                        invoice: inv,
+                        clientName: clientName,
                         onTap: () => openFormRoute(context, '/invoices/${inv.id}/edit'),
-                        tileColor: Theme.of(context).cardColor,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(color: Theme.of(context).dividerColor),
-                        ),
-                        leading: Icon(Icons.receipt_long, color: _statusColor(inv.status)),
-                        title: Text(inv.invoiceNumber, style: const TextStyle(fontWeight: FontWeight.w600)),
-                        subtitle: Text(_invoiceSubtitle(inv)),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(formatCurrency(inv.total, symbol: currencySymbol(inv.currency))),
-                                if (inv.amountPaid > 0 && inv.status != 'paid')
-                                  Text(
-                                    'Paid ${formatCurrency(inv.amountPaid, symbol: currencySymbol(inv.currency))}',
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          color: ClivoraColors.successGreen,
-                                        ),
-                                  ),
-                              ],
-                            ),
-                            PopupMenuButton<String>(
-                              icon: const Icon(Icons.more_vert, size: 20),
-                              onSelected: (action) {
-                                if (action == 'share') {
-                                  shareInvoicePdf(ref, context, inv.id);
-                                } else if (action == 'edit') {
-                                  openFormRoute(context, '/invoices/${inv.id}/edit');
-                                }
-                              },
-                              itemBuilder: (ctx) => const [
-                                PopupMenuItem(value: 'share', child: Text('Share PDF')),
-                                PopupMenuItem(value: 'edit', child: Text('Edit')),
-                              ],
-                            ),
-                          ],
-                        ),
+                        onShare: () => shareInvoicePdf(ref, context, inv.id),
                       ),
                     );
                   },
@@ -212,32 +261,198 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
       ),
     );
   }
+}
 
-  Color _statusColor(String status) {
-    switch (status) {
+class _InvoiceCard extends StatelessWidget {
+  const _InvoiceCard({
+    required this.invoice,
+    required this.clientName,
+    required this.onTap,
+    required this.onShare,
+  });
+
+  final Invoice invoice;
+  final String clientName;
+  final VoidCallback onTap;
+  final VoidCallback onShare;
+
+  Color get _statusColor {
+    switch (invoice.status) {
       case 'paid':
         return ClivoraColors.successGreen;
       case 'overdue':
         return ClivoraColors.errorRed;
       case 'sent':
         return ClivoraColors.warningOrange;
+      case 'viewed':
+        return Colors.blue;
       default:
         return ClivoraColors.textSecondary;
     }
   }
 
-  String _statusLabel(String status) {
-    return status[0].toUpperCase() + status.substring(1);
+  Color get _iconBg {
+    switch (invoice.status) {
+      case 'paid':
+        return ClivoraColors.iconGreen;
+      case 'sent':
+        return ClivoraColors.iconOrange;
+      case 'viewed':
+        return ClivoraColors.iconBlue;
+      default:
+        return ClivoraColors.iconIndigo;
+    }
   }
 
-  String _invoiceSubtitle(Invoice inv) {
-    final status = _statusLabel(inv.status);
-    if (inv.status == 'paid' || inv.status == 'draft') return status;
-    final due = inv.dueDate ?? inv.issueDate;
-    final days = DateTime.now().difference(due).inDays;
-    if (days <= 0) return '$status · Current';
-    if (days <= 30) return '$status · ${days}d (1–30)';
-    if (days <= 60) return '$status · ${days}d (31–60)';
-    return '$status · ${days}d (60+)';
+  @override
+  Widget build(BuildContext context) {
+    final statusLabel = invoice.status[0].toUpperCase() + invoice.status.substring(1);
+    return Material(
+      color: Theme.of(context).cardColor,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: ClivoraColors.borderLight),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: _iconBg,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  invoice.status == 'viewed' ? Icons.visibility_outlined : Icons.receipt_long_outlined,
+                  color: _statusColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      invoice.invoiceNumber,
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      clientName,
+                      style: const TextStyle(fontSize: 12, color: ClivoraColors.textSecondary),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: _statusColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        statusLabel,
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _statusColor),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    formatCurrency(invoice.total, symbol: currencySymbol(invoice.currency)),
+                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    DateFormat.MMMd().format(invoice.issueDate),
+                    style: const TextStyle(fontSize: 11, color: ClivoraColors.textSecondary),
+                  ),
+                ],
+              ),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, size: 20),
+                onSelected: (action) {
+                  if (action == 'share') onShare();
+                  if (action == 'edit') onTap();
+                },
+                itemBuilder: (ctx) => const [
+                  PopupMenuItem(value: 'share', child: Text('Share PDF')),
+                  PopupMenuItem(value: 'edit', child: Text('Edit')),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CreateInvoiceCta extends StatelessWidget {
+  const _CreateInvoiceCta({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            ClivoraColors.primaryLight,
+            ClivoraColors.primary.withValues(alpha: 0.18),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: ClivoraColors.primary.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.7),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(Icons.post_add_outlined, color: ClivoraColors.primaryDark, size: 28),
+          ),
+          const SizedBox(width: 14),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Create Invoice', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                SizedBox(height: 4),
+                Text(
+                  'Generate professional invoices and get paid on time.',
+                  style: TextStyle(fontSize: 12, color: ClivoraColors.textSecondary, height: 1.35),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          FilledButton(
+            onPressed: onTap,
+            style: FilledButton.styleFrom(
+              backgroundColor: ClivoraColors.primaryDark,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            ),
+            child: const Text('+ New Invoice', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+          ),
+        ],
+      ),
+    );
   }
 }

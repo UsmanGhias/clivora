@@ -11,6 +11,7 @@ class ClivoraScaffold extends StatelessWidget {
     super.key,
     required this.title,
     required this.body,
+    this.subtitle,
     this.action,
     this.showBackButton = false,
     this.showMessagesButton = false,
@@ -20,6 +21,7 @@ class ClivoraScaffold extends StatelessWidget {
   });
 
   final String title;
+  final String? subtitle;
   final Widget body;
   final Widget? action;
   final bool showBackButton;
@@ -43,6 +45,7 @@ class ClivoraScaffold extends StatelessWidget {
             Padding(
               padding: screenPadding,
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (showBackButton) ...[
                     IconButton(
@@ -57,9 +60,23 @@ class ClivoraScaffold extends StatelessWidget {
                     const SizedBox(width: ClivoraSpacing.sm),
                   ],
                   Expanded(
-                    child: Text(
-                      title,
-                      style: Theme.of(context).textTheme.headlineLarge,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: Theme.of(context).textTheme.headlineLarge,
+                        ),
+                        if (subtitle != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            subtitle!,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: ClivoraColors.textSecondary,
+                                ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                   if (showMessagesButton) ...[
