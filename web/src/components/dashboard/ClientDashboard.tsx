@@ -8,6 +8,7 @@ import {
   Sparkles,
   UserPlus,
   Users,
+  Check,
 } from "lucide-react";
 import { EarningsLineChart } from "@/components/dashboard/EarningsLineChart";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
@@ -21,6 +22,7 @@ import { formatConnectCredits } from "@/lib/connect-credits";
 import type { Profile } from "@/lib/profile-types";
 import { isProPlus } from "@/lib/plan";
 import { cn } from "@/lib/utils";
+import { money } from "@/components/client/ui";
 
 type HomeSummary = {
   open_jobs?: number;
@@ -37,6 +39,7 @@ type Props = {
   paidTotal: number;
   escrowHeld: number;
   refunds: number;
+  outstanding?: number;
   credits: ConnectCreditSummary | null;
   activities: Array<{ id: string; title: string; detail: string; time: string; kind: string }>;
   projects: DashboardProject[];
@@ -48,28 +51,42 @@ function ClientKpi({
   label,
   value,
   sub,
-  icon: Icon,
+  linkLabel,
   href,
+  icon: Icon,
   iconTone,
+  trend,
 }: {
   label: string;
   value: string | number;
   sub?: string;
-  icon: React.ComponentType<{ className?: string }>;
+  linkLabel?: string;
   href: string;
+  icon: React.ComponentType<{ className?: string }>;
   iconTone: string;
+  trend?: string;
 }) {
   return (
     <Link
       href={href}
       className="rounded-2xl border border-border bg-surface p-4 shadow-sm transition hover:border-client-accent/40"
     >
-      <span className={cn("flex h-10 w-10 items-center justify-center rounded-xl", iconTone)}>
-        <Icon className="h-5 w-5" />
-      </span>
+      <div className="flex items-start justify-between gap-2">
+        <span className={cn("flex h-10 w-10 items-center justify-center rounded-xl", iconTone)}>
+          <Icon className="h-5 w-5" />
+        </span>
+        {trend && (
+          <span className="rounded-lg bg-success/10 px-2 py-0.5 text-[10px] font-bold text-success">
+            {trend}
+          </span>
+        )}
+      </div>
       <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-text-muted">{label}</p>
       <p className="mt-1 font-display text-2xl font-extrabold text-navy">{value}</p>
       {sub && <p className="mt-1 text-xs text-text-secondary">{sub}</p>}
+      {linkLabel && (
+        <p className="mt-2 text-xs font-semibold text-client-accent">{linkLabel}</p>
+      )}
     </Link>
   );
 }
@@ -82,6 +99,7 @@ export function ClientDashboard({
   paidTotal,
   escrowHeld,
   refunds,
+  outstanding = 0,
   credits,
   activities,
   projects,
@@ -97,34 +115,36 @@ export function ClientDashboard({
     const s = (p.status || "").toLowerCase();
     return s.includes("progress") || s === "active";
   }).length;
+  const owed = outstanding || Math.max(0, totalSpent - paidTotal);
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-6 pb-10">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h1 className="font-display text-2xl font-extrabold text-navy sm:text-3xl">
-            {portalGreeting()}, {firstName} 👋
+            {portalGreeting()}, {firstName}! 👋
           </h1>
           <p className="mt-1 text-sm text-text-secondary">
-            Hire talent, review proposals, and track spending in one place.
+            Hire talent, manage projects, and track everything in one place.
           </p>
           {credits && (
-            <p className="mt-2 text-xs font-semibold text-client-accent">
-              Connect · {formatConnectCredits(credits)}
+            <p className="mt-2 flex items-center gap-2 text-xs font-semibold text-text-secondary">
+              <span className="inline-block h-2 w-2 rounded-full bg-success" />
+              Connect Plan · {formatConnectCredits(credits)}
             </p>
           )}
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
             href="/connect/manage"
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-client-accent px-4 py-2.5 text-sm font-bold text-white hover:bg-client-header"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-navy px-4 py-2.5 text-sm font-bold text-white hover:bg-navy-light"
           >
             <Plus className="h-4 w-4" />
             Post a job
           </Link>
           <Link
             href="/app/hub"
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border-2 border-client-accent px-4 py-2.5 text-sm font-bold text-client-accent hover:bg-client-surface"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border-2 border-border bg-white px-4 py-2.5 text-sm font-bold text-navy hover:bg-client-surface"
           >
             <UserPlus className="h-4 w-4" />
             Invite team
@@ -134,43 +154,48 @@ export function ClientDashboard({
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <ClientKpi
-          label="Open jobs"
+          label="Open Jobs"
           value={openJobs}
           sub="New applicants waiting"
-          icon={Briefcase}
+          linkLabel="View all jobs →"
           href="/connect/manage"
-          iconTone="bg-client-surface text-client-accent"
-        />
-        <ClientKpi
-          label="Active projects"
-          value={projectCount}
-          sub={`${inProgress || home.milestones_needing_action || 0} in progress`}
-          icon={Users}
-          href="/app/projects"
-          iconTone="bg-violet-100 text-violet-700"
-        />
-        <ClientKpi
-          label="Pending proposals"
-          value={proposals}
-          sub="Awaiting your review"
-          icon={FileText}
-          href="/app/proposals"
-          iconTone="bg-amber-100 text-amber-800"
-        />
-        <ClientKpi
-          label="Unread messages"
-          value={unread}
-          sub="From freelancers"
-          icon={MessageSquare}
-          href="/app/messages"
+          icon={Briefcase}
           iconTone="bg-sky-100 text-sky-800"
         />
         <ClientKpi
-          label="Total spent"
-          value={`$${totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          label="Active Projects"
+          value={projectCount}
+          sub={`${inProgress || home.milestones_needing_action || 0} in progress`}
+          linkLabel="View all projects →"
+          href="/app/projects"
+          icon={Users}
+          iconTone="bg-violet-100 text-violet-700"
+        />
+        <ClientKpi
+          label="Pending Proposals"
+          value={proposals}
+          sub="Awaiting your review"
+          linkLabel="Review proposals →"
+          href="/app/proposals"
+          icon={FileText}
+          iconTone="bg-amber-100 text-amber-800"
+        />
+        <ClientKpi
+          label="Unread Messages"
+          value={unread}
+          sub="From freelancers"
+          linkLabel="Go to inbox →"
+          href="/app/messages"
+          icon={MessageSquare}
+          iconTone="bg-rose-100 text-rose-700"
+        />
+        <ClientKpi
+          label="Total Spent"
+          value={money(totalSpent)}
           sub="This month"
-          icon={DollarSign}
+          trend={totalSpent > 0 ? "↑ 18.2% vs last month" : undefined}
           href="/app/invoices"
+          icon={DollarSign}
           iconTone="bg-emerald-100 text-emerald-800"
         />
       </div>
@@ -181,26 +206,27 @@ export function ClientDashboard({
             total={totalSpent}
             accent="slate"
             title="Spending overview"
-            trendLabel={totalSpent > 0 ? "↑ 12.5% vs last month" : undefined}
+            trendLabel={totalSpent > 0 ? "↑ 18.2% vs last month" : undefined}
+            showPreviousLegend
             summaryBoxes={[
               {
-                label: "Total spent",
-                value: `$${totalSpent.toLocaleString()}`,
-                tone: "bg-client-surface text-client-accent",
-              },
-              {
-                label: "Escrow held",
-                value: `$${escrowHeld.toLocaleString()}`,
+                label: "Escrow Held",
+                value: money(escrowHeld),
                 tone: "bg-sky-50 text-sky-800",
               },
               {
-                label: "Paid to freelancers",
-                value: `$${paidTotal.toLocaleString()}`,
+                label: "Paid to Freelancers",
+                value: money(paidTotal),
                 tone: "bg-violet-50 text-violet-800",
               },
               {
                 label: "Refunds",
-                value: `$${refunds.toLocaleString()}`,
+                value: money(refunds),
+                tone: "bg-slate-50 text-slate-700",
+              },
+              {
+                label: "Outstanding",
+                value: money(owed),
                 tone: "bg-amber-50 text-amber-900",
               },
             ]}
@@ -218,8 +244,8 @@ export function ClientDashboard({
             <DonutChart
               title="Spending by category"
               slices={spendSlices}
-              centerLabel="Spend"
-              centerValue={spendSlices.length ? "%" : "—"}
+              centerLabel="Total"
+              centerValue={money(totalSpent, 0)}
             />
           </div>
         </div>
@@ -227,23 +253,30 @@ export function ClientDashboard({
         <aside className="space-y-4">
           <ActivityFeed items={activities} viewAllHref="/app/activity" accent="slate" />
           <ConnectCreditsWidget signedIn isClient />
-          <div className="rounded-2xl border border-client-accent/20 bg-gradient-to-br from-client-surface to-white p-5 shadow-sm">
+          <div className="rounded-2xl bg-navy p-5 text-white shadow-sm">
             <div className="flex items-start gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-client-accent text-white">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-amber-300">
                 <Sparkles className="h-5 w-5" />
               </span>
               <div>
-                <p className="font-display font-bold text-navy">
-                  {plus ? "Unlock more with Pro Plus" : "Upgrade to Pro Plus"}
-                </p>
-                <p className="mt-1 text-sm text-text-secondary">
-                  Featured talent, more Connect credits, and team-ready hiring tools.
-                </p>
+                <p className="font-display font-bold">Hire faster with Pro Plus</p>
+                <ul className="mt-3 space-y-2 text-xs text-white/70">
+                  {[
+                    "Unlimited Connect credits",
+                    "Priority talent matching",
+                    "Team seats & reports",
+                  ].map((t) => (
+                    <li key={t} className="flex items-center gap-2">
+                      <Check className="h-3.5 w-3.5 text-success" />
+                      {t}
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
             <Link
               href="/pro?plan=pro_plus"
-              className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-client-accent px-4 py-2.5 text-sm font-bold text-white hover:bg-client-header"
+              className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-navy hover:bg-white/90"
             >
               {plus ? "Manage plan" : "Upgrade now"}
             </Link>

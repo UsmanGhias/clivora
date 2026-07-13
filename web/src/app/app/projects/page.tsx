@@ -98,47 +98,8 @@ export default async function ProjectsPage() {
     } catch {
       rows = [];
     }
-    return (
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-extrabold">Work / Projects</h1>
-          <p className="text-sm text-text-secondary">
-            Projects shared with you by freelancers, with current status and budget context.
-          </p>
-        </div>
-        {rows.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center">
-            <p className="font-semibold">No shared projects yet</p>
-            <Link href="/connect" className="mt-4 inline-block text-sm font-semibold text-primary">
-              Find freelancers on Connect →
-            </Link>
-          </div>
-        ) : (
-          <ul className="grid gap-2">
-            {rows.map((r) => (
-              <li
-                key={r.share_id}
-                className="grid gap-3 rounded-xl border border-border bg-surface px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto]"
-              >
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-semibold text-navy">{r.project_name || "Project"}</p>
-                    <StatusChip status={r.status} />
-                  </div>
-                  <p className="mt-1 text-sm text-text-secondary">
-                    {r.freelancer_email || "Freelancer"}
-                    {r.budget != null ? ` · ${r.currency || ""} ${r.budget}` : ""}
-                  </p>
-                </div>
-                <div className="flex items-center sm:justify-end">
-                  <Progress status={r.status} />
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    );
+    const { ClientProjectsPanel } = await import("@/components/client/ClientProjectsPanel");
+    return <ClientProjectsPanel rows={rows} />;
   }
 
   const gate = canCreateProject(profile, projects.length);

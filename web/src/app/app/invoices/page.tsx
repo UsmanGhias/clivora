@@ -67,82 +67,15 @@ export default async function InvoicesPage() {
     } catch {
       rows = [];
     }
+    const { ClientInvoicesPanel } = await import("@/components/client/ClientInvoicesPanel");
     return (
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-extrabold">Invoices</h1>
-          <p className="text-sm text-text-secondary">Invoices shared with you.</p>
-        </div>
-        {rows.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-client-surface p-8 text-center">
-            <p className="font-semibold text-navy">No shared invoices yet</p>
-            <p className="mt-2 text-sm text-text-secondary">
-              Invoices shared by freelancers will appear here with public links and payment status.
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-border text-sm">
-                <thead className="bg-client-surface text-left text-xs font-bold uppercase tracking-wide text-client-accent">
-                  <tr>
-                    <th className="px-4 py-3">Number</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3 text-right">Amount</th>
-                    <th className="px-4 py-3">Date</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {rows.map((r) => {
-                    const publicHref = r.public_token ? `/i/${r.public_token}` : null;
-                    return (
-                      <tr key={r.share_id} className="align-middle">
-                        <td className="px-4 py-3 font-semibold text-navy">
-                          {r.invoice_number || "Invoice"}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="inline-flex rounded-full bg-client-surface px-2.5 py-1 text-xs font-bold capitalize text-client-accent">
-                            {statusLabel(r.status)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right font-bold text-text-primary">
-                          {formatMoney(r.currency, r.total)}
-                        </td>
-                        <td className="px-4 py-3 text-text-secondary">
-                          {formatDate(r.due_date ?? r.updated_at)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex justify-end gap-2">
-                            {publicHref ? (
-                              <>
-                                <a
-                                  href={publicHref}
-                                  className="rounded-lg bg-client-accent px-3 py-1.5 text-xs font-bold text-white"
-                                >
-                                  View PDF
-                                </a>
-                                <a
-                                  href={publicHref}
-                                  className="rounded-lg border border-border px-3 py-1.5 text-xs font-bold text-client-accent"
-                                >
-                                  Public link
-                                </a>
-                              </>
-                            ) : (
-                              <span className="text-xs text-text-muted">No public link</span>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </div>
+      <ClientInvoicesPanel
+        rows={rows.map((r) => ({
+          ...r,
+          freelancer_email: r.client_email,
+          issue_date: r.updated_at,
+        }))}
+      />
     );
   }
 

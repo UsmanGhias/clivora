@@ -1,4 +1,8 @@
 import { redirect } from "next/navigation";
+import { getProfile, isClientAccount, planLabel } from "@/lib/profile";
+import { isProPlus } from "@/lib/plan";
+import { createClient } from "@/lib/supabase/server";
+import { ClientSettingsPanel } from "@/components/client/ClientSettingsPanel";
 import Link from "next/link";
 import {
   Bell,
@@ -10,8 +14,6 @@ import {
   ShieldCheck,
   User,
 } from "lucide-react";
-import { getProfile, isClientAccount, planLabel } from "@/lib/profile";
-import { isProPlus } from "@/lib/plan";
 import { ManageBillingButton } from "@/components/app/ManageBillingButton";
 import {
   FreelancerCard,
@@ -39,7 +41,48 @@ export default async function SettingsPage({
 }) {
   const profile = await getProfile();
   if (!profile) redirect("/login");
-  if (isClientAccount(profile)) redirect("/app/account");
+
+  if (isClientAccount(profile)) {
+    const supabase = await createClient();
+    const uid = profile.id;
+    let jobsPosted = 0;
+    let activeProjects = 0;
+    let invoices = 0;
+    let totalSpent = 0;
+    try {
+      const [jobs, projects, inv] = await Promise.all([
+        supabase
+          .from("connect_need_posts")
+          .select("id", { count: "exact", head: true })
+          .eq("owner_uid", uid),
+        supabase
+          .from("project_shares")
+          .select("share_id", { count: "exact", head: true })
+          .eq("client_uid", uid),
+        supabase
+          .from("invoice_shares")
+          .select("share_id, total")
+          .eq("client_uid", uid)
+          .limit(200),
+      ]);
+      jobsPosted = jobs.count ?? 0;
+      activeProjects = projects.count ?? 0;
+      if (inv.data) {
+        invoices = inv.data.length;
+        totalSpent = inv.data.reduce((s, r) => s + (Number(r.total) || 0), 0);
+      }
+    } catch {
+      /* ignore */
+    }
+    return (
+      <ClientSettingsPanel
+        profile={profile}
+        plan={planLabel(profile)}
+        plus={isProPlus(profile)}
+        stats={{ jobsPosted, activeProjects, invoices, totalSpent }}
+      />
+    );
+  }
 
   const params = searchParams ? await searchParams : {};
   const tab = (params.tab as string) || "account";
@@ -58,10 +101,10 @@ export default async function SettingsPage({
           <Link
             key={t.id}
             href={`/app/settings?tab=${t.id}`}
-            className={`px-3 py-2.5 text-sm font-semibold ${
+            className={`border-b-2 px-3 py-2 text-sm font-semibold ${
               tab === t.id
-                ? "border-b-2 border-primary text-primary"
-                : "text-text-secondary hover:text-navy"
+                ? "border-primary text-primary"
+                : "border-transparent text-text-muted hover:text-navy"
             }`}
           >
             {t.label}
@@ -71,241 +114,113 @@ export default async function SettingsPage({
 
       <div className="grid gap-4 xl:grid-cols-[1fr_300px]">
         <div className="space-y-4">
-          {(tab === "account" || !TABS.some((t) => t.id === tab)) && (
-            <>
-              <FreelancerCard
-                title="Account information"
-                action={
-                  <OutlineButton href="/app/account">Edit Profile</OutlineButton>
-                }
-              >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-                  <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-navy text-2xl font-bold text-white">
-                    {(profile.name || profile.email || "?").charAt(0).toUpperCase()}
-                  </span>
-                  <div className="grid flex-1 gap-3 sm:grid-cols-2">
-                    {[
-                      ["Full name", profile.name || "—"],
-                      ["Email address", profile.email || "—"],
-                      ["Role", "Freelancer"],
-                      ["Username", (profile.email || "").split("@")[0] || "—"],
-                      ["Member since", "Jan 2024"],
-                      ["Current plan", plan],
-                    ].map(([k, v]) => (
-                      <div key={k}>
-                        <p className="text-xs font-semibold uppercase text-text-muted">{k}</p>
-                        <p className="mt-1 text-sm font-semibold text-navy">
-                          {k === "Current plan" ? (
-                            <StatusPill tone="teal">{String(v)}</StatusPill>
-                          ) : (
-                            v
-                          )}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+          {tab === "account" && (
+            <FreelancerCard title="Account">
+              <div className="flex items-start gap-4">
+                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-lg font-bold text-white">
+                  {(profile.name || "?").charAt(0).toUpperCase()}
+                </span>
+                <div>
+                  <p className="font-bold text-navy">{profile.name || "Freelancer"}</p>
+                  <p className="text-sm text-text-secondary">{profile.email}</p>
+                  <StatusPill tone="teal">{plan}</StatusPill>
                 </div>
-              </FreelancerCard>
-
-              <FreelancerCard title="Quick settings">
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {[
-                    { icon: KeyRound, title: "Password", desc: "Change your password", href: "/app/account" },
-                    { icon: Bell, title: "Email preferences", desc: "Choose what we send you", href: "/app/settings?tab=notifications" },
-                    { icon: Globe, title: "Language & region", desc: "Locale and currency", href: "/app/settings?tab=preferences" },
-                    { icon: User, title: "Profile visibility", desc: "Connect listing controls", href: "/connect/manage" },
-                    { icon: Link2, title: "Connected accounts", desc: "Google and billing", href: "/app/settings?tab=apps" },
-                    { icon: ShieldCheck, title: "Data & privacy", desc: "Export or delete data", href: "/delete-account" },
-                  ].map((item) => (
-                    <Link
-                      key={item.title}
-                      href={item.href}
-                      className="flex items-center gap-3 rounded-xl border border-border px-3 py-3 transition hover:border-primary/40"
-                    >
-                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                        <item.icon className="h-4 w-4" />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-navy">{item.title}</p>
-                        <p className="text-xs text-text-secondary">{item.desc}</p>
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-text-muted" />
-                    </Link>
-                  ))}
-                </div>
-              </FreelancerCard>
-
-              <div className="rounded-2xl border border-red-200 bg-red-50 p-5">
-                <p className="font-bold text-error">Danger zone</p>
-                <p className="mt-1 text-sm text-red-800/80">
-                  Permanently delete your account and associated data.
-                </p>
-                <Link
-                  href="/delete-account"
-                  className="mt-3 inline-flex rounded-xl border border-error px-4 py-2 text-sm font-semibold text-error"
-                >
-                  Delete account
-                </Link>
               </div>
-            </>
+              <div className="mt-4 flex gap-2">
+                <PrimaryButton href="/app/account">Edit profile</PrimaryButton>
+                <OutlineButton href="/app/account">View public profile</OutlineButton>
+              </div>
+            </FreelancerCard>
           )}
 
           {tab === "security" && (
             <FreelancerCard title="Security">
-              <ul className="space-y-3 text-sm">
-                <li className="flex items-center justify-between rounded-xl border border-border px-3 py-3">
-                  <span>Two-factor authentication</span>
-                  <StatusPill tone="green">Enabled</StatusPill>
-                </li>
-                <li className="flex items-center justify-between rounded-xl border border-border px-3 py-3">
-                  <span>Email verified</span>
-                  <StatusPill tone="green">Verified</StatusPill>
-                </li>
-              </ul>
-              <p className="mt-4 text-sm text-text-secondary">
-                MFA is managed through Supabase Auth. Use Manage 2FA from your profile or the mobile app.
-              </p>
-              <div className="mt-4">
-                <PrimaryButton href="/app/account">Manage 2FA Settings</PrimaryButton>
+              <div className="flex items-start gap-3">
+                <KeyRound className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-semibold text-navy">Password & 2FA</p>
+                  <p className="text-sm text-text-secondary">
+                    Keep your account secure with a strong password and MFA.
+                  </p>
+                  <div className="mt-3">
+                    <PrimaryButton>Update security</PrimaryButton>
+                  </div>
+                </div>
               </div>
             </FreelancerCard>
           )}
 
           {tab === "notifications" && (
-            <FreelancerCard title="Notification preferences">
+            <FreelancerCard title="Notifications">
               <ul className="space-y-3">
-                {["New messages", "Invoice updates", "Connect proposals", "Project deadlines", "Marketing tips"].map(
-                  (n) => (
-                    <li
-                      key={n}
-                      className="flex items-center justify-between rounded-xl border border-border px-3 py-3 text-sm"
-                    >
-                      <span className="font-semibold text-navy">{n}</span>
-                      <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
-                        On
-                      </span>
-                    </li>
-                  ),
-                )}
+                {["New messages", "Proposal updates", "Payment alerts", "Product tips"].map((l) => (
+                  <li key={l} className="flex items-center justify-between rounded-xl border border-border px-4 py-3">
+                    <span className="flex items-center gap-2 text-sm font-semibold">
+                      <Bell className="h-4 w-4 text-primary" />
+                      {l}
+                    </span>
+                    <input type="checkbox" defaultChecked className="accent-primary" />
+                  </li>
+                ))}
               </ul>
             </FreelancerCard>
           )}
 
           {tab === "billing" && (
-            <FreelancerCard title="Billing & plan">
+            <FreelancerCard title="Billing & Plan">
               <p className="text-sm text-text-secondary">
-                Current plan: <strong className="text-navy">{plan}</strong>
+                You are on <strong>{plan}</strong>
+                {plus ? " with Pro Plus benefits." : ". Upgrade for more Connect credits."}
               </p>
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-4">
                 <ManageBillingButton />
-                {!plus && <PrimaryButton href="/pro?plan=pro_plus">Upgrade to Pro Plus</PrimaryButton>}
               </div>
             </FreelancerCard>
           )}
 
           {tab === "preferences" && (
             <FreelancerCard title="Preferences">
-              <div className="grid gap-3 sm:grid-cols-2">
-                {[
-                  ["Language", "English"],
-                  ["Timezone", "Asia/Karachi"],
-                  ["Currency", "USD"],
-                  ["Week starts on", "Monday"],
-                ].map(([k, v]) => (
-                  <div key={k} className="rounded-xl border border-border px-3 py-3">
-                    <p className="text-xs font-semibold uppercase text-text-muted">{k}</p>
-                    <p className="mt-1 font-semibold text-navy">{v}</p>
-                  </div>
-                ))}
+              <div className="flex items-center gap-3 rounded-xl border border-border p-4">
+                <Globe className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-semibold text-navy">Language & region</p>
+                  <p className="text-sm text-text-secondary">English · USD</p>
+                </div>
               </div>
             </FreelancerCard>
           )}
 
           {tab === "apps" && (
-            <FreelancerCard title="Apps & integrations">
-              <ul className="space-y-3">
-                {["Stripe", "Google", "CLIVORA Android App"].map((app) => (
-                  <li
-                    key={app}
-                    className="flex items-center justify-between rounded-xl border border-border px-3 py-3 text-sm"
-                  >
-                    <span className="font-semibold text-navy">{app}</span>
-                    <StatusPill tone="green">Connected</StatusPill>
-                  </li>
-                ))}
-              </ul>
+            <FreelancerCard title="Apps & Integrations">
+              <div className="flex items-center gap-3 rounded-xl border border-border p-4">
+                <Link2 className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-semibold text-navy">Connected tools</p>
+                  <p className="text-sm text-text-secondary">Stripe billing is linked when you subscribe.</p>
+                </div>
+              </div>
             </FreelancerCard>
           )}
         </div>
 
         <aside className="space-y-4">
-          <FreelancerCard title="Account security">
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-success/15 text-success">
-              <ShieldCheck className="h-6 w-6" />
+          <FreelancerCard title="Account health">
+            <div className="flex items-center gap-2 text-sm">
+              <ShieldCheck className="h-4 w-4 text-success" />
+              <span>Email verified</span>
             </div>
-            <ul className="space-y-2 text-sm text-text-secondary">
-              <li className="flex items-center gap-2">
-                <span className="text-success">✓</span> Two-factor authentication is enabled
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="text-success">✓</span> Email verified
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="text-success">✓</span> Last login: Today
-              </li>
-            </ul>
-            <div className="mt-4">
-              <OutlineButton href="/app/settings?tab=security">Manage Security</OutlineButton>
+            <div className="mt-2 flex items-center gap-2 text-sm">
+              <User className="h-4 w-4 text-primary" />
+              <span>Profile ready for Connect</span>
             </div>
           </FreelancerCard>
-
-          <FreelancerCard title="Plan & usage">
-            <div className="flex items-center justify-between">
-              <p className="font-bold text-navy">{plan} Plan</p>
-              <StatusPill tone="green">Active</StatusPill>
-            </div>
-            <ul className="mt-4 space-y-3 text-sm">
-              <li>
-                <div className="flex justify-between">
-                  <span>Proposals</span>
-                  <span className="font-semibold">{plus ? "Unlimited" : "5 / mo"}</span>
-                </div>
-                <div className="mt-1 h-1.5 rounded-full bg-background">
-                  <div className="h-full w-2/3 rounded-full bg-primary" />
-                </div>
-              </li>
-              <li>
-                <div className="flex justify-between">
-                  <span>Projects</span>
-                  <span className="font-semibold">Active</span>
-                </div>
-                <div className="mt-1 h-1.5 rounded-full bg-background">
-                  <div className="h-full w-1/2 rounded-full bg-primary" />
-                </div>
-              </li>
-              <li>
-                <div className="flex justify-between">
-                  <span>Storage</span>
-                  <span className="font-semibold">2.4 / 50 GB</span>
-                </div>
-                <div className="mt-1 h-1.5 rounded-full bg-background">
-                  <div className="h-full w-[8%] rounded-full bg-primary" />
-                </div>
-              </li>
-            </ul>
-            <div className="mt-4">
-              <PrimaryButton href="/pro?plan=pro_plus">Manage Plan</PrimaryButton>
-            </div>
-          </FreelancerCard>
-
           <FreelancerCard>
             <div className="flex items-start gap-3">
               <HelpCircle className="h-5 w-5 text-primary" />
               <div>
-                <p className="font-bold text-navy">Need help?</p>
-                <p className="mt-1 text-sm text-text-secondary">Visit the help center or contact support.</p>
-                <Link href="/app/support" className="mt-2 inline-block text-sm font-semibold text-primary">
-                  Visit Help Center →
+                <p className="font-semibold text-navy">Need help?</p>
+                <Link href="/app/support" className="mt-2 inline-flex items-center text-sm font-semibold text-primary">
+                  Visit support <ChevronRight className="h-4 w-4" />
                 </Link>
               </div>
             </div>

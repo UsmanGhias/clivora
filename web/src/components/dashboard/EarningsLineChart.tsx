@@ -27,12 +27,14 @@ export function EarningsLineChart({
   title = "Earnings overview",
   trendLabel,
   summaryBoxes,
+  showPreviousLegend,
 }: {
   total: number;
   accent?: "teal" | "slate";
   title?: string;
   trendLabel?: string;
   summaryBoxes?: Array<{ label: string; value: string; tone: string }>;
+  showPreviousLegend?: boolean;
 }) {
   const stroke = accent === "slate" ? "#475569" : "#0D9488";
   const fill = stroke;
@@ -42,8 +44,9 @@ export function EarningsLineChart({
       ? DEMO.map((d) => ({
           ...d,
           amount: Math.round((d.amount / 1320) * Math.max(total / 6, 200)),
+          previous: Math.round((d.amount / 1320) * Math.max(total / 8, 150) * 0.72),
         }))
-      : DEMO;
+      : DEMO.map((d) => ({ ...d, previous: Math.round(d.amount * 0.72) }));
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
@@ -62,6 +65,18 @@ export function EarningsLineChart({
             >
               {trendLabel}
             </p>
+          )}
+          {showPreviousLegend && (
+            <div className="mt-2 flex items-center gap-4 text-[11px] font-semibold text-text-muted">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full" style={{ background: stroke }} />
+                {title.includes("Spend") ? "Spending" : "Earnings"}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-slate-300" />
+                Previous month
+              </span>
+            </div>
           )}
         </div>
         <select className="rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text-secondary">
@@ -82,9 +97,22 @@ export function EarningsLineChart({
             <XAxis dataKey="day" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} width={40} />
             <Tooltip
-              formatter={(v) => [`$${Number(v ?? 0).toLocaleString()}`, title.includes("Spend") ? "Spend" : "Earnings"]}
+              formatter={(v, name) => [
+                `$${Number(v ?? 0).toLocaleString()}`,
+                name === "previous" ? "Previous" : title.includes("Spend") ? "Spend" : "Earnings",
+              ]}
               contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F0" }}
             />
+            {showPreviousLegend && (
+              <Area
+                type="monotone"
+                dataKey="previous"
+                stroke="#CBD5E1"
+                strokeWidth={2}
+                fill="transparent"
+                dot={false}
+              />
+            )}
             <Area
               type="monotone"
               dataKey="amount"

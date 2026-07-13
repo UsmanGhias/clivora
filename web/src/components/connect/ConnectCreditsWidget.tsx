@@ -44,16 +44,50 @@ export function ConnectCreditsWidget({
     : null;
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+    <div
+      className={cn(
+        "rounded-2xl border p-5 shadow-sm",
+        isClient && summary?.legacy_unlimited
+          ? "border-navy/20 bg-navy text-white"
+          : "border-border bg-surface",
+      )}
+    >
       <div className="flex items-center gap-2">
-        <Coins className={cn("h-5 w-5", isClient ? "text-client-accent" : "text-primary")} />
-        <h3 className="font-display font-bold text-navy">Connect credits</h3>
-        <Info className="ml-auto h-4 w-4 text-text-muted" />
+        <Coins
+          className={cn(
+            "h-5 w-5",
+            isClient && summary?.legacy_unlimited
+              ? "text-emerald-300"
+              : isClient
+                ? "text-client-accent"
+                : "text-primary",
+          )}
+        />
+        <h3
+          className={cn(
+            "font-display font-bold",
+            isClient && summary?.legacy_unlimited ? "text-white" : "text-navy",
+          )}
+        >
+          Connect credits
+        </h3>
+        <Info
+          className={cn(
+            "ml-auto h-4 w-4",
+            isClient && summary?.legacy_unlimited ? "text-white/50" : "text-text-muted",
+          )}
+        />
       </div>
       <p
         className={cn(
           "mt-3 font-display text-2xl font-extrabold",
-          summary?.legacy_unlimited ? "text-success" : isClient ? "text-client-accent" : "text-primary",
+          summary?.legacy_unlimited
+            ? isClient
+              ? "text-emerald-300"
+              : "text-success"
+            : isClient
+              ? "text-client-accent"
+              : "text-primary",
         )}
       >
         {signedIn
@@ -63,13 +97,31 @@ export function ConnectCreditsWidget({
           : "Sign in"}
       </p>
       {renewLabel && (
-        <p className="mt-1 text-xs text-text-secondary">Renews on {renewLabel}</p>
+        <p
+          className={cn(
+            "mt-1 text-xs",
+            isClient && summary?.legacy_unlimited ? "text-white/60" : "text-text-secondary",
+          )}
+        >
+          Renews on {renewLabel}
+        </p>
+      )}
+      {isClient && summary?.legacy_unlimited && (
+        <ul className="mt-3 space-y-1.5 text-xs text-white/70">
+          <li>✓ Unlimited invites</li>
+          <li>✓ Direct contact with talent</li>
+          <li>✓ No platform fees</li>
+        </ul>
       )}
       <Link
         href="/pro?plan=pro_plus"
         className={cn(
-          "mt-4 inline-flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold text-white",
-          isClient ? "bg-client-accent hover:bg-client-header" : "bg-primary hover:bg-primary-dark",
+          "mt-4 inline-flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold",
+          isClient && summary?.legacy_unlimited
+            ? "bg-white text-navy hover:bg-white/90"
+            : isClient
+              ? "bg-client-accent text-white hover:bg-client-header"
+              : "bg-primary text-white hover:bg-primary-dark",
         )}
       >
         Manage plan

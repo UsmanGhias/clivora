@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import {
   LayoutDashboard,
   FileText,
@@ -24,6 +25,10 @@ import {
   Diamond,
   BarChart3,
   Wallet,
+  ChevronDown,
+  CreditCard,
+  ArrowLeftRight,
+  Banknote,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -40,14 +45,23 @@ type NavItem = {
   cta?: boolean;
 };
 
+type NavGroup = {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  children: NavItem[];
+  matchPrefixes: string[];
+};
+
 function NavLink({
   item,
   active,
   isClient,
+  nested,
 }: {
   item: NavItem;
   active: boolean;
   isClient: boolean;
+  nested?: boolean;
 }) {
   const Icon = item.icon;
   return (
@@ -55,6 +69,7 @@ function NavLink({
       href={item.href}
       className={cn(
         "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
+        nested && "py-2 pl-10",
         item.cta
           ? isClient
             ? "mt-2 bg-client-accent text-white hover:bg-client-header"
@@ -66,7 +81,7 @@ function NavLink({
             : "text-white/70 hover:bg-white/5 hover:text-white",
       )}
     >
-      <Icon className="h-4 w-4 shrink-0" />
+      {!nested && <Icon className="h-4 w-4 shrink-0" />}
       <span className="flex-1 truncate">{item.label}</span>
       {item.badge != null && item.badge > 0 && (
         <span
@@ -116,24 +131,45 @@ export function AppShell({
     { href: "/app/settings", label: "Settings", icon: Settings },
   ];
 
-  const clientNav: NavItem[] = [
+  const clientTop: NavItem[] = [
     { href: "/app", label: "Dashboard", icon: LayoutDashboard },
     { href: "/connect/manage", label: "Post a job", icon: Plus },
     { href: "/app/connect", label: "Marketplace / Connect", icon: Network },
     { href: "/app/proposals", label: "Proposals", icon: FileText, badge: counts?.proposals },
-    { href: "/app/projects", label: "Projects", icon: FolderKanban },
+    { href: "/app/projects", label: "Projects", icon: FolderKanban, badge: counts?.projects },
     { href: "/app/messages", label: "Messages", icon: MessageSquare, badge: counts?.messages },
-    { href: "/app/invoices", label: "Payments", icon: Receipt },
-    { href: "/app/invoices", label: "Invoices", icon: FileText },
-    { href: "/app/hub", label: "My team", icon: Users },
-    { href: "/app/hub", label: "Bookmarks", icon: Bookmark },
-    { href: "/app/hub", label: "Reviews", icon: Star },
-    { href: "/app/timesheets", label: "Time tracking", icon: Clock },
-    { href: "/app/hub", label: "Reports", icon: Briefcase },
-    { href: "/app/account", label: "Settings", icon: Settings },
   ];
 
-  const nav = isClient ? clientNav : freelancerNav;
+  const paymentsGroup: NavGroup = {
+    label: "Payments",
+    icon: Receipt,
+    matchPrefixes: ["/app/payments", "/app/invoices"],
+    children: [
+      { href: "/app/payments", label: "Overview", icon: Wallet },
+      { href: "/app/invoices", label: "Invoices", icon: FileText },
+      { href: "/app/payments/transactions", label: "Transactions", icon: ArrowLeftRight },
+      { href: "/app/payments/payment-methods", label: "Payment methods", icon: CreditCard },
+      { href: "/app/payments/payouts", label: "Payouts", icon: Banknote },
+    ],
+  };
+
+  const clientBottom: NavItem[] = [
+    { href: "/app/hub", label: "My team", icon: Users },
+    { href: "/app/bookmarks", label: "Bookmarks", icon: Bookmark },
+    { href: "/app/reviews", label: "Reviews", icon: Star },
+    { href: "/app/timesheets", label: "Time tracking", icon: Clock },
+    { href: "/app/analytics", label: "Reports", icon: BarChart3 },
+    { href: "/app/settings", label: "Settings", icon: Settings },
+  ];
+
+  const nav = isClient ? clientTop : freelancerNav;
+
+  const paymentsOpenDefault =
+    isClient &&
+    paymentsGroup.matchPrefixes.some(
+      (p) => pathname === p || pathname.startsWith(`${p}/`),
+    );
+  const [paymentsOpen, setPaymentsOpen] = useState(paymentsOpenDefault);
 
   const mobileNav = isClient
     ? [
@@ -141,7 +177,7 @@ export function AppShell({
         { href: "/app/connect", label: "Connect", icon: Network },
         { href: "/app/proposals", label: "Proposals", icon: FileText },
         { href: "/app/messages", label: "Messages", icon: MessageSquare },
-        { href: "/app/account", label: "Account", icon: UserCircle },
+        { href: "/app/settings", label: "Settings", icon: Settings },
       ]
     : [
         { href: "/app", label: "Home", icon: LayoutDashboard },
@@ -160,13 +196,20 @@ export function AppShell({
 
   function isActive(href: string) {
     if (href === "/app") return pathname === "/app";
+    if (href === "/app/payments") return pathname === "/app/payments";
     return pathname === href || pathname.startsWith(`${href}/`);
   }
 
   const pageTitle =
     pathname === "/app"
       ? "Dashboard"
-      : nav.find((n) => isActive(n.href))?.label ?? "App";
+      : pathname.startsWith("/app/payments")
+        ? "Payments"
+        : pathname.startsWith("/app/invoices")
+          ? "Invoices"
+          : [...clientTop, ...clientBottom, ...freelancerNav, ...paymentsGroup.children].find((n) =>
+              isActive(n.href),
+            )?.label ?? "App";
 
   return (
     <div
@@ -182,8 +225,8 @@ export function AppShell({
           </Link>
           <p
             className={cn(
-              "mt-2 text-xs font-bold uppercase tracking-wider",
-              isClient ? "text-client-muted" : "text-primary-light",
+              "mt-2 text-[10px] font-bold uppercase tracking-[0.14em]",
+              isClient ? "text-white/50" : "text-primary-light",
             )}
           >
             {isClient ? "Client portal" : "Freelancer portal"}
@@ -191,25 +234,32 @@ export function AppShell({
         </div>
 
         <div className="border-b border-white/10 px-4 py-4">
-          <p className="truncate font-semibold">{profile.name || profile.email}</p>
-          {plus && (
-            <span
-              className={cn(
-                "mt-1 inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase",
-                isClient
-                  ? "bg-white/15 text-white"
-                  : "bg-primary/20 text-primary-light",
+          <div className="flex items-center gap-3">
+            <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-bold">
+              {(profile.name || profile.email || "?").charAt(0).toUpperCase()}
+              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-navy bg-success" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold">{profile.name || profile.email}</p>
+              {plus && (
+                <span
+                  className={cn(
+                    "mt-1 inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase",
+                    isClient ? "bg-white/15 text-white" : "bg-primary/20 text-primary-light",
+                  )}
+                >
+                  <Diamond className="h-3 w-3" />
+                  {plan}
+                </span>
               )}
-            >
-              <Diamond className="h-3 w-3" />
-              {plan}
-            </span>
-          )}
-          {!plus && (
-            <span className="mt-1 inline-block text-[10px] font-semibold uppercase tracking-wide text-white/50">
-              Free plan
-            </span>
-          )}
+              {!plus && (
+                <span className="mt-1 inline-block text-[10px] font-semibold uppercase tracking-wide text-white/50">
+                  Free plan
+                </span>
+              )}
+            </div>
+            <ChevronDown className="h-4 w-4 shrink-0 text-white/40" />
+          </div>
         </div>
 
         <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
@@ -221,13 +271,57 @@ export function AppShell({
               isClient={isClient}
             />
           ))}
+
+          {isClient && (
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => setPaymentsOpen((o) => !o)}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
+                  paymentsOpenDefault
+                    ? "bg-white/10 text-white"
+                    : "text-white/70 hover:bg-white/5 hover:text-white",
+                )}
+              >
+                <Receipt className="h-4 w-4 shrink-0" />
+                <span className="flex-1 text-left">Payments</span>
+                <ChevronDown
+                  className={cn("h-4 w-4 transition", paymentsOpen && "rotate-180")}
+                />
+              </button>
+              {paymentsOpen && (
+                <div className="mt-0.5 space-y-0.5">
+                  {paymentsGroup.children.map((item) => (
+                    <NavLink
+                      key={item.href}
+                      item={item}
+                      active={isActive(item.href)}
+                      isClient={isClient}
+                      nested
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {isClient &&
+            clientBottom.map((item, i) => (
+              <NavLink
+                key={`${item.href}-${item.label}-${i}`}
+                item={item}
+                active={isActive(item.href)}
+                isClient={isClient}
+              />
+            ))}
         </nav>
 
         <div className="border-t border-white/10 p-4">
           {isClient ? (
             <Link
               href="/connect/manage"
-              className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl bg-client-accent px-3 py-2.5 text-sm font-bold text-white hover:bg-client-header"
+              className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-transparent px-3 py-2.5 text-sm font-bold text-white hover:bg-white/5"
             >
               <Plus className="h-4 w-4" />
               Post a job
@@ -242,18 +336,18 @@ export function AppShell({
             </Link>
           )}
           <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-            <p className="text-xs font-bold text-white/80">{plus ? `${plan} Plan` : "Free Plan"}</p>
+            <p className="text-xs font-bold text-white/80">{plus ? `${plan} plan` : "Free Plan"}</p>
             <p className="mt-1 text-[10px] text-white/50">
-              {plus ? "Renews on Aug 1, 2026" : "Upgrade for Connect credits"}
+              {plus ? "Renews on Oct 10, 2026" : "Upgrade for Connect credits"}
             </p>
             <Link
               href="/pro?plan=pro_plus"
               className={cn(
                 "mt-2 block rounded-lg px-3 py-1.5 text-center text-xs font-semibold text-white",
-                isClient ? "bg-client-accent" : "bg-primary",
+                isClient ? "bg-white/15 hover:bg-white/25" : "bg-primary",
               )}
             >
-              Manage Plan
+              Manage plan
             </Link>
           </div>
         </div>
@@ -305,11 +399,11 @@ export function AppShell({
                 href={plus ? "/pro" : "/pro?plan=pro_plus"}
                 className={cn(
                   "hidden items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-white sm:inline-flex",
-                  isClient ? "bg-client-accent" : "bg-primary",
+                  isClient ? "bg-navy" : "bg-primary",
                 )}
               >
                 <Sparkles className="h-3.5 w-3.5" />
-                {plus ? plan : "Upgrade"}
+                {plus ? plan : "Pro Plus"}
               </Link>
               <Link
                 href="/app/account"
@@ -345,7 +439,7 @@ export function AppShell({
                   "flex flex-col items-center gap-0.5 rounded-lg px-1.5 py-1 text-[10px] font-semibold",
                   active
                     ? isClient
-                      ? "text-client-muted"
+                      ? "text-white"
                       : "text-primary-light"
                     : "text-white/50",
                 )}

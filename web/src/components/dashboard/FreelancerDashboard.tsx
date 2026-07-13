@@ -1,11 +1,13 @@
 import Link from "next/link";
 import {
+  Award,
   Briefcase,
   FileText,
   MessageSquare,
   Sparkles,
   TrendingUp,
   Bot,
+  MapPin,
 } from "lucide-react";
 import { EarningsLineChart } from "@/components/dashboard/EarningsLineChart";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
@@ -87,6 +89,9 @@ function KpiCard({
       <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-text-muted">{label}</p>
       <p className="mt-1 font-display text-2xl font-extrabold text-navy">{value}</p>
       {sub && <p className="mt-1 text-xs text-text-secondary">{sub}</p>}
+      <div className="mt-3 h-1 overflow-hidden rounded-full bg-slate-100">
+        <div className="h-full w-2/3 rounded-full bg-primary/40 transition group-hover:bg-primary/70" />
+      </div>
     </Link>
   );
 }
@@ -114,9 +119,11 @@ export function FreelancerDashboard({
     const s = (p.status || "").toLowerCase();
     return s.includes("progress") || s === "active" || s === "ongoing";
   }).length;
+  const proposalTotal = proposalSlices.reduce((s, x) => s + x.value, 0);
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-6 pb-10">
+      {/* Hero greeting + profile completeness */}
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div>
           <h1 className="font-display text-2xl font-extrabold text-navy sm:text-3xl">
@@ -124,36 +131,38 @@ export function FreelancerDashboard({
           </h1>
           <p className="mt-1 text-sm text-text-secondary">Let&apos;s crush your goals today.</p>
           {credits && (
-            <p className="mt-2 text-xs font-semibold text-primary">
+            <p className="mt-2 flex items-center gap-2 text-xs font-semibold text-text-secondary">
+              <span className="inline-block h-2 w-2 rounded-full bg-success" />
               Connect · {formatConnectCredits(credits)}
             </p>
           )}
         </div>
-        <div className="w-full max-w-sm">
-          <ProfileCompleteness percent={profileCompleteness} successScore={successScore} />
+        <div className="w-full max-w-sm shrink-0">
+          <ProfileCompleteness percent={profileCompleteness} />
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {/* 5 KPI cards matching mockup */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <KpiCard
-          label="Total earnings"
+          label="Total Earnings"
           value={`$${invoiceTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-          sub="Invoiced in CRM"
+          sub="This month"
           trend={invoiceTotal > 0 ? "+18.2% vs last month" : undefined}
           icon={TrendingUp}
-          href="/app/invoices"
-          iconTone="bg-primary/10 text-primary"
+          href="/app/earnings"
+          iconTone="bg-emerald-100 text-emerald-700"
         />
         <KpiCard
-          label="Active projects"
+          label="Active Projects"
           value={projectCount}
           sub={`${inProgress || home.active_milestones || 0} in progress`}
           icon={Briefcase}
           href="/app/projects"
-          iconTone="bg-violet-100 text-violet-700"
+          iconTone="bg-sky-100 text-sky-800"
         />
         <KpiCard
-          label="Pending proposals"
+          label="Pending Proposals"
           value={pending}
           sub={pending > 0 ? "Awaiting review" : "Submit on Connect"}
           icon={FileText}
@@ -161,71 +170,87 @@ export function FreelancerDashboard({
           iconTone="bg-amber-100 text-amber-800"
         />
         <KpiCard
-          label="Unread messages"
+          label="Unread Messages"
           value={unread}
           sub="From clients"
           icon={MessageSquare}
           href="/app/messages"
-          iconTone="bg-sky-100 text-sky-800"
+          iconTone="bg-violet-100 text-violet-700"
+        />
+        <KpiCard
+          label="Success Score"
+          value={`${successScore}%`}
+          sub="Top Rated"
+          icon={Award}
+          href="/app/reviews"
+          iconTone="bg-primary/10 text-primary"
         />
       </div>
 
+      {/* Earnings chart + Recent activity */}
       <div className="grid gap-4 xl:grid-cols-3">
-        <div className="space-y-4 xl:col-span-2">
+        <div className="xl:col-span-2">
           <EarningsLineChart
             total={invoiceTotal}
             accent="teal"
             title="Earnings overview"
             trendLabel={invoiceTotal > 0 ? "↑ Growing this month" : undefined}
+            showPreviousLegend
           />
-          <WeekOverview {...week} />
         </div>
         <ActivityFeed items={activities} viewAllHref="/app/activity" />
       </div>
 
+      {/* Active projects | Top clients | Proposals donut */}
       <div className="grid gap-4 lg:grid-cols-3">
         <ProjectListCard projects={projects} />
         <PeopleListCard title="Top clients" people={clients} href="/app/clients" />
         <DonutChart
           title="Proposals status"
           slices={proposalSlices}
-          centerValue={proposalSlices.reduce((s, x) => s + x.value, 0)}
+          centerValue={proposalTotal || pending}
           centerLabel="Total"
         />
       </div>
 
-      <div className="relative overflow-hidden rounded-2xl bg-navy p-6 text-white shadow-sm">
+      {/* This week overview */}
+      <WeekOverview {...week} />
+
+      {/* AI Assistant banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-navy p-6 text-white shadow-sm sm:p-7">
         <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-3">
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/20 text-primary-light">
-              <Bot className="h-6 w-6" />
+          <div className="flex items-start gap-4">
+            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/25 text-primary-light ring-1 ring-primary/40">
+              <Bot className="h-7 w-7" />
             </span>
             <div>
-              <p className="font-display text-lg font-bold">Boost your workflow with AI</p>
-              <p className="mt-1 max-w-md text-sm text-white/70">
+              <p className="font-display text-lg font-bold sm:text-xl">Boost your workflow with AI</p>
+              <p className="mt-1 max-w-lg text-sm text-white/70">
                 Draft proposals, summarize client threads, and plan milestones faster inside CLIVORA.
               </p>
             </div>
           </div>
           <Link
             href="/app/hub"
-            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-dark"
+            className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-dark"
           >
             Try AI Assistant
           </Link>
         </div>
-        <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-primary/20 blur-2xl" />
+        <div className="pointer-events-none absolute -right-10 -top-10 h-48 w-48 rounded-full bg-primary/25 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 left-1/3 h-40 w-40 rounded-full bg-teal-500/10 blur-2xl" />
       </div>
 
+      {/* Recommended opportunities */}
       <div>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-display text-lg font-bold text-navy">Recommended opportunities</h2>
-          <Link href="/app/connect" className="text-xs font-semibold text-primary">
+          <Link href="/app/connect" className="text-xs font-semibold text-primary hover:underline">
             Browse Connect →
           </Link>
         </div>
         {opportunities.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-surface p-6 text-center text-sm text-text-secondary">
+          <div className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center text-sm text-text-secondary">
             Open Connect to discover jobs matching your skills.
           </div>
         ) : (
@@ -234,11 +259,21 @@ export function FreelancerDashboard({
               <Link
                 key={o.id}
                 href="/app/connect"
-                className="rounded-2xl border border-border bg-surface p-4 shadow-sm transition hover:border-primary/40"
+                className="rounded-2xl border border-border bg-surface p-4 shadow-sm transition hover:border-primary/40 hover:shadow-md"
               >
-                <p className="font-semibold text-navy">{o.title}</p>
-                <p className="mt-1 text-sm font-bold text-primary">{o.budget}</p>
-                <p className="mt-2 text-xs text-text-muted">{o.type}</p>
+                <div className="flex items-start gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-navy text-sm font-bold text-white">
+                    {(o.title || "?").charAt(0).toUpperCase()}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-navy">{o.title}</p>
+                    <p className="mt-1 text-sm font-bold text-primary">{o.budget}</p>
+                    <p className="mt-2 flex items-center gap-1 text-xs text-text-muted">
+                      <MapPin className="h-3 w-3" />
+                      {o.type || "Remote"}
+                    </p>
+                  </div>
+                </div>
               </Link>
             ))}
           </div>

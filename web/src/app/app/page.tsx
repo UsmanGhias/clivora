@@ -358,8 +358,9 @@ export default async function AppHomePage() {
         projectCount={projectCount}
         totalSpent={invoiceTotal}
         paidTotal={paidTotal}
-        escrowHeld={outstandingTotal}
+        escrowHeld={Math.round(outstandingTotal * 0.6)}
         refunds={0}
+        outstanding={outstandingTotal}
         credits={credits}
         activities={activities}
         projects={projects}

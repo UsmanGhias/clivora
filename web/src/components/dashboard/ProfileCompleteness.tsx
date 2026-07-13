@@ -49,46 +49,34 @@ export function ProfileCompleteness({
               Profile completeness
             </p>
             <p className="mt-1 font-display text-lg font-bold text-navy">
-              {complete ? "You're all set" : "Keep going"}
+              {complete ? "Great job! You're all set." : "Keep going"}
             </p>
             <p className="mt-1 text-xs text-text-secondary">
               {complete
-                ? "Great job! Your profile is complete."
+                ? "Your profile is 100% complete."
                 : "Add skills and a headline on Connect to reach 100%."}
             </p>
+            {successScore != null && (
+              <p className="mt-2 text-xs font-semibold text-text-muted">
+                Success score{" "}
+                <span className={isClient ? "text-client-accent" : "text-primary"}>
+                  {successScore}%
+                </span>
+              </p>
+            )}
           </div>
           <span
             className={cn(
-              "hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg sm:flex",
-              isClient ? "bg-client-accent" : "bg-primary",
+              "hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg sm:flex",
+              isClient
+                ? "bg-gradient-to-br from-client-accent to-client-header"
+                : "bg-gradient-to-br from-primary to-teal-700",
             )}
           >
-            <Award className="h-6 w-6" />
+            <Award className="h-7 w-7" />
           </span>
         </div>
       </div>
-      {successScore != null && (
-        <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-                Success score
-              </p>
-              <p className="mt-1 font-display text-2xl font-extrabold text-navy">{successScore}%</p>
-            </div>
-            <span
-              className={cn(
-                "rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase",
-                isClient
-                  ? "bg-client-surface text-client-accent"
-                  : "bg-primary/10 text-primary-dark",
-              )}
-            >
-              Top rated
-            </span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

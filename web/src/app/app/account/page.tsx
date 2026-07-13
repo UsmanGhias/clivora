@@ -36,20 +36,7 @@ export default async function AccountPage() {
 
   const client = isClientAccount(profile);
   if (client) {
-    // Keep a simpler client account view
-    return (
-      <div className="space-y-4">
-        <h1 className="font-display text-2xl font-extrabold text-navy">Account</h1>
-        <FreelancerCard>
-          <p className="font-semibold text-navy">{profile.name || "Client"}</p>
-          <p className="text-sm text-text-secondary">{profile.email}</p>
-          <p className="mt-2 text-sm">Plan: {planLabel(profile)}</p>
-          <div className="mt-4">
-            <ManageBillingButton />
-          </div>
-        </FreelancerCard>
-      </div>
-    );
+    redirect("/app/settings");
   }
 
   const plus = isProPlus(profile);
