@@ -36,6 +36,9 @@ export const site = {
   proLimits: {
     fileVaultGb: 5,
   },
+  proPlusLimits: {
+    fileVaultGb: 50,
+  },
   social: {
     github: "https://github.com/usmanghias/clivora-web",
   },

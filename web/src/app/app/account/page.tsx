@@ -18,6 +18,7 @@ import { createClient } from "@/lib/supabase/server";
 import { loadFreelancerFinance } from "@/lib/freelancer-finance";
 import { ManageBillingButton } from "@/components/app/ManageBillingButton";
 import { SmartAppCta } from "@/components/app/SmartAppCta";
+import { AccountProfileEditor } from "@/components/freelancer/AccountProfileEditor";
 import {
   FreelancerCard,
   FreelancerPageHeader,
@@ -30,7 +31,11 @@ import {
 
 export const metadata = { title: "My Profile" };
 
-export default async function AccountPage() {
+export default async function AccountPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ edit?: string }>;
+}) {
   const profile = await getProfile();
   if (!profile) redirect("/login");
 
@@ -38,6 +43,9 @@ export default async function AccountPage() {
   if (client) {
     redirect("/app/settings");
   }
+
+  const params = searchParams ? await searchParams : {};
+  const editing = params.edit === "1" || params.edit === "true";
 
   const plus = isProPlus(profile);
   const plan = planLabel(profile);
@@ -77,13 +85,35 @@ export default async function AccountPage() {
     <div className="space-y-6 pb-10">
       <FreelancerPageHeader title="My Profile" subtitle={headline} />
 
+      {editing && (
+        <FreelancerCard title="Edit profile">
+          <AccountProfileEditor profile={profile} />
+          <p className="mt-4 text-xs text-text-muted">
+            For Connect listing fields (skills, rate, bio), use{" "}
+            <Link href="/connect/manage" className="font-semibold text-primary">
+              Manage Connect
+            </Link>
+            .
+          </p>
+        </FreelancerCard>
+      )}
+
       <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
         <FreelancerCard>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <div className="relative">
-              <span className="flex h-24 w-24 items-center justify-center rounded-full bg-navy text-3xl font-bold text-white">
-                {(profile.name || "?").charAt(0).toUpperCase()}
-              </span>
+              {profile.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={profile.avatar_url}
+                  alt=""
+                  className="h-24 w-24 rounded-full object-cover"
+                />
+              ) : (
+                <span className="flex h-24 w-24 items-center justify-center rounded-full bg-navy text-3xl font-bold text-white">
+                  {(profile.name || "?").charAt(0).toUpperCase()}
+                </span>
+              )}
               <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-white bg-success" />
             </div>
             <div className="min-w-0 flex-1">
@@ -97,21 +127,31 @@ export default async function AccountPage() {
                 <MapPin className="h-3.5 w-3.5" />
                 {location}
               </p>
-              <p className="mt-1 text-xs text-text-muted">Member since Jan 15, 2024</p>
+              <p className="mt-1 text-xs text-text-muted">{profile.email}</p>
               <div className="mt-4 flex flex-wrap gap-2">
-                <PrimaryButton href="/connect/manage">Edit Profile</PrimaryButton>
+                <PrimaryButton href="/app/account?edit=1">Edit Profile</PrimaryButton>
+                <OutlineButton href="/connect/manage">Connect listing</OutlineButton>
                 <OutlineButton href="/app/connect">View Public Profile</OutlineButton>
               </div>
             </div>
           </div>
         </FreelancerCard>
 
-        <FreelancerCard title="Pro Plus Plan">
-          <StatusPill tone="green">Active</StatusPill>
+        <FreelancerCard title={`${plan} Plan`}>
+          <StatusPill tone={plus ? "green" : "teal"}>{plus ? "Active" : plan}</StatusPill>
           <ul className="mt-3 space-y-1 text-sm text-text-secondary">
-            <li>• Unlimited proposals</li>
-            <li>• Connect credits monthly</li>
-            <li>• Featured listing</li>
+            {plus ? (
+              <>
+                <li>• Unlimited proposals</li>
+                <li>• Connect credits monthly</li>
+                <li>• MFA + 50GB vault</li>
+              </>
+            ) : (
+              <>
+                <li>• CRM tools on your plan</li>
+                <li>• Upgrade for Connect + MFA</li>
+              </>
+            )}
           </ul>
           <div className="mt-4">
             <ManageBillingButton />
@@ -161,11 +201,10 @@ export default async function AccountPage() {
         <FreelancerCard title="Account information" className="lg:col-span-1">
           <ul className="space-y-3 text-sm">
             {[
-              ["Name", profile.name || "—", "/connect/manage"],
+              ["Name", profile.name || "—", "/app/account?edit=1"],
               ["Email", profile.email || "—", "/app/settings"],
               ["Role", "Freelancer", "/app/settings"],
               ["Plan", plan, "/pro?plan=pro_plus"],
-              ["Join date", "Jan 15, 2024", "/app/settings"],
             ].map(([k, v, href]) => (
               <li key={k} className="flex items-center justify-between gap-2 border-b border-border/70 pb-2">
                 <div>
@@ -238,9 +277,13 @@ export default async function AccountPage() {
         <FreelancerCard title="Two-factor authentication (MFA)">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <StatusPill tone="green">Enabled</StatusPill>
+              {plus ? (
+                <StatusPill tone="teal">Pro Plus</StatusPill>
+              ) : (
+                <StatusPill tone="amber">Upgrade for MFA</StatusPill>
+              )}
               <p className="mt-2 text-sm text-text-secondary">
-                MFA is powered by Supabase Auth for your CLIVORA account.
+                MFA uses Supabase Auth TOTP. Available on Pro Plus.
               </p>
             </div>
             <PrimaryButton href="/app/settings?tab=security">Manage 2FA Settings</PrimaryButton>

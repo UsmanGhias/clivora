@@ -10,4 +10,5 @@ export type Profile = {
   is_blocked?: boolean | null;
   is_restricted?: boolean | null;
   block_reason?: string | null;
+  avatar_url?: string | null;
 };

@@ -135,14 +135,20 @@ export function PrimaryButton({
   children,
   onClick,
   type = "button",
+  disabled,
+  className: extra,
 }: {
   href?: string;
   children: React.ReactNode;
   onClick?: () => void;
   type?: "button" | "submit";
+  disabled?: boolean;
+  className?: string;
 }) {
-  const className =
-    "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-primary-dark";
+  const className = cn(
+    "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-primary-dark disabled:opacity-60",
+    extra,
+  );
   if (href) {
     return (
       <Link href={href} className={className}>
@@ -151,7 +157,7 @@ export function PrimaryButton({
     );
   }
   return (
-    <button type={type} onClick={onClick} className={className}>
+    <button type={type} onClick={onClick} disabled={disabled} className={className}>
       {children}
     </button>
   );
@@ -160,12 +166,22 @@ export function PrimaryButton({
 export function OutlineButton({
   href,
   children,
+  onClick,
+  type = "button",
+  disabled,
+  className: extra,
 }: {
   href?: string;
   children: React.ReactNode;
+  onClick?: () => void;
+  type?: "button" | "submit";
+  disabled?: boolean;
+  className?: string;
 }) {
-  const className =
-    "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-navy hover:border-primary/40";
+  const className = cn(
+    "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-navy hover:border-primary/40 disabled:opacity-60",
+    extra,
+  );
   if (href) {
     return (
       <Link href={href} className={className}>
@@ -173,7 +189,11 @@ export function OutlineButton({
       </Link>
     );
   }
-  return <button type="button" className={className}>{children}</button>;
+  return (
+    <button type={type} onClick={onClick} disabled={disabled} className={className}>
+      {children}
+    </button>
+  );
 }
 
 export function money(n: number, digits = 2) {

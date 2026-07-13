@@ -4,12 +4,12 @@ import { CheckCircle2, MessageSquare, Settings2, Star } from "lucide-react";
 import { getProfile, isClientAccount } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 import { DonutChart } from "@/components/dashboard/DonutChart";
+import { RequestReviewButton } from "@/components/freelancer/RequestReviewModal";
 import {
   FreelancerCard,
   FreelancerPageHeader,
   FreelancerStatCard,
   OutlineButton,
-  PrimaryButton,
   StatusPill,
 } from "@/components/freelancer/ui";
 import {
@@ -219,10 +219,7 @@ export default async function ReviewsPage() {
         subtitle="See what clients say about your work and grow your reputation."
         actions={
           <>
-            <PrimaryButton href="/app/messages">
-              <MessageSquare className="h-4 w-4" />
-              Request a Review
-            </PrimaryButton>
+            <RequestReviewButton fromEmail={profile.email || ""} />
             <OutlineButton href="/app/settings">
               <Settings2 className="h-4 w-4" />
               Review Settings
@@ -324,8 +321,8 @@ export default async function ReviewsPage() {
               ))}
             </ul>
           )}
-          <div className="mt-4 rounded-xl bg-primary/5 p-4 text-center">
-            <PrimaryButton href="/app/messages">Request a Review</PrimaryButton>
+          <div className="mt-4 flex justify-center rounded-xl bg-primary/5 p-4">
+            <RequestReviewButton fromEmail={profile.email || ""} />
           </div>
         </FreelancerCard>
 

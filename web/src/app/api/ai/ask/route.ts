@@ -7,6 +7,141 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
+type CrmAggregates = {
+  customers: number;
+  projects: number;
+  activeProjects: number;
+  invoices: number;
+  paidInvoices: number;
+  draftInvoices: number;
+  overdueInvoices: number;
+  paidTotal: number;
+  unpaidTotal: number;
+};
+
+async function loadCrmAggregates(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  ownerUid: string,
+): Promise<CrmAggregates> {
+  const empty: CrmAggregates = {
+    customers: 0,
+    projects: 0,
+    activeProjects: 0,
+    invoices: 0,
+    paidInvoices: 0,
+    draftInvoices: 0,
+    overdueInvoices: 0,
+    paidTotal: 0,
+    unpaidTotal: 0,
+  };
+  try {
+    const [customers, projects, invoices] = await Promise.all([
+      supabase
+        .from("crm_customers")
+        .select("id", { count: "exact", head: true })
+        .eq("owner_uid", ownerUid),
+      supabase
+        .from("crm_projects")
+        .select("id, status")
+        .eq("owner_uid", ownerUid)
+        .limit(500),
+      supabase
+        .from("crm_invoices")
+        .select("id, status, total, due_date")
+        .eq("owner_uid", ownerUid)
+        .limit(500),
+    ]);
+
+    const projectRows = projects.data ?? [];
+    const invoiceRows = invoices.data ?? [];
+    const now = Date.now();
+
+    let paidTotal = 0;
+    let unpaidTotal = 0;
+    let paidInvoices = 0;
+    let draftInvoices = 0;
+    let overdueInvoices = 0;
+
+    for (const inv of invoiceRows) {
+      const st = (inv.status || "").toLowerCase();
+      const total = Number(inv.total) || 0;
+      if (st === "paid") {
+        paidInvoices += 1;
+        paidTotal += total;
+      } else if (st === "draft") {
+        draftInvoices += 1;
+      } else {
+        unpaidTotal += total;
+        if (inv.due_date && new Date(inv.due_date).getTime() < now && st !== "void") {
+          overdueInvoices += 1;
+        }
+      }
+    }
+
+    return {
+      customers: customers.count ?? 0,
+      projects: projectRows.length,
+      activeProjects: projectRows.filter((p) => {
+        const st = (p.status || "").toLowerCase();
+        return st && !st.includes("complet") && st !== "cancelled" && st !== "canceled";
+      }).length,
+      invoices: invoiceRows.length,
+      paidInvoices,
+      draftInvoices,
+      overdueInvoices,
+      paidTotal,
+      unpaidTotal,
+    };
+  } catch {
+    return empty;
+  }
+}
+
+function formatMoney(n: number) {
+  return `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+}
+
+function buildCrmTip(query: string, agg: CrmAggregates): string {
+  const q = query.toLowerCase();
+  const lines: string[] = [];
+
+  if (q.includes("overdue") || q.includes("late") || q.includes("collect")) {
+    lines.push(
+      agg.overdueInvoices > 0
+        ? `You have ${agg.overdueInvoices} overdue invoice(s) totaling about ${formatMoney(agg.unpaidTotal)} unpaid overall. Prioritize follow-ups on the oldest due dates.`
+        : `No overdue invoices detected in CRM. You have ${agg.invoices} invoice(s) total (${agg.paidInvoices} paid).`,
+    );
+  } else if (q.includes("bill") || q.includes("invoice") || q.includes("revenue") || q.includes("earn")) {
+    lines.push(
+      `CRM snapshot: ${agg.invoices} invoices · ${agg.paidInvoices} paid (${formatMoney(agg.paidTotal)}) · ${agg.draftInvoices} drafts · ~${formatMoney(agg.unpaidTotal)} still open.`,
+    );
+  } else if (q.includes("client") || q.includes("customer")) {
+    lines.push(
+      `You have ${agg.customers} CRM client(s) and ${agg.activeProjects} active project(s) of ${agg.projects} total.`,
+    );
+  } else if (q.includes("project")) {
+    lines.push(
+      `${agg.activeProjects} active project(s) out of ${agg.projects}. Keep statuses updated so reports stay accurate.`,
+    );
+  } else {
+    lines.push(
+      `Quick CRM tip from your data: ${agg.customers} clients · ${agg.projects} projects (${agg.activeProjects} active) · ${agg.invoices} invoices (${agg.paidInvoices} paid, ${formatMoney(agg.paidTotal)} collected).`,
+    );
+    if (agg.overdueInvoices > 0) {
+      lines.push(`Focus next: ${agg.overdueInvoices} overdue invoice(s) need follow-up.`);
+    } else if (agg.draftInvoices > 0) {
+      lines.push(`Focus next: finish and send ${agg.draftInvoices} draft invoice(s).`);
+    } else {
+      lines.push("Focus next: log time or add a project milestone so your next invoice is ready.");
+    }
+  }
+
+  lines.push(
+    "Cloud AI is offline (no LLM key). These numbers come from your Supabase CRM. For richer offline AI, use the Android app.",
+  );
+  return lines.join("\n\n");
+}
+
 async function hasEmbeddings(ownerUid: string): Promise<boolean> {
   if (!SUPABASE_SERVICE_ROLE_KEY) return false;
   try {
@@ -109,7 +244,11 @@ export async function POST(req: NextRequest) {
     const plan = (profile?.subscription_plan ?? "free").toLowerCase();
     if (plan !== "pro" && plan !== "pro_plus" && plan !== "plus" && plan !== "proplus") {
       return NextResponse.json(
-        { error: "AI assistant is a Pro feature. Upgrade to access smart search and summaries." },
+        {
+          error: "Ask AI is a Pro feature. Upgrade to Pro or Pro Plus to unlock CRM insights.",
+          code: "pro_required",
+          upgradeUrl: "/pro?plan=pro",
+        },
         { status: 403 },
       );
     }
@@ -120,17 +259,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "query is required" }, { status: 400 });
     }
 
+    const aggregates = await loadCrmAggregates(supabase, user.id);
     const llmConfigured = Boolean(OPENAI_API_KEY || ANTHROPIC_API_KEY);
+
     if (!llmConfigured) {
       return NextResponse.json({
-        mode: "app_required",
-        answer:
-          "Cloud Ask AI needs an LLM key on the server. Use the CLIVORA Android app for offline AI insights on your CRM data, or ask your admin to set OPENAI_API_KEY.",
-        source: "app_required",
+        mode: "crm_fallback",
+        answer: buildCrmTip(query, aggregates),
+        source: "crm_aggregates",
+        aggregates,
       });
     }
 
     let context = "";
+    context = [
+      `CRM aggregates: ${aggregates.customers} clients, ${aggregates.projects} projects (${aggregates.activeProjects} active), ${aggregates.invoices} invoices (${aggregates.paidInvoices} paid / ${formatMoney(aggregates.paidTotal)}, ${aggregates.overdueInvoices} overdue, ~${formatMoney(aggregates.unpaidTotal)} open).`,
+    ].join("\n");
+
     if (SUPABASE_SERVICE_ROLE_KEY && (await hasEmbeddings(user.id))) {
       try {
         const res = await fetch(
@@ -145,32 +290,33 @@ export async function POST(req: NextRequest) {
         );
         if (res.ok) {
           const rows = (await res.json()) as Array<{ content?: string; source_type?: string }>;
-          context = rows
+          const emb = rows
             .map((r) => `[${r.source_type ?? "crm"}] ${r.content ?? ""}`)
             .join("\n")
             .slice(0, 4000);
+          if (emb) context = `${context}\n${emb}`;
         }
       } catch {
-        context = "";
+        /* keep aggregate context */
       }
     }
 
     const answer =
-      (await callOpenAi(query, context)) ||
-      (await callAnthropic(query, context));
+      (await callOpenAi(query, context)) || (await callAnthropic(query, context));
 
     if (!answer) {
       return NextResponse.json({
-        mode: "app_required",
-        answer:
-          "The AI provider did not respond. Download the Android app for offline CRM insights, or try again later.",
-        source: "provider_error",
+        mode: "crm_fallback",
+        answer: buildCrmTip(query, aggregates),
+        source: "crm_aggregates_provider_error",
+        aggregates,
       });
     }
 
     return NextResponse.json({
       answer,
-      source: context ? "llm_with_context" : "llm",
+      source: "llm_with_context",
+      mode: "llm",
     });
   } catch (err) {
     return NextResponse.json(
