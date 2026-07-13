@@ -16,7 +16,29 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     await requireAdmin({ requireAal2: true });
-    requireAdminServiceConfig();
+
+    try {
+      requireAdminServiceConfig();
+    } catch (error) {
+      if (error instanceof AdminServiceConfigurationError) {
+        // Soft-fail: return degraded payload so UI can show 503 banner without blanking the panel
+        const localStats = adminStats();
+        return adminJson({
+          ...localStats,
+          totalProfiles: 0,
+          proProfiles: 0,
+          clientProfiles: 0,
+          freelancerProfiles: 0,
+          profiles: [],
+          source: "degraded",
+          warning: "Stats request failed (503)",
+          events: loadEvents()
+            .filter((event) => !event.eventType.startsWith("audit_"))
+            .slice(0, 150),
+        });
+      }
+      throw error;
+    }
 
     const [cloudEvents, profileCount, profiles] = await Promise.all([
       fetchEventsFromSupabase(500),
@@ -42,12 +64,6 @@ export async function GET() {
         .slice(0, 150),
     });
   } catch (error) {
-    if (error instanceof AdminServiceConfigurationError) {
-      return adminJson(
-        { error: "Admin service is unavailable.", code: "ADMIN_SERVICE_UNAVAILABLE" },
-        { status: 503 },
-      );
-    }
     return adminErrorResponse(error, "Could not load admin statistics");
   }
 }
