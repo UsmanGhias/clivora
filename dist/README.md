@@ -1,15 +1,15 @@
-# CLIVORA v2.17.0 downloads
+# CLIVORA v2.19.0 downloads
 
-**Version:** 2.17.0+74
+**Version:** 2.19.0+76
 
-## Direct download (sign in to GitHub)
+Signed with Play upload key (`SHA1 96:93:81:80:...`). Private repo — GitHub login required to download.
 
-| File | URL |
-|------|-----|
-| **APK** | https://github.com/UsmanGhias/clivora/releases/download/v2.17.0-playstore/clivora-2.17.0.apk |
-| **AAB** | https://github.com/UsmanGhias/clivora/releases/download/v2.17.0-playstore/clivora-2.17.0.aab |
-| **Checksums** | https://github.com/UsmanGhias/clivora/releases/download/v2.17.0-playstore/SHA256SUMS.txt |
-| **Release page** | https://github.com/UsmanGhias/clivora/releases/tag/v2.17.0-playstore |
+## Install
+
+- **APK:** https://github.com/UsmanGhias/clivora/releases/download/v2.19.0-playstore/clivora-2.19.0.apk
+- **AAB:** https://github.com/UsmanGhias/clivora/releases/download/v2.19.0-playstore/clivora-2.19.0.aab
+- **Release:** https://github.com/UsmanGhias/clivora/releases/tag/v2.19.0-playstore
+- **Checksums:** https://github.com/UsmanGhias/clivora/releases/download/v2.19.0-playstore/SHA256SUMS.txt
 
 ### Install APK on Android
 1. Open the APK link on your phone (or download on PC and transfer)
