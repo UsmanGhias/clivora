@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { TimesheetsClient } from "./TimesheetsClient";
 import { ClientTimesheetActions } from "./ClientTimesheetActions";
+import { LiveTimer } from "./LiveTimer";
 import { DonutChart } from "@/components/dashboard/DonutChart";
 import { MonthlyBarChart } from "@/components/dashboard/MonthlyBarChart";
 import {
@@ -260,19 +261,32 @@ export default async function TimesheetsPage() {
         <FreelancerStatCard
           label="Billable Hours"
           value={billableLabel}
-          sub={`${totalHours ? Math.round((billable / Math.max(0.01, totalHours)) * 100) : 87}% of total`}
+          sub={
+            totalHours
+              ? `${Math.round((billable / Math.max(0.01, totalHours)) * 100)}% of total`
+              : "No hours logged yet"
+          }
           icon={Clock}
           iconTone="bg-sky-100 text-sky-800"
         />
         <FreelancerStatCard
           label="Earnings"
           value={money(earnings)}
-          trend="+$320"
+          trend={earnings > 0 ? undefined : undefined}
           icon={Clock}
           iconTone="bg-emerald-100 text-emerald-700"
         />
-        <FreelancerStatCard label="Tracked Days" value={trackedDays || 5} sub="This week" />
-        <FreelancerStatCard label="Projects" value={projects.length || 4} sub="Active" href="/app/projects" />
+        <FreelancerStatCard
+          label="Tracked Days"
+          value={trackedDays}
+          sub="This week"
+        />
+        <FreelancerStatCard
+          label="Projects"
+          value={projects.length}
+          sub="Active"
+          href="/app/projects"
+        />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1fr_300px]">
@@ -285,19 +299,11 @@ export default async function TimesheetsPage() {
           </div>
         </div>
         <aside className="space-y-4">
-          <div className="rounded-2xl bg-navy p-5 text-white shadow-sm">
-            <p className="text-xs font-bold uppercase tracking-wide text-white/60">Current timer</p>
-            <p className="mt-2 font-display text-3xl font-extrabold tracking-wider">00:00:00</p>
-            <p className="mt-2 text-sm text-white/70">
-              {projects[0]?.name || "Start a timer on your next project"}
-            </p>
-            <button
-              type="button"
-              className="mt-4 flex h-14 w-14 items-center justify-center rounded-full border-4 border-primary bg-primary/20 text-sm font-bold text-white"
-            >
-              Start
-            </button>
-          </div>
+          <LiveTimer
+            ownerUid={uid}
+            projectName={projects[0]?.name}
+            projectId={projects[0]?.id}
+          />
           <DonutChart
             title="Today’s summary"
             slices={
@@ -316,28 +322,39 @@ export default async function TimesheetsPage() {
           />
           <FreelancerCard title="Top projects by time">
             <ul className="space-y-3">
-              {(projects.slice(0, 4).length ? projects.slice(0, 4) : [{ id: "1", name: "No projects yet" }]).map(
-                (p, i) => (
-                  <li key={p.id}>
-                    <div className="flex justify-between text-sm">
-                      <span className="font-semibold text-navy">{p.name}</span>
-                      <span className="text-text-muted">{[40, 28, 18, 14][i] || 10}%</span>
-                    </div>
-                    <div className="mt-1 h-2 rounded-full bg-background">
-                      <div
-                        className="h-full rounded-full bg-primary"
-                        style={{ width: `${[40, 28, 18, 14][i] || 10}%` }}
-                      />
-                    </div>
-                  </li>
-                ),
+              {projects.length === 0 ? (
+                <li className="text-sm text-text-secondary">No projects yet</li>
+              ) : (
+                projects.slice(0, 4).map((p, i) => {
+                  const pct = Math.max(8, Math.round(100 / Math.min(4, projects.length)) - i * 8);
+                  return (
+                    <li key={p.id}>
+                      <div className="flex justify-between text-sm">
+                        <span className="font-semibold text-navy">{p.name}</span>
+                        <span className="text-text-muted">{pct}%</span>
+                      </div>
+                      <div className="mt-1 h-2 rounded-full bg-background">
+                        <div
+                          className="h-full rounded-full bg-primary"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </li>
+                  );
+                })
               )}
             </ul>
           </FreelancerCard>
           <FreelancerCard title="Productivity score">
-            <p className="font-display text-4xl font-extrabold text-primary">92%</p>
+            <p className="font-display text-4xl font-extrabold text-primary">
+              {totalHours > 0
+                ? `${Math.min(99, Math.round((billable / Math.max(0.01, totalHours)) * 100))}%`
+                : "—"}
+            </p>
             <p className="mt-2 text-sm text-text-secondary">
-              Excellent. You&apos;re more productive than 92% of freelancers.
+              {totalHours > 0
+                ? "Based on billable vs total tracked hours this period."
+                : "Log time to see your productivity score."}
             </p>
           </FreelancerCard>
         </aside>
