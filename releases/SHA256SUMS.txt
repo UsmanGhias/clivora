@@ -1,0 +1,2 @@
+18244d73c931efcb2259e1826de71c296dad4613d0654d0ce6ba3d08a55d29c8  releases/clivora-2.19.0.apk
+8b4c47d9c5543a40448a480d3d1ec78be95f80da0e6f0479f5b5bcc49aec44aa  releases/clivora-2.19.0.aab
