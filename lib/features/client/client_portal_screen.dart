@@ -44,36 +44,17 @@ class ClientPortalScreen extends ConsumerWidget {
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(child: Text('Error: $e')),
             data: (projects) {
+              final isPlus = ref.watch(isProPlusProvider);
+              final isPro = ref.watch(isProProvider);
               return ListView(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
                 children: [
-                  Row(
-                    children: [
-                      const Expanded(
-                        child: Text(
-                          'Client Portal',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: ClivoraColors.clientAccent,
-                          ),
-                        ),
-                      ),
-                      NotificationIconButton(isClient: true),
-                      IconButton(
-                        onPressed: () =>
-                            openFormRoute(context, '/client-messages'),
-                        icon: const Icon(
-                          Icons.mail_outline_rounded,
-                          color: ClivoraColors.clientAccent,
-                        ),
-                      ),
-                    ],
-                  ),
-                  _ClientWelcomeHeader(
+                  _ClientDashboardHeader(
                     firstName: firstName,
                     projectCount: projects.length,
                     isGuest: isGuest,
+                    isPro: isPro,
+                    isPlus: isPlus,
                   ),
                   const SizedBox(height: 16),
                   const ClientPriorityStrip(),
@@ -177,93 +158,154 @@ class ClientPortalScreen extends ConsumerWidget {
   }
 }
 
-class _ClientWelcomeHeader extends StatelessWidget {
-  const _ClientWelcomeHeader({
+class _ClientDashboardHeader extends StatelessWidget {
+  const _ClientDashboardHeader({
     required this.firstName,
     required this.projectCount,
+    required this.isPro,
+    required this.isPlus,
     this.isGuest = false,
   });
 
   final String firstName;
   final int projectCount;
+  final bool isPro;
+  final bool isPlus;
   final bool isGuest;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: ClivoraColors.clientGradient,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (isGuest)
-            Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Text(
-                'GUEST PREVIEW · CLIENT',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.6,
-                ),
-              ),
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (isGuest)
           Container(
+            margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.18),
+              color: ClivoraColors.clientAccent.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Text(
-              'CLIENT PORTAL',
+              'GUEST PREVIEW · CLIENT',
               style: TextStyle(
-                color: Colors.white,
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
-                letterSpacing: 0.8,
+                letterSpacing: 0.6,
+                color: ClivoraColors.clientAccent,
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            timeBasedGreeting(),
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.75),
-              fontSize: 12,
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '${timeBasedGreeting()}, $firstName ',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: ClivoraColors.textPrimary,
+                          ),
+                        ),
+                        const TextSpan(text: '👋', style: TextStyle(fontSize: 16)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  if (isPlus || isPro)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: ClivoraColors.clientSurface,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.diamond_outlined,
+                            size: 14,
+                            color: ClivoraColors.clientAccent,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            isPlus ? 'Pro Plus' : 'Pro',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: ClivoraColors.clientAccent,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: ClivoraColors.clientSurface,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'CLIENT PORTAL',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.6,
+                          color: ClivoraColors.clientAccent,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  Text(
+                    projectCount == 0
+                        ? 'Projects shared with you will appear below.'
+                        : 'You have $projectCount shared ${projectCount == 1 ? 'project' : 'projects'} to review.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: ClivoraColors.textSecondary,
+                          height: 1.35,
+                        ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Text(
-            firstName,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
+            const NotificationIconButton(isClient: true),
+            const SizedBox(width: 4),
+            IconButton(
+              onPressed: () => openFormRoute(context, '/client-messages'),
+              icon: const Icon(
+                Icons.mail_outline_rounded,
+                color: ClivoraColors.clientAccent,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            projectCount == 0
-                ? 'Projects shared with you will appear below.'
-                : 'You have $projectCount shared ${projectCount == 1 ? 'project' : 'projects'} to review.',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.85),
-              fontSize: 14,
-            ),
-          ),
-        ],
-      ),
+          ],
+        ),
+      ],
     );
   }
+}
+
+BoxDecoration _clientCardDecoration(BuildContext context) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  return BoxDecoration(
+    borderRadius: BorderRadius.circular(18),
+    border: Border.all(
+      color: isDark ? ClivoraColors.darkBorder : ClivoraColors.borderLight,
+    ),
+    boxShadow: [
+      BoxShadow(
+        color: ClivoraColors.navyDark.withValues(alpha: isDark ? 0.2 : 0.04),
+        blurRadius: 16,
+        offset: const Offset(0, 6),
+      ),
+    ],
+  );
 }
 
 class _ClientStatsRow extends ConsumerWidget {
@@ -528,36 +570,41 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return Material(
-      color: colorScheme.surface,
-      borderRadius: BorderRadius.circular(16),
+      color: Theme.of(context).cardColor,
+      borderRadius: BorderRadius.circular(18),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: colorScheme.outline),
-          ),
+          decoration: _clientCardDecoration(context),
           child: Column(
             children: [
-              Icon(icon, color: colorScheme.primary, size: 20),
-              const SizedBox(height: 6),
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: ClivoraColors.clientSurface,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: ClivoraColors.clientAccent, size: 18),
+              ),
+              const SizedBox(height: 8),
               Text(
                 value,
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 16,
-                  color: colorScheme.onSurface,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 17,
+                  color: ClivoraColors.textPrimary,
                 ),
               ),
               Text(
-                label,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(fontSize: 11),
+                label.toUpperCase(),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      fontSize: 10,
+                      letterSpacing: 0.3,
+                    ),
               ),
             ],
           ),
@@ -576,10 +623,8 @@ class _EmptyProjects extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+      decoration: _clientCardDecoration(context).copyWith(
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         children: [
@@ -628,7 +673,6 @@ class _ClientProjectCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final view = projectView;
     final status = view.status.replaceAll('_', ' ');
-    final colorScheme = Theme.of(context).colorScheme;
     final secondsAsync =
         (!view.isCloudOnly && clientUserId != null && view.localProject != null)
         ? ref.watch(
@@ -649,9 +693,8 @@ class _ClientProjectCard extends ConsumerWidget {
         onTap: () => openClientProjectDetail(context, ref, view, clientUserId),
         child: Container(
           padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
+          decoration: _clientCardDecoration(context).copyWith(
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Theme.of(context).dividerColor),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -662,12 +705,12 @@ class _ClientProjectCard extends ConsumerWidget {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: colorScheme.primaryContainer,
+                      color: ClivoraColors.clientSurface,
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Icons.folder_open_rounded,
-                      color: colorScheme.primary,
+                      color: ClivoraColors.clientAccent,
                     ),
                   ),
                   const SizedBox(width: 12),

@@ -7,7 +7,6 @@ import { FreelancerOSSection } from "@/components/marketing/FreelancerOSSection"
 import { SocialProofSection } from "@/components/marketing/SocialProofSection";
 import { ConnectSection } from "@/components/marketing/ConnectSection";
 import { WorkspaceSection } from "@/components/marketing/WorkspaceSection";
-import { PricingSection } from "@/components/marketing/PricingSection";
 import { FAQSection } from "@/components/marketing/FAQSection";
 import { CTASection } from "@/components/marketing/CTASection";
 import { site } from "@/lib/site";
@@ -27,7 +26,6 @@ export default function Home() {
       <SocialProofSection />
       <ConnectSection />
       <WorkspaceSection />
-      <PricingSection />
       <FAQSection />
       <CTASection />
     </MarketingShell>

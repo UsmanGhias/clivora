@@ -10,7 +10,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { marketing } from "@/lib/marketing";
-import { FreelancerDashMock } from "./mockups/FreelancerDashMock";
+import { AnalyticsPreviewMock } from "./mockups/AnalyticsPreviewMock";
 
 const icons = [LayoutDashboard, FolderKanban, FileText, Timer, Users, Bot];
 
@@ -55,7 +55,7 @@ export function FreelancerOSSection() {
         <div className="relative">
           <div className="absolute -inset-3 rounded-[28px] bg-gradient-to-tr from-teal-100/60 to-slate-200/40 blur-xl" />
           <div className="relative">
-            <FreelancerDashMock />
+            <AnalyticsPreviewMock />
           </div>
         </div>
       </div>

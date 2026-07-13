@@ -66,31 +66,36 @@ export function ConnectActions({
 
   if (!signedIn) {
     return (
-      <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-5 shadow-sm">
+      <div className="rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50 to-white p-5 shadow-sm">
         <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
             <Crown className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="font-bold text-navy">Browse free. Buy Pro Plus for monthly Connect credits.</p>
+            <p className="font-bold text-navy">Browse free. Upgrade only when you need Connect credits.</p>
             <p className="mt-1 text-sm text-text-secondary">
-              Explore talent and jobs with $0 platform fees on your deals. Pro Plus includes{" "}
-              <strong>100 Connect credits / month</strong> for contact, proposals, and posting (
-              {site.pricing.proPlusMonthlyLabel}/mo).
+              Explore talent and jobs with $0 platform fees on your deals. Pro Plus unlocks monthly
+              Connect credits for contact, proposals, and posting when you are ready.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link
-                href={`/signup?next=${encodeURIComponent("/pro?plan=pro_plus")}`}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-navy"
+                href="/signup?next=/connect"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-navy px-5 py-2.5 text-sm font-bold text-white"
               >
                 <UserPlus className="h-4 w-4" />
-                Buy Pro Plus · {site.pricing.proPlusMonthlyLabel}/mo
+                Create free account
               </Link>
               <Link
                 href="/login?next=/connect"
-                className="inline-flex min-h-11 items-center rounded-xl border-2 border-navy bg-white px-5 py-2.5 text-sm font-semibold text-navy"
+                className="inline-flex min-h-11 items-center rounded-xl border-2 border-navy/15 bg-white px-5 py-2.5 text-sm font-semibold text-navy"
               >
                 Sign in
+              </Link>
+              <Link
+                href="/pricing"
+                className="inline-flex min-h-11 items-center rounded-xl px-4 py-2.5 text-sm font-semibold text-violet-700 hover:underline"
+              >
+                Compare plans
               </Link>
             </div>
           </div>

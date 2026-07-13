@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { SocialProofSection } from "@/components/marketing/SocialProofSection";
 import { ConnectSection } from "@/components/marketing/ConnectSection";
-import { PricingSection } from "@/components/marketing/PricingSection";
+import { FAQSection } from "@/components/marketing/FAQSection";
 import { CTASection } from "@/components/marketing/CTASection";
 import { ClientDashMock } from "@/components/marketing/mockups/ClientDashMock";
 import { marketing } from "@/lib/marketing";
@@ -50,7 +50,7 @@ export default function ForClientsPage() {
       </section>
       <SocialProofSection />
       <ConnectSection />
-      <PricingSection />
+      <FAQSection />
       <CTASection />
     </MarketingShell>
   );

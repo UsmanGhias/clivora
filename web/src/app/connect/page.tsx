@@ -12,16 +12,17 @@ import {
   isClientAccount,
   isProPlus,
   isRestricted,
-  planLabel,
 } from "@/lib/profile";
-import { site } from "@/lib/site";
-import { SubPageChrome } from "@/components/app/SubPageChrome";
+import { MarketingNav } from "@/components/marketing/MarketingNav";
+import { MarketingFooter } from "@/components/marketing/MarketingFooter";
+import { ConnectMarketingHero } from "@/components/connect/ConnectMarketingHero";
 import { ConnectBoard } from "@/components/connect/ConnectBoard";
+import { Lock, ShieldCheck, Building2 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "CLIVORA Connect. Private marketplace",
+  title: "CLIVORA Connect — Private marketplace",
   description:
-    "Hire freelancers and find clients on CLIVORA Connect. Private contact until mutual accept, then continue in the same CRM.",
+    "Hire freelancers and find clients on CLIVORA Connect. Private contact until mutual accept, then continue in the same CRM. Browse free.",
 };
 
 export default async function ConnectPage() {
@@ -36,130 +37,62 @@ export default async function ConnectPage() {
   const plus = isProPlus(profile);
   const client = isClientAccount(profile);
   const restricted = isRestricted(profile);
-  const backHref = signedIn ? "/app" : "/";
-  const backLabel = signedIn ? "Back to app" : "Back to home";
 
   return (
-    <SubPageChrome
-      isClient={client}
-      backHref={backHref}
-      backLabel={backLabel}
-      crumbs={[
-        { label: signedIn ? "App" : "Home", href: backHref },
-        { label: "Connect" },
-      ]}
-      title="Connect"
-      rightSlot={
-        signedIn ? (
-          <span className="hidden rounded-lg bg-emerald-500/20 px-2.5 py-1 text-[11px] font-bold text-emerald-200 sm:inline">
-            {planLabel(profile)}
-          </span>
-        ) : (
-          <Link
-            href="/login?next=/connect"
-            className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-semibold text-white"
-          >
-            Sign in
-          </Link>
-        )
-      }
-    >
-      <div className="space-y-6">
-        <section
-          className={`overflow-hidden rounded-3xl p-6 text-white sm:p-8 ${
-            client ? "bg-client-gradient" : "bg-brand-gradient"
-          }`}
-        >
-          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-white/70">
-            CLIVORA Connect
+    <div className="min-h-screen bg-[#F8FAFC] text-navy antialiased">
+      <MarketingNav />
+      <main className="mx-auto max-w-7xl space-y-8 px-5 py-8 lg:px-8 lg:py-12">
+        <ConnectMarketingHero signedIn={signedIn} isClient={client} />
+
+        {restricted && (
+          <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            Your account is restricted — browsing works, posting/contact is paused. Contact support
+            if this is unexpected.
           </p>
-          <h1 className="mt-2 font-display text-2xl font-extrabold sm:text-4xl">
-            Hire & get hired, privately
-          </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/85 sm:text-base">
-            Browse talent and jobs free. $0 platform fees on negotiated rates (no per-proposal
-            tokens). Contact and post with Pro Plus. Emails unlock only after both sides accept,
-            then continue in the same CLIVORA CRM.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            {signedIn && plus ? (
-              <Link
-                href="/connect/manage"
-                className="rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-navy"
-              >
-                {client ? "Post a job" : "Update my profile"}
-              </Link>
-            ) : (
-              <Link
-                href={
-                  signedIn
-                    ? "/pro?plan=pro_plus"
-                    : `/signup?next=${encodeURIComponent("/pro?plan=pro_plus")}`
-                }
-                className="rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-navy"
-              >
-                {signedIn
-                  ? `Buy Pro Plus · ${site.pricing.proPlusMonthlyLabel}/mo`
-                  : `Buy Pro Plus · ${site.pricing.proPlusMonthlyLabel}/mo`}
-              </Link>
-            )}
-            {!signedIn && (
-              <Link
-                href="/login?next=/connect"
-                className="rounded-xl border border-white/30 px-4 py-2.5 text-sm font-bold text-white"
-              >
-                Sign in
-              </Link>
-            )}
-          </div>
-          {restricted && (
-            <p className="mt-4 rounded-xl bg-black/20 px-3 py-2 text-sm text-amber-100">
-              Your account is restricted, browsing works, posting/contact is paused. Contact
-              support if this is unexpected.
+        )}
+
+        <div id="board" className="scroll-mt-24">
+          <ConnectBoard
+            profiles={profiles}
+            needs={needs}
+            requests={requests}
+            signedIn={signedIn}
+            isProPlus={plus}
+            isClient={client}
+            isRestricted={restricted}
+            myUserId={profile?.id}
+            accent={client ? "slate" : "teal"}
+          />
+        </div>
+
+        <section className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-6 sm:grid-cols-3">
+          <div>
+            <Lock className="mb-2 h-5 w-5 text-primary" />
+            <p className="text-sm font-bold text-navy">How Connect works</p>
+            <p className="mt-1 text-sm text-slate-500">
+              Both sides must accept a request before contact details unlock.
             </p>
-          )}
+          </div>
+          <div>
+            <ShieldCheck className="mb-2 h-5 w-5 text-primary" />
+            <p className="text-sm font-bold text-navy">Why professionals love it</p>
+            <p className="mt-1 text-sm text-slate-500">
+              Zero fees on negotiated rates, privacy by default, and full control.
+            </p>
+          </div>
+          <div>
+            <Building2 className="mb-2 h-5 w-5 text-primary" />
+            <p className="text-sm font-bold text-navy">Need a team workspace?</p>
+            <p className="mt-1 text-sm text-slate-500">
+              Start free on CLIVORA, then grow into Pro tools when you need them.{" "}
+              <Link href="/contact" className="font-semibold text-primary hover:underline">
+                Contact sales
+              </Link>
+            </p>
+          </div>
         </section>
-
-        <ol className="grid gap-3 sm:grid-cols-3">
-          {[
-            {
-              n: "01",
-              t: "Discover",
-              d: "Search talent or open jobs by skill, rate, and budget.",
-            },
-            {
-              n: "02",
-              t: "Request",
-              d: "Send a Connect request, emails stay private until accept.",
-            },
-            {
-              n: "03",
-              t: "Work in CRM",
-              d: "After match, manage the relationship in CLIVORA on web or app.",
-            },
-          ].map((step) => (
-            <li
-              key={step.n}
-              className="rounded-2xl border border-border bg-surface px-4 py-4 shadow-sm"
-            >
-              <p className="font-display text-xs font-bold tracking-widest text-primary">{step.n}</p>
-              <p className="mt-1 font-bold text-navy">{step.t}</p>
-              <p className="mt-1 text-sm text-text-secondary">{step.d}</p>
-            </li>
-          ))}
-        </ol>
-
-        <ConnectBoard
-          profiles={profiles}
-          needs={needs}
-          requests={requests}
-          signedIn={signedIn}
-          isProPlus={plus}
-          isClient={client}
-          isRestricted={restricted}
-          myUserId={profile?.id}
-        />
-      </div>
-    </SubPageChrome>
+      </main>
+      <MarketingFooter />
+    </div>
   );
 }

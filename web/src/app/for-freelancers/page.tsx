@@ -4,7 +4,6 @@ import { ArrowRight } from "lucide-react";
 import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { FreelancerOSSection } from "@/components/marketing/FreelancerOSSection";
 import { WorkspaceSection } from "@/components/marketing/WorkspaceSection";
-import { PricingSection } from "@/components/marketing/PricingSection";
 import { CTASection } from "@/components/marketing/CTASection";
 import { FreelancerDashMock } from "@/components/marketing/mockups/FreelancerDashMock";
 import { marketing } from "@/lib/marketing";
@@ -50,7 +49,6 @@ export default function ForFreelancersPage() {
       </section>
       <FreelancerOSSection />
       <WorkspaceSection />
-      <PricingSection />
       <CTASection />
     </MarketingShell>
   );

@@ -82,7 +82,7 @@ export function ClientDashMock() {
             <Stat label="Active Projects" value="6" />
             <Stat label="Pending Proposals" value="5" />
             <Stat label="Unread Messages" value="4" />
-            <Stat label="Total Spent" value="$24,560" />
+            <Stat label="Total Spent" value="$6,420" />
           </div>
 
           <div className="mt-2 grid grid-cols-5 gap-1.5">
