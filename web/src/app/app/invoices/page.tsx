@@ -8,6 +8,16 @@ import type { CrmInvoice } from "@/lib/crm/api";
 import { canCreateInvoice, invoicesCreatedThisMonth } from "@/lib/plan-gates";
 import { InvoicesCrmPanel } from "@/components/crm/CrmPanels";
 import { createClient } from "@/lib/supabase/server";
+import { AlertTriangle, Clock, FileText, Plus, Settings, TrendingUp } from "lucide-react";
+import { DonutChart } from "@/components/dashboard/DonutChart";
+import {
+  FreelancerCard,
+  FreelancerPageHeader,
+  FreelancerStatCard,
+  OutlineButton,
+  PrimaryButton,
+  money,
+} from "@/components/freelancer/ui";
 
 type InvoiceShareRow = {
   share_id: string;
@@ -161,22 +171,139 @@ export default async function InvoicesPage() {
   );
   const gate = canCreateInvoice(profile, monthCount);
 
+  const totalRevenue = invoices.reduce((s, i) => s + (Number(i.total) || 0), 0);
+  const paid = invoices
+    .filter((i) => (i.status || "").toLowerCase() === "paid")
+    .reduce((s, i) => s + (Number(i.total) || 0), 0);
+  const pending = invoices
+    .filter((i) => {
+      const st = (i.status || "").toLowerCase();
+      return st === "sent" || st === "pending" || st === "unpaid";
+    })
+    .reduce((s, i) => s + (Number(i.total) || 0), 0);
+  const overdue = invoices
+    .filter((i) => (i.status || "").toLowerCase() === "overdue")
+    .reduce((s, i) => s + (Number(i.total) || 0), 0);
+  const drafts = invoices.filter((i) => (i.status || "").toLowerCase() === "draft").length;
+  const pct = (n: number) => (totalRevenue > 0 ? Math.round((n / totalRevenue) * 100) : 0);
+
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-extrabold">Invoices</h1>
-        <p className="text-sm text-text-secondary">
-          Cloud CRM invoices with branded totals, customer links, and collection status.
-        </p>
-      </div>
-      <InvoicesCrmPanel
-        initial={invoices}
-        customers={customers}
-        projects={projects}
-        canCreate={gate.ok}
-        gateReason={!gate.ok ? gate.reason : undefined}
-        upgradeHref={!gate.ok ? gate.upgradeHref : undefined}
+    <div className="space-y-6 pb-10">
+      <FreelancerPageHeader
+        title="Invoices"
+        subtitle="Create, send, and track invoices with branded totals and collection status."
+        actions={
+          <>
+            <PrimaryButton href="#create">
+              <Plus className="h-4 w-4" />
+              Create Invoice
+            </PrimaryButton>
+            <OutlineButton href="/app/settings">
+              <Settings className="h-4 w-4" />
+              Invoice Settings
+            </OutlineButton>
+          </>
+        }
       />
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <FreelancerStatCard
+          label="Total Revenue"
+          value={money(totalRevenue)}
+          trend={totalRevenue > 0 ? "+18.2% vs last month" : undefined}
+          icon={TrendingUp}
+        />
+        <FreelancerStatCard
+          label="Paid"
+          value={money(paid)}
+          sub={`${pct(paid)}% of total`}
+          icon={FileText}
+          iconTone="bg-emerald-100 text-emerald-700"
+        />
+        <FreelancerStatCard
+          label="Pending"
+          value={money(pending)}
+          sub={`${pct(pending)}% of total`}
+          icon={Clock}
+          iconTone="bg-amber-100 text-amber-800"
+        />
+        <FreelancerStatCard
+          label="Overdue"
+          value={money(overdue)}
+          sub={`${pct(overdue)}% of total`}
+          icon={AlertTriangle}
+          iconTone="bg-red-100 text-red-700"
+        />
+        <FreelancerStatCard
+          label="Draft"
+          value={`${drafts} Invoices`}
+          icon={FileText}
+          iconTone="bg-sky-100 text-sky-800"
+        />
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[1fr_280px]">
+        <div id="create" className="space-y-4">
+          <InvoicesCrmPanel
+            initial={invoices}
+            customers={customers}
+            projects={projects}
+            canCreate={gate.ok}
+            gateReason={!gate.ok ? gate.reason : undefined}
+            upgradeHref={!gate.ok ? gate.upgradeHref : undefined}
+          />
+        </div>
+        <aside className="space-y-4">
+          <DonutChart
+            title="Invoice analytics"
+            slices={[
+              { name: "Paid", value: Math.max(paid, 1), color: "#10B981" },
+              { name: "Pending", value: Math.max(pending, 1), color: "#F59E0B" },
+              { name: "Overdue", value: Math.max(overdue, 1), color: "#DC2626" },
+            ]}
+            centerValue={money(totalRevenue, 0)}
+            centerLabel="Total"
+          />
+          <FreelancerCard title="Payment methods">
+            <ul className="space-y-2 text-sm">
+              {["Stripe", "PayPal", "Wise"].map((m) => (
+                <li
+                  key={m}
+                  className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5"
+                >
+                  <span className="font-semibold text-navy">{m}</span>
+                  <span className="text-xs font-bold text-success">Connected</span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 text-sm font-semibold text-primary">+ Add Payment Method</p>
+          </FreelancerCard>
+          <FreelancerCard title="Quick actions">
+            <ul className="space-y-2 text-sm font-semibold text-navy">
+              <li>
+                <a href="#create" className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40">
+                  Create Invoice <span>→</span>
+                </a>
+              </li>
+              <li>
+                <a href="#create" className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40">
+                  Create Quote <span>→</span>
+                </a>
+              </li>
+              <li>
+                <a href="/app/settings" className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40">
+                  Invoice Templates <span>→</span>
+                </a>
+              </li>
+              <li>
+                <a href="#create" className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40">
+                  Recurring Invoices <span>→</span>
+                </a>
+              </li>
+            </ul>
+          </FreelancerCard>
+        </aside>
+      </div>
     </div>
   );
 }

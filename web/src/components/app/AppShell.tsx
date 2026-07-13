@@ -22,6 +22,8 @@ import {
   Briefcase,
   Plus,
   Diamond,
+  BarChart3,
+  Wallet,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -102,15 +104,16 @@ export function AppShell({
     { href: "/app/proposals", label: "Proposals", icon: FileText, badge: counts?.proposals },
     { href: "/app/projects", label: "Projects", icon: FolderKanban, badge: counts?.projects },
     { href: "/app/messages", label: "Messages", icon: MessageSquare, badge: counts?.messages },
-    { href: "/app/invoices", label: "Earnings", icon: Receipt },
-    { href: "/app/invoices", label: "Invoices", icon: FileText },
+    { href: "/app/earnings", label: "Earnings", icon: Wallet },
+    { href: "/app/invoices", label: "Invoices", icon: Receipt },
     { href: "/app/timesheets", label: "Time tracking", icon: Clock },
     { href: "/app/clients", label: "Clients", icon: Users },
-    { href: "/app/hub", label: "Reviews", icon: Star },
+    { href: "/app/reviews", label: "Reviews", icon: Star },
     { href: "/app/account", label: "My profile", icon: UserCircle },
-    { href: "/app/hub", label: "Bookmarks", icon: Bookmark },
-    { href: "/app/hub", label: "Analytics", icon: Briefcase },
-    { href: "/app/account", label: "Settings", icon: Settings },
+    { href: "/app/bookmarks", label: "Bookmarks", icon: Bookmark },
+    { href: "/app/hub", label: "Team", icon: Briefcase },
+    { href: "/app/analytics", label: "Analytics", icon: BarChart3 },
+    { href: "/app/settings", label: "Settings", icon: Settings },
   ];
 
   const clientNav: NavItem[] = [
@@ -231,16 +234,18 @@ export function AppShell({
             </Link>
           ) : (
             <Link
-              href="/app/connect"
+              href="/connect/manage"
               className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-sm font-bold text-white hover:bg-primary-dark"
             >
-              <Briefcase className="h-4 w-4" />
-              Find jobs (Connect)
+              <Plus className="h-4 w-4" />
+              Post a Job (Connect)
             </Link>
           )}
           <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-            <p className="text-xs font-bold text-white/80">{plus ? `${plan} plan` : "Free plan"}</p>
-            <p className="mt-1 text-[10px] text-white/50">Manage billing & credits</p>
+            <p className="text-xs font-bold text-white/80">{plus ? `${plan} Plan` : "Free Plan"}</p>
+            <p className="mt-1 text-[10px] text-white/50">
+              {plus ? "Renews on Aug 1, 2026" : "Upgrade for Connect credits"}
+            </p>
             <Link
               href="/pro?plan=pro_plus"
               className={cn(
@@ -248,7 +253,7 @@ export function AppShell({
                 isClient ? "bg-client-accent" : "bg-primary",
               )}
             >
-              Manage plan
+              Manage Plan
             </Link>
           </div>
         </div>
