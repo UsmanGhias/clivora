@@ -344,12 +344,7 @@ export default async function AppHomePage() {
             { name: "Mobile Development", value: Math.round(spendBase * 0.172), color: "#8B5CF6" },
             { name: "Writing & Content", value: Math.round(spendBase * 0.071), color: "#F59E0B" },
           ]
-        : [
-            { name: "Web Development", value: 0, color: "#475569" },
-            { name: "Design & Creative", value: 0, color: "#0EA5E9" },
-            { name: "Mobile Development", value: 0, color: "#8B5CF6" },
-            { name: "Writing & Content", value: 0, color: "#F59E0B" },
-          ].filter(() => false);
+        : [];
 
     return (
       <ClientDashboard
@@ -365,16 +360,7 @@ export default async function AppHomePage() {
         activities={activities}
         projects={projects}
         freelancers={freelancers}
-        spendSlices={
-          spendSlices.length
-            ? spendSlices
-            : [
-                { name: "Web Development", value: 1, color: "#475569" },
-                { name: "Design & Creative", value: 1, color: "#0EA5E9" },
-                { name: "Mobile Development", value: 1, color: "#8B5CF6" },
-                { name: "Writing & Content", value: 1, color: "#F59E0B" },
-              ]
-        }
+        spendSlices={spendSlices}
       />
     );
   }

@@ -495,7 +495,27 @@ export default function AdminPage() {
   }, [loggedIn, loadStats, loadPayments, loadConnect, loadFlags, loadEscrow]);
 
   async function login() {
-    window.location.href = "/login?next=%2Fadmin";
+    setError("");
+    const em = email.trim().toLowerCase();
+    if (!em || !password) {
+      setError("Enter your CLIVORA account email and password.");
+      return;
+    }
+    try {
+      const supabase = createBrowserSupabaseClient();
+      const { error: authErr } = await supabase.auth.signInWithPassword({
+        email: em,
+        password,
+      });
+      if (authErr) {
+        setError(authErr.message || "Sign-in failed");
+        return;
+      }
+      // Hard navigate so admin layout re-checks role + MFA gate
+      window.location.href = "/admin";
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Sign-in failed");
+    }
   }
 
   async function changePanelPassword() {
@@ -520,8 +540,9 @@ export default function AdminPage() {
             <Logo size="sm" variant="onDark" />
           </div>
           <h1 className="text-2xl font-bold text-slate-900">CLIVORA Admin</h1>
-          <p className="text-slate-600 text-sm mt-2 mb-6">
-            Production console for signups, Pro activations, cloud profiles, and audit trail.
+          <p className="text-slate-600 text-sm mt-2 mb-4">
+            Sign in with your CLIVORA account (same password as the app). Admin access requires an
+            admin role on your profile, then Google Authenticator MFA.
           </p>
           {error && (
             <p className="text-red-700 text-sm mb-4 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
@@ -531,25 +552,28 @@ export default function AdminPage() {
             className="w-full border border-slate-300 rounded-lg px-3 py-2.5 mb-4 text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@codcrafters.org"
+            placeholder="usmanghias1@gmail.com"
             autoComplete="email"
           />
-          <label className="block text-sm font-semibold text-slate-800 mb-1">Password</label>
+          <label className="block text-sm font-semibold text-slate-800 mb-1">Account password</label>
           <input
             type="password"
-            className="w-full border border-slate-300 rounded-lg px-3 py-2.5 mb-6 text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+            className="w-full border border-slate-300 rounded-lg px-3 py-2.5 mb-4 text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
-            onKeyDown={(e) => e.key === "Enter" && login()}
+            onKeyDown={(e) => e.key === "Enter" && void login()}
           />
           <button
-            onClick={login}
+            onClick={() => void login()}
             className="w-full bg-teal-600 hover:bg-teal-700 text-white rounded-lg py-3 font-semibold transition-colors"
           >
-            Sign in
+            Sign in to Admin
           </button>
-          <p className="text-xs text-slate-500 text-center mt-6">{ADMIN_VERSION} · Supabase live · Vercel</p>
+          <p className="text-xs text-slate-500 mt-4 text-center">
+            Allowed admins: usmanghias1@gmail.com · iusmanghias@gmail.com · admin@codcrafters.org
+          </p>
+          <p className="text-xs text-slate-500 text-center mt-2">{ADMIN_VERSION} · Supabase Auth + MFA</p>
         </div>
       </main>
     );

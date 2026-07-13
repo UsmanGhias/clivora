@@ -20,16 +20,16 @@ const DEMO = [
 ];
 
 export function MonthlyBarChart({ total }: { total: number }) {
-  const data =
-    total > 0
-      ? DEMO.map((d) => ({
-          ...d,
-          amount: Math.round((d.amount / 6100) * Math.max(total / 6, 400)),
-        }))
-      : DEMO;
+  const isEmpty = total === 0;
+  const data = isEmpty
+    ? DEMO.map((d) => ({ ...d, amount: 0 }))
+    : DEMO.map((d) => ({
+        ...d,
+        amount: Math.round((d.amount / 6100) * Math.max(total / 6, 400)),
+      }));
 
   return (
-    <div className="h-56 w-full">
+    <div className="relative h-56 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
@@ -39,9 +39,16 @@ export function MonthlyBarChart({ total }: { total: number }) {
             formatter={(v) => [`$${Number(v ?? 0).toLocaleString()}`, "Earnings"]}
             contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F0" }}
           />
-          <Bar dataKey="amount" fill="#0D9488" radius={[8, 8, 0, 0]} />
+          <Bar dataKey="amount" fill={isEmpty ? "#E2E8F0" : "#0D9488"} radius={[8, 8, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
+      {isEmpty && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <p className="rounded-lg border border-dashed border-border bg-surface/90 px-4 py-2 text-sm font-semibold text-text-secondary">
+            No data yet
+          </p>
+        </div>
+      )}
     </div>
   );
 }

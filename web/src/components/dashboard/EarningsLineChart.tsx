@@ -21,6 +21,8 @@ const DEMO = [
   { day: "Jul 31", amount: 1320 },
 ];
 
+const EMPTY = DEMO.map((d) => ({ day: d.day, amount: 0, previous: 0 }));
+
 export function EarningsLineChart({
   total,
   accent = "teal",
@@ -39,14 +41,14 @@ export function EarningsLineChart({
   const stroke = accent === "slate" ? "#475569" : "#0D9488";
   const fill = stroke;
   const gradId = accent === "slate" ? "spendGrad" : "earnGrad";
-  const scaled =
-    total > 0
-      ? DEMO.map((d) => ({
-          ...d,
-          amount: Math.round((d.amount / 1320) * Math.max(total / 6, 200)),
-          previous: Math.round((d.amount / 1320) * Math.max(total / 8, 150) * 0.72),
-        }))
-      : DEMO.map((d) => ({ ...d, previous: Math.round(d.amount * 0.72) }));
+  const isEmpty = total === 0;
+  const scaled = isEmpty
+    ? EMPTY
+    : DEMO.map((d) => ({
+        ...d,
+        amount: Math.round((d.amount / 1320) * Math.max(total / 6, 200)),
+        previous: Math.round((d.amount / 1320) * Math.max(total / 8, 150) * 0.72),
+      }));
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
@@ -66,7 +68,7 @@ export function EarningsLineChart({
               {trendLabel}
             </p>
           )}
-          {showPreviousLegend && (
+          {showPreviousLegend && !isEmpty && (
             <div className="mt-2 flex items-center gap-4 text-[11px] font-semibold text-text-muted">
               <span className="inline-flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full" style={{ background: stroke }} />
@@ -84,12 +86,12 @@ export function EarningsLineChart({
           <option>Last month</option>
         </select>
       </div>
-      <div className="h-52 w-full">
+      <div className="relative h-52 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={scaled}>
             <defs>
               <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={fill} stopOpacity={0.35} />
+                <stop offset="0%" stopColor={fill} stopOpacity={isEmpty ? 0.08 : 0.35} />
                 <stop offset="100%" stopColor={fill} stopOpacity={0.02} />
               </linearGradient>
             </defs>
@@ -103,7 +105,7 @@ export function EarningsLineChart({
               ]}
               contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F0" }}
             />
-            {showPreviousLegend && (
+            {showPreviousLegend && !isEmpty && (
               <Area
                 type="monotone"
                 dataKey="previous"
@@ -116,14 +118,22 @@ export function EarningsLineChart({
             <Area
               type="monotone"
               dataKey="amount"
-              stroke={stroke}
+              stroke={isEmpty ? "#CBD5E1" : stroke}
               strokeWidth={2.5}
+              strokeDasharray={isEmpty ? "6 4" : undefined}
               fill={`url(#${gradId})`}
-              dot={{ r: 3, fill: stroke }}
-              activeDot={{ r: 5 }}
+              dot={isEmpty ? false : { r: 3, fill: stroke }}
+              activeDot={isEmpty ? false : { r: 5 }}
             />
           </AreaChart>
         </ResponsiveContainer>
+        {isEmpty && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <p className="rounded-lg border border-dashed border-border bg-surface/90 px-4 py-2 text-sm font-semibold text-text-secondary">
+              No data yet
+            </p>
+          </div>
+        )}
       </div>
       {summaryBoxes && summaryBoxes.length > 0 && (
         <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">

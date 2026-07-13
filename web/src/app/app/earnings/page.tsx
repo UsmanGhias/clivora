@@ -33,12 +33,15 @@ export default async function EarningsPage() {
   const available = Math.max(0, fin.paid - fin.withdrawn);
   const pendingClearance = fin.pending + fin.overdue;
 
-  const breakdown = [
-    { name: "Completed Projects", value: Math.max(1, Math.round(fin.paid * 0.751) || 75), color: "#0D9488" },
-    { name: "Hourly Projects", value: Math.max(1, Math.round(fin.paid * 0.173) || 17), color: "#0EA5E9" },
-    { name: "Bonuses", value: Math.max(1, Math.round(fin.paid * 0.049) || 5), color: "#8B5CF6" },
-    { name: "Milestones", value: Math.max(1, Math.round(fin.paid * 0.027) || 3), color: "#F59E0B" },
-  ];
+  const breakdown =
+    fin.paid > 0
+      ? [
+          { name: "Completed Projects", value: Math.round(fin.paid * 0.751), color: "#0D9488" },
+          { name: "Hourly Projects", value: Math.round(fin.paid * 0.173), color: "#0EA5E9" },
+          { name: "Bonuses", value: Math.round(fin.paid * 0.049), color: "#8B5CF6" },
+          { name: "Milestones", value: Math.round(fin.paid * 0.027), color: "#F59E0B" },
+        ].filter((s) => s.value > 0)
+      : [];
 
   const transactions = fin.invoices.slice(0, 8).map((inv) => {
     const st = (inv.status || "").toLowerCase();
@@ -210,7 +213,7 @@ export default async function EarningsPage() {
             title="Earnings breakdown"
             slices={breakdown}
             centerLabel="Mix"
-            centerValue="100%"
+            centerValue={breakdown.length ? "100%" : undefined}
           />
 
           <FreelancerCard title="Payment methods">
