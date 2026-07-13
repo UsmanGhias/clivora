@@ -3,13 +3,16 @@ import { site } from "@/lib/site";
 /**
  * Single source of truth for marketing site copy, navigation, and section data.
  * Edit this file to reconfigure the public website without touching components.
+ *
+ * Honesty policy: never invent users, revenue, ratings, jobs, logos, or uptime.
+ * Demo mockups may show sample dashboard data — always label them as illustrative.
  */
 export const marketing = {
   brand: {
     name: site.name,
     productLine: "FREELANCER OS",
-    badge: "All-in-One Freelance OS",
-    tagline: "Work Smarter. Manage Everything. Grow Faster.",
+    badge: "Early Access · Freelancer OS",
+    tagline: "Run Your Entire Freelance Business From One Workspace.",
     description: site.description,
   },
 
@@ -19,8 +22,8 @@ export const marketing = {
         label: "For Freelancers",
         href: "/for-freelancers",
         children: [
-          { label: "Freelancer OS", href: "/for-freelancers" },
-          { label: "Find Jobs", href: "/connect" },
+          { label: "Freelancer Workspace", href: "/for-freelancers" },
+          { label: "Connect", href: "/connect" },
           { label: "Features", href: "/features" },
         ],
       },
@@ -28,7 +31,7 @@ export const marketing = {
         label: "For Clients",
         href: "/for-clients",
         children: [
-          { label: "Client Portal", href: "/for-clients" },
+          { label: "Client Workspace", href: "/for-clients" },
           { label: "Hire Talent", href: "/connect" },
           { label: "Pricing", href: "/pricing" },
         ],
@@ -60,242 +63,196 @@ export const marketing = {
   },
 
   hero: {
-    badge: "All-in-One Freelance OS",
-    headline: ["Work Smarter. Manage Everything.", "Grow Faster."],
+    badge: "Early Access · All-in-One Freelancer OS",
+    headline: ["Run Your Entire Freelance Business", "From One Workspace."],
     body:
-      "CLIVORA is the operating system for freelancers and clients — manage people, projects, proposals, invoices, and payments in one beautiful workspace. Web and Android. One account.",
-    primaryCta: { label: "I'm a Freelancer", href: "/signup?role=freelancer" },
-    secondaryCta: { label: "I'm a Client", href: "/signup?role=client" },
-    trusts: ["Free to start", "No credit card required", "Setup in minutes"],
+      "Clivora brings your clients, projects, proposals, invoices, expenses, time tracking, and business insights into one connected workspace—so you spend less time managing tools and more time doing great work.",
+    primaryCta: { label: "Start as a Freelancer", href: "/signup?role=freelancer" },
+    secondaryCta: { label: "Explore as a Client", href: "/signup?role=client" },
+    trusts: ["Free to start", "No credit card required", "Set up in minutes"],
+    mockCaption: "Illustrative dashboard shown with sample data.",
   },
 
   trustBar: {
-    title: "Trusted by freelancers and growing teams worldwide.",
-    logos: [
-      "Nexora Labs",
-      "BrightPath Co",
-      "Orbit Studio",
-      "Cedar & Co",
-      "PixelCraft",
-      "Northline",
-      "Helix Soft",
-      "Summit Digital",
+    title: "Built for the way independent professionals actually work.",
+    body: "Whether you manage one client or a growing freelance business, Clivora keeps your work, communication, documents, and finances organized in one place.",
+    audiences: [
+      "Freelancers",
+      "Independent consultants",
+      "Small agencies",
+      "Clients and project owners",
     ],
   },
 
-  dualPortal: {
-    badge: "ALL-IN-ONE FREELANCE OS",
-    headline: ["Everything You Need.", "One Powerful Platform."],
-    body: "CLIVORA brings every tool, every workflow, and every connection together in one seamless operating system.",
-    tabs: [
-      { id: "freelancer" as const, label: "For Freelancers" },
-      { id: "client" as const, label: "For Clients" },
+  /** Compact product capabilities — replaces inflated dual-portal showcase */
+  platform: {
+    badge: "ONE WORKSPACE",
+    headline: ["One workspace.", "Every part of your freelance business."],
+    body: "Stop switching between separate tools for CRM, projects, invoices, tasks, expenses, and communication. Clivora connects the complete freelance workflow from first contact to final payment.",
+    features: [
+      { title: "Client CRM", description: "Leads, contacts, notes, and history in one place.", status: "Available now" as const },
+      { title: "Projects & tasks", description: "Milestones, deadlines, files, and progress.", status: "Available now" as const },
+      { title: "Proposals", description: "Send proposals and track responses.", status: "Available now" as const },
+      { title: "Invoices & expenses", description: "Professional invoices and expense tracking.", status: "Available now" as const },
+      { title: "Time tracking", description: "Timers and billable hours on projects.", status: "Available now" as const },
+      { title: "Messages & files", description: "Project-linked chat and shared files.", status: "Available now" as const },
+      { title: "Business reports", description: "Earnings and activity insights.", status: "Available now" as const },
+      { title: "Clivora AI", description: "Assisted drafting for everyday business writing.", status: "Beta" as const },
+      { title: "Connect marketplace", description: "Discover opportunities and professional connections.", status: "Beta" as const },
+      { title: "Calendar & reminders", description: "Deadlines and follow-ups in one view.", status: "Available now" as const },
     ],
-    sideFeatures: {
-      left: [
-        {
-          title: "Smart Dashboard",
-          description: "Real-time overview of earnings, projects, proposals and more.",
-          tone: "violet" as const,
-        },
-        {
-          title: "Project Management",
-          description: "Organize tasks, milestones, files and deadlines effortlessly.",
-          tone: "green" as const,
-        },
-        {
-          title: "Invoicing & Payments",
-          description: "Create professional invoices and get paid on time.",
-          tone: "orange" as const,
-        },
-      ],
-      right: [
-        {
-          title: "Messages",
-          description: "Communicate with clients or freelancers in real-time.",
-          tone: "blue" as const,
-        },
-        {
-          title: "Connect Marketplace",
-          description: "Find work, hire talent and grow your network.",
-          tone: "violet" as const,
-        },
-        {
-          title: "AI Assistant",
-          description: "Smart AI tools to write proposals, contracts, invoices and more.",
-          tone: "teal" as const,
-        },
-      ],
-    },
-    bottomStrip: [
-      "Analytics & Reports",
-      "Expenses Tracking",
-      "Contracts & Documents",
-      "Time Tracking",
-      "Backup & Security",
-      "Workflows",
-    ],
-    socialProof: "Built for freelancers. Loved by teams. Trusted by thousands.",
-    activeUsers: "10K+ Active Users",
   },
 
   freelancerOs: {
-    headline: "Everything Freelancers Need to Succeed. All in One Workspace.",
-    body: "Manage clients, projects, proposals, invoices, and payments from a beautiful, powerful dashboard — without juggling five different apps.",
-    cta: { label: "Explore All Features", href: "/features" },
+    eyebrow: "Freelancer workspace",
+    headline: "Everything You Need to Run Your Freelance Business.",
+    body: "Manage leads, clients, proposals, active projects, time, expenses, invoices, and business performance without juggling multiple subscriptions and disconnected apps.",
+    cta: { label: "Explore Freelancer Workspace", href: "/for-freelancers" },
     features: [
       {
-        title: "Complete Dashboard",
-        description: "Track earnings, projects, proposals, and performance in real-time.",
+        title: "Keep every client relationship organized",
+        description: "CRM with contacts, notes, and project history.",
       },
       {
-        title: "Project Management",
-        description: "Organize tasks, milestones, files, and deadlines effortlessly.",
+        title: "Turn proposals into active projects",
+        description: "Track status from draft to accepted work.",
       },
       {
-        title: "Invoicing & Payments",
-        description: "Create professional invoices, get paid on time, every time.",
+        title: "Track tasks, milestones, files, and deadlines",
+        description: "One place for delivery, not five apps.",
       },
       {
-        title: "Time Tracking",
-        description: "Track time, log hours, and boost productivity.",
+        title: "Create professional invoices",
+        description: "Draft, send, and track payment status.",
       },
       {
-        title: "Client Management",
-        description: "Manage clients, contracts, communications in one place.",
+        title: "Record income and business expenses",
+        description: "Clearer books when tax season arrives.",
       },
       {
-        title: "AI Assistant",
-        description: "Write proposals, contracts, replies and more with CLIVORA AI.",
+        title: "Understand performance through reports",
+        description: "See what is earning and what needs attention.",
       },
     ],
-    stats: [
-      { value: "2.4K+", label: "Active freelancers" },
-      { value: "8.1K+", label: "Projects delivered" },
-      { value: "96%", label: "Client satisfaction" },
-      { value: "$1.2M+", label: "Paid via CLIVORA" },
-      { value: "40+", label: "Countries" },
-      { value: "4.8/5", label: "Average rating" },
+    /** Honest product proofs — not invented user metrics */
+    proofs: [
+      { value: "Web + Android", label: "One account across platforms" },
+      { value: "Free plan", label: "Start without a credit card" },
+      { value: "Early access", label: "Feedback shapes every release" },
+      { value: "CODCrafters", label: "Independently built product" },
     ],
+    mockCaption: "Illustrative dashboard shown with sample data.",
   },
 
   socialProof: {
-    badge: "TRUSTED BY THOUSANDS WORLDWIDE.",
-    headline: ["Built for Top Talent.", "Trusted by Growing Teams."],
-    body: "CLIVORA helps freelancers and businesses run work, money, and relationships in one place — without the noise of bloated marketplaces.",
+    badge: "BUILT OPENLY. IMPROVED CONTINUOUSLY.",
+    headline: ["Built independently.", "Improved with real feedback."],
+    body: "Clivora is an independently developed Freelancer OS from CODCrafters. The platform is currently in early access, and feedback from freelancers and clients directly influences what we build next.",
     features: [
       {
-        title: "Verified professionals",
-        description: "Work with skilled freelancers across design, development, writing, and more.",
+        title: "Transparent early-access development",
+        description: "We ship openly and improve based on real usage.",
         tone: "violet" as const,
       },
       {
-        title: "Proven quality",
-        description: "4.8/5 average rating from clients who finish projects on CLIVORA.",
+        title: "Privacy-focused product design",
+        description: "We collect only what is needed for auth, sync, and communication.",
         tone: "blue" as const,
       },
       {
-        title: "Secure & reliable",
-        description: "Private Connect, authenticated accounts, and clear privacy controls.",
+        title: "Web and Android experience",
+        description: "Same account on clivora.codcrafters.org and the Android app.",
         tone: "teal" as const,
       },
       {
-        title: "Global reach",
-        description: "Collaborate across time zones with clients and talent worldwide.",
+        title: "Feedback-driven roadmap",
+        description: "Direct feedback shapes features and priorities.",
         tone: "violet" as const,
       },
       {
-        title: "Faster delivery",
-        description: "Proposals, projects, and invoices stay connected so work moves quicker.",
+        title: "Direct support from the builder",
+        description: "Reach the CODCrafters team when you need help.",
         tone: "orange" as const,
       },
       {
-        title: "Business growth",
-        description: "CRM, analytics, and Connect help you scale beyond one-off gigs.",
+        title: "Free plan for early users",
+        description: "Generous free limits while Clivora grows with you.",
         tone: "green" as const,
       },
     ],
-    floatingStats: [
-      { value: "2.4K+", label: "Active Freelancers", hint: "Ready for your next project." },
-      { value: "8.1K+", label: "Projects Completed", hint: "↑ 14% this quarter" },
-      { value: "$1.2M+", label: "Total Paid", hint: "↑ 11% this quarter" },
-      { value: "40+", label: "Countries", hint: "Across the globe" },
-    ],
     trustedBy: {
-      title: "TRUSTED BY STUDIOS, STARTUPS, AND SOLO TEAMS.",
-      body: "From local agencies to remote-first startups, teams use CLIVORA to get work done.",
+      title: "DESIGNED FOR INDEPENDENT PROFESSIONALS.",
+      body: "Whether you are solo, consulting, or running a small agency, Clivora keeps work and finances in one workspace.",
       link: { label: "Learn about CODCrafters", href: "/about" },
-      logos: [
-        "Nexora Labs",
-        "BrightPath Co",
-        "Orbit Studio",
-        "Cedar & Co",
-        "PixelCraft",
-        "Northline",
-        "Helix Soft",
-        "Summit Digital",
+      audiences: [
+        "Freelancers",
+        "Consultants",
+        "Small agencies",
+        "Clients",
       ],
     },
     metrics: [
-      { value: "1,800+", label: "Active clients" },
-      { value: "3,200+", label: "Jobs posted" },
-      { value: "96%", label: "Client satisfaction" },
-      { value: "99.5%", label: "Uptime" },
+      { value: "Early access", label: "Active development" },
+      { value: "Web + Android", label: "Cross-platform" },
+      { value: "Free plan", label: "No card required" },
+      { value: "Connect", label: "Marketplace (beta)" },
       { value: "Support", label: "Email help desk" },
     ],
   },
 
   connect: {
-    headline: ["Hire top talent.", "Get hired for great work."],
-    body: "A private network to connect, collaborate, and grow together. Zero platform fees on negotiated rates. Total privacy. Built for professionals.",
+    eyebrow: "Connect marketplace · Beta",
+    headline: ["Discover Opportunities.", "Build Professional Connections."],
+    body: "Clivora Connect is an emerging professional network where freelancers can discover relevant opportunities and clients can connect with suitable talent. Opportunity availability may vary as the community grows.",
+    feeNote:
+      "Clivora does not deduct a commission from rates independently negotiated between freelancers and clients. Subscription or payment-processing fees may still apply.",
     features: [
       {
-        title: "100% Private",
-        description: "Contact only after mutual approval.",
+        title: "Direct connections",
+        description: "Freelancer–client introductions without noisy marketplace noise.",
       },
       {
-        title: "No Platform Fees",
-        description: "Keep more of what you earn.",
+        title: "Professional profiles",
+        description: "Showcase skills, rates, and availability.",
       },
       {
-        title: "Pro Tools",
-        description: "CRM after you connect.",
+        title: "Job discovery & proposals",
+        description: "Browse opportunities and manage proposals in one place.",
+      },
+      {
+        title: "Private messaging",
+        description: "Communicate after mutual connect.",
+      },
+      {
+        title: "No commission on negotiated rates",
+        description: "Keep what you agree with your client.",
       },
     ],
     primaryCta: { label: "I want to hire", href: "/signup?role=client&next=/connect" },
     secondaryCta: { label: "I want to get hired", href: "/signup?role=freelancer&next=/connect" },
-    ribbon: [
-      { value: "320+", label: "Active jobs" },
-      { value: "2.4K+", label: "Freelancers" },
-      { value: "96%", label: "Success rate" },
-      { value: "40+", label: "Countries" },
-      { value: "8.1K+", label: "Projects done" },
-    ],
     categories: [
-      { title: "Web Development", jobs: "420+ jobs", tone: "green" as const },
-      { title: "Mobile Apps", jobs: "280+ jobs", tone: "violet" as const },
-      { title: "Design & Creative", jobs: "310+ jobs", tone: "orange" as const },
-      { title: "AI & Machine Learning", jobs: "95+ jobs", tone: "blue" as const },
-      { title: "Writing & Content", jobs: "180+ jobs", tone: "green" as const },
-      { title: "Marketing", jobs: "140+ jobs", tone: "violet" as const },
-      { title: "Video & Animation", jobs: "70+ jobs", tone: "orange" as const },
-      { title: "Business", jobs: "110+ jobs", tone: "blue" as const },
+      { title: "Web Development", jobs: "Category", tone: "green" as const },
+      { title: "Mobile Apps", jobs: "Category", tone: "violet" as const },
+      { title: "Design & Creative", jobs: "Category", tone: "orange" as const },
+      { title: "Writing & Content", jobs: "Category", tone: "blue" as const },
+      { title: "Marketing", jobs: "Category", tone: "green" as const },
+      { title: "Business", jobs: "Category", tone: "violet" as const },
     ],
   },
 
   workspace: {
     headline: ["Your Freelance", "Business Operating System."],
-    body: "CLIVORA gives freelancers everything they need to manage clients, projects, payments, and growth — all in one place.",
+    body: "Clivora gives freelancers the tools to manage clients, projects, invoices, and growth — in one early-access workspace.",
     cta: { label: "Explore Freelancer Workspace", href: "/for-freelancers" },
     features: [
-      { title: "Project Management", description: "Plan and deliver projects." },
-      { title: "Invoicing & Payments", description: "Create invoices and track earnings." },
-      { title: "Time Tracking", description: "Track billable hours." },
-      { title: "Client Communication", description: "Chat and share files." },
-      { title: "CRM & Clients", description: "Manage leads and build relationships." },
-      { title: "AI Assistant", description: "Write proposals and contracts." },
-      { title: "Contracts & Docs", description: "Create and e-sign contracts." },
-      { title: "Analytics & Reports", description: "Get business growth insights." },
+      { title: "Project Management", description: "Plan and deliver projects.", status: "Available now" as const },
+      { title: "Invoicing", description: "Create invoices and track status.", status: "Available now" as const },
+      { title: "Time Tracking", description: "Track billable hours.", status: "Available now" as const },
+      { title: "Client Communication", description: "Chat and share files.", status: "Available now" as const },
+      { title: "CRM & Clients", description: "Manage leads and relationships.", status: "Available now" as const },
+      { title: "AI Assistance", description: "Draft everyday business writing.", status: "Beta" as const },
+      { title: "Contracts & Docs", description: "Store agreements with projects.", status: "Available now" as const },
+      { title: "Analytics & Reports", description: "Business growth insights.", status: "Available now" as const },
     ],
     workflow: {
       title: "Your Workflow. Simplified.",
@@ -305,16 +262,17 @@ export const marketing = {
         { title: "Get Hired", description: "Client accepts proposal." },
         { title: "Work & Collaborate", description: "Complete project tasks." },
         { title: "Send Invoice", description: "Bill for your work." },
-        { title: "Get Paid", description: "Receive payments." },
-        { title: "Grow Business", description: "Build long-term success." },
+        { title: "Get Paid", description: "Record payments." },
+        { title: "Grow Business", description: "Review reports & improve." },
       ],
     },
+    mockCaption: "Illustrative dashboard shown with sample data.",
   },
 
   pricingPage: {
     badge: "Simple, transparent pricing",
     headline: "Start free. Upgrade when you grow.",
-    body: site.pricing.earlyAccessNote,
+    body: "Start organizing your freelance business today and help shape the future of Clivora.",
     plans: [
       {
         id: "free",
@@ -333,7 +291,7 @@ export const marketing = {
           "Tasks, expenses & notes",
           "Calendar & follow-up alerts",
           "Financial reports & PDF invoices",
-          "CLIVORA AI insights",
+          "AI insights (beta)",
           "Web + Android sync",
         ],
       },
@@ -365,29 +323,28 @@ export const marketing = {
         price: site.pricing.proPlusMonthlyLabel,
         listPrice: site.pricing.proPlusListLabel,
         period: "/month",
-        description: "Unlimited Connect, AI tools, and team collaboration.",
+        description: "Connect marketplace access, AI tools, and team collaboration.",
         cta: { label: "Get Pro Plus", href: "/pro" },
         highlighted: false,
         badge: "Best for growth",
         features: [
           "Everything in Pro",
-          "Unlimited Connect credits",
-          "AI proposal & contract writer",
+          "Connect marketplace access",
+          "AI proposal & writing assistance (beta)",
           "Team seats & collaboration",
           `${site.proPlusLimits.fileVaultGb} GB File Vault`,
           "Advanced analytics & reports",
           "Priority marketplace visibility",
-          "Dedicated onboarding",
         ],
       },
     ],
-    note: site.pricing.billingNote,
+    note: "Android subscriptions are billed through Google Play. Web billing will be introduced separately. Cancel anytime.",
   },
 
   featuresPage: {
     badge: "Product capabilities",
     headline: "Every tool. One Freelancer OS.",
-    body: "From first lead to final payment — CLIVORA replaces the patchwork of apps freelancers and clients juggle every day.",
+    body: "From first lead to final payment — Clivora replaces the patchwork of apps freelancers and clients juggle every day. Features are labeled honestly as they ship.",
     groups: [
       {
         title: "Core business OS",
@@ -395,22 +352,22 @@ export const marketing = {
           {
             title: "Business Command Center",
             description:
-              "Paid revenue, outstanding amounts, active projects, and onboarding checklist — your morning snapshot in seconds.",
+              "Revenue, outstanding amounts, active projects, and your morning snapshot in seconds.",
           },
           {
             title: "Client CRM",
             description:
-              "Business name, contact, email, phone, WhatsApp, address, and notes. Search and manage your entire client base.",
+              "Business name, contact, email, phone, WhatsApp, address, and notes.",
           },
           {
             title: "Projects & Time Tracking",
             description:
-              "Budgets, deadlines, status filters, and a built-in project timer. Track hours and earned revenue per project.",
+              "Budgets, deadlines, status filters, and a built-in project timer.",
           },
           {
             title: "Professional Invoicing",
             description:
-              "Tax, discounts, draft/sent/paid/overdue workflow. Link invoices to clients and projects effortlessly.",
+              "Tax, discounts, draft/sent/paid/overdue workflow linked to clients and projects.",
           },
         ],
       },
@@ -418,22 +375,22 @@ export const marketing = {
         title: "Connect & growth",
         items: [
           {
-            title: "CLIVORA Connect",
+            title: "Clivora Connect (beta)",
             description:
-              "Private marketplace to find work and hire talent. Contact stays private until mutual accept. $0 platform fees on your deals.",
+              "Emerging marketplace to discover opportunities and connect with talent. No commission on independently negotiated rates.",
           },
           {
             title: "Proposals",
             description:
-              "Send polished proposals, track status, and convert wins into projects without leaving CLIVORA.",
+              "Send proposals, track status, and convert wins into projects.",
           },
           {
             title: "Messages",
-            description: "Real-time chat with clients or freelancers, tied to projects and jobs.",
+            description: "Realtime chat with clients or freelancers, tied to work.",
           },
           {
-            title: "Reviews & reputation",
-            description: "Build trust with verified reviews after completed work.",
+            title: "Reviews",
+            description: "Collect feedback after completed work as the community grows.",
           },
         ],
       },
@@ -441,20 +398,20 @@ export const marketing = {
         title: "Money & documents",
         items: [
           {
-            title: "Payments Hub",
-            description: "Track payments, payouts, escrow, and outstanding balances in one place.",
+            title: "Payments records",
+            description: "Track invoice status, outstanding balances, and payment history.",
           },
           {
             title: "Contracts & Documents",
-            description: "Create, store, and manage contracts alongside your projects.",
+            description: "Store and manage agreements alongside your projects.",
           },
           {
             title: "Expenses & reports",
-            description: "Log expenses and export financial reports for tax season.",
+            description: "Log expenses and export financial reports.",
           },
           {
             title: "File Vault",
-            description: "Secure cloud storage for briefs, deliverables, and client files.",
+            description: "Cloud storage for briefs, deliverables, and client files.",
           },
         ],
       },
@@ -462,20 +419,21 @@ export const marketing = {
         title: "Intelligence & platforms",
         items: [
           {
-            title: "CLIVORA AI",
-            description: "Draft proposals, contracts, replies, and invoices with AI assistance.",
+            title: "Clivora AI (beta)",
+            description:
+              "Draft proposals, improve replies, and prepare professional business content. Not legal advice.",
           },
           {
             title: "Analytics",
-            description: "Earnings trends, utilization, and growth insights for freelancers and teams.",
+            description: "Earnings trends and activity insights for your business.",
           },
           {
             title: "Web + Android",
-            description: "One account across clivora.codcrafters.org and the Android app — cloud-first sync.",
+            description: "One account across the web app and Android — cloud sync.",
           },
           {
             title: "Team collaboration",
-            description: "Invite teammates, assign work, and grow beyond solo freelancing with Pro Plus.",
+            description: "Invite teammates and assign work with Pro Plus.",
           },
         ],
       },
@@ -483,58 +441,58 @@ export const marketing = {
   },
 
   forFreelancers: {
-    badge: "FREELANCER PORTAL",
-    headline: "Run your freelance business like a pro.",
-    body: "Dashboard, CRM, projects, invoices, Connect jobs, time tracking, and AI — purpose-built for freelancers who want one OS, not ten tabs.",
+    badge: "FREELANCER WORKSPACE",
+    headline: "Run your freelance business from one workspace.",
+    body: "Dashboard, CRM, projects, invoices, Connect opportunities, time tracking, and AI assistance — purpose-built for freelancers who want one OS, not ten tabs.",
     cta: { label: "Start as Freelancer", href: "/signup?role=freelancer" },
     secondaryCta: { label: "See pricing", href: "/pricing" },
   },
 
   forClients: {
-    badge: "CLIENT PORTAL",
-    headline: "Hire talent. Manage projects. Pay with confidence.",
-    body: "Post jobs, review proposals, track active work, hold escrow, and collaborate with freelancers — all inside CLIVORA.",
+    badge: "CLIENT WORKSPACE",
+    headline: "Hire, collaborate, and manage work with confidence.",
+    body: "Post opportunities, review proposals, organize projects, communicate with freelancers, approve milestones, and keep project records together in one client workspace.",
     cta: { label: "Start as Client", href: "/signup?role=client" },
     secondaryCta: { label: "Browse Connect", href: "/connect" },
   },
 
   faq: [
     {
-      q: "Is CLIVORA free to start?",
+      q: "Is Clivora free to start?",
       a: `Yes. Start on the Free plan with up to ${site.freeLimits.clients} clients and ${site.freeLimits.projects} projects. Upgrade to Pro (${site.pricing.proMonthlyLabel}/mo) or Pro Plus (${site.pricing.proPlusMonthlyLabel}/mo) when you need unlimited tools and Connect.`,
     },
     {
-      q: "What is CLIVORA Connect?",
-      a: "Connect is our private marketplace to find work and hire talent. Browse free; contact stays private until both sides accept. Negotiated rates have $0 platform fees.",
+      q: "What is Clivora Connect?",
+      a: "Connect is our emerging professional network (currently in beta) to discover opportunities and talent. Clivora does not deduct a commission from rates independently negotiated between freelancers and clients. Subscription or payment-processing fees may still apply.",
     },
     {
       q: "Does it work on web and Android?",
-      a: "Yes. Use the full web app at clivora.codcrafters.org and the Android app with the same account. Data syncs in the cloud.",
+      a: "Yes. Use the web app at clivora.codcrafters.org and the Android app with the same account. Data syncs in the cloud.",
     },
     {
-      q: "Can clients and freelancers both use CLIVORA?",
-      a: "Absolutely. Freelancers get a business OS; clients get a portal to post jobs, manage projects, and pay. Role-aware UI keeps each experience clear.",
+      q: "Can clients and freelancers both use Clivora?",
+      a: "Yes. Freelancers get a business OS; clients get a workspace to post opportunities, manage projects, and review invoices. Role-aware UI keeps each experience clear.",
     },
     {
-      q: "How do Pro and Pro Plus billing work?",
-      a: site.pricing.billingNote,
+      q: "How does billing work?",
+      a: "Android subscriptions are billed through Google Play. Web billing will be introduced separately. Cancel anytime.",
     },
     {
       q: "Is my data secure?",
-      a: "We use enterprise-grade cloud infrastructure with authenticated access, role-based permissions, and documented privacy / data-safety policies.",
+      a: "Clivora is designed with privacy in mind. We collect and process only the information required for authentication, synchronization, and communication. See our Privacy Policy and Data Safety page for details.",
     },
   ],
 
   cta: {
-    headline: "Ready to run your freelance business on one OS?",
-    body: "Join freelancers and clients who manage work, money, and growth inside CLIVORA.",
-    primary: { label: "Get Started Free", href: "/signup" },
-    secondary: { label: "Explore documentation", href: "/docs" },
+    headline: "Build a Better-Organized Freelance Business.",
+    body: "Clivora is currently in early access. Create your workspace, explore the available tools, and help us build a Freelancer OS shaped by real professionals.",
+    primary: { label: "Create Your Free Workspace", href: "/signup" },
+    secondary: { label: "See What's Available", href: "/features" },
   },
 
   footer: {
     blurb:
-      "The all-in-one Freelancer OS — Connect marketplace, CRM, projects, invoices, and payments. Web and Android.",
+      "Early-access Freelancer OS from CODCrafters — clients, projects, invoices, Connect, and more on web and Android.",
     columns: {
       Product: [
         { label: "Features", href: "/features" },

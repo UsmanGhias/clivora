@@ -4,16 +4,16 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Check, Sparkles } from "lucide-react";
 import { marketing } from "@/lib/marketing";
-import { ClientDashMock } from "./mockups/ClientDashMock";
+import { FreelancerDashMock } from "./mockups/FreelancerDashMock";
 
 export function HomeHero() {
   const h = marketing.hero;
 
   return (
-    <section className="relative overflow-hidden pb-16 pt-10 lg:pb-24 lg:pt-14">
+    <section className="relative overflow-hidden pb-16 pt-10 lg:pb-20 lg:pt-14">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_10%_-10%,rgba(13,148,136,0.14),transparent_55%)]" />
 
-      <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-5 lg:grid-cols-[1fr_1.12fr] lg:gap-10 lg:px-8">
+      <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-5 lg:grid-cols-[1fr_1.05fr] lg:gap-10 lg:px-8">
         <div>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -28,7 +28,7 @@ export function HomeHero() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="mt-6 font-display text-4xl font-extrabold leading-[1.08] tracking-tight text-navy sm:text-5xl lg:text-[3.35rem]"
+            className="mt-6 font-display text-4xl font-extrabold leading-[1.08] tracking-tight text-navy sm:text-5xl lg:text-[3.2rem]"
           >
             {h.headline[0]}{" "}
             <span className="bg-gradient-to-r from-primary to-teal-400 bg-clip-text text-transparent">
@@ -90,7 +90,8 @@ export function HomeHero() {
         >
           <div className="pointer-events-none absolute -inset-4 rounded-[2rem] bg-gradient-to-tr from-teal-100/40 to-slate-100/30 blur-2xl" />
           <div className="relative">
-            <ClientDashMock />
+            <FreelancerDashMock />
+            <p className="mt-3 text-center text-xs text-slate-400">{h.mockCaption}</p>
           </div>
         </motion.div>
       </div>

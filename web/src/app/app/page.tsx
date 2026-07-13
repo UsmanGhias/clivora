@@ -42,8 +42,8 @@ export default async function AppHomePage() {
   let invoiceTotal = 0;
   let paidTotal = 0;
   let outstandingTotal = 0;
-  let profileCompleteness = 85;
-  let successScore = 98;
+  let profileCompleteness = 0;
+  let successScore = 0;
   let projectCount = 0;
   let activities: Array<{ id: string; title: string; detail: string; time: string; kind: string }> =
     [];
@@ -176,11 +176,11 @@ export default async function AppHomePage() {
     if (connectProfile.data) {
       profileCompleteness = Math.min(
         100,
-        Math.round(Number(connectProfile.data.profile_completeness ?? 85)),
+        Math.round(Number(connectProfile.data.profile_completeness ?? 0)),
       );
       const rate = Number(connectProfile.data.completion_rate ?? 0);
       const rating = Number(connectProfile.data.avg_rating ?? 0);
-      successScore = Math.min(100, Math.round(rate || rating * 20 || 98));
+      successScore = Math.min(100, Math.round(rate || (rating > 0 ? rating * 20 : 0)));
     }
 
     if (!client && crmInvoices.data) {

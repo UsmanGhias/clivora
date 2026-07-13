@@ -1,24 +1,21 @@
 import { marketing } from "@/lib/marketing";
 
-export function TrustLogos({
-  title = marketing.trustBar.title,
-  logos = marketing.trustBar.logos as readonly string[],
-}: {
-  title?: string;
-  logos?: readonly string[];
-}) {
+export function TrustLogos() {
+  const t = marketing.trustBar;
+
   return (
-    <section className="border-y border-slate-200/80 bg-white py-10">
+    <section className="border-y border-slate-200/80 bg-white py-12">
       <div className="mx-auto max-w-7xl px-5 text-center lg:px-8">
-        <p className="text-sm font-medium text-slate-500">{title}</p>
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-x-8 gap-y-4 sm:gap-x-12">
-          {logos.map((name) => (
-            <span
+        <p className="font-display text-lg font-bold text-navy sm:text-xl">{t.title}</p>
+        <p className="mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-slate-500">{t.body}</p>
+        <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {t.audiences.map((name) => (
+            <div
               key={name}
-              className="font-display text-sm font-bold tracking-wide text-slate-300 transition hover:text-slate-500 sm:text-base"
+              className="rounded-xl border border-slate-200 bg-[#F8FAFC] px-4 py-4 text-sm font-semibold text-navy"
             >
               {name}
-            </span>
+            </div>
           ))}
         </div>
       </div>

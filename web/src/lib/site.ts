@@ -2,9 +2,9 @@ export const site = {
   name: "CLIVORA",
   tagline: "Freelancer OS — Connect, CRM & Invoices",
   shortDescription:
-    "All-in-one Freelancer OS: private Connect marketplace, CRM, projects, invoices, and payments. Web and Android, one account.",
+    "Early-access Freelancer OS: clients, projects, invoices, Connect, and business tools on web and Android — one account.",
   description:
-    "CLIVORA is the world's Freelancer OS for freelancers and clients. Discover talent and jobs on CLIVORA Connect with private contact until mutual accept, then run clients, projects, invoices, and payments on web and Android — one powerful platform.",
+    "Clivora is an early-access Freelancer OS from CODCrafters. Manage clients, projects, proposals, invoices, expenses, time tracking, and professional connections in one web and Android workspace.",
   url: "https://clivora.codcrafters.org",
   appPackage: "org.codcrafters.clivora",
   appVersion: "2.20.0",
@@ -22,9 +22,10 @@ export const site = {
     proPlusMonthlyLabel: "$19",
     proListLabel: "$14",
     proPlusListLabel: "$29",
-    billingNote: "Billed monthly via Google Play. Cancel anytime.",
+    billingNote:
+      "Android subscriptions are billed through Google Play. Web billing will be introduced separately. Cancel anytime.",
     earlyAccessNote:
-      "Start free, then upgrade to Pro ($9/mo) or Pro Plus ($19/mo) when you need unlimited tools and Connect.",
+      "Start free, then upgrade to Pro ($9/mo) or Pro Plus ($19/mo) when you need unlimited tools and Connect. Early access — help shape Clivora.",
   },
   freeLimits: {
     clients: 3,

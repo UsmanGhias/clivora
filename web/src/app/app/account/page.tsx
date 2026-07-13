@@ -163,7 +163,6 @@ export default async function AccountPage({
         <FreelancerStatCard
           label="Total Earnings"
           value={money(fin.totalRevenue)}
-          trend="+18.2% vs last month"
           icon={TrendingUp}
         />
         <FreelancerStatCard

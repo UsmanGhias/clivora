@@ -201,41 +201,35 @@ export default async function AnalyticsPage() {
         <FreelancerStatCard
           label="Total Earnings"
           value={money(fin.totalRevenue)}
-          trend="+18.2%"
           icon={TrendingUp}
         />
         <FreelancerStatCard
           label="Billable Hours"
           value={hoursLabel}
-          trend="+16.4%"
           icon={Clock}
           iconTone="bg-sky-100 text-sky-800"
         />
         <FreelancerStatCard
           label="Active Projects"
           value={activeProjects || fin.projects.length}
-          trend="+12.5%"
           icon={Briefcase}
           iconTone="bg-violet-100 text-violet-800"
         />
         <FreelancerStatCard
           label="Completed Projects"
           value={completedProjects}
-          trend="+22.2%"
           icon={CheckCircle2}
           iconTone="bg-emerald-100 text-emerald-700"
         />
         <FreelancerStatCard
           label="New Clients"
           value={fin.customers.length}
-          trend="+40%"
           icon={Users}
           iconTone="bg-amber-100 text-amber-800"
         />
         <FreelancerStatCard
           label="Success Rate"
           value={`${successRate}%`}
-          trend="+5%"
           icon={Star}
           iconTone="bg-fuchsia-100 text-fuchsia-800"
         />

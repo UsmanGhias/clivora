@@ -143,7 +143,7 @@ export default async function InvoicesPage() {
         <FreelancerStatCard
           label="Total Revenue"
           value={money(totalRevenue)}
-          trend={totalRevenue > 0 ? "+18.2% vs last month" : undefined}
+          trend={undefined}
           icon={TrendingUp}
         />
         <FreelancerStatCard

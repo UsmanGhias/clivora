@@ -90,7 +90,7 @@ export default async function EarningsPage() {
         <FreelancerStatCard
           label="Total Earnings"
           value={money(fin.totalRevenue)}
-          trend={fin.totalRevenue > 0 ? "+18.2% vs last month" : undefined}
+          trend={undefined}
           icon={TrendingUp}
           iconTone="bg-primary/10 text-primary"
         />

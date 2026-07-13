@@ -5,7 +5,6 @@ import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { FreelancerOSSection } from "@/components/marketing/FreelancerOSSection";
 import { WorkspaceSection } from "@/components/marketing/WorkspaceSection";
 import { CTASection } from "@/components/marketing/CTASection";
-import { ShowcaseImage } from "@/components/marketing/ShowcaseImage";
 import { FreelancerDashMock } from "@/components/marketing/mockups/FreelancerDashMock";
 import { marketing } from "@/lib/marketing";
 
@@ -45,7 +44,12 @@ export default function ForFreelancersPage() {
               </Link>
             </div>
           </div>
-          <FreelancerDashMock />
+          <div>
+            <FreelancerDashMock />
+            <p className="mt-3 text-center text-xs text-slate-400">
+              Illustrative dashboard shown with sample data.
+            </p>
+          </div>
         </div>
       </section>
       <FreelancerOSSection />

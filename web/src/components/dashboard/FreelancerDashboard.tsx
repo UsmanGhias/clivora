@@ -148,7 +148,7 @@ export function FreelancerDashboard({
           label="Total Earnings"
           value={`$${invoiceTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           sub="This month"
-          trend={invoiceTotal > 0 ? "+18.2% vs last month" : undefined}
+          trend={undefined}
           icon={TrendingUp}
           href="/app/earnings"
           iconTone="bg-emerald-100 text-emerald-700"
