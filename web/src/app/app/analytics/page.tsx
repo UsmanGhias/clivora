@@ -6,9 +6,11 @@ import {
   CheckCircle2,
   Clock,
   Download,
+  FileText,
   Star,
   TrendingUp,
   Users,
+  Wallet,
 } from "lucide-react";
 import { getProfile, isClientAccount } from "@/lib/profile";
 import { loadFreelancerFinance } from "@/lib/freelancer-finance";
@@ -23,13 +25,121 @@ import {
   PrimaryButton,
   money,
 } from "@/components/freelancer/ui";
+import {
+  ClientCard,
+  ClientPageHeader,
+  ClientPrimaryButton,
+  ClientStatCard,
+  ClientStatusPill,
+  money as clientMoney,
+} from "@/components/client/ui";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Analytics" };
 
 export default async function AnalyticsPage() {
   const profile = await getProfile();
   if (!profile) redirect("/login");
-  if (isClientAccount(profile)) redirect("/app");
+  const isClient = isClientAccount(profile);
+
+  if (isClient) {
+    const supabase = await createClient();
+    type ShareRow = {
+      share_id: string;
+      invoice_number: string | null;
+      total: number | null;
+      status: string | null;
+      currency: string | null;
+      due_date: string | null;
+      freelancer_email: string | null;
+      updated_at: string | null;
+    };
+    let shares: ShareRow[] = [];
+    try {
+      const { data } = await supabase
+        .from("invoice_shares")
+        .select(
+          "share_id, invoice_number, total, status, currency, due_date, freelancer_email, updated_at",
+        )
+        .eq("client_uid", profile.id)
+        .order("updated_at", { ascending: false })
+        .limit(100);
+      shares = (data ?? []) as ShareRow[];
+    } catch {
+      shares = [];
+    }
+    let total = 0;
+    let paid = 0;
+    let pending = 0;
+    let overdue = 0;
+    for (const r of shares) {
+      const amt = Number(r.total) || 0;
+      total += amt;
+      const s = (r.status || "").toLowerCase();
+      if (s === "paid") paid += amt;
+      else if (s === "overdue") overdue += amt;
+      else pending += amt;
+    }
+
+    return (
+      <div className="space-y-6 pb-10">
+        <ClientPageHeader
+          title="Reports"
+          subtitle="Spending report from invoices shared with your account."
+          icon={BarChart3}
+          actions={
+            <ClientPrimaryButton href="/app/invoices">
+              <FileText className="h-4 w-4" />
+              Open invoices
+            </ClientPrimaryButton>
+          }
+        />
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <ClientStatCard label="Total spend" value={clientMoney(total)} icon={Wallet} />
+          <ClientStatCard label="Paid" value={clientMoney(paid)} icon={CheckCircle2} iconTone="bg-emerald-100 text-emerald-700" />
+          <ClientStatCard label="Pending" value={clientMoney(pending)} icon={FileText} iconTone="bg-amber-100 text-amber-800" />
+          <ClientStatCard label="Overdue" value={clientMoney(overdue)} icon={FileText} iconTone="bg-red-100 text-red-700" />
+        </div>
+        <ClientCard title="Invoice spending">
+          {shares.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-text-secondary">
+              No shared invoices yet. When freelancers share invoices, they appear here.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {shares.map((r) => (
+                <li key={r.share_id} className="flex flex-wrap items-center justify-between gap-2 py-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-navy">
+                      {r.invoice_number || r.share_id}
+                    </p>
+                    <p className="truncate text-xs text-text-muted">
+                      {r.freelancer_email || "Freelancer"}
+                      {r.due_date ? ` · due ${new Date(r.due_date).toLocaleDateString()}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <p className="font-bold text-navy">{clientMoney(Number(r.total) || 0)}</p>
+                    <ClientStatusPill
+                      tone={
+                        (r.status || "").toLowerCase() === "paid"
+                          ? "green"
+                          : (r.status || "").toLowerCase() === "overdue"
+                            ? "red"
+                            : "amber"
+                      }
+                    >
+                      {r.status || "pending"}
+                    </ClientStatusPill>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </ClientCard>
+      </div>
+    );
+  }
 
   const fin = await loadFreelancerFinance(profile.id);
   const activeProjects = fin.projects.filter((p) => {

@@ -24,7 +24,7 @@ import { getHubKpis } from "@/lib/hub-kpis";
 /** Freelancer hub, mirrors Flutter /more with app-preferred tools called out. */
 export default async function HubPage() {
   const profile = await getProfile();
-  if (isClientAccount(profile)) redirect("/app/account");
+  if (isClientAccount(profile)) redirect("/app/team");
   const plan = planLabel(profile);
   const kpis = profile?.id
     ? await getHubKpis(profile.id)

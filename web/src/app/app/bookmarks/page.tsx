@@ -8,6 +8,7 @@ import {
   Plus,
   ShoppingBag,
   Smartphone,
+  Star,
   Users,
 } from "lucide-react";
 import { getProfile, isClientAccount } from "@/lib/profile";
@@ -21,13 +22,148 @@ import {
   PrimaryButton,
   StatusPill,
 } from "@/components/freelancer/ui";
+import {
+  ClientCard,
+  ClientPageHeader,
+  ClientPrimaryButton,
+  ClientStatCard,
+} from "@/components/client/ui";
 
 export const metadata = { title: "Bookmarks" };
 
 export default async function BookmarksPage() {
   const profile = await getProfile();
   if (!profile) redirect("/login");
-  if (isClientAccount(profile)) redirect("/app");
+  const isClient = isClientAccount(profile);
+  const supabase = await createClient();
+
+  type BookmarkRow = {
+    id: string;
+    target_id: string;
+    target_type: string;
+    title: string | null;
+    meta: Record<string, unknown> | null;
+    created_at: string | null;
+  };
+
+  let bookmarks: BookmarkRow[] = [];
+  try {
+    const { data } = await supabase
+      .from("freelancer_bookmarks")
+      .select("id, target_id, target_type, title, meta, created_at")
+      .eq("user_id", profile.id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    bookmarks = (data ?? []) as BookmarkRow[];
+  } catch {
+    bookmarks = [];
+  }
+
+  if (isClient) {
+    const freelancerBookmarks = bookmarks.filter(
+      (b) => b.target_type === "freelancer" || b.target_type === "job",
+    );
+    let talent: Awaited<ReturnType<typeof listPublicConnectProfiles>> = [];
+    try {
+      talent = await listPublicConnectProfiles();
+    } catch {
+      talent = [];
+    }
+    const byUserId = new Map(talent.map((t) => [t.user_id, t]));
+    const byId = new Map(talent.map((t) => [t.id, t]));
+    const savedTalent = freelancerBookmarks
+      .map((b) => {
+        const profileRow = byUserId.get(b.target_id) || byId.get(b.target_id);
+        return {
+          bookmark: b,
+          profile: profileRow,
+        };
+      })
+      .filter((x) => x.profile || x.bookmark.title);
+
+    return (
+      <div className="space-y-6 pb-10">
+        <ClientPageHeader
+          title="Bookmarks"
+          subtitle="Save freelancers and Connect profiles you want to hire later."
+          icon={Bookmark}
+          actions={
+            <ClientPrimaryButton href="/app/connect">
+              <Plus className="h-4 w-4" />
+              Browse talent
+            </ClientPrimaryButton>
+          }
+        />
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          <ClientStatCard label="Saved freelancers" value={savedTalent.length} icon={Users} />
+          <ClientStatCard
+            label="Total bookmarks"
+            value={bookmarks.length}
+            icon={Bookmark}
+          />
+          <ClientStatCard
+            label="Connect pool"
+            value={talent.length}
+            icon={Star}
+            href="/app/connect"
+          />
+        </div>
+
+        <ClientCard title="Saved freelancers">
+          {savedTalent.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border px-4 py-8 text-center">
+              <p className="font-semibold text-navy">No saved freelancers yet</p>
+              <p className="mt-2 text-sm text-text-secondary">
+                Bookmark Connect profiles from the marketplace to find them here.
+              </p>
+              <Link
+                href="/app/connect"
+                className="mt-4 inline-block text-sm font-semibold text-client-accent"
+              >
+                Open Connect →
+              </Link>
+            </div>
+          ) : (
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {savedTalent.map(({ bookmark, profile: cp }) => (
+                <li
+                  key={bookmark.id}
+                  className="rounded-xl border border-border bg-background px-4 py-3"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-client-surface text-sm font-bold text-client-accent">
+                      {(cp?.display_title || bookmark.title || "F").charAt(0)}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-navy">
+                        {cp?.display_title || bookmark.title || "Freelancer"}
+                      </p>
+                      <p className="truncate text-xs text-text-secondary">
+                        {cp?.headline || "Saved Connect profile"}
+                      </p>
+                      {cp?.avg_rating != null && (
+                        <p className="mt-1 text-xs text-amber-600">
+                          ★ {Number(cp.avg_rating).toFixed(1)}
+                          {cp.review_count != null ? ` · ${cp.review_count} reviews` : ""}
+                        </p>
+                      )}
+                      <Link
+                        href="/app/messages"
+                        className="mt-2 inline-block text-xs font-semibold text-client-accent"
+                      >
+                        Message →
+                      </Link>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </ClientCard>
+      </div>
+    );
+  }
 
   let projects: Awaited<ReturnType<typeof listProjectsServer>> = [];
   let customers: Awaited<ReturnType<typeof listCustomersServer>> = [];
@@ -45,19 +181,7 @@ export default async function BookmarksPage() {
     /* ignore */
   }
 
-  // Persist bookmarks in profiles.custom metadata via local table if present
-  const supabase = await createClient();
-  let savedIds: string[] = [];
-  try {
-    const { data } = await supabase
-      .from("freelancer_bookmarks")
-      .select("target_id, target_type")
-      .eq("user_id", profile.id)
-      .limit(50);
-    if (data) savedIds = data.map((d) => d.target_id);
-  } catch {
-    savedIds = [];
-  }
+  const savedIds = bookmarks.map((d) => d.target_id);
 
   const savedProjects = projects.slice(0, 4);
   const savedClients = customers.slice(0, 4);

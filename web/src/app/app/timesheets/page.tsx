@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { getProfile, isClientAccount } from "@/lib/profile";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { TimesheetsClient } from "./TimesheetsClient";
+import { ClientTimesheetActions } from "./ClientTimesheetActions";
 import { DonutChart } from "@/components/dashboard/DonutChart";
 import { MonthlyBarChart } from "@/components/dashboard/MonthlyBarChart";
 import {
@@ -12,6 +14,13 @@ import {
   PrimaryButton,
   money,
 } from "@/components/freelancer/ui";
+import {
+  ClientCard,
+  ClientPageHeader,
+  ClientPrimaryButton,
+  ClientStatCard,
+  ClientStatusPill,
+} from "@/components/client/ui";
 import { Clock, Download, Settings2 } from "lucide-react";
 import { listProjectsServer } from "@/lib/crm/server";
 
@@ -25,15 +34,169 @@ export type TimeEntry = {
   date: string | null;
   status: string | null;
   created_at: string | null;
+  minutes?: number | null;
+  work_date?: string | null;
+  approval_status?: string | null;
+  hourly_rate?: number | null;
 };
+
+function normalizeEntry(raw: Record<string, unknown>): TimeEntry {
+  const minutes = Number(raw.minutes ?? 0);
+  const hours =
+    raw.hours != null
+      ? Number(raw.hours)
+      : minutes > 0
+        ? minutes / 60
+        : null;
+  return {
+    id: String(raw.id),
+    owner_uid: String(raw.owner_uid),
+    project_id: (raw.project_id as string | null) ?? null,
+    customer_id: (raw.customer_id as string | null) ?? null,
+    description: (raw.description as string | null) ?? null,
+    hours,
+    date: (raw.date as string | null) ?? (raw.work_date as string | null) ?? null,
+    status:
+      (raw.status as string | null) ??
+      (raw.approval_status as string | null) ??
+      "pending",
+    created_at: (raw.created_at as string | null) ?? null,
+    minutes: raw.minutes as number | null | undefined,
+    work_date: raw.work_date as string | null | undefined,
+    approval_status: raw.approval_status as string | null | undefined,
+    hourly_rate: raw.hourly_rate as number | null | undefined,
+  };
+}
 
 export default async function TimesheetsPage() {
   const profile = await getProfile();
-  if (isClientAccount(profile)) redirect("/app");
   if (!profile) redirect("/login");
-
+  const isClient = isClientAccount(profile);
   const supabase = await createClient();
   const uid = profile.id;
+
+  if (isClient) {
+    type Share = {
+      share_id: string;
+      project_name: string | null;
+      freelancer_uid: string | null;
+      freelancer_email: string | null;
+      status: string | null;
+    };
+    let shares: Share[] = [];
+    let entries: TimeEntry[] = [];
+    try {
+      const { data: shareRows } = await supabase
+        .from("project_shares")
+        .select("share_id, project_name, freelancer_uid, freelancer_email, status")
+        .eq("client_uid", uid)
+        .limit(50);
+      shares = (shareRows ?? []) as Share[];
+      const freelancerIds = [
+        ...new Set(shares.map((s) => s.freelancer_uid).filter(Boolean) as string[]),
+      ];
+      if (freelancerIds.length > 0) {
+        const { data: timeRows } = await supabase
+          .from("crm_time_entries")
+          .select(
+            "id, owner_uid, project_id, customer_id, description, hours, date, status, minutes, work_date, approval_status, hourly_rate, created_at",
+          )
+          .in("owner_uid", freelancerIds)
+          .order("created_at", { ascending: false })
+          .limit(100);
+        entries = (timeRows ?? []).map((r) => normalizeEntry(r as Record<string, unknown>));
+      }
+    } catch {
+      entries = [];
+    }
+
+    const pending = entries.filter(
+      (e) => (e.status || "").toLowerCase() === "pending",
+    ).length;
+    const totalHours = entries.reduce((s, e) => s + (Number(e.hours) || 0), 0);
+    const freelancerLabel = (ownerUid: string) =>
+      shares.find((s) => s.freelancer_uid === ownerUid)?.freelancer_email ||
+      "Freelancer";
+
+    return (
+      <div className="space-y-6 pb-10">
+        <ClientPageHeader
+          title="Time tracking"
+          subtitle="Review shared time entries from freelancers on your projects."
+          icon={Clock}
+          actions={
+            <ClientPrimaryButton href="/app/projects">View projects</ClientPrimaryButton>
+          }
+        />
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          <ClientStatCard label="Shared projects" value={shares.length} icon={Clock} />
+          <ClientStatCard label="Pending approval" value={pending} />
+          <ClientStatCard
+            label="Hours submitted"
+            value={`${totalHours.toFixed(1)}h`}
+          />
+        </div>
+
+        <ClientCard title="Time entries for approval">
+          {entries.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border px-4 py-8 text-center">
+              <p className="font-semibold text-navy">No shared time entries yet</p>
+              <p className="mt-2 text-sm text-text-secondary">
+                When freelancers log time on shared projects, you can approve it here.
+              </p>
+              {shares.length === 0 && (
+                <Link
+                  href="/app/projects"
+                  className="mt-4 inline-block text-sm font-semibold text-client-accent"
+                >
+                  Open projects →
+                </Link>
+              )}
+            </div>
+          ) : (
+            <ul className="divide-y divide-border">
+              {entries.map((entry) => (
+                <li
+                  key={entry.id}
+                  className="flex flex-wrap items-start justify-between gap-2 py-3"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-navy">
+                      {entry.description || "Time entry"}
+                    </p>
+                    <p className="mt-0.5 text-xs text-text-muted">
+                      {freelancerLabel(entry.owner_uid)}
+                      {entry.date ? ` · ${entry.date.slice(0, 10)}` : ""}
+                      {entry.hours != null ? ` · ${entry.hours}h` : ""}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <ClientStatusPill
+                      tone={
+                        (entry.status || "").toLowerCase() === "approved"
+                          ? "green"
+                          : (entry.status || "").toLowerCase() === "rejected"
+                            ? "red"
+                            : "amber"
+                      }
+                    >
+                      {entry.status || "pending"}
+                    </ClientStatusPill>
+                    <ClientTimesheetActions
+                      entryId={entry.id}
+                      status={entry.status}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </ClientCard>
+      </div>
+    );
+  }
+
   let entries: TimeEntry[] = [];
   let projects: Awaited<ReturnType<typeof listProjectsServer>> = [];
 
@@ -41,13 +204,15 @@ export default async function TimesheetsPage() {
     const [{ data }, proj] = await Promise.all([
       supabase
         .from("crm_time_entries")
-        .select("id, owner_uid, project_id, customer_id, description, hours, date, status, created_at")
+        .select(
+          "id, owner_uid, project_id, customer_id, description, hours, date, status, minutes, work_date, approval_status, created_at",
+        )
         .eq("owner_uid", uid)
-        .order("date", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(100),
       listProjectsServer(),
     ]);
-    entries = (data ?? []) as TimeEntry[];
+    entries = (data ?? []).map((r) => normalizeEntry(r as Record<string, unknown>));
     projects = proj;
   } catch {
     entries = [];
@@ -135,10 +300,18 @@ export default async function TimesheetsPage() {
           </div>
           <DonutChart
             title="Today’s summary"
-            slices={[
-              { name: "Billable", value: Math.max(1, Math.round(billable || 93)), color: "#0D9488" },
-              { name: "Non-billable", value: Math.max(1, Math.round(totalHours - billable || 7)), color: "#94A3B8" },
-            ]}
+            slices={
+              totalHours > 0
+                ? [
+                    { name: "Billable", value: Math.round(billable), color: "#0D9488" },
+                    {
+                      name: "Non-billable",
+                      value: Math.round(Math.max(0, totalHours - billable)),
+                      color: "#94A3B8",
+                    },
+                  ].filter((s) => s.value > 0)
+                : []
+            }
             centerLabel="Today"
           />
           <FreelancerCard title="Top projects by time">

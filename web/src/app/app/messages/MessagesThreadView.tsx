@@ -3,7 +3,15 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { MessageSquare, Network, Send } from "lucide-react";
+import {
+  MessageSquare,
+  Network,
+  Search,
+  Send,
+  Settings,
+  Share2,
+  UserPlus,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { MessageRow } from "./page";
 
@@ -17,6 +25,33 @@ function formatTime(iso?: string | null) {
   } catch {
     return iso;
   }
+}
+
+function formatDateLabel(iso?: string | null) {
+  if (!iso) return "";
+  try {
+    return new Date(iso).toLocaleDateString(undefined, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return "";
+  }
+}
+
+function isUnread(row: MessageRow, myUid: string) {
+  if (row.from_uid === myUid) return false;
+  if (row.read_at) return false;
+  if (row.is_read === true) return false;
+  return true;
+}
+
+function counterpartEmail(row: MessageRow, myUid: string, myEmail: string) {
+  if (row.from_uid === myUid) {
+    return (row.to_email || "").trim() || "";
+  }
+  return (row.from_email || "").trim() || "";
 }
 
 function ComposeForm({
@@ -44,6 +79,10 @@ function ComposeForm({
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
 
+  useEffect(() => {
+    setToEmail(defaultTo ?? "");
+  }, [defaultTo]);
+
   async function onSend(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -56,23 +95,24 @@ function ComposeForm({
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Sign in required");
       const to = toEmail.trim().toLowerCase();
+      if (!to) throw new Error("Recipient email is required");
       let toUid: string | null = null;
-      if (to) {
-        const { data: prof } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("email", to)
-          .maybeSingle();
-        toUid = prof?.id ?? null;
-      }
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", to)
+        .maybeSingle();
+      toUid = prof?.id ?? null;
+      // client_messages has is_read (boolean) + read_at (timestamptz); to_email is NOT NULL
       const { error: err } = await supabase.from("client_messages").insert({
         from_uid: user.id,
         from_email: fromEmail || user.email || "",
-        to_email: to || null,
+        to_email: to,
         to_uid: toUid,
         subject: subject.trim() || (parentId ? "Reply" : "Message"),
         body: body.trim(),
         is_read: false,
+        read_at: null,
         parent_message_id: parentId ?? null,
       });
       if (err) throw err;
@@ -91,6 +131,10 @@ function ComposeForm({
     }
   }
 
+  const accentBtn = isClient
+    ? "bg-client-accent hover:bg-client-header"
+    : "bg-primary hover:bg-primary-dark";
+
   return (
     <form
       onSubmit={onSend}
@@ -98,7 +142,11 @@ function ComposeForm({
     >
       {!compact && (
         <div className="flex items-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-navy/10 text-navy">
+          <span
+            className={`flex h-9 w-9 items-center justify-center rounded-xl ${
+              isClient ? "bg-client-surface text-client-accent" : "bg-primary/10 text-primary"
+            }`}
+          >
             <Send className="h-4 w-4" />
           </span>
           <div>
@@ -135,6 +183,9 @@ function ComposeForm({
           />
         </label>
       )}
+      {parentId && (
+        <input type="hidden" value={toEmail} readOnly />
+      )}
       <label className="block text-xs font-semibold text-text-secondary">
         {parentId ? "Reply" : "Message"}
         <textarea
@@ -154,8 +205,8 @@ function ComposeForm({
       )}
       <button
         type="submit"
-        disabled={busy}
-        className="rounded-xl bg-navy px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+        disabled={busy || (parentId ? !toEmail.trim() : false)}
+        className={`rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 ${accentBtn}`}
       >
         {busy ? "Sending…" : parentId ? "Reply" : "Send"}
       </button>
@@ -175,7 +226,10 @@ function MarkReadButton({ messageId, readAt }: { messageId: string; readAt?: str
       const supabase = createClient();
       await supabase
         .from("client_messages")
-        .update({ read_at: new Date().toISOString() })
+        .update({
+          is_read: true,
+          read_at: new Date().toISOString(),
+        })
         .eq("id", messageId);
       setDone(true);
       router.refresh();
@@ -210,41 +264,84 @@ export function MessagesThreadView({
   myUid: string;
   isClient?: boolean;
 }) {
-  const [replyTo, setReplyTo] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"all" | "unread">("all");
+  const [filter, setFilter] = useState<"all" | "unread" | "archived">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+
+  const accent = isClient ? "client" : "teal";
+  const activeTabCls =
+    accent === "client" ? "bg-client-accent text-white" : "bg-primary text-white";
+  const activeThreadCls =
+    accent === "client"
+      ? "border-client-accent bg-client-surface"
+      : "border-primary bg-primary/10";
+  const outBubbleCls =
+    accent === "client" ? "ml-auto bg-navy text-white" : "ml-auto bg-primary text-white";
+  const linkAccent = accent === "client" ? "text-client-accent" : "text-primary";
 
   const topLevel = useMemo(() => {
     const roots = rows.filter((r) => !r.parent_message_id);
     const sorted = [...roots].sort((a, b) =>
       String(b.created_at || "").localeCompare(String(a.created_at || "")),
     );
+    const q = search.trim().toLowerCase();
+    const searched = q
+      ? sorted.filter((r) => {
+          const hay = [
+            r.subject,
+            r.body,
+            r.from_email,
+            r.to_email,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+          return hay.includes(q);
+        })
+      : sorted;
     if (filter === "unread") {
-      return sorted.filter((r) => r.from_uid !== myUid && !r.read_at);
+      return searched.filter((r) => isUnread(r, myUid));
     }
-    return sorted;
-  }, [rows, filter, myUid]);
+    if (filter === "archived") {
+      // Archive storage not wired yet — show empty intentionally
+      return [];
+    }
+    return searched;
+  }, [rows, filter, myUid, search]);
 
   const repliesFor = (parentId: string) =>
     rows.filter((r) => r.parent_message_id === parentId);
 
   const unreadCount = rows.filter(
-    (r) => !r.parent_message_id && r.from_uid !== myUid && !r.read_at,
+    (r) => !r.parent_message_id && isUnread(r, myUid),
   ).length;
   const selectedThread = topLevel.find((r) => r.id === selectedId) ?? topLevel[0] ?? null;
 
   useEffect(() => {
     if (selectedId && !topLevel.some((r) => r.id === selectedId)) {
       setSelectedId(null);
-      setReplyTo(null);
     }
   }, [selectedId, topLevel]);
 
+  const overviewEmail = selectedThread
+    ? counterpartEmail(selectedThread, myUid, fromEmail)
+    : "";
+  const overviewName = (overviewEmail || "Contact").split("@")[0];
+
   if (rows.length === 0) {
     return (
-      <div className="space-y-4">
-        <ComposeForm fromEmail={fromEmail} isClient={isClient} />
-        <div className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center">
+      <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_240px]">
+        <aside className="space-y-4">
+          <div className="rounded-2xl border border-border bg-surface p-3 shadow-sm">
+            <p className="mb-3 px-1 text-xs font-bold uppercase tracking-wide text-text-muted">
+              Inbox
+            </p>
+            <p className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-text-secondary">
+              No conversations yet
+            </p>
+          </div>
+        </aside>
+        <section className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center shadow-sm">
           <MessageSquare className="mx-auto h-8 w-8 text-text-muted" />
           <p className="mt-3 font-semibold text-navy">No messages yet</p>
           <p className="mt-2 text-sm text-text-secondary">
@@ -252,6 +349,9 @@ export function MessagesThreadView({
               ? "Message freelancers after you accept a Connect request, or start from a shared project."
               : "Message clients from your CRM email, or continue after a Connect match."}
           </p>
+          <div className="mx-auto mt-4 max-w-md">
+            <ComposeForm fromEmail={fromEmail} isClient={isClient} />
+          </div>
           <Link
             href="/connect"
             className={`mt-4 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white ${
@@ -261,30 +361,47 @@ export function MessagesThreadView({
             <Network className="h-4 w-4" />
             Open Connect
           </Link>
-        </div>
+        </section>
+        <aside className="hidden space-y-4 xl:block">
+          <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+            <p className="mb-3 text-sm font-bold text-navy">Quick actions</p>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <Link href="/app/connect" className={`font-semibold ${linkAccent}`}>
+                  Invite →
+                </Link>
+              </li>
+              <li>
+                <Link href="/app/projects" className={`font-semibold ${linkAccent}`}>
+                  Share project →
+                </Link>
+              </li>
+              <li>
+                <Link href="/app/settings" className={`font-semibold ${linkAccent}`}>
+                  Settings →
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </aside>
       </div>
     );
   }
 
   return (
-    <div
-      className={
-        isClient
-          ? "grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_240px]"
-          : "grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.5fr)]"
-      }
-    >
+    <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_240px]">
       <aside className="space-y-4">
-        {!isClient && <ComposeForm fromEmail={fromEmail} isClient={isClient} />}
         <div className="rounded-2xl border border-border bg-surface p-3 shadow-sm">
           <div className="mb-3 px-1">
             <p className="text-xs font-bold uppercase tracking-wide text-text-muted">Inbox</p>
           </div>
           <div className="relative mb-3">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
             <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               placeholder="Search messages..."
-              className="w-full rounded-xl border border-border bg-background py-2 pl-3 pr-3 text-sm"
-              readOnly
+              className="w-full rounded-xl border border-border bg-background py-2 pl-9 pr-3 text-sm"
             />
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -292,99 +409,76 @@ export function MessagesThreadView({
               type="button"
               onClick={() => setFilter("all")}
               className={`rounded-lg px-2.5 py-1 font-semibold ${
-                filter === "all"
-                  ? isClient
-                    ? "bg-client-accent text-white"
-                    : "bg-navy text-white"
-                  : "bg-background text-text-secondary"
+                filter === "all" ? activeTabCls : "bg-background text-text-secondary"
               }`}
             >
-              All {topLevel.length}
+              All
             </button>
             <button
               type="button"
               onClick={() => setFilter("unread")}
               className={`rounded-lg px-2.5 py-1 font-semibold ${
-                filter === "unread"
-                  ? isClient
-                    ? "bg-client-accent text-white"
-                    : "bg-navy text-white"
-                  : "bg-background text-text-secondary"
+                filter === "unread" ? activeTabCls : "bg-background text-text-secondary"
               }`}
             >
               Unread {unreadCount}
             </button>
-            {isClient && (
-              <button
-                type="button"
-                className="rounded-lg bg-background px-2.5 py-1 font-semibold text-text-secondary"
-              >
-                Archived
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => setFilter("archived")}
+              className={`rounded-lg px-2.5 py-1 font-semibold ${
+                filter === "archived" ? activeTabCls : "bg-background text-text-secondary"
+              }`}
+            >
+              Archived
+            </button>
           </div>
           {topLevel.length === 0 ? (
             <p className="mt-3 rounded-xl border border-dashed border-border px-4 py-6 text-center text-sm text-text-secondary">
-              No unread messages.
+              {filter === "archived"
+                ? "No archived conversations."
+                : filter === "unread"
+                  ? "No unread messages."
+                  : "No matching messages."}
             </p>
           ) : (
             <ul className="mt-3 space-y-2">
               {topLevel.map((r) => {
-                const isIncoming = r.from_uid !== myUid;
+                const incoming = isUnread(r, myUid) || r.from_uid !== myUid;
                 const active = selectedThread?.id === r.id;
+                const label = counterpartEmail(r, myUid, fromEmail) || r.from_email || "CLIVORA";
                 return (
                   <li key={r.id}>
                     <button
                       type="button"
-                      onClick={() => {
-                        setSelectedId(r.id);
-                        setReplyTo(null);
-                      }}
+                      onClick={() => setSelectedId(r.id)}
                       className={`w-full rounded-xl border px-3 py-2.5 text-left transition ${
-                        active
-                          ? isClient
-                            ? "border-client-accent bg-client-surface"
-                            : "border-navy bg-navy text-white"
-                          : "border-border bg-background hover:border-navy/30"
+                        active ? activeThreadCls : "border-border bg-background hover:border-primary/30"
                       }`}
                     >
                       <span className="flex items-center gap-2">
                         <span
-                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                            active && !isClient
-                              ? "bg-white/20 text-white"
-                              : "bg-navy text-white"
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${
+                            isClient ? "bg-navy" : "bg-primary"
                           }`}
                         >
-                          {(r.from_email || "C").charAt(0).toUpperCase()}
+                          {label.charAt(0).toUpperCase()}
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="flex items-center justify-between gap-2">
-                            <span
-                              className={`truncate text-sm font-bold ${
-                                active && !isClient ? "text-white" : "text-navy"
-                              }`}
-                            >
-                              {(r.from_email || "CLIVORA").split("@")[0]}
+                            <span className="truncate text-sm font-bold text-navy">
+                              {label.split("@")[0]}
                             </span>
-                            {isIncoming && !r.read_at && (
+                            {incoming && isUnread(r, myUid) && (
                               <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-sky-500 px-1 text-[10px] font-bold text-white">
                                 1
                               </span>
                             )}
                           </span>
-                          <span
-                            className={`mt-0.5 block truncate text-xs ${
-                              active && !isClient ? "text-white/70" : "text-text-muted"
-                            }`}
-                          >
+                          <span className="mt-0.5 block truncate text-xs text-text-muted">
                             {r.subject || "Conversation"}
                           </span>
-                          <span
-                            className={`mt-0.5 block truncate text-[11px] ${
-                              active && !isClient ? "text-white/50" : "text-text-muted"
-                            }`}
-                          >
+                          <span className="mt-0.5 block truncate text-[11px] text-text-muted">
                             {(r.body || "").slice(0, 48)}
                             {r.created_at ? ` · ${formatTime(r.created_at)}` : ""}
                           </span>
@@ -396,224 +490,227 @@ export function MessagesThreadView({
               })}
             </ul>
           )}
-          {isClient && (
-            <button
-              type="button"
-              className="mt-3 w-full rounded-xl border border-border py-2 text-xs font-semibold text-text-secondary"
-            >
-              View archived
-            </button>
-          )}
         </div>
       </aside>
 
-      <section className="rounded-2xl border border-border bg-surface shadow-sm">
+      <section className="flex min-h-[28rem] flex-col rounded-2xl border border-border bg-surface shadow-sm">
         {selectedThread ? (
           (() => {
             const replies = repliesFor(selectedThread.id);
-            const isReplying = replyTo === selectedThread.id;
             const isIncoming = selectedThread.from_uid !== myUid;
+            const replyTo = counterpartEmail(selectedThread, myUid, fromEmail);
+            const threadMessages = [selectedThread, ...replies];
+            let lastDate = "";
             return (
-              <div className="flex h-full flex-col">
+              <div className="flex h-full min-h-[28rem] flex-col">
                 <div className="border-b border-border px-4 py-3">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0">
                       <h2 className="font-bold text-navy">
-                        {(selectedThread.from_email || "CLIVORA").split("@")[0]}
+                        {(replyTo || selectedThread.from_email || "CLIVORA").split("@")[0]}
                       </h2>
                       <p className="text-xs text-text-muted">
                         {selectedThread.subject || "Conversation"}
-                        {selectedThread.created_at ? ` · ${formatTime(selectedThread.created_at)}` : ""}
+                        {selectedThread.created_at
+                          ? ` · ${formatTime(selectedThread.created_at)}`
+                          : ""}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {isClient && (
-                        <Link
-                          href="/app/projects"
-                          className="rounded-lg border border-border px-2.5 py-1 text-[11px] font-semibold text-navy"
-                        >
-                          View project
-                        </Link>
-                      )}
-                      {isIncoming && !selectedThread.read_at && (
+                      <Link
+                        href="/app/projects"
+                        className="rounded-lg border border-border px-2.5 py-1 text-[11px] font-semibold text-navy"
+                      >
+                        View project
+                      </Link>
+                      {isIncoming && isUnread(selectedThread, myUid) && (
                         <MarkReadButton
                           messageId={selectedThread.id}
                           readAt={selectedThread.read_at}
                         />
                       )}
-                      <button
-                        type="button"
-                        onClick={() => setReplyTo(isReplying ? null : selectedThread.id)}
-                        className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold ${
-                          isClient ? "bg-client-surface text-client-accent" : "bg-navy/5 text-navy"
-                        }`}
-                      >
-                        {isReplying ? "Cancel" : "Reply"}
-                      </button>
                     </div>
                   </div>
-                  {isClient && (
-                    <div className="mt-3 rounded-xl border border-border bg-client-surface/50 px-3 py-2 text-xs">
-                      <span className="font-semibold text-navy">
-                        {selectedThread.subject || "Shared project"}
-                      </span>
-                      <span className="mx-2 text-text-muted">·</span>
-                      <span className="text-text-secondary">Fixed Price</span>
-                      <span className="mx-2 inline-flex items-center gap-1 font-semibold text-sky-700">
-                        <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
-                        In Progress
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 space-y-3 px-4 py-4">
                   <div
-                    className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-                      isIncoming
-                        ? "bg-slate-100 text-navy"
-                        : isClient
-                          ? "ml-auto bg-navy text-white"
-                          : "ml-auto bg-primary text-white"
+                    className={`mt-3 rounded-xl border border-border px-3 py-2 text-xs ${
+                      isClient ? "bg-client-surface/50" : "bg-primary/5"
                     }`}
                   >
-                    <p className="text-sm">{selectedThread.body || "(empty)"}</p>
-                    <p
-                      className={`mt-1 text-[10px] ${
-                        isIncoming ? "text-text-muted" : "text-white/60"
-                      }`}
-                    >
-                      {formatTime(selectedThread.created_at)}
-                    </p>
+                    <span className="font-semibold text-navy">
+                      {selectedThread.subject || "Shared project"}
+                    </span>
+                    <span className="mx-2 text-text-muted">·</span>
+                    <span className="text-text-secondary">Fixed Price</span>
+                    <span className="mx-2 inline-flex items-center gap-1 font-semibold text-sky-700">
+                      <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
+                      In Progress
+                    </span>
                   </div>
-                  {replies.map((rep) => {
-                    const repIncoming = rep.from_uid !== myUid;
+                </div>
+                <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+                  {threadMessages.map((msg) => {
+                    const incoming = msg.from_uid !== myUid;
+                    const dateLabel = formatDateLabel(msg.created_at);
+                    const showDate = dateLabel && dateLabel !== lastDate;
+                    if (showDate) lastDate = dateLabel;
                     return (
-                      <div
-                        key={rep.id}
-                        className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-                          repIncoming
-                            ? "bg-slate-100 text-navy"
-                            : isClient
-                              ? "ml-auto bg-navy text-white"
-                              : "ml-auto bg-primary text-white"
-                        }`}
-                      >
-                        <p className="text-sm">{rep.body || "(empty)"}</p>
-                        <div className="mt-1 flex flex-wrap items-center gap-2">
-                          <p
-                            className={`text-[10px] ${
-                              repIncoming ? "text-text-muted" : "text-white/60"
-                            }`}
-                          >
-                            {formatTime(rep.created_at)}
+                      <div key={msg.id}>
+                        {showDate && (
+                          <p className="mb-2 text-center text-[10px] font-semibold uppercase tracking-wide text-text-muted">
+                            {dateLabel}
                           </p>
-                          {repIncoming && !rep.read_at && (
-                            <MarkReadButton messageId={rep.id} readAt={rep.read_at} />
-                          )}
+                        )}
+                        <div
+                          className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                            incoming ? "bg-slate-100 text-navy" : outBubbleCls
+                          }`}
+                        >
+                          <p className="text-sm">{msg.body || "(empty)"}</p>
+                          <div className="mt-1 flex flex-wrap items-center gap-2">
+                            <p
+                              className={`text-[10px] ${
+                                incoming ? "text-text-muted" : "text-white/60"
+                              }`}
+                            >
+                              {formatTime(msg.created_at)}
+                            </p>
+                            {incoming && isUnread(msg, myUid) && (
+                              <MarkReadButton messageId={msg.id} readAt={msg.read_at} />
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
                   })}
-                  {isReplying && (
-                    <ComposeForm
-                      fromEmail={fromEmail}
-                      parentId={selectedThread.id}
-                      parentSubject={selectedThread.subject ?? undefined}
-                      compact
-                      isClient={isClient}
-                      onSent={() => setReplyTo(null)}
-                    />
-                  )}
                 </div>
-                {isClient && !isReplying && (
-                  <div className="border-t border-border p-3">
-                    <ComposeForm
-                      fromEmail={fromEmail}
-                      parentId={selectedThread.id}
-                      parentSubject={selectedThread.subject ?? undefined}
-                      compact
-                      isClient={isClient}
-                      defaultTo={
-                        selectedThread.from_uid === myUid
-                          ? undefined
-                          : selectedThread.from_email || undefined
-                      }
-                    />
-                  </div>
-                )}
+                <div className="border-t border-border p-3">
+                  <ComposeForm
+                    fromEmail={fromEmail}
+                    parentId={selectedThread.id}
+                    parentSubject={selectedThread.subject ?? undefined}
+                    compact
+                    isClient={isClient}
+                    defaultTo={replyTo || undefined}
+                  />
+                </div>
               </div>
             );
           })()
         ) : (
-          <div className="p-8 text-center">
-            <MessageSquare className="mx-auto h-8 w-8 text-text-muted" />
+          <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
+            <MessageSquare className="h-8 w-8 text-text-muted" />
             <p className="mt-3 font-semibold text-navy">No thread selected</p>
             <p className="mt-2 text-sm text-text-secondary">
-              Choose a thread or switch back to all messages.
+              Choose a thread from the inbox or start a new message.
             </p>
           </div>
         )}
       </section>
 
-      {isClient && (
-        <aside className="hidden space-y-4 xl:block">
-          <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
-            <p className="text-sm font-bold text-navy">New message</p>
-            <ComposeForm fromEmail={fromEmail} isClient compact />
-          </div>
-          <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
-            <p className="mb-3 text-sm font-bold text-navy">Quick actions</p>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link href="/app/connect" className="font-semibold text-client-accent">
-                  Invite freelancers →
-                </Link>
-              </li>
-              <li>
-                <Link href="/app/projects" className="font-semibold text-client-accent">
-                  Share project →
-                </Link>
-              </li>
-              <li>
-                <Link href="/app/hub" className="font-semibold text-client-accent">
-                  Create team chat →
-                </Link>
-              </li>
-              <li>
-                <Link href="/app/settings" className="font-semibold text-client-accent">
-                  Message settings →
-                </Link>
-              </li>
-            </ul>
-          </div>
-          <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
-            <p className="mb-3 text-sm font-bold text-navy">Recent contacts</p>
-            <ul className="space-y-3">
-              {topLevel.slice(0, 3).map((r) => (
-                <li key={r.id} className="flex items-center gap-2">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-navy text-xs font-bold text-white">
-                    {(r.from_email || "?").charAt(0).toUpperCase()}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-navy">
-                      {(r.from_email || "Contact").split("@")[0]}
-                    </p>
-                    <p className="truncate text-[11px] text-text-muted">
-                      {r.subject || "Freelancer"}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <Link
-              href="/app/clients"
-              className="mt-3 inline-block text-xs font-semibold text-client-accent"
-            >
-              View all contacts →
-            </Link>
-          </div>
-        </aside>
-      )}
+      <aside className="hidden space-y-4 xl:block">
+        <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+          <p className="text-sm font-bold text-navy">
+            {isClient ? "Freelancer overview" : "Client overview"}
+          </p>
+          {selectedThread ? (
+            <div className="mt-3 flex items-center gap-3">
+              <span
+                className={`flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold text-white ${
+                  isClient ? "bg-navy" : "bg-primary"
+                }`}
+              >
+                {overviewName.charAt(0).toUpperCase()}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-navy">{overviewName}</p>
+                <p className="truncate text-xs text-text-muted">
+                  {overviewEmail || "No email on file"}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-text-secondary">Select a conversation.</p>
+          )}
+          <p className="mt-3 text-xs text-text-secondary">
+            {selectedThread?.subject || "Project conversation"}
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+          <p className="mb-3 text-sm font-bold text-navy">Quick actions</p>
+          <ul className="space-y-2 text-sm">
+            <li>
+              <Link
+                href={isClient ? "/app/connect" : "/app/team"}
+                className={`inline-flex items-center gap-1.5 font-semibold ${linkAccent}`}
+              >
+                <UserPlus className="h-3.5 w-3.5" />
+                Invite →
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/app/projects"
+                className={`inline-flex items-center gap-1.5 font-semibold ${linkAccent}`}
+              >
+                <Share2 className="h-3.5 w-3.5" />
+                Share project →
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/app/settings"
+                className={`inline-flex items-center gap-1.5 font-semibold ${linkAccent}`}
+              >
+                <Settings className="h-3.5 w-3.5" />
+                Settings →
+              </Link>
+            </li>
+          </ul>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+          <p className="mb-3 text-sm font-bold text-navy">New message</p>
+          <ComposeForm fromEmail={fromEmail} isClient={isClient} compact />
+        </div>
+
+        <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+          <p className="mb-3 text-sm font-bold text-navy">Recent contacts</p>
+          <ul className="space-y-3">
+            {rows
+              .filter((r) => !r.parent_message_id)
+              .slice(0, 4)
+              .map((r) => {
+                const email = counterpartEmail(r, myUid, fromEmail) || r.from_email || "?";
+                return (
+                  <li key={r.id} className="flex items-center gap-2">
+                    <span
+                      className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white ${
+                        isClient ? "bg-navy" : "bg-primary"
+                      }`}
+                    >
+                      {email.charAt(0).toUpperCase()}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-navy">
+                        {email.split("@")[0]}
+                      </p>
+                      <p className="truncate text-[11px] text-text-muted">
+                        {r.subject || (isClient ? "Freelancer" : "Client")}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+          </ul>
+          <Link
+            href={isClient ? "/app/team" : "/app/clients"}
+            className={`mt-3 inline-block text-xs font-semibold ${linkAccent}`}
+          >
+            View all contacts →
+          </Link>
+        </div>
+      </aside>
     </div>
   );
 }

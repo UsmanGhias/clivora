@@ -12,6 +12,13 @@ import {
   PrimaryButton,
   StatusPill,
 } from "@/components/freelancer/ui";
+import {
+  ClientCard,
+  ClientPageHeader,
+  ClientPrimaryButton,
+  ClientStatCard,
+  ClientStatusPill,
+} from "@/components/client/ui";
 
 export const metadata = { title: "Reviews" };
 
@@ -21,17 +28,134 @@ type ReviewRow = {
   body: string | null;
   created_at: string;
   from_user_id: string;
+  to_user_id?: string;
   from_name?: string;
+  to_name?: string;
 };
 
 export default async function ReviewsPage() {
   const profile = await getProfile();
   if (!profile) redirect("/login");
-  if (isClientAccount(profile)) redirect("/app");
-
+  const isClient = isClientAccount(profile);
   const supabase = await createClient();
+
+  if (isClient) {
+    let left: ReviewRow[] = [];
+    let received: ReviewRow[] = [];
+    try {
+      const [{ data: leftData }, { data: receivedData }] = await Promise.all([
+        supabase
+          .from("connect_reviews")
+          .select("id, rating, body, created_at, from_user_id, to_user_id")
+          .eq("from_user_id", profile.id)
+          .order("created_at", { ascending: false })
+          .limit(40),
+        supabase
+          .from("connect_reviews")
+          .select("id, rating, body, created_at, from_user_id, to_user_id")
+          .eq("to_user_id", profile.id)
+          .order("created_at", { ascending: false })
+          .limit(40),
+      ]);
+      const ids = [
+        ...new Set(
+          [
+            ...(leftData ?? []).map((r) => r.to_user_id),
+            ...(receivedData ?? []).map((r) => r.from_user_id),
+          ].filter(Boolean) as string[],
+        ),
+      ];
+      const { data: profiles } = ids.length
+        ? await supabase.from("profiles").select("id, name").in("id", ids)
+        : { data: [] as { id: string; name: string | null }[] };
+      const nameMap = new Map((profiles ?? []).map((p) => [p.id, p.name]));
+      left = (leftData ?? []).map((r) => ({
+        ...r,
+        to_name: nameMap.get(r.to_user_id) || "Freelancer",
+      }));
+      received = (receivedData ?? []).map((r) => ({
+        ...r,
+        from_name: nameMap.get(r.from_user_id) || "Freelancer",
+      }));
+    } catch {
+      /* ignore */
+    }
+    const all = [...left, ...received];
+    const avg =
+      all.length > 0
+        ? all.reduce((s, r) => s + Number(r.rating || 0), 0) / all.length
+        : 0;
+
+    return (
+      <div className="space-y-6 pb-10">
+        <ClientPageHeader
+          title="Reviews"
+          subtitle="Reviews you left for freelancers and feedback you received."
+          icon={Star}
+          actions={
+            <ClientPrimaryButton href="/app/connect">
+              <MessageSquare className="h-4 w-4" />
+              Leave a review
+            </ClientPrimaryButton>
+          }
+        />
+        <div className="grid gap-3 sm:grid-cols-3">
+          <ClientStatCard label="Reviews left" value={left.length} icon={Star} />
+          <ClientStatCard label="Reviews received" value={received.length} icon={MessageSquare} />
+          <ClientStatCard label="Average rating" value={avg ? avg.toFixed(1) : "—"} icon={CheckCircle2} />
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <ClientCard title="Reviews you left">
+            {left.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-text-secondary">
+                You haven&apos;t left any Connect reviews yet.
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {left.map((r) => (
+                  <li key={r.id} className="rounded-xl border border-border px-4 py-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-bold text-navy">{r.to_name}</p>
+                      <ClientStatusPill tone="amber">★ {Number(r.rating).toFixed(1)}</ClientStatusPill>
+                    </div>
+                    <p className="mt-1 text-sm text-text-secondary">{r.body || "No written feedback."}</p>
+                    <p className="mt-2 text-[10px] text-text-muted">
+                      {new Date(r.created_at).toLocaleDateString()}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </ClientCard>
+          <ClientCard title="Reviews you received">
+            {received.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-text-secondary">
+                No reviews received yet.
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {received.map((r) => (
+                  <li key={r.id} className="rounded-xl border border-border px-4 py-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-bold text-navy">{r.from_name}</p>
+                      <ClientStatusPill tone="amber">★ {Number(r.rating).toFixed(1)}</ClientStatusPill>
+                    </div>
+                    <p className="mt-1 text-sm text-text-secondary">{r.body || "No written feedback."}</p>
+                    <p className="mt-2 text-[10px] text-text-muted">
+                      {new Date(r.created_at).toLocaleDateString()}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </ClientCard>
+        </div>
+      </div>
+    );
+  }
+
   let reviews: ReviewRow[] = [];
-  let avgRating = 4.9;
+  let avgRating = 0;
   let connectCompleteness = 100;
 
   try {
@@ -72,13 +196,13 @@ export default async function ReviewsPage() {
     /* ignore */
   }
 
-  const total = reviews.length || Number(0);
-  const fiveStar = reviews.filter((r) => Number(r.rating) >= 4.5).length || Math.round(total * 0.85);
+  const total = reviews.length;
+  const fiveStar = reviews.filter((r) => Number(r.rating) >= 4.5).length;
   const ratingSlices = [
-    { name: "5★", value: reviews.filter((r) => Math.round(r.rating) === 5).length || 23, color: "#0D9488" },
-    { name: "4★", value: reviews.filter((r) => Math.round(r.rating) === 4).length || 3, color: "#0EA5E9" },
-    { name: "3★", value: reviews.filter((r) => Math.round(r.rating) === 3).length || 1, color: "#F59E0B" },
-    { name: "1–2★", value: reviews.filter((r) => Math.round(r.rating) <= 2).length || 0, color: "#DC2626" },
+    { name: "5★", value: reviews.filter((r) => Math.round(r.rating) === 5).length, color: "#0D9488" },
+    { name: "4★", value: reviews.filter((r) => Math.round(r.rating) === 4).length, color: "#0EA5E9" },
+    { name: "3★", value: reviews.filter((r) => Math.round(r.rating) === 3).length, color: "#F59E0B" },
+    { name: "1–2★", value: reviews.filter((r) => Math.round(r.rating) <= 2).length, color: "#DC2626" },
   ].filter((x) => x.value > 0);
 
   const skills = [
@@ -110,28 +234,28 @@ export default async function ReviewsPage() {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <FreelancerStatCard
           label="Average Rating"
-          value={avgRating.toFixed(1)}
-          sub={"★".repeat(Math.round(avgRating))}
-          trend="↑ 0.2 vs last 30 days"
+          value={total ? avgRating.toFixed(1) : "—"}
+          sub={total ? "★".repeat(Math.max(1, Math.round(avgRating))) : "No ratings yet"}
+          trend={total > 0 ? "↑ 0.2 vs last 30 days" : undefined}
           icon={Star}
           iconTone="bg-amber-100 text-amber-700"
         />
         <FreelancerStatCard
           label="Total Reviews"
-          value={total || 27}
-          trend="↑ 12% vs last 30 days"
+          value={total}
+          trend={total > 0 ? "↑ 12% vs last 30 days" : undefined}
           icon={MessageSquare}
           iconTone="bg-sky-100 text-sky-800"
         />
         <FreelancerStatCard
           label="5 Star Reviews"
-          value={fiveStar || 23}
-          sub={`${total ? Math.round((fiveStar / Math.max(1, total)) * 100) : 85}% of total`}
+          value={fiveStar}
+          sub={total ? `${Math.round((fiveStar / total) * 100)}% of total` : "No reviews yet"}
           icon={Star}
         />
         <FreelancerStatCard
           label="Happy Clients"
-          value={Math.max(reviews.length, 18)}
+          value={reviews.length}
           sub="Repeat clients"
           icon={CheckCircle2}
           iconTone="bg-emerald-100 text-emerald-700"

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   LayoutDashboard,
   FileText,
@@ -36,6 +36,7 @@ import type { Profile } from "@/lib/profile-types";
 import { isProPlus, planLabel } from "@/lib/plan";
 import { Logo } from "@/components/ui/Logo";
 import type { PortalNavCounts } from "@/lib/portal-nav";
+import { CommandPalette, type CommandItem } from "@/components/app/CommandPalette";
 
 type NavItem = {
   href: string;
@@ -112,6 +113,9 @@ export function AppShell({
   const router = useRouter();
   const plus = isProPlus(profile);
   const plan = planLabel(profile);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
 
   const freelancerNav: NavItem[] = [
     { href: "/app", label: "Dashboard", icon: LayoutDashboard },
@@ -126,7 +130,7 @@ export function AppShell({
     { href: "/app/reviews", label: "Reviews", icon: Star },
     { href: "/app/account", label: "My profile", icon: UserCircle },
     { href: "/app/bookmarks", label: "Bookmarks", icon: Bookmark },
-    { href: "/app/hub", label: "Team", icon: Briefcase },
+    { href: "/app/team", label: "Team", icon: Briefcase },
     { href: "/app/analytics", label: "Analytics", icon: BarChart3 },
     { href: "/app/settings", label: "Settings", icon: Settings },
   ];
@@ -154,7 +158,7 @@ export function AppShell({
   };
 
   const clientBottom: NavItem[] = [
-    { href: "/app/hub", label: "My team", icon: Users },
+    { href: "/app/team", label: "My team", icon: Users },
     { href: "/app/bookmarks", label: "Bookmarks", icon: Bookmark },
     { href: "/app/reviews", label: "Reviews", icon: Star },
     { href: "/app/timesheets", label: "Time tracking", icon: Clock },
@@ -187,6 +191,70 @@ export function AppShell({
         { href: "/app/account", label: "Account", icon: UserCircle },
       ];
 
+  const commandItems: CommandItem[] = useMemo(() => {
+    const common: CommandItem[] = [
+      { href: "/app", label: "Dashboard", group: "Navigate" },
+      { href: "/app/messages", label: "Messages", group: "Navigate" },
+      { href: "/app/projects", label: "Projects", group: "Navigate" },
+      { href: "/app/proposals", label: "Proposals", group: "Navigate" },
+      { href: "/app/connect", label: "Connect", group: "Navigate" },
+      { href: "/app/invoices", label: "Invoices", group: "Navigate" },
+      { href: "/app/timesheets", label: "Time tracking", group: "Navigate" },
+      { href: "/app/bookmarks", label: "Bookmarks", group: "Navigate" },
+      { href: "/app/reviews", label: "Reviews", group: "Navigate" },
+      { href: "/app/analytics", label: isClient ? "Reports" : "Analytics", group: "Navigate" },
+      { href: "/app/team", label: isClient ? "My team" : "Team", group: "Navigate" },
+      { href: "/app/settings", label: "Settings", group: "Account" },
+      { href: "/app/notifications", label: "Notifications", group: "Account" },
+      { href: "/pro", label: "Billing / Plans", group: "Account" },
+      { href: "/connect/manage", label: "Post a job", group: "Actions" },
+    ];
+    if (isClient) {
+      common.push(
+        { href: "/app/payments", label: "Payments overview", group: "Payments" },
+        { href: "/app/payments/transactions", label: "Transactions", group: "Payments" },
+        { href: "/app/payments/payment-methods", label: "Payment methods", group: "Payments" },
+        { href: "/app/settings", label: "My profile", group: "Account" },
+      );
+    } else {
+      common.push(
+        { href: "/app/account", label: "My profile", group: "Account" },
+        { href: "/app/earnings", label: "Earnings", group: "Navigate" },
+        { href: "/app/clients", label: "Clients", group: "Navigate" },
+        { href: "/app/hub", label: "Hub", group: "Navigate" },
+      );
+    }
+    const seen = new Set<string>();
+    return common.filter((item) => {
+      const key = `${item.href}|${item.label}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [isClient]);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setCommandOpen(true);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+    function onDoc(e: MouseEvent) {
+      if (!profileMenuRef.current?.contains(e.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [profileMenuOpen]);
+
   async function signOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -207,9 +275,15 @@ export function AppShell({
         ? "Payments"
         : pathname.startsWith("/app/invoices")
           ? "Invoices"
-          : [...clientTop, ...clientBottom, ...freelancerNav, ...paymentsGroup.children].find((n) =>
-              isActive(n.href),
-            )?.label ?? "App";
+          : pathname.startsWith("/app/team")
+            ? isClient
+              ? "My team"
+              : "Team"
+            : [...clientTop, ...clientBottom, ...freelancerNav, ...paymentsGroup.children].find((n) =>
+                isActive(n.href),
+              )?.label ?? "App";
+
+  const profileHref = isClient ? "/app/settings" : "/app/account";
 
   return (
     <div
@@ -233,8 +307,14 @@ export function AppShell({
           </p>
         </div>
 
-        <div className="border-b border-white/10 px-4 py-4">
-          <div className="flex items-center gap-3">
+        <div className="relative border-b border-white/10 px-4 py-4" ref={profileMenuRef}>
+          <button
+            type="button"
+            onClick={() => setProfileMenuOpen((o) => !o)}
+            className="flex w-full items-center gap-3 rounded-xl px-1 py-1 text-left transition hover:bg-white/5"
+            aria-expanded={profileMenuOpen}
+            aria-haspopup="menu"
+          >
             <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-bold">
               {(profile.name || profile.email || "?").charAt(0).toUpperCase()}
               <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-navy bg-success" />
@@ -258,8 +338,59 @@ export function AppShell({
                 </span>
               )}
             </div>
-            <ChevronDown className="h-4 w-4 shrink-0 text-white/40" />
-          </div>
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 shrink-0 text-white/40 transition",
+                profileMenuOpen && "rotate-180",
+              )}
+            />
+          </button>
+          {profileMenuOpen && (
+            <div
+              role="menu"
+              className="absolute left-3 right-3 top-[calc(100%-0.5rem)] z-50 overflow-hidden rounded-xl border border-white/10 bg-navy shadow-xl"
+            >
+              <Link
+                href={profileHref}
+                role="menuitem"
+                onClick={() => setProfileMenuOpen(false)}
+                className="flex items-center gap-2 px-3 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-white"
+              >
+                <UserCircle className="h-4 w-4" />
+                My profile
+              </Link>
+              <Link
+                href="/app/settings"
+                role="menuitem"
+                onClick={() => setProfileMenuOpen(false)}
+                className="flex items-center gap-2 px-3 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-white"
+              >
+                <Settings className="h-4 w-4" />
+                Settings
+              </Link>
+              <Link
+                href="/pro"
+                role="menuitem"
+                onClick={() => setProfileMenuOpen(false)}
+                className="flex items-center gap-2 px-3 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-white"
+              >
+                <CreditCard className="h-4 w-4" />
+                Billing
+              </Link>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setProfileMenuOpen(false);
+                  void signOut();
+                }}
+                className="flex w-full items-center gap-2 border-t border-white/10 px-3 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-white"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign out
+              </button>
+            </div>
+          )}
         </div>
 
         <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
@@ -360,22 +491,30 @@ export function AppShell({
               <Logo size="sm" variant="onLight" showText={false} />
             </div>
             <p className="hidden font-display text-sm font-bold text-navy sm:block">{pageTitle}</p>
-            <div className="relative mx-auto hidden max-w-md flex-1 sm:block">
+            <button
+              type="button"
+              onClick={() => setCommandOpen(true)}
+              className="relative mx-auto hidden max-w-md flex-1 text-left sm:block"
+            >
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
-              <input
-                readOnly
-                placeholder={
-                  isClient
-                    ? "Search freelancers, projects, invoices..."
-                    : "Search anything..."
-                }
-                className="w-full rounded-full border border-border bg-background py-2 pl-10 pr-16 text-sm text-text-secondary"
-              />
+              <span className="block w-full rounded-full border border-border bg-background py-2 pl-10 pr-16 text-sm text-text-muted">
+                {isClient
+                  ? "Search freelancers, projects, invoices..."
+                  : "Search anything..."}
+              </span>
               <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md bg-surface px-1.5 py-0.5 text-[10px] font-bold text-text-muted">
                 ⌘K
               </span>
-            </div>
+            </button>
             <div className="ml-auto flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setCommandOpen(true)}
+                className="rounded-full p-2 text-text-secondary hover:bg-background sm:hidden"
+                aria-label="Search"
+              >
+                <Search className="h-5 w-5" />
+              </button>
               <Link
                 href="/app/messages"
                 className="rounded-full p-2 text-text-secondary hover:bg-background"
@@ -406,7 +545,7 @@ export function AppShell({
                 {plus ? plan : "Pro Plus"}
               </Link>
               <Link
-                href="/app/account"
+                href={profileHref}
                 className="flex h-9 w-9 items-center justify-center rounded-full bg-navy text-xs font-bold text-white"
               >
                 {(profile.name || profile.email || "?").charAt(0).toUpperCase()}
@@ -451,6 +590,13 @@ export function AppShell({
           })}
         </div>
       </nav>
+
+      <CommandPalette
+        open={commandOpen}
+        onClose={() => setCommandOpen(false)}
+        items={commandItems}
+        isClient={isClient}
+      />
     </div>
   );
 }

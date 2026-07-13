@@ -8,10 +8,12 @@ export type MessageRow = {
   subject?: string | null;
   created_at?: string | null;
   from_email?: string | null;
+  to_email?: string | null;
   from_uid?: string | null;
   to_uid?: string | null;
   parent_message_id?: string | null;
   read_at?: string | null;
+  is_read?: boolean | null;
   attachments?: unknown;
 };
 
@@ -26,7 +28,7 @@ export default async function MessagesPage() {
     const { data, error } = await supabase
       .from("client_messages")
       .select(
-        "id, body, subject, created_at, from_email, from_uid, to_uid, parent_message_id, read_at, attachments",
+        "id, body, subject, created_at, from_email, to_email, from_uid, to_uid, parent_message_id, read_at, is_read, attachments",
       )
       .or(`from_uid.eq.${uid},to_uid.eq.${uid}`)
       .order("created_at", { ascending: true })

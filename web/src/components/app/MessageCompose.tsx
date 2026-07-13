@@ -46,6 +46,7 @@ export function MessageCompose({
         subject: subject.trim() || "Message",
         body: body.trim(),
         is_read: false,
+        read_at: null,
       });
       if (err) throw err;
       setSubject("");
