@@ -222,19 +222,38 @@ class _SimpleChatScreenState extends ConsumerState<SimpleChatScreen> {
         : const AsyncValue<List<ChatBubble>>.data([]);
 
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
+        centerTitle: true,
+        leading: IconButton(
+          onPressed: () => Navigator.of(context).maybePop(),
+          icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+          style: IconButton.styleFrom(
+            backgroundColor: Theme.of(context).brightness == Brightness.light
+                ? ClivoraColors.chipBackground
+                : ClivoraColors.darkBorder,
+          ),
+        ),
         title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.isClient ? 'Chat' : 'Client Chat', style: const TextStyle(fontSize: 17)),
+            Text(
+              widget.isClient ? 'Chat' : 'Client Chat',
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+            ),
             if (_peerEmail != null && _peerEmail!.isNotEmpty)
-              Text(_peerEmail!, style: Theme.of(context).textTheme.bodySmall),
+              Text(
+                _peerEmail!,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: ClivoraColors.textSecondary,
+                      fontSize: 12,
+                    ),
+              ),
           ],
         ),
         actions: [
           if (_peerEmail != null)
             IconButton(
-              icon: const Icon(Icons.swap_horiz),
+              icon: const Icon(Icons.sync_alt_rounded, size: 20),
               tooltip: 'Switch contact',
               onPressed: () async {
                 final email = await _pickPeerEmail(context);
@@ -246,7 +265,7 @@ class _SimpleChatScreenState extends ConsumerState<SimpleChatScreen> {
           if (_peerEmail != null && _peerEmail!.isNotEmpty)
             IconButton(
               tooltip: 'Block contact',
-              icon: const Icon(Icons.block),
+              icon: const Icon(Icons.block, size: 20),
               onPressed: () async {
                 final ok = await showDialog<bool>(
                   context: context,
@@ -343,41 +362,82 @@ class _SimpleChatScreenState extends ConsumerState<SimpleChatScreen> {
               },
             ),
           ),
-          Material(
-            elevation: 8,
-            child: SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: _sendImage,
-                      icon: const Icon(Icons.image_outlined),
-                      tooltip: 'Share image',
-                    ),
-                    Expanded(
-                      child: TextField(
-                        controller: _inputController,
-                        decoration: InputDecoration(
-                          hintText: 'Type a message…',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        ),
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (_) => _send(),
-                        maxLines: 3,
-                        minLines: 1,
+          SafeArea(
+            top: false,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                border: Border(
+                  top: BorderSide(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? ClivoraColors.darkBorder
+                        : ClivoraColors.borderLight,
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Material(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? ClivoraColors.darkBorder
+                        : ClivoraColors.chipBackground,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      onTap: _sendImage,
+                      borderRadius: BorderRadius.circular(12),
+                      child: const SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: Icon(Icons.image_outlined, color: ClivoraColors.textSecondary),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    IconButton.filled(
-                      onPressed: _send,
-                      icon: const Icon(Icons.send_rounded),
-                      style: IconButton.styleFrom(backgroundColor: accent),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: _inputController,
+                      decoration: InputDecoration(
+                        hintText: 'Type a message...',
+                        filled: true,
+                        fillColor: Theme.of(context).brightness == Brightness.dark
+                            ? ClivoraColors.darkBorder
+                            : Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: const BorderSide(color: ClivoraColors.borderLight),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: const BorderSide(color: ClivoraColors.borderLight),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: BorderSide(color: accent, width: 1.5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => _send(),
+                      maxLines: 3,
+                      minLines: 1,
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 10),
+                  Material(
+                    color: accent,
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      onTap: _sending ? null : _send,
+                      customBorder: const CircleBorder(),
+                      child: const SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: Icon(Icons.send_rounded, color: Colors.white, size: 22),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -410,7 +470,7 @@ class _Bubble extends StatelessWidget {
     return Align(
       alignment: align,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
+        margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
         decoration: BoxDecoration(
@@ -421,7 +481,22 @@ class _Bubble extends StatelessWidget {
             bottomLeft: Radius.circular(message.isMine ? 16 : 4),
             bottomRight: Radius.circular(message.isMine ? 4 : 16),
           ),
-          border: message.isMine ? null : Border.all(color: Theme.of(context).dividerColor),
+          border: message.isMine
+              ? null
+              : Border.all(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? ClivoraColors.darkBorder
+                      : ClivoraColors.borderLight,
+                ),
+          boxShadow: message.isMine
+              ? [
+                  BoxShadow(
+                    color: accent.withValues(alpha: 0.22),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -460,11 +535,19 @@ class _Bubble extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(displayText, style: TextStyle(color: fg, height: 1.35)),
               ],
-            ]
-            else
+            ] else
               Text(displayText, style: TextStyle(color: fg, height: 1.35)),
-            const SizedBox(height: 4),
-            Text(time, style: TextStyle(fontSize: 10, color: fg.withValues(alpha: 0.7))),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(time, style: TextStyle(fontSize: 10, color: fg.withValues(alpha: 0.75))),
+                if (message.isMine) ...[
+                  const SizedBox(width: 4),
+                  Icon(Icons.done_all, size: 14, color: fg.withValues(alpha: 0.9)),
+                ],
+              ],
+            ),
           ],
         ),
       ),

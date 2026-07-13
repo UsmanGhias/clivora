@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/constants/plan_limits.dart';
 import '../../core/services/sync_outbox_service.dart';
+import '../../core/theme/clivora_colors.dart';
 import '../../core/utils/crm_refresh.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../data/models/invoice_line_item.dart';
@@ -75,6 +75,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
   Widget build(BuildContext context) {
     final customersAsync = ref.watch(customersProvider(_search));
     final customerCountAsync = ref.watch(customerCountProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return ClivoraScaffold(
       title: 'Customers',
@@ -82,12 +83,23 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
       action: ClivoraIconButton(icon: Icons.add, onPressed: _onAddCustomer),
       body: Column(
         children: [
-          TextField(
-            controller: _searchController,
-            onChanged: (v) => setState(() => _search = v.isEmpty ? null : v),
-            decoration: const InputDecoration(
-              hintText: 'Search customers...',
-              prefixIcon: Icon(Icons.search),
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? ClivoraColors.darkBorder : ClivoraColors.chipBackground,
+              borderRadius: BorderRadius.circular(28),
+            ),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (v) => setState(() => _search = v.isEmpty ? null : v),
+              decoration: const InputDecoration(
+                hintText: 'Search customers...',
+                prefixIcon: Icon(Icons.search, color: ClivoraColors.textSecondary),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                filled: false,
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -100,7 +112,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
               resource: 'clients',
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Expanded(
             child: customersAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -116,82 +128,98 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                 }
                 return ListView.separated(
                   itemCount: customers.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final c = customers[index];
                     final emails = parseStringList(c.emails);
                     final phones = parseStringList(c.phones);
-                    return Dismissible(
-                      key: ValueKey(c.id),
-                      direction: DismissDirection.endToStart,
-                      background: Container(
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.only(right: 20),
-                        color: Colors.red,
-                        child: const Icon(Icons.delete, color: Colors.white),
-                      ),
-                      confirmDismiss: (_) async {
-                        return await showDialog<bool>(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                title: const Text('Delete customer?'),
-                                content: Text('Remove ${c.contactPerson}?'),
-                                actions: [
-                                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                                  TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
+                    final initial = c.contactPerson.isNotEmpty
+                        ? c.contactPerson[0].toUpperCase()
+                        : (c.company.isNotEmpty ? c.company[0].toUpperCase() : '?');
+                    final subtitle = emails.isNotEmpty
+                        ? emails.first
+                        : (c.company.isNotEmpty ? c.company : 'No contact info');
+
+                    return Material(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(18),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: () => openFormRoute(context, '/customers/${c.id}/edit'),
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: isDark ? ClivoraColors.darkBorder : ClivoraColors.borderLight,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 24,
+                                    backgroundColor: ClivoraColors.primaryLight,
+                                    child: Text(
+                                      initial,
+                                      style: const TextStyle(
+                                        color: ClivoraColors.primaryDark,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          c.contactPerson,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 16,
+                                            color: ClivoraColors.textPrimary,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          subtitle,
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            color: ClivoraColors.textSecondary,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  _SquareIconButton(
+                                    icon: Icons.edit_outlined,
+                                    color: ClivoraColors.textSecondary,
+                                    bg: isDark ? ClivoraColors.darkBorder : ClivoraColors.chipBackground,
+                                    onTap: () => openFormRoute(context, '/customers/${c.id}/edit'),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _SquareIconButton(
+                                    icon: Icons.delete_outline,
+                                    color: ClivoraColors.errorRed,
+                                    bg: ClivoraColors.iconRed,
+                                    onTap: () => _deleteCustomer(c.id, c.contactPerson),
+                                  ),
                                 ],
                               ),
-                            ) ??
-                            false;
-                      },
-                      onDismissed: (_) {
-                        ref.read(databaseProvider).deleteCustomer(c.id);
-                      },
-                      child: ListTile(
-                        onTap: () => openFormRoute(context, '/customers/${c.id}/edit'),
-                        tileColor: Theme.of(context).cardColor,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(color: Theme.of(context).dividerColor),
-                        ),
-                        leading: CircleAvatar(
-                          child: Text(c.contactPerson.isNotEmpty ? c.contactPerson[0].toUpperCase() : '?'),
-                        ),
-                        title: Text(c.contactPerson, style: const TextStyle(fontWeight: FontWeight.w600)),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              c.company.isNotEmpty
-                                  ? c.company
-                                  : emails.isNotEmpty
-                                      ? emails.first
-                                      : 'No contact info',
-                            ),
-                            ContactActionChips(
-                              phone: phones.isNotEmpty ? phones.first : '',
-                              email: emails.isNotEmpty ? emails.first : '',
-                              whatsapp: c.whatsapp,
-                            ),
-                          ],
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit_outlined, size: 20),
-                              tooltip: 'Edit',
-                              visualDensity: VisualDensity.compact,
-                              onPressed: () => openFormRoute(context, '/customers/${c.id}/edit'),
-                            ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                              tooltip: 'Delete',
-                              visualDensity: VisualDensity.compact,
-                              onPressed: () => _deleteCustomer(c.id, c.contactPerson),
-                            ),
-                          ],
+                              ContactActionChips(
+                                phone: phones.isNotEmpty ? phones.first : '',
+                                email: emails.isNotEmpty ? emails.first : '',
+                                whatsapp: c.whatsapp,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );
@@ -201,6 +229,37 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SquareIconButton extends StatelessWidget {
+  const _SquareIconButton({
+    required this.icon,
+    required this.color,
+    required this.bg,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color color;
+  final Color bg;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: SizedBox(
+          width: 36,
+          height: 36,
+          child: Icon(icon, size: 18, color: color),
+        ),
       ),
     );
   }

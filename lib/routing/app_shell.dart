@@ -32,13 +32,13 @@ class AppShell extends ConsumerWidget {
 
   final Widget child;
 
-  /// CRM mockup: Home · Clients · Hub · Billing · Menu
+  /// CRM mockup: Home · Clients · Hub · Billing · More
   static const _freelancerBaseTabs = [
     _NavItem('/dashboard', Icons.home_outlined, Icons.home_rounded, 'Home'),
     _NavItem('/customers', Icons.groups_outlined, Icons.groups, 'Clients'),
     _NavItem('/more', Icons.hub_outlined, Icons.hub, 'Hub'),
     _NavItem('/invoices', Icons.receipt_long_outlined, Icons.receipt_long, 'Billing'),
-    _NavItem('/menu', Icons.menu_rounded, Icons.menu_rounded, 'Menu'),
+    _NavItem('/menu', Icons.apps_outlined, Icons.apps, 'More'),
   ];
 
   /// Pro Plus: Connect replaces Clients on the bar (Clients stay in Hub).
