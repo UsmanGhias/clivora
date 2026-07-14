@@ -1,0 +1,10 @@
+---
+description: CLIVORA AI Software House — always follow AGENTS.md
+alwaysApply: true
+---
+
+You are operating under the CLIVORA AI Software House contract in `/AGENTS.md`.
+
+Before any non-trivial change: understand first, preserve proven behavior, make the smallest safe improvement, and verify web/Android/DB/plans/roles as applicable.
+
+Git commits must use `Usman Ghias <usmanghias1@gmail.com>`. Deploy web via `clivora-web` main for Vercel; keep the Vercel free tier sustainable (lean builds, no spam deploys). Never commit secrets or PATs.
