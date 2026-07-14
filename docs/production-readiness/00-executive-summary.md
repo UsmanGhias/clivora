@@ -2,8 +2,8 @@
 
 **Status:** AUDIT IN PROGRESS · Phase 1 baseline  
 **Prepared:** 2026-07-14  
-**Product baseline:** Web `2.20.0` (package.json) · Android `3.8.0+80` (pubspec.yaml)  
-**GO/NO-GO:** **Not yet determined** — audit batches incomplete
+**Product baseline:** Web `2.20.0` (package.json) · Android `3.8.1+81` (pubspec.yaml)  
+**GO/NO-GO:** **NO-GO** until PR-02…PR-10 evidence lands (Phase 1 inventory only)
 
 ## Purpose
 
@@ -19,15 +19,15 @@ Phase 1 establishes an evidence-backed inventory, journey checklist, permission 
 | Database | `supabase/migrations/` (33 files) | Supabase Postgres + RLS |
 | Docs | `docs/`, `web/content/docs/` | Product + public docs |
 
-## Concurrent work (out of band)
+## Concurrent hotfixes (shipped on branch; not full audit sign-off)
 
-The following hotfixes are in flight **outside** this audit baseline and are **not verified** here:
+Shipped in commit `5b946f8` / web mirror `99fcd14` — still require QA evidence in later batches:
 
-- **Settings UI** — web freelancer/client settings panels (`FreelancerSettingsPanel`, `ClientSettingsPanel`)
-- **Play Store promo** — promo codes / billing surfaces (migrations `promo_codes`, `20260711_v215_*`)
-- **Mobile hub** — web `/app/hub` and Flutter `more_screen` / `client_hub_screen` command-center layouts
-
-Treat these as parallel streams; reconcile into the audit when merged.
+- **Settings Account layout** — plan box stacked under profile (no overlap)
+- **Play Store promo** — marketing homepage section (`PlayStorePromoSection`)
+- **Android home** — 3 KPI cards; duplicate secondary stats removed; Hub width/aspect improved
+- **Odoo** — Contacts-only sync API (env secrets required; no new Odoo apps)
+- **Release artifacts** — `clivora-3.8.1.apk` / `.aab` under `/opt/cursor/artifacts`
 
 ## Phase 1 deliverables (this folder)
 
