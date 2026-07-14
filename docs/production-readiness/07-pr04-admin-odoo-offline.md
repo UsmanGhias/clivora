@@ -19,24 +19,25 @@
 3. **Fabricated overview metrics** — removed invented `newUsers`/`platformFee`/`totalPayouts` ratios; use real counts / milestone statuses.
 4. **Odoo sync scope** — POST now pushes **all** `crm_customers` (service role) into Odoo Contacts; GET verifies auth; PUT lets admin save a verified API key into `admin_integration_secrets`.
 5. **Migration export** — Admin Overview “Export full snapshot” downloads users, CRM, Connect, invoices, payments JSON.
-
-## Live DB snapshot (evidence)
-
-Queried project `jtzjwgovqczlccyeujhq` on 2026-07-14:
-
-- `profiles`: **22** rows (admins include `usmanghias1@gmail.com`, `iusmanghias@gmail.com`)
-- `crm_customers`: **9** rows across owners
-- `admin_integration_secrets`: ODOO_* keys present
-- Odoo host `https://clivora.odoo.com` / db `clivora` reachable (v19); **stored API key currently fails authenticate** → admin UI prompts for a fresh API key (Preferences → Account Security). Interactive passwords are not stored.
+6. **Two-way Odoo** — pull + push with `odoo_partner_id`; simplified pull domain (fixes Odoo Server Error on complex `email!=false` domains); partial success warnings on two-way.
+7. **Connect messaging** — `require_message_link` allows accepted Connect requests / hired proposals; `connect_peer_contact` RPC reveals email only after accept; messages compose uses it.
+8. **Job / need posting** — `connect_publish_need` allows freelancers (one open need) and clients.
+9. **Proposals CRUD** — Hire / Shortlist / Decline wired via RPCs; accept creates engagement request + reveals contacts for messaging.
+10. **Jobs invisible after post** — publish set `pending` but RLS only showed `approved`; now publishes as `approved` (admin can Hide). Draft status allowed in check constraint.
+11. **Hire from shortlisted** — `connect_accept_proposal` accepts pending/shortlisted/viewed.
+12. **Connect request accept** — `connect_respond_request` RPC sets `revealed_at`; web + Flutter use it.
+13. **Messaging privacy** — Message CTA only after hire/accept; freelancer cannot see client contact beforehand; `connect_peer_contact` gates email.
+14. **Admin Connect/Jobs CRUD** — Approve / Hide / Verify wired to `/api/admin/marketplace`; field mapping uses `budget_band` / `moderation_status` / `is_open`.
 
 ## Residual / next
 
 | ID | Item | Status |
 | --- | --- | --- |
-| PR-04-A | Redeploy `clivora-web` with auth + schema fixes; confirm `/api/admin/platform` 200 with live counts | Pending deploy |
-| PR-04-B | Paste working Odoo API key via Admin → Integrations (or Vercel `ODOO_*`) and run Sync | Blocked on valid key |
+| PR-04-A | Admin live snapshot deploy | **Done** |
+| PR-04-B | Odoo two-way Contacts | **Done** (Contacts app only) |
 | PR-04-C | Android sync outbox + conflict evidence | Not started |
-| PR-04-D | Realtime channel ACL / chat attachment RLS residual from risk register | Open |
+| PR-04-D | Realtime channel ACL / chat attachment RLS residual | Open |
+| PR-04-E | Runtime matrix tests (client post job → freelancer apply → hire → message) | TO VERIFY after deploy |
 
 ## Commands
 

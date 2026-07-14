@@ -88,39 +88,5 @@ begin
 end;
 $$;
 
-create or replace function public.connect_publish_need(
-  p_title text, p_summary text, p_skills text[], p_budget_band text)
-returns uuid language plpgsql security definer set search_path = public
-as $$
-declare v_id uuid := gen_random_uuid();
-begin
-  perform public.connect_require_pro_plus();
-  if not exists (select 1 from public.profiles where id = auth.uid() and account_type in ('client', 'admin')) then raise exception 'ACTION_NOT_ALLOWED'; end if;
-  perform public.connect_spend_credits('publish_need', 'connect_need', v_id, 'publish_need:' || v_id::text);
-  insert into public.connect_need_posts
-    (id, client_user_id, title, summary, skills, budget_band, is_open, moderation_status)
-  values (v_id, auth.uid(), left(coalesce(p_title, ''), 200), coalesce(p_summary, ''), coalesce(p_skills, '{}'),
-    left(coalesce(p_budget_band, ''), 120), true, 'pending');
-  return v_id;
-end;
-$$;
-
-create or replace function public.connect_publish_profile(
-  p_headline text, p_bio text, p_skills text[], p_rate numeric)
-returns uuid language plpgsql security definer set search_path = public
-as $$
-declare v_id uuid := auth.uid();
-begin
-  perform public.connect_require_pro_plus();
-  if v_id is null or not exists (select 1 from public.profiles where id = v_id and account_type = 'freelancer') then
-    raise exception 'ACTION_NOT_ALLOWED';
-  end if;
-  perform public.connect_spend_credits('publish_profile', 'connect_profile', v_id, 'publish_profile:' || v_id::text);
-  insert into public.connect_profiles (user_id, display_title, headline, bio, skills, rate_band, is_listed)
-    values (v_id, left(coalesce(p_headline, ''), 200), left(coalesce(p_headline, ''), 200), coalesce(p_bio, ''), coalesce(p_skills, '{}'),
-      left(coalesce(p_rate, 0)::text, 80), true)
-  on conflict (user_id) do update set headline = excluded.headline, bio = excluded.bio,
-    skills = excluded.skills, rate_band = excluded.rate_band, is_listed = true, updated_at = now();
-  return v_id;
-end;
-$$;
+-- Final publish_need / publish_profile live in 20260714_connect_marketplace_crud_fix.sql
+-- (freelancer needs + immediate approved visibility). Do not redefine client-only versions here.
