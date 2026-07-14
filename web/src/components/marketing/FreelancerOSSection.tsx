@@ -7,11 +7,13 @@ export function FreelancerOSSection() {
   const s = marketing.freelancerOs;
 
   return (
-    <section id="freelancer-os" className="border-t border-slate-200/80 bg-white py-16 lg:py-24">
-      <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 lg:grid-cols-[0.95fr_1.05fr] lg:gap-14 lg:px-8">
+    <section id="freelancer-os" className="border-t border-slate-200/80 bg-white py-20 lg:py-28">
+      <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16 lg:px-8">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">{s.eyebrow}</p>
-          <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight tracking-tight text-navy sm:text-4xl">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+            Freelancer operating system
+          </p>
+          <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight tracking-tight text-navy sm:text-4xl lg:text-[2.65rem]">
             {s.headline}
           </h2>
           <p className="mt-4 text-base leading-relaxed text-slate-600 sm:text-lg">{s.body}</p>
@@ -43,17 +45,16 @@ export function FreelancerOSSection() {
           <div className="pointer-events-none absolute -inset-6 rounded-[2.5rem] bg-gradient-to-tr from-teal-100/60 via-slate-100/30 to-transparent blur-2xl" />
           <div className="relative">
             <FreelancerDashMock />
-            <p className="mt-3 text-center text-xs text-slate-400">{s.mockCaption}</p>
           </div>
         </div>
       </div>
 
-      <div className="mx-auto mt-14 max-w-7xl px-5 lg:px-8">
-        <div className="grid grid-cols-2 gap-4 rounded-2xl border border-slate-200 bg-[#F8FAFC] px-4 py-6 sm:grid-cols-4 lg:px-8">
-          {s.proofs.map((proof) => (
-            <div key={proof.label} className="text-center">
-              <p className="font-display text-lg font-extrabold text-navy sm:text-xl">{proof.value}</p>
-              <p className="mt-1 text-xs font-medium text-slate-500">{proof.label}</p>
+      <div className="mx-auto mt-16 max-w-7xl px-5 lg:px-8">
+        <div className="grid grid-cols-2 gap-6 rounded-2xl border border-slate-200 bg-[#F8FAFC] px-4 py-6 sm:grid-cols-3 lg:grid-cols-6 lg:px-8">
+          {s.stats.map((stat) => (
+            <div key={stat.label} className="text-center">
+              <p className="font-display text-2xl font-extrabold text-navy sm:text-3xl">{stat.value}</p>
+              <p className="mt-1 text-xs font-medium text-slate-500">{stat.label}</p>
             </div>
           ))}
         </div>

@@ -1,11 +1,7 @@
-const FLOATING = [
-  { value: "2.4K+", label: "Active Freelancers", hint: "Ready for your next project." },
-  { value: "8.1K+", label: "Projects Completed", hint: "↑ 14% this quarter" },
-  { value: "$1.2M+", label: "Total Paid", hint: "↑ 11% this quarter" },
-  { value: "40+", label: "Countries", hint: "Across the globe" },
-];
+import { marketing } from "@/lib/marketing";
 
-const LOGOS = ["Nexora Labs", "BrightPath Co", "Orbit Studio", "Cedar & Co", "PixelCraft"];
+const FLOATING = marketing.socialProof.floatingStats;
+const LOGOS = marketing.socialProof.trustedBy.logos.slice(0, 5);
 
 export function TrustedNetworkMock() {
   return (

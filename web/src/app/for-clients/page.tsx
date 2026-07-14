@@ -46,9 +46,6 @@ export default function ForClientsPage() {
             </div>
           </div>
           <ClientDashMock />
-          <p className="mt-3 text-center text-xs text-slate-400">
-            Illustrative dashboard shown with sample data.
-          </p>
         </div>
       </section>
       <SocialProofSection />

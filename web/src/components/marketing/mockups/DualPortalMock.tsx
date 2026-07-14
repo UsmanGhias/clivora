@@ -6,16 +6,20 @@ export function DualPortalMock({ focus = "both" }: { focus?: "freelancer" | "cli
   return (
     <div className="grid gap-3 lg:grid-cols-2">
       <div
-        className={`transition duration-300 ${
-          focus === "client" ? "opacity-55 saturate-[0.85] lg:scale-[0.98]" : ""
-        }`}
+        className={
+          focus === "client"
+            ? "hidden lg:block lg:opacity-55 lg:saturate-[0.85] lg:scale-[0.98] transition duration-300"
+            : "transition duration-300"
+        }
       >
         <FreelancerDashMock compact />
       </div>
       <div
-        className={`transition duration-300 ${
-          focus === "freelancer" ? "opacity-55 saturate-[0.85] lg:scale-[0.98]" : ""
-        }`}
+        className={
+          focus === "freelancer"
+            ? "hidden lg:block lg:opacity-55 lg:saturate-[0.85] lg:scale-[0.98] transition duration-300"
+            : "transition duration-300"
+        }
       >
         <ClientDashMock compact />
       </div>
