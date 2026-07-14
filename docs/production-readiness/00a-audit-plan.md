@@ -20,7 +20,7 @@
 | Phase 1 | Inventory, journeys, role matrix, risk register, GO/NO-GO skeleton | **Accepted** — docs `00`–`03`, `14`, `15` |
 | Phase 2 / PR-02 | Auth, roles, restrictions, admin, RLS, entitlements (inspection) | **Done (inspection)** — `04`, `06`, `09`; findings drove PR-03 |
 | **PR-03** | Server entitlements + admin honesty remediations | **Applied / residual tests open** — `05`, `08`; R-16–R-18 **MITIGATED**; see gate `15` |
-| **PR-04** | Admin live snapshot + Odoo Contacts + offline/realtime start | **In progress** — `07-pr04-admin-odoo-offline.md` |
+| **PR-04** | Admin live snapshot + Odoo Contacts + offline/realtime | **Done (scoped)** — `07-pr04-admin-odoo-offline.md`; PR-04-E manual matrix TO VERIFY |
 | Later | Batches D–I, PR-01, PR-05–PR-10; Batch I deploy author (R-02) | Not started / partial |
 
 ## Proposed verification batches

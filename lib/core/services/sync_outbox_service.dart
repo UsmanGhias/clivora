@@ -6,15 +6,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../cloud/cloud_crm_repository.dart';
 import '../cloud/cloud_invoice_repository.dart';
+import '../cloud/cloud_message_repository.dart';
 import '../cloud/cloud_notification_repository.dart';
 import '../cloud/cloud_project_repository.dart';
 import '../cloud/supabase_auth_helper.dart';
+import '../cloud/supabase_sync_service.dart';
 import '../auth/auth_service.dart';
 import '../../core/utils/crm_refresh.dart';
 import '../../data/database/user_scoped_queries.dart';
 import '../../data/providers/app_providers.dart';
-import 'admin_sync_service.dart';
-import 'analytics_service.dart';
 import 'audit_log_service.dart';
 import 'connectivity_service.dart';
 import 'tracking_service.dart';
@@ -30,6 +30,8 @@ class SyncOutboxService {
   final Ref ref;
   static const _storageKey = 'clivora_sync_outbox_v1';
   static const _conflictKey = 'clivora_invoice_conflicts_v1';
+  static const _deadLetterKey = 'clivora_sync_dead_letter_v1';
+  static const _maxRetries = 8;
 
   Future<List<Map<String, dynamic>>> pendingConflicts() async {
     final prefs = await SharedPreferences.getInstance();
@@ -182,11 +184,81 @@ class SyncOutboxService {
     await clearEntityConflict(entityType: entityType, localId: localId);
   }
 
-  static const _maxRetries = 8;
+  String _dedupeKey(SyncOutboxItem item) {
+    final p = item.payload;
+    switch (item.kind) {
+      case 'crm_customer':
+      case 'crm_project':
+      case 'crm_invoice':
+        return '${item.kind}:${p['localId']}';
+      case 'invoice_sync':
+        return 'invoice_sync:${p['invoiceId']}';
+      case 'project_share':
+        return 'project_share:${p['projectId']}:${p['clientEmail']}';
+      case 'message_send':
+        return 'message_send:${p['idempotencyKey'] ?? p['createdAt'] ?? ''}';
+      case 'notification':
+        return 'notification:${p['toUid'] ?? p['toEmail']}:${p['title']}:${p['body']}';
+      case 'analytics':
+        return 'analytics:${p['eventType']}:${p['email']}:${p['createdAt'] ?? ''}';
+      default:
+        return '${item.kind}:${jsonEncode(p)}';
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> deadLetterItems() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_deadLetterKey);
+    if (raw == null || raw.isEmpty) return [];
+    try {
+      return (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> _appendDeadLetter(SyncOutboxItem item, String reason) async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = await deadLetterItems();
+    list.add({
+      ...item.toJson(),
+      'deadAt': DateTime.now().toIso8601String(),
+      'reason': reason,
+    });
+    // Keep last 50 for evidence / manual retry
+    final trimmed = list.length > 50 ? list.sublist(list.length - 50) : list;
+    await prefs.setString(_deadLetterKey, jsonEncode(trimmed));
+  }
+
+  Future<void> requeueDeadLetter() async {
+    final dead = await deadLetterItems();
+    if (dead.isEmpty) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_deadLetterKey);
+    for (final row in dead) {
+      await enqueue(
+        SyncOutboxItem.fromJson(Map<String, dynamic>.from(row))
+            .copyWith(retries: 0),
+      );
+    }
+  }
 
   Future<void> enqueue(SyncOutboxItem item) async {
     final items = await _load();
-    items.add(item);
+    final key = _dedupeKey(item);
+    final existingIdx = items.indexWhere((e) => _dedupeKey(e) == key);
+    if (existingIdx >= 0) {
+      // Replace with freshest payload; keep lower retry count
+      final prev = items[existingIdx];
+      items[existingIdx] = SyncOutboxItem(
+        kind: item.kind,
+        payload: item.payload,
+        retries: prev.retries < item.retries ? prev.retries : item.retries,
+        createdAt: prev.createdAt,
+      );
+    } else {
+      items.add(item);
+    }
     await _save(items);
     if (SupabaseAuthHelper.currentUid != null &&
         await ref.read(connectivityServiceProvider).isOnlineNow()) {
@@ -201,7 +273,15 @@ class SyncOutboxService {
 
     final remaining = <SyncOutboxItem>[];
     var dropped = 0;
+    final now = DateTime.now();
     for (final item in items) {
+      // Exponential backoff: 2^retries seconds (cap 5 min)
+      final waitSecs = (1 << item.retries.clamp(0, 8)).clamp(1, 300);
+      final dueAt = item.createdAt.add(Duration(seconds: waitSecs * (item.retries == 0 ? 0 : 1)));
+      if (item.retries > 0 && now.isBefore(dueAt)) {
+        remaining.add(item);
+        continue;
+      }
       try {
         final ok = await _execute(item);
         if (!ok) {
@@ -210,22 +290,25 @@ class SyncOutboxService {
             remaining.add(next);
           } else {
             dropped++;
+            await _appendDeadLetter(next, 'max_retries');
           }
         }
       } catch (e) {
-        debugPrint('Sync outbox item failed: $e');
+        debugPrint('Sync outbox item failed (${item.kind}): $e');
         final next = item.copyWith(retries: item.retries + 1);
         if (next.retries < _maxRetries) {
           remaining.add(next);
         } else {
           dropped++;
+          await _appendDeadLetter(next, e.toString());
         }
       }
     }
     await _save(remaining);
-    if (dropped > 0) {
+    final dead = await deadLetterItems();
+    if (dropped > 0 || dead.isNotEmpty) {
       ref.read(syncFailureMessageProvider.notifier).state =
-          '$dropped change(s) could not sync. Tap to retry when online.';
+          '${remaining.length} pending · ${dead.length} failed sync(s). Tap to retry.';
     } else if (remaining.isEmpty) {
       ref.read(syncFailureMessageProvider.notifier).state = null;
     } else {
@@ -314,28 +397,33 @@ class SyncOutboxService {
                 title: item.payload['title'] as String? ?? '',
                 body: item.payload['body'] as String? ?? '',
                 kind: item.payload['kind'] as String? ?? 'info',
+                bypassQueue: true,
               );
         } else {
+          final toEmail = item.payload['toEmail'] as String? ?? '';
+          if (toEmail.isEmpty) return false;
           await ref.read(cloudNotificationRepositoryProvider).send(
-                toEmail: item.payload['toEmail'] as String? ?? '',
+                toEmail: toEmail,
                 title: item.payload['title'] as String? ?? '',
                 body: item.payload['body'] as String? ?? '',
                 kind: item.payload['kind'] as String? ?? 'info',
+                bypassQueue: true,
               );
         }
         return true;
       case 'analytics':
-        await ref.read(analyticsServiceProvider).track(
+        await ref.read(supabaseSyncServiceProvider).mirrorAnalyticsEvent(
               eventType: item.payload['eventType'] as String? ?? 'event',
-              email: item.payload['email'] as String?,
-              name: item.payload['name'] as String?,
+              userEmail: item.payload['email'] as String? ?? '',
+              userName: item.payload['name'] as String? ?? '',
               plan: item.payload['plan'] as String? ?? 'free',
               amount: (item.payload['amount'] as num?)?.toDouble() ?? 0,
               payload: item.payload['payload'] as String? ?? '{}',
+              rethrowOnError: true,
             );
         return true;
       case 'admin_sync':
-        await ref.read(adminSyncServiceProvider).flushPendingEvents();
+        // Legacy no-op — drop without retry burn
         return true;
       case 'invoice_sync':
         final user = ref.read(authStateProvider).valueOrNull;
@@ -349,6 +437,7 @@ class SyncOutboxService {
               invoice: invoice,
               clientEmail: item.payload['clientEmail'] as String? ?? '',
               clientUid: item.payload['clientUid'] as String?,
+              bypassQueue: true,
             );
         return true;
       case 'project_share':
@@ -363,6 +452,7 @@ class SyncOutboxService {
               clientEmail: item.payload['clientEmail'] as String? ?? '',
               localProjectId: projectId,
               project: project,
+              bypassQueue: true,
             );
         return true;
       case 'crm_customer':
@@ -395,7 +485,24 @@ class SyncOutboxService {
       case 'crm_sync_all':
         await ref.read(cloudCrmRepositoryProvider).syncAllForSignedInUser();
         return true;
+      case 'message_send':
+        final fromUid = item.payload['fromUid'] as String? ?? '';
+        final fromEmail = item.payload['fromEmail'] as String? ?? '';
+        final toEmail = item.payload['toEmail'] as String? ?? '';
+        if (fromUid.isEmpty || toEmail.isEmpty) return false;
+        await ref.read(cloudMessageRepositoryProvider).sendMessage(
+              fromUid: fromUid,
+              fromEmail: fromEmail,
+              toEmail: toEmail,
+              toUid: item.payload['toUid'] as String?,
+              subject: item.payload['subject'] as String? ?? '',
+              body: item.payload['body'] as String? ?? '',
+              projectShareId: item.payload['projectShareId'] as String?,
+            );
+        return true;
       default:
+        // Unknown kinds go to dead letter instead of silent success
+        await _appendDeadLetter(item, 'unknown_kind');
         return true;
     }
   }

@@ -91,8 +91,12 @@ class SupabaseSyncService {
     required String plan,
     double amount = 0,
     String payload = '{}',
+    bool rethrowOnError = false,
   }) async {
-    if (SupabaseAuthHelper.currentUid == null) return;
+    if (SupabaseAuthHelper.currentUid == null) {
+      if (rethrowOnError) throw StateError('AUTH_REQUIRED');
+      return;
+    }
     try {
       await _db.from('clivora_events').insert({
         'event_type': eventType,
@@ -105,6 +109,7 @@ class SupabaseSyncService {
       });
     } catch (e) {
       debugPrint('Supabase analytics mirror error: $e');
+      if (rethrowOnError) rethrow;
     }
   }
 }

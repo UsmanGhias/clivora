@@ -26,7 +26,7 @@ class CloudCrmRepository {
 
   Future<void> pushCustomer({required int ownerUserId, required int localId}) async {
     final uid = SupabaseAuthHelper.currentUid;
-    if (uid == null) return;
+    if (uid == null) throw StateError('AUTH_REQUIRED');
     final row = await ref.read(databaseProvider).getCustomerForUser(ownerUserId, localId);
     if (row == null) return;
     try {
@@ -61,7 +61,7 @@ class CloudCrmRepository {
 
   Future<void> pushProject({required int ownerUserId, required int localId}) async {
     final uid = SupabaseAuthHelper.currentUid;
-    if (uid == null) return;
+    if (uid == null) throw StateError('AUTH_REQUIRED');
     final row = await ref.read(databaseProvider).getProjectForUser(ownerUserId, localId);
     if (row == null) return;
     String? cloudCustomerId;
@@ -98,7 +98,7 @@ class CloudCrmRepository {
 
   Future<void> pushInvoice({required int ownerUserId, required int localId}) async {
     final uid = SupabaseAuthHelper.currentUid;
-    if (uid == null) return;
+    if (uid == null) throw StateError('AUTH_REQUIRED');
     final row = await ref.read(databaseProvider).getInvoiceForUser(ownerUserId, localId);
     if (row == null) return;
     String? cloudCustomerId;

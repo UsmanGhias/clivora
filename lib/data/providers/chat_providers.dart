@@ -1,10 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_service.dart';
-import '../../core/auth/user_roles.dart';
 import '../../core/cloud/cloud_message_repository.dart';
 import '../../core/cloud/supabase_auth_helper.dart';
-import '../../core/services/admin_management_service.dart';
 import '../../data/database/user_scoped_queries.dart';
 import '../../data/models/invoice_line_item.dart';
 import 'database_provider.dart';
@@ -37,7 +35,7 @@ class ChatThreadKey {
   int get hashCode => Object.hash(peerEmail, isClient);
 }
 
-/// All linked peer emails for chat (freelancer ↔ client on shared projects).
+/// Linked peer emails for chat: local CRM/project links + server Connect/invoice peers.
 final linkedPeerEmailsProvider = FutureProvider.family<List<String>, bool>((ref, isClient) async {
   final user = ref.watch(authStateProvider).valueOrNull;
   if (user == null) return [];
@@ -69,6 +67,42 @@ final linkedPeerEmailsProvider = FutureProvider.family<List<String>, bool>((ref,
     }
   }
 
+  // Align with require_message_link / Connect accept / hired proposals
+  try {
+    final rows = await SupabaseAuthHelper.client.rpc('message_allowed_peer_emails');
+    if (rows is List) {
+      for (final row in rows) {
+        if (row is Map && row['peer_email'] != null) {
+          final e = row['peer_email'].toString().trim().toLowerCase();
+          if (e.contains('@')) emails.add(e);
+        } else if (row is String && row.contains('@')) {
+          emails.add(row.trim().toLowerCase());
+        }
+      }
+    }
+  } catch (_) {
+    // Fallback: accepted Connect requests visible via details view
+    try {
+      final uid = SupabaseAuthHelper.currentUid;
+      if (uid != null) {
+        final reqs = await SupabaseAuthHelper.client
+            .from('connect_request_details')
+            .select('from_email,to_email,from_user_id,to_user_id,status')
+            .eq('status', 'accepted')
+            .or('from_user_id.eq.$uid,to_user_id.eq.$uid')
+            .limit(100);
+        for (final r in (reqs as List)) {
+          final map = Map<String, dynamic>.from(r as Map);
+          final from = (map['from_email'] as String? ?? '').trim().toLowerCase();
+          final to = (map['to_email'] as String? ?? '').trim().toLowerCase();
+          final me = user.email.trim().toLowerCase();
+          if (from.isNotEmpty && from != me) emails.add(from);
+          if (to.isNotEmpty && to != me) emails.add(to);
+        }
+      }
+    } catch (_) {}
+  }
+
   return emails.toList()..sort();
 });
 
@@ -90,7 +124,9 @@ final chatThreadProvider = StreamProvider.family<List<ChatBubble>, ChatThreadKey
       .watchThread(myUid: uid, myEmail: user.email, peerEmail: key.peerEmail)
       .map((messages) {
     for (final m in messages) {
-      if (!m.isRead && m.toUid == uid) {
+      final toMe = m.toUid == uid ||
+          m.toEmail.trim().toLowerCase() == user.email.trim().toLowerCase();
+      if (!m.isRead && toMe && m.fromUid != uid) {
         repo.markMessageReadById(m.id);
       }
     }

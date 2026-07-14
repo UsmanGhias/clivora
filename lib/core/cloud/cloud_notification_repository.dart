@@ -59,10 +59,23 @@ class CloudNotificationRepository {
     required String title,
     required String body,
     String kind = 'info',
+    bool bypassQueue = false,
   }) async {
     final fromUid = SupabaseAuthHelper.currentUid;
-    if (fromUid == null) return;
+    if (fromUid == null) throw StateError('AUTH_REQUIRED');
 
+    Future<void> action() async {
+      final toUid = await ref.read(supabaseSyncServiceProvider).uidForEmail(toEmail);
+      if (toUid == null) {
+        throw StateError('NO_LINKED_PROFILE');
+      }
+      await _insertToUid(fromUid: fromUid, toUid: toUid, title: title, body: body, kind: kind);
+    }
+
+    if (bypassQueue) {
+      await action();
+      return;
+    }
     await ref.read(cloudWriteGuardProvider).runOrEnqueue(
           kind: 'notification',
           payload: {
@@ -71,14 +84,7 @@ class CloudNotificationRepository {
             'body': body,
             'kind': kind,
           },
-          action: () async {
-            final toUid = await ref.read(supabaseSyncServiceProvider).uidForEmail(toEmail);
-            if (toUid == null) {
-              debugPrint('Notification skipped: no linked profile for $toEmail');
-              return;
-            }
-            await _insertToUid(fromUid: fromUid, toUid: toUid, title: title, body: body, kind: kind);
-          },
+          action: action,
         );
   }
 
@@ -87,10 +93,22 @@ class CloudNotificationRepository {
     required String title,
     required String body,
     String kind = 'info',
+    bool bypassQueue = false,
   }) async {
     final fromUid = SupabaseAuthHelper.currentUid;
-    if (fromUid == null || toUid.isEmpty) return;
+    if (fromUid == null || toUid.isEmpty) throw StateError('AUTH_REQUIRED');
 
+    Future<void> action() => _insertToUid(
+          fromUid: fromUid,
+          toUid: toUid,
+          title: title,
+          body: body,
+          kind: kind,
+        );
+    if (bypassQueue) {
+      await action();
+      return;
+    }
     await ref.read(cloudWriteGuardProvider).runOrEnqueue(
           kind: 'notification',
           payload: {
@@ -99,13 +117,7 @@ class CloudNotificationRepository {
             'body': body,
             'kind': kind,
           },
-          action: () => _insertToUid(
-                fromUid: fromUid,
-                toUid: toUid,
-                title: title,
-                body: body,
-                kind: kind,
-              ),
+          action: action,
         );
   }
 

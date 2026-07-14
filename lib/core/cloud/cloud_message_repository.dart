@@ -8,6 +8,8 @@ import '../../data/database/database.dart';
 import '../../data/database/user_scoped_queries.dart';
 import '../../data/providers/database_provider.dart';
 import '../services/chat_block_service.dart';
+import '../services/connectivity_service.dart';
+import '../services/sync_outbox_service.dart';
 import 'cloud_notification_repository.dart';
 import 'supabase_auth_helper.dart';
 import 'supabase_sync_service.dart';
@@ -105,7 +107,6 @@ class CloudMessageRepository {
     if (resolvedToUid != null && resolvedToUid.isNotEmpty) {
       final blocked = await ref.read(chatBlockServiceProvider).isEitherBlocked(fromUid, resolvedToUid);
       if (blocked) {
-        debugPrint('Message blocked: chat_block between $fromUid and $resolvedToUid');
         throw StateError('Messaging is blocked with this contact');
       }
     }
@@ -141,17 +142,21 @@ class CloudMessageRepository {
   Stream<List<CloudMessage>> watchClientMailbox({required String uid, required String email}) {
     var sent = <CloudMessage>[];
     var received = <CloudMessage>[];
+    var byEmail = <CloudMessage>[];
+    final normalizedEmail = email.trim().toLowerCase();
 
     final controller = StreamController<List<CloudMessage>>();
-    // Never leave UI in perpetual loading, emit immediately, then bootstrap + realtime.
     controller.add(const <CloudMessage>[]);
 
     Future<void> bootstrap() async {
       try {
+        final orFilter = normalizedEmail.isEmpty
+            ? 'from_uid.eq.$uid,to_uid.eq.$uid'
+            : 'from_uid.eq.$uid,to_uid.eq.$uid,to_email.eq.$normalizedEmail';
         final rows = await _db
             .from('client_messages')
             .select()
-            .or('from_uid.eq.$uid,to_uid.eq.$uid')
+            .or(orFilter)
             .order('created_at', ascending: false)
             .limit(200);
         final all = (rows as List)
@@ -159,10 +164,20 @@ class CloudMessageRepository {
             .toList();
         sent = all.where((m) => m.fromUid == uid).toList();
         received = all.where((m) => m.toUid == uid).toList();
-        if (!controller.isClosed) controller.add(_mergeMailbox(sent, received));
-      } catch (e) {
-        debugPrint('Mailbox bootstrap failed: $e');
-        if (!controller.isClosed) controller.add(const <CloudMessage>[]);
+        byEmail = all
+            .where(
+              (m) =>
+                  m.toUid != uid &&
+                  m.fromUid != uid &&
+                  m.toEmail.trim().toLowerCase() == normalizedEmail,
+            )
+            .toList();
+        if (!controller.isClosed) {
+          controller.add(_mergeMailbox([...sent, ...byEmail], received));
+        }
+      } catch (e, st) {
+        debugPrint('Mailbox bootstrap failed: $e\n$st');
+        if (!controller.isClosed) controller.addError(e);
       }
     }
 
@@ -174,10 +189,12 @@ class CloudMessageRepository {
         .eq('from_uid', uid)
         .listen((rows) {
       sent = rows.map(CloudMessage.fromRow).toList();
-      if (!controller.isClosed) controller.add(_mergeMailbox(sent, received));
+      if (!controller.isClosed) {
+        controller.add(_mergeMailbox([...sent, ...byEmail], received));
+      }
     }, onError: (e) {
       debugPrint('Sent mailbox stream error: $e');
-      if (!controller.isClosed) controller.add(_mergeMailbox(sent, received));
+      if (!controller.isClosed) controller.addError(e);
     });
     final recvSub = _db
         .from('client_messages')
@@ -185,15 +202,38 @@ class CloudMessageRepository {
         .eq('to_uid', uid)
         .listen((rows) {
       received = rows.map(CloudMessage.fromRow).toList();
-      if (!controller.isClosed) controller.add(_mergeMailbox(sent, received));
+      if (!controller.isClosed) {
+        controller.add(_mergeMailbox([...sent, ...byEmail], received));
+      }
     }, onError: (e) {
       debugPrint('Client mailbox error: $e');
-      if (!controller.isClosed) controller.add(_mergeMailbox(sent, received));
+      if (!controller.isClosed) controller.addError(e);
     });
+
+    StreamSubscription? emailSub;
+    if (normalizedEmail.isNotEmpty) {
+      emailSub = _db
+          .from('client_messages')
+          .stream(primaryKey: ['id'])
+          .eq('to_email', normalizedEmail)
+          .listen((rows) {
+        byEmail = rows
+            .map(CloudMessage.fromRow)
+            .where((m) => m.toUid != uid && m.fromUid != uid)
+            .toList();
+        if (!controller.isClosed) {
+          controller.add(_mergeMailbox([...sent, ...byEmail], received));
+        }
+      }, onError: (e) {
+        debugPrint('Email mailbox stream error: $e');
+        if (!controller.isClosed) controller.addError(e);
+      });
+    }
 
     controller.onCancel = () {
       sentSub.cancel();
       recvSub.cancel();
+      emailSub?.cancel();
     };
     return controller.stream;
   }
@@ -218,11 +258,17 @@ class CloudMessageRepository {
   }
 
   Future<void> markMessageReadById(String messageId) async {
-    await _db.from('client_messages').update({'is_read': true}).eq('id', messageId);
+    await _db.from('client_messages').update({
+      'is_read': true,
+      'read_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('id', messageId);
   }
 
-  Stream<List<CloudMessage>> watchFreelancerMailbox({required String uid}) {
-    return watchClientMailbox(uid: uid, email: '');
+  Stream<List<CloudMessage>> watchFreelancerMailbox({
+    required String uid,
+    String email = '',
+  }) {
+    return watchClientMailbox(uid: uid, email: email);
   }
 
   List<CloudMessage> _mergeMailbox(List<CloudMessage> sent, List<CloudMessage> received) {
@@ -238,13 +284,8 @@ class CloudMessageRepository {
   Stream<List<CloudMessage>> watchInbox({required String email, String? uid}) {
     final normalized = email.trim().toLowerCase();
     if (uid != null && uid.isNotEmpty) {
-      return _db
-          .from('client_messages')
-          .stream(primaryKey: ['id'])
-          .eq('to_uid', uid)
-          .order('created_at', ascending: false)
-          .limit(100)
-          .map((rows) => rows.map(CloudMessage.fromRow).toList());
+      // Prefer full mailbox merge so sent + to_email rows appear.
+      return watchClientMailbox(uid: uid, email: normalized);
     }
     return _db
         .from('client_messages')
@@ -268,49 +309,91 @@ class CloudMessageRepository {
     final appDb = ref.read(databaseProvider);
 
     if (fromUid == null || fromUid.isEmpty) {
-      debugPrint('Cloud message skipped: no Supabase session (sign in with email or Google)');
       if (localToUserId != null) {
         await appDb.sendClientMessage(
-              fromUserId: fromUser.id,
-              toUserId: localToUserId,
-              subject: subject,
-              body: body,
-              projectId: localProjectId,
-            );
+          fromUserId: fromUser.id,
+          toUserId: localToUserId,
+          subject: subject,
+          body: body,
+          projectId: localProjectId,
+        );
       }
-      return;
+      throw StateError('Sign in required to send cloud messages');
     }
 
+    String? toUid;
     try {
-      final toUid = await ref.read(supabaseSyncServiceProvider).uidForEmail(toEmail);
+      toUid = await ref.read(supabaseSyncServiceProvider).uidForEmail(toEmail);
       if (toUid != null && toUid.isNotEmpty) {
         final blocked = await ref.read(chatBlockServiceProvider).isEitherBlocked(fromUid, toUid);
         if (blocked) {
-          debugPrint('Hybrid message blocked: chat_block between $fromUid and $toUid');
-          return;
+          throw StateError('Messaging is blocked with this contact');
         }
       }
-      await sendMessage(
-            fromUid: fromUid,
-            fromEmail: fromUser.email,
-            toEmail: toEmail,
-            toUid: toUid,
-            subject: subject,
-            body: body,
-            projectShareId: projectShareId,
-          );
+    } catch (e) {
+      if (e is StateError) rethrow;
+      debugPrint('Hybrid uid resolve failed: $e');
+    }
+
+    final online = await ref.read(connectivityServiceProvider).isOnlineNow();
+    try {
+      if (!online) {
+        await ref.read(syncOutboxServiceProvider).enqueue(
+              SyncOutboxItem(
+                kind: 'message_send',
+                payload: {
+                  'fromUid': fromUid,
+                  'fromEmail': fromUser.email,
+                  'toEmail': toEmail,
+                  if (toUid != null) 'toUid': toUid,
+                  'subject': subject,
+                  'body': body,
+                  if (projectShareId != null) 'projectShareId': projectShareId,
+                  'idempotencyKey':
+                      '$fromUid:${toEmail.trim().toLowerCase()}:${DateTime.now().millisecondsSinceEpoch}',
+                },
+              ),
+            );
+      } else {
+        await sendMessage(
+          fromUid: fromUid,
+          fromEmail: fromUser.email,
+          toEmail: toEmail,
+          toUid: toUid,
+          subject: subject,
+          body: body,
+          projectShareId: projectShareId,
+        );
+      }
     } catch (e) {
       debugPrint('Hybrid cloud message failed: $e');
+      await ref.read(syncOutboxServiceProvider).enqueue(
+            SyncOutboxItem(
+              kind: 'message_send',
+              payload: {
+                'fromUid': fromUid,
+                'fromEmail': fromUser.email,
+                'toEmail': toEmail,
+                if (toUid != null) 'toUid': toUid,
+                'subject': subject,
+                'body': body,
+                if (projectShareId != null) 'projectShareId': projectShareId,
+                'idempotencyKey':
+                    '$fromUid:${toEmail.trim().toLowerCase()}:${DateTime.now().millisecondsSinceEpoch}',
+              },
+            ),
+          );
+      rethrow;
     }
 
     if (localToUserId != null) {
       await appDb.sendClientMessage(
-            fromUserId: fromUser.id,
-            toUserId: localToUserId,
-            subject: subject,
-            body: body,
-            projectId: localProjectId,
-          );
+        fromUserId: fromUser.id,
+        toUserId: localToUserId,
+        subject: subject,
+        body: body,
+        projectId: localProjectId,
+      );
     }
   }
 }
@@ -366,7 +449,7 @@ Stream<List<ClientInboxEntry>> watchUnifiedClientInbox(Ref ref, User user) async
       cloud = value;
       controller.add(mergeInboxEntries(local: local, cloud: cloud));
     },
-    onError: (e) => debugPrint('Cloud inbox error: $e'),
+    onError: controller.addError,
   );
 
   ref.onDispose(() {
@@ -383,9 +466,9 @@ Future<void> markInboxEntryRead(WidgetRef ref, ClientInboxEntry entry) async {
     await ref.read(databaseProvider).markMessageRead(entry.localMessageId!);
   }
   if (entry.cloudMessageId != null) {
-    await SupabaseAuthHelper.client
-        .from('client_messages')
-        .update({'is_read': true})
-        .eq('id', entry.cloudMessageId!);
+    await SupabaseAuthHelper.client.from('client_messages').update({
+      'is_read': true,
+      'read_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('id', entry.cloudMessageId!);
   }
 }

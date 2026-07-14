@@ -109,12 +109,27 @@ class CloudInvoiceRepository {
     required Invoice invoice,
     required String clientEmail,
     String? clientUid,
+    bool bypassQueue = false,
   }) async {
     final uid = SupabaseAuthHelper.currentUid;
-    if (uid == null || uid.isEmpty) return;
+    if (uid == null || uid.isEmpty) {
+      throw StateError('AUTH_REQUIRED');
+    }
     if (invoice.status == 'draft') return;
 
     final shareId = shareIdFor(freelancerUid: uid, localInvoiceId: invoice.id);
+    Future<void> action() => _upsertShare(
+          freelancer: freelancer,
+          invoice: invoice,
+          clientEmail: clientEmail,
+          clientUid: clientUid,
+          shareId: shareId,
+          uid: uid,
+        );
+    if (bypassQueue) {
+      await action();
+      return;
+    }
     await ref.read(cloudWriteGuardProvider).runOrEnqueue(
           kind: 'invoice_sync',
           payload: {
@@ -122,14 +137,7 @@ class CloudInvoiceRepository {
             'clientEmail': clientEmail,
             if (clientUid != null) 'clientUid': clientUid,
           },
-          action: () => _upsertShare(
-                freelancer: freelancer,
-                invoice: invoice,
-                clientEmail: clientEmail,
-                clientUid: clientUid,
-                shareId: shareId,
-                uid: uid,
-              ),
+          action: action,
         );
   }
 

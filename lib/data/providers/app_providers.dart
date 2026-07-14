@@ -484,10 +484,14 @@ final unifiedClientInboxProvider = StreamProvider<List<ClientInboxEntry>>((ref) 
 
 /// Freelancer mailbox, sent + received (Supabase).
 final freelancerMailboxProvider = StreamProvider<List<CloudMessage>>((ref) {
-  ref.watch(authStateProvider);
+  final user = ref.watch(authStateProvider).valueOrNull;
   final uid = SupabaseAuthHelper.currentUid;
-  if (uid == null || uid.isEmpty) return Stream.value(const <CloudMessage>[]);
-  return ref.watch(cloudMessageRepositoryProvider).watchFreelancerMailbox(uid: uid);
+  if (uid == null || uid.isEmpty || user == null) {
+    return Stream.value(const <CloudMessage>[]);
+  }
+  return ref
+      .watch(cloudMessageRepositoryProvider)
+      .watchFreelancerMailbox(uid: uid, email: user.email);
 });
 
 final unreadMessagesProvider = FutureProvider<int>((ref) async {
@@ -508,9 +512,14 @@ final unreadMessagesProvider = FutureProvider<int>((ref) async {
 final freelancerUnreadProvider = FutureProvider<int>((ref) async {
   ref.watch(freelancerMailboxProvider);
   final uid = SupabaseAuthHelper.currentUid;
-  if (uid == null) return 0;
+  final user = ref.watch(authStateProvider).valueOrNull;
+  if (uid == null || user == null) return 0;
   final mailbox = await ref.read(freelancerMailboxProvider.future);
-  return mailbox.where((m) => m.toUid == uid && !m.isRead).length;
+  final me = user.email.trim().toLowerCase();
+  return mailbox.where((m) {
+    if (m.isRead || m.fromUid == uid) return false;
+    return m.toUid == uid || m.toEmail.trim().toLowerCase() == me;
+  }).length;
 });
 
 final clientCloudInvoicesProvider = StreamProvider<List<CloudInvoiceShare>>((ref) {
@@ -626,7 +635,11 @@ final unreadBadgeCountProvider = Provider<int>((ref) {
     count += inbox.where((m) => !m.isRead).length;
   } else if (uid != null) {
     final mailbox = ref.watch(freelancerMailboxProvider).valueOrNull ?? [];
-    count += mailbox.where((m) => m.toUid == uid && !m.isRead).length;
+    final me = user.email.trim().toLowerCase();
+    count += mailbox.where((m) {
+      if (m.isRead || m.fromUid == uid) return false;
+      return m.toUid == uid || m.toEmail.trim().toLowerCase() == me;
+    }).length;
     final tasks = ref.watch(freelancerClientTasksProvider).valueOrNull ?? [];
     count += tasks.where((t) => !t.isRead).length;
   }

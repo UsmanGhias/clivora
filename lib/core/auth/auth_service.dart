@@ -27,6 +27,7 @@ import '../../core/services/project_time_service.dart';
 import '../../core/services/push_notification_service.dart';
 import '../../core/services/referral_service.dart';
 import '../../core/services/cloud_crm_backup_service.dart';
+import '../../core/services/sync_outbox_service.dart';
 import '../../data/database/database.dart';
 import '../../data/database/user_defaults.dart';
 import '../../data/database/user_scoped_queries.dart';
@@ -112,6 +113,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
           await ref.read(pushNotificationServiceProvider).onUserSignedIn();
         } catch (e) {
           debugPrint('Push on restore: $e');
+        }
+        try {
+          await ref.read(syncOutboxServiceProvider).processQueue();
+          await ref.read(syncOutboxServiceProvider).reconcileInvoiceShares();
+        } catch (e) {
+          debugPrint('Outbox drain on restore: $e');
         }
       }
     } catch (e) {
@@ -631,6 +638,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         await ref.read(pushNotificationServiceProvider).onUserSignedIn();
       } catch (e) {
         debugPrint('Push on session: $e');
+      }
+      try {
+        await ref.read(syncOutboxServiceProvider).processQueue();
+        await ref.read(syncOutboxServiceProvider).reconcileInvoiceShares();
+      } catch (e) {
+        debugPrint('Outbox drain on session: $e');
       }
       try {
         await ref.read(referralServiceProvider).syncCodeToCloud();

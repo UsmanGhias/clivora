@@ -19,12 +19,15 @@ class SyncFailureBanner extends ConsumerWidget {
       child: InkWell(
         onTap: () async {
           final outbox = ref.read(syncOutboxServiceProvider);
+          await outbox.requeueDeadLetter();
           await outbox.processQueue();
+          await outbox.reconcileInvoiceShares();
           invalidateOnReconnect(ref);
           final pending = await outbox.pendingCount();
-          if (pending > 0) {
+          final dead = (await outbox.deadLetterItems()).length;
+          if (pending > 0 || dead > 0) {
             ref.read(syncFailureMessageProvider.notifier).state =
-                'Sync pending ($pending). Tap to retry.';
+                '$pending pending · $dead failed. Tap to retry.';
           } else {
             ref.read(syncFailureMessageProvider.notifier).state = null;
           }

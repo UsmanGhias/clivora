@@ -152,10 +152,22 @@ class CloudProjectRepository {
     required String clientEmail,
     required int localProjectId,
     required Project project,
+    bool bypassQueue = false,
   }) async {
     final uid = SupabaseAuthHelper.currentUid;
     if (uid == null || uid.isEmpty) {
-      debugPrint('Cloud project share skipped: no Supabase session');
+      throw StateError('AUTH_REQUIRED');
+    }
+    Future<void> action() => shareProject(
+          freelancerUid: uid,
+          freelancerEmail: freelancer.email,
+          clientEmail: clientEmail,
+          localProjectId: localProjectId,
+          project: project,
+          currency: project.currency.isNotEmpty ? project.currency : 'USD',
+        );
+    if (bypassQueue) {
+      await action();
       return;
     }
     await ref.read(cloudWriteGuardProvider).runOrEnqueue(
@@ -164,14 +176,7 @@ class CloudProjectRepository {
             'projectId': localProjectId,
             'clientEmail': clientEmail,
           },
-          action: () => shareProject(
-                freelancerUid: uid,
-                freelancerEmail: freelancer.email,
-                clientEmail: clientEmail,
-                localProjectId: localProjectId,
-                project: project,
-                currency: project.currency.isNotEmpty ? project.currency : 'USD',
-              ),
+          action: action,
         );
   }
 }

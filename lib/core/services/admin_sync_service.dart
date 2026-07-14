@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/database/database.dart';
 import '../../data/providers/app_providers.dart';
 import 'connectivity_service.dart';
-import 'sync_outbox_service.dart';
 
 final adminSyncServiceProvider = Provider<AdminSyncService>((ref) {
   return AdminSyncService(ref);
@@ -19,9 +18,7 @@ class AdminSyncService {
   Future<void> syncPendingEvents() async {
     final online = await ref.read(connectivityServiceProvider).isOnlineNow();
     if (!online) {
-      await ref.read(syncOutboxServiceProvider).enqueue(
-            SyncOutboxItem(kind: 'admin_sync', payload: {}),
-          );
+      // Keep analytics local only — admin_sync has no authenticated RPC yet.
       return;
     }
     await flushPendingEvents();
