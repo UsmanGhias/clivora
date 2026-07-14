@@ -680,6 +680,22 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       BusinessProfilesCompanion(ownerPhotoPath: Value(savedPath)),
     );
 
+    // Sync avatar to cloud so web + mobile share the same image.
+    try {
+      final url = await SupabaseAuthHelper.uploadAvatarFromPath(savedPath);
+      if (url != null) {
+        await SupabaseAuthHelper.upsertProfile(
+          email: user.email,
+          name: user.name,
+          accountType: user.accountType,
+          role: user.role,
+          avatarUrl: url,
+        );
+      }
+    } catch (e) {
+      debugPrint('Cloud avatar sync: $e');
+    }
+
     final updated = await _db.getUser(user.id);
     state = AsyncValue.data(updated);
     return null;

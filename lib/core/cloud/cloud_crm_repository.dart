@@ -89,11 +89,54 @@ class CloudCrmRepository {
         'currency': row.currency,
         'priority': row.priority,
         'status': row.status,
+        'pricing_type': row.pricingType,
         'start_date': row.startDate?.toUtc().toIso8601String(),
         'deadline': row.deadline?.toUtc().toIso8601String(),
         'updated_at': row.updatedAt.toUtc().toIso8601String(),
       },
     );
+  }
+
+  /// Push a completed mobile time session into `crm_time_entries` for web sync.
+  Future<void> pushTimeEntry({
+    required int ownerUserId,
+    required int localProjectId,
+    required int localEntryId,
+    required int minutes,
+    required String description,
+    double hourlyRate = 0,
+  }) async {
+    final uid = SupabaseAuthHelper.currentUid;
+    if (uid == null) throw StateError('AUTH_REQUIRED');
+    String? cloudProjectId;
+    try {
+      final p = await _db
+          .from('crm_projects')
+          .select('id')
+          .eq('owner_uid', uid)
+          .eq('local_id', localProjectId)
+          .maybeSingle();
+      cloudProjectId = p?['id'] as String?;
+    } catch (_) {}
+    final hours = minutes / 60.0;
+    final now = DateTime.now().toUtc();
+    final day = now.toIso8601String().substring(0, 10);
+    await _db.from('crm_time_entries').upsert({
+      'owner_uid': uid,
+      'project_id': cloudProjectId,
+      'local_id': localEntryId,
+      'description': description,
+      'minutes': minutes,
+      'hours': double.parse(hours.toStringAsFixed(2)),
+      'hourly_rate': hourlyRate,
+      'billable': true,
+      'approval_status': 'pending',
+      'status': 'pending',
+      'work_date': day,
+      'date': day,
+      'updated_at': now.toIso8601String(),
+      'created_at': now.toIso8601String(),
+    }, onConflict: 'owner_uid,local_id');
   }
 
   Future<void> pushInvoice({required int ownerUserId, required int localId}) async {

@@ -292,6 +292,22 @@ class _ClientContractTile extends ConsumerWidget {
                   ),
                 ),
               ],
+              if (contract.status == 'signed') ...[
+                const SizedBox(height: 24),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: ClivoraColors.successGreen.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: ClivoraColors.successGreen.withValues(alpha: 0.35)),
+                  ),
+                  child: const Text(
+                    'This agreement is signed and locked. Terms are read-only for both sides.',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
               if (contract.status == 'sent') ...[
                 const SizedBox(height: 24),
                 FilledButton.icon(

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../cloud/cloud_notification_repository.dart';
 import '../cloud/supabase_auth_helper.dart';
@@ -19,6 +20,8 @@ class PushNotificationService {
   final Ref ref;
   String? _listeningUid;
   final Set<String> _shownIds = {};
+  DateTime? _bootstrappedAt;
+  bool _skipBootstrap = true;
 
   Future<void> initialize() async {
     await ref.read(fcmServiceProvider).initialize();
@@ -30,6 +33,13 @@ class PushNotificationService {
     if (uid == null || uid.isEmpty) return;
     if (_listeningUid == uid) return;
     _listeningUid = uid;
+    _skipBootstrap = true;
+    _bootstrappedAt = DateTime.now().toUtc();
+
+    final prefs = await SharedPreferences.getInstance();
+    final seenKey = 'notif_seen_$uid';
+    final lastSeenIso = prefs.getString(seenKey);
+    final lastSeen = lastSeenIso != null ? DateTime.tryParse(lastSeenIso) : null;
 
     ref.read(cloudNotificationRepositoryProvider).watchForUser(uid).listen(
       (notifications) async {
@@ -37,10 +47,32 @@ class PushNotificationService {
         final latest = notifications.first;
         if (latest.isRead) return;
         if (_shownIds.contains(latest.id)) return;
+
+        // Skip the first snapshot after listen attach (historical unread).
+        if (_skipBootstrap) {
+          _skipBootstrap = false;
+          for (final n in notifications) {
+            _shownIds.add(n.id);
+          }
+          final newest = notifications.first.createdAt.toUtc();
+          await prefs.setString(seenKey, newest.toIso8601String());
+          return;
+        }
+
+        // Only alert for notifications created after this session started,
+        // or after the last locally-seen timestamp.
+        final created = latest.createdAt.toUtc();
+        final floor = lastSeen ?? _bootstrappedAt;
+        if (floor != null && !created.isAfter(floor)) {
+          _shownIds.add(latest.id);
+          return;
+        }
+
         _shownIds.add(latest.id);
         if (_shownIds.length > 200) {
           _shownIds.remove(_shownIds.first);
         }
+        await prefs.setString(seenKey, created.toIso8601String());
         if (!await ref.read(notificationPrefsServiceProvider).allowsKind(latest.kind)) {
           return;
         }
@@ -82,9 +114,5 @@ class PushNotificationService {
           body: body,
           payload: kind,
         );
-  }
-
-  void dispose() {
-    _listeningUid = null;
   }
 }

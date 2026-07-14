@@ -1,12 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/providers/database_provider.dart';
 import '../auth/auth_service.dart';
 import '../auth/user_roles.dart';
-import '../cloud/cloud_message_repository.dart';
-import '../cloud/cloud_notification_repository.dart';
 import '../cloud/supabase_auth_helper.dart';
-import '../cloud/supabase_sync_service.dart';
 
 final freelancerLinkServiceProvider = Provider<FreelancerLinkService>((ref) {
   return FreelancerLinkService(ref);
@@ -34,35 +30,28 @@ class FreelancerLinkService {
       return 'Sign in with Google or email (not guest) to connect with a freelancer';
     }
 
-    final freelancerUid = await ref.read(supabaseSyncServiceProvider).uidForEmail(email);
-
-    final subject = '[Link Request] ${client.name} wants to connect';
-    final body =
-        'Hi,\n\n'
-        '${client.name} (${client.email}) would like to work with you on CLIVORA.\n\n'
-        'Please share a project with their email so they can view progress, invoices, and messages.\n\n'
-        'Open CLIVORA → Clients → share a project using: ${client.email}';
-
+    final sb = SupabaseAuthHelper.client;
     try {
-      await ref.read(cloudMessageRepositoryProvider).sendMessage(
-            fromUid: clientUid,
-            fromEmail: client.email,
-            toEmail: email,
-            toUid: freelancerUid,
-            subject: subject,
-            body: body,
-          );
+      await sb.rpc(
+        'client_invite_freelancer',
+        params: {
+          'p_freelancer_email': email,
+          'p_message':
+              'Hi,\n\n'
+              '${client.name} (${client.email}) would like to work with you on CLIVORA.\n\n'
+              'Please share a project with their email so they can view progress, invoices, and messages.\n\n'
+              'Open CLIVORA → Clients → share a project using: ${client.email}',
+        },
+      );
     } catch (e) {
+      final msg = e.toString();
+      if (msg.contains('Sign in required')) {
+        return 'Sign in with Google or email (not guest) to connect with a freelancer';
+      }
+      if (msg.contains('Enter a valid') || msg.contains('not your own')) {
+        return msg.replaceFirst(RegExp(r'^.*Exception:\s*'), '');
+      }
       return 'Could not send link request: $e';
-    }
-
-    if (freelancerUid != null) {
-      await ref.read(cloudNotificationRepositoryProvider).sendToUid(
-            toUid: freelancerUid,
-            title: 'New client connection request',
-            body: '${client.name} wants to link with you on CLIVORA',
-            kind: 'invite',
-          );
     }
 
     return null;

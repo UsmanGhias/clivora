@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -105,6 +107,7 @@ class SupabaseAuthHelper {
     required String accountType,
     required String role,
     bool forceLock = false,
+    String? avatarUrl,
   }) async {
     final uid = currentUid;
     if (uid == null) return;
@@ -125,11 +128,43 @@ class SupabaseAuthHelper {
         'account_type': accountType,
         'role': role,
         'account_type_locked': forceLock || locked,
+        if (avatarUrl != null && avatarUrl.isNotEmpty) 'avatar_url': avatarUrl,
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       });
     } catch (e) {
       debugPrint('Supabase profile upsert: $e');
     }
+  }
+
+  /// Upload a local profile image to Storage and return a public URL.
+  static Future<String?> uploadAvatarFromPath(String localPath) async {
+    final uid = currentUid;
+    if (uid == null) return null;
+    try {
+      final bytes = await File(localPath).readAsBytes();
+      final ext = localPath.split('.').last.toLowerCase();
+      final safeExt = (ext == 'png' || ext == 'webp' || ext == 'gif') ? ext : 'jpg';
+      final path = '$uid/${DateTime.now().millisecondsSinceEpoch}.$safeExt';
+      for (final bucket in const ['avatars', 'profile-photos']) {
+        try {
+          await client.storage.from(bucket).uploadBinary(
+                path,
+                bytes,
+                fileOptions: FileOptions(
+                  upsert: true,
+                  contentType: 'image/$safeExt',
+                ),
+              );
+          final publicUrl = client.storage.from(bucket).getPublicUrl(path);
+          if (publicUrl.isNotEmpty) return publicUrl;
+        } catch (_) {
+          continue;
+        }
+      }
+    } catch (e) {
+      debugPrint('Avatar upload failed: $e');
+    }
+    return null;
   }
 
   static Future<String?> resetPasswordForEmail(String email) async {

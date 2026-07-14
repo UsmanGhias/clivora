@@ -628,7 +628,8 @@ final unreadBadgeCountProvider = Provider<int>((ref) {
   var count = 0;
 
   final cloud = ref.watch(cloudNotificationsProvider).valueOrNull ?? [];
-  count += cloud.where((n) => !n.isRead).length;
+  // Exclude message-kind cloud rows when mailbox/inbox already counts them.
+  count += cloud.where((n) => !n.isRead && n.kind != 'message').length;
 
   if (isClientUser(user)) {
     final inbox = ref.watch(unifiedClientInboxProvider).valueOrNull ?? [];

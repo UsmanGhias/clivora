@@ -104,6 +104,12 @@ class AppShell extends ConsumerWidget {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
+        // Prefer normal back when there is a pushed route (Hub → Contracts, etc.).
+        final router = GoRouter.of(context);
+        if (router.canPop()) {
+          router.pop();
+          return;
+        }
         await showExitDialog(context);
       },
       child: Scaffold(

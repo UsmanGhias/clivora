@@ -32,6 +32,7 @@ class _ConnectMarketplaceScreenState
   String? _error;
   List<Map<String, dynamic>> _profiles = [];
   List<Map<String, dynamic>> _needs = [];
+  List<Map<String, dynamic>> _myJobs = [];
   List<Map<String, dynamic>> _requests = [];
   Set<String> _savedIds = {};
   String _profileFilter = 'all'; // all | verified | available
@@ -106,11 +107,13 @@ class _ConnectMarketplaceScreenState
           ? await svc.browseFreelancers(skill: _skillCtrl.text, sort: _talentSort)
           : await svc.browseClients(skill: _skillCtrl.text, sort: _talentSort);
       final needs = await svc.browseNeeds();
+      final myJobs = isClient ? await svc.myNeedPosts() : <Map<String, dynamic>>[];
       final requests = await svc.myRequests();
       if (!mounted) return;
       setState(() {
         _profiles = profiles;
         _needs = needs;
+        _myJobs = myJobs;
         _requests = requests;
         _loading = false;
       });
@@ -197,7 +200,7 @@ class _ConnectMarketplaceScreenState
                   labelPadding: const EdgeInsets.symmetric(horizontal: 8),
                   tabs: [
                     Tab(text: isClient ? 'Talent' : 'Clients'),
-                    Tab(text: isClient ? 'Jobs' : 'Open jobs'),
+                    Tab(text: isClient ? 'My jobs' : 'Open jobs'),
                     Tab(
                       text:
                           'Inbox (${_requests.where((r) => (r['status'] as String?) == 'pending').length})',
@@ -253,19 +256,48 @@ class _ConnectMarketplaceScreenState
                                 onToggleSaved: _toggleSaved,
                                 browseClients: !isClient,
                               ),
-                              _NeedsTab(
-                                needs: _needs,
-                                isClient: isClient,
-                                categoryFilter: _categoryFilter,
-                                onCategoryChanged: (cat) =>
-                                    setState(() => _categoryFilter = cat),
-                                onCreate: () => context.push('/connect/need'),
-                                onOpenDetail: (row) => _showNeedDetail(
-                                  row,
-                                  canApply: !isClient,
-                                  onApply: () => _contactNeed(row),
+                              if (isClient)
+                                _MyJobsTab(
+                                  jobs: _myJobs,
+                                  onCreate: () => context.push('/connect/need'),
+                                  onClose: (row) async {
+                                    final id = row['id'] as String?;
+                                    if (id == null) return;
+                                    try {
+                                      await ref
+                                          .read(connectMarketplaceServiceProvider)
+                                          .closeNeedPost(id);
+                                      if (!mounted) return;
+                                      messenger.showSnackBar(
+                                        const SnackBar(content: Text('Job closed')),
+                                      );
+                                      await _reload();
+                                    } catch (e) {
+                                      if (!mounted) return;
+                                      messenger.showSnackBar(SnackBar(content: Text('$e')));
+                                    }
+                                  },
+                                  onOpenDetail: (row) => _showNeedDetail(
+                                    row,
+                                    canApply: false,
+                                    onApply: () {},
+                                  ),
+                                )
+                              else
+                                _NeedsTab(
+                                  needs: _needs,
+                                  isClient: isClient,
+                                  categoryFilter: _categoryFilter,
+                                  onCategoryChanged: (cat) =>
+                                      setState(() => _categoryFilter = cat),
+                                  onCreate: () => context.push('/connect/need'),
+                                  onOpenDetail: (row) => _showNeedDetail(
+                                    row,
+                                    canApply: true,
+                                    onApply: () => _applyToNeed(row),
+                                    onContact: () => _contactNeed(row),
+                                  ),
                                 ),
-                              ),
                               _InboxTab(
                                 requests: _requests,
                                 myUid: ref
@@ -441,6 +473,92 @@ class _ConnectMarketplaceScreenState
     }
   }
 
+  Future<void> _applyToNeed(Map<String, dynamic> row) async {
+    final amountCtrl = TextEditingController();
+    final messageCtrl = TextEditingController();
+    final daysCtrl = TextEditingController(text: '14');
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Apply with a proposal'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: amountCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Proposed amount (USD)',
+                  hintText: 'e.g. 500',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: daysCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Timeline (days)',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: messageCtrl,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Cover note',
+                  hintText: 'Pitch your fit. Stay professional.',
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Submit')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final amount = double.tryParse(amountCtrl.text.trim()) ?? 0;
+    final days = int.tryParse(daysCtrl.text.trim());
+    final message = messageCtrl.text.trim();
+    if (amount <= 0 || message.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Enter amount and a cover note')),
+        );
+      }
+      return;
+    }
+    try {
+      await ref.read(connectMarketplaceServiceProvider).submitProposal(
+            toUserId: row['client_user_id'] as String,
+            needId: row['id'] as String?,
+            amount: amount,
+            timelineDays: days,
+            message: message,
+          );
+      await ref
+          .read(connectMarketplaceServiceProvider)
+          .logConnectEvent('connect_proposal_submitted');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Proposal submitted')),
+        );
+        await _reload();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      }
+    } finally {
+      amountCtrl.dispose();
+      messageCtrl.dispose();
+      daysCtrl.dispose();
+    }
+  }
+
   Future<void> _contactNeed(Map<String, dynamic> row) async {
     final message = await _askMessage(
       'Pitch your fit for this need. Stay anonymous for now.',
@@ -533,6 +651,7 @@ class _ConnectMarketplaceScreenState
     Map<String, dynamic> row, {
     required bool canApply,
     required VoidCallback onApply,
+    VoidCallback? onContact,
   }) async {
     final title = row['title'] as String? ?? 'Job';
     await showModalBottomSheet<void>(
@@ -557,6 +676,13 @@ class _ConnectMarketplaceScreenState
                 onApply();
               }
             : null,
+        secondaryLabel: onContact != null ? 'Contact' : null,
+        onSecondary: onContact == null
+            ? null
+            : () {
+                Navigator.pop(ctx);
+                onContact();
+              },
       ),
     );
   }
@@ -1778,6 +1904,95 @@ class _InboxStatusChip extends StatelessWidget {
   }
 }
 
+class _MyJobsTab extends StatelessWidget {
+  const _MyJobsTab({
+    required this.jobs,
+    required this.onCreate,
+    required this.onClose,
+    required this.onOpenDetail,
+  });
+
+  final List<Map<String, dynamic>> jobs;
+  final VoidCallback onCreate;
+  final Future<void> Function(Map<String, dynamic> row) onClose;
+  final void Function(Map<String, dynamic> row) onOpenDetail;
+
+  @override
+  Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Your posted jobs',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+            ),
+            FilledButton.icon(
+              onPressed: onCreate,
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Post job'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (jobs.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 48),
+            child: Column(
+              children: [
+                Icon(Icons.work_outline, size: 48, color: onSurface.withValues(alpha: 0.35)),
+                const SizedBox(height: 12),
+                Text(
+                  'No jobs yet',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Post a need so freelancers can apply with proposals.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: onSurface.withValues(alpha: 0.6)),
+                ),
+              ],
+            ),
+          )
+        else
+          for (final row in jobs)
+            Card(
+              margin: const EdgeInsets.only(bottom: 10),
+              child: ListTile(
+                onTap: () => onOpenDetail(row),
+                title: Text(
+                  row['title'] as String? ?? 'Job',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                subtitle: Text(
+                  [
+                    row['is_open'] == true ? 'Open' : 'Closed',
+                    row['budget_band'] as String? ?? 'Negotiable',
+                    row['moderation_status'] as String? ?? '',
+                  ].where((e) => e.toString().isNotEmpty).join(' · '),
+                ),
+                trailing: row['is_open'] == true
+                    ? TextButton(
+                        onPressed: () => onClose(row),
+                        child: const Text('Close'),
+                      )
+                    : Icon(Icons.lock_outline, color: onSurface.withValues(alpha: 0.4)),
+              ),
+            ),
+      ],
+    );
+  }
+}
+
 class _ConnectDetailSheet extends StatelessWidget {
   const _ConnectDetailSheet({
     required this.title,
@@ -1792,6 +2007,8 @@ class _ConnectDetailSheet extends StatelessWidget {
     required this.verified,
     required this.ctaLabel,
     required this.onCta,
+    this.secondaryLabel,
+    this.onSecondary,
   });
 
   final String title;
@@ -1806,6 +2023,8 @@ class _ConnectDetailSheet extends StatelessWidget {
   final bool verified;
   final String? ctaLabel;
   final VoidCallback? onCta;
+  final String? secondaryLabel;
+  final VoidCallback? onSecondary;
 
   @override
   Widget build(BuildContext context) {
@@ -1944,6 +2163,17 @@ class _ConnectDetailSheet extends StatelessWidget {
                           : Icons.chat_bubble_outline,
                     ),
                     label: Text(ctaLabel!),
+                  ),
+                ),
+              ],
+              if (secondaryLabel != null && onSecondary != null) ...[
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: onSecondary,
+                    icon: const Icon(Icons.chat_bubble_outline),
+                    label: Text(secondaryLabel!),
                   ),
                 ),
               ],

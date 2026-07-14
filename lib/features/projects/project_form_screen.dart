@@ -41,6 +41,7 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
   String _status = 'not_started';
   String? _previousStatus;
   String _priority = 'medium';
+  String _pricingType = 'fixed';
   String _currency = kDefaultCurrency;
   DateTime? _startDate;
   DateTime? _deadline;
@@ -69,6 +70,7 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
       _status = project.status;
       _previousStatus = project.status;
       _priority = project.priority;
+      _pricingType = project.pricingType.isNotEmpty ? project.pricingType : 'fixed';
       _startDate = project.startDate;
       _deadline = project.deadline;
     }
@@ -115,6 +117,7 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
             currency: _currency,
             status: _status,
             priority: _priority,
+            pricingType: _pricingType,
             startDate: Value(_startDate),
             deadline: Value(_deadline),
             updatedAt: DateTime.now(),
@@ -147,6 +150,7 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
           currency: Value(_currency),
           status: Value(_status),
           priority: Value(_priority),
+          pricingType: Value(_pricingType),
           startDate: Value(_startDate),
           deadline: Value(_deadline),
         ),
@@ -336,7 +340,18 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          ClivoraTextField(controller: _budgetController, label: 'Budget', hint: '0', keyboardType: TextInputType.number),
+                          ClivoraTextField(controller: _budgetController, label: 'Budget / hourly rate', hint: '0', keyboardType: TextInputType.number),
+                          const SizedBox(height: 16),
+                          const ClivoraFieldLabel(label: 'Pricing type'),
+                          DropdownButtonFormField<String>(
+                            value: _pricingType,
+                            decoration: const InputDecoration(hintText: 'Select pricing'),
+                            items: const [
+                              DropdownMenuItem(value: 'fixed', child: Text('Fixed price')),
+                              DropdownMenuItem(value: 'hourly', child: Text('Hourly')),
+                            ],
+                            onChanged: (v) => setState(() => _pricingType = v ?? 'fixed'),
+                          ),
                           const SizedBox(height: 16),
                           const ClivoraFieldLabel(label: 'Currency'),
                           DropdownButtonFormField<String>(

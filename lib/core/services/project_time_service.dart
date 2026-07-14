@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_service.dart';
+import '../../core/cloud/cloud_crm_repository.dart';
 import '../../core/utils/duration_formatter.dart';
 import '../../core/services/tracking_service.dart';
 import '../../data/database/user_scoped_queries.dart';
@@ -123,12 +124,26 @@ class ProjectTimeTrackerNotifier extends StateNotifier<ProjectTimeTrackerState> 
 
     final project = await db.getProjectForUser(ownerId, projectId);
     if (project != null) {
+      final nextStatus = (project.status == 'not_started' || project.status == 'draft')
+          ? 'in_progress'
+          : project.status;
+      if (nextStatus != project.status) {
+        await db.updateProject(project.copyWith(status: nextStatus, updatedAt: DateTime.now()));
+        ref.invalidate(projectsProvider);
+      }
       await ref.read(trackingServiceProvider).logStatusChange(
             entityType: 'project',
             entityId: projectId,
-            status: project.status,
+            status: nextStatus,
             note: 'Time tracking started',
           );
+      // Best-effort cloud CRM sync so web projects reflect in-progress.
+      try {
+        await ref.read(cloudCrmRepositoryProvider).pushProject(
+              ownerUserId: ownerId,
+              localId: projectId,
+            );
+      } catch (_) {}
     }
   }
 
@@ -136,7 +151,8 @@ class ProjectTimeTrackerNotifier extends StateNotifier<ProjectTimeTrackerState> 
     if (state.activeEntryId == null) return;
     final projectId = state.activeProjectId;
     final startedAt = state.startedAt;
-    await ref.read(databaseProvider).stopTimeEntry(state.activeEntryId!);
+    final entryId = state.activeEntryId!;
+    await ref.read(databaseProvider).stopTimeEntry(entryId);
     _stopTicker();
     state = const ProjectTimeTrackerState();
     ref.invalidate(projectTrackedSecondsMapProvider);
@@ -155,6 +171,18 @@ class ProjectTimeTrackerNotifier extends StateNotifier<ProjectTimeTrackerState> 
               status: project.status,
               note: 'Time tracking stopped (${formatTrackedDuration(sessionSeconds)} this session)',
             );
+        try {
+          await ref.read(cloudCrmRepositoryProvider).pushTimeEntry(
+                ownerUserId: ownerId,
+                localProjectId: projectId,
+                localEntryId: entryId,
+                minutes: (sessionSeconds / 60).round().clamp(1, 24 * 60),
+                description: 'Tracked on mobile · ${project.name}',
+                hourlyRate: project.pricingType == 'hourly'
+                    ? (project.budget > 0 ? project.budget : 0)
+                    : 0,
+              );
+        } catch (_) {}
       }
     }
   }

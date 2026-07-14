@@ -69,10 +69,22 @@ class ClientHubScreen extends ConsumerWidget {
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: const [
-                      _HubPill(icon: Icons.receipt_long_outlined, label: 'Pay'),
-                      _HubPill(icon: Icons.folder_open_outlined, label: 'Review'),
-                      _HubPill(icon: Icons.mail_outline, label: 'Reply'),
+                    children: [
+                      _HubPill(
+                        icon: Icons.receipt_long_outlined,
+                        label: 'Pay',
+                        onTap: () => context.push('/client-invoices'),
+                      ),
+                      _HubPill(
+                        icon: Icons.folder_open_outlined,
+                        label: 'Review',
+                        onTap: () => context.push('/client-contracts'),
+                      ),
+                      _HubPill(
+                        icon: Icons.mail_outline,
+                        label: 'Reply',
+                        onTap: () => context.push('/client-messages'),
+                      ),
                     ],
                   ),
                 ],
@@ -131,7 +143,7 @@ class ClientHubScreen extends ConsumerWidget {
                 description: 'Pay invoices and download PDFs',
                 iconBackground: ClivoraColors.clientSurface,
                 iconColor: ClivoraColors.clientAccent,
-                onTap: () => context.go('/client-invoices'),
+                onTap: () => context.push('/client-invoices'),
               ),
             ],
           ),
@@ -195,7 +207,7 @@ class ClientHubScreen extends ConsumerWidget {
                   description: 'Discover freelancers on CLIVORA Connect',
                   iconBackground: ClivoraColors.clientSurface,
                   iconColor: ClivoraColors.clientAccent,
-                  onTap: () => context.go('/connect'),
+                  onTap: () => context.push('/connect'),
                 )
               else
                 ToolGridTile(
@@ -234,34 +246,46 @@ class _ClientHubGrid extends StatelessWidget {
 }
 
 class _HubPill extends StatelessWidget {
-  const _HubPill({required this.icon, required this.label});
+  const _HubPill({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   final IconData icon;
   final String label;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.13),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: Colors.white, size: 14),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.13),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
           ),
-        ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: Colors.white, size: 14),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

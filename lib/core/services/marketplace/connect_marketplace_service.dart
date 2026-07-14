@@ -143,12 +143,36 @@ class ConnectMarketplaceService {
     if (c == null) return [];
     final rows = await c
         .from('connect_need_posts')
-        .select('id,client_user_id,title,summary,skills,budget_band,created_at')
+        .select('id,client_user_id,title,summary,skills,budget_band,is_open,created_at')
         .eq('is_open', true)
         .eq('moderation_status', 'approved')
         .order('created_at', ascending: false)
         .limit(50);
     return (rows as List).cast<Map<String, dynamic>>();
+  }
+
+  /// Client's own Connect jobs (open + closed) for manage/close.
+  Future<List<Map<String, dynamic>>> myNeedPosts() async {
+    final c = client;
+    final uid = c?.auth.currentUser?.id;
+    if (c == null || uid == null) return [];
+    final rows = await c
+        .from('connect_need_posts')
+        .select('id,client_user_id,title,summary,skills,budget_band,is_open,moderation_status,created_at')
+        .eq('client_user_id', uid)
+        .order('created_at', ascending: false)
+        .limit(50);
+    return (rows as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<void> closeNeedPost(String needId) async {
+    final c = client;
+    final uid = c?.auth.currentUser?.id;
+    if (c == null || uid == null) throw StateError('Sign in required');
+    await c.from('connect_need_posts').update({
+      'is_open': false,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('id', needId).eq('client_user_id', uid);
   }
 
   Future<Map<String, dynamic>?> myListing() async {
