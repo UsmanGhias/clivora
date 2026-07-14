@@ -66,7 +66,6 @@ class _FreelancerPriorityStripState extends ConsumerState<FreelancerPriorityStri
         metrics: [
           _PriorityMetricData('Proposals', pending),
           _PriorityMetricData('Accepted', accepted),
-          _PriorityMetricData('Milestones', milestones),
           _PriorityMetricData('Unread', unread),
         ],
       ),
@@ -339,8 +338,8 @@ class _PriorityMetric extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 74,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      width: (MediaQuery.sizeOf(context).width - 40 - 16) / 3,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(14),
@@ -349,13 +348,13 @@ class _PriorityMetric extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('$value', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
+          Text('$value', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18)),
           const SizedBox(height: 2),
           Text(
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.72), fontSize: 10, fontWeight: FontWeight.w600),
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.72), fontSize: 11, fontWeight: FontWeight.w600),
           ),
         ],
       ),

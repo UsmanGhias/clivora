@@ -118,8 +118,10 @@ class MoreScreen extends ConsumerWidget {
       title: 'Command Center',
       subtitle: 'All tools and resources in one place',
       showMessagesButton: true,
+      // Narrower than default so Hub tiles use more of the screen width.
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+        padding: const EdgeInsets.fromLTRB(0, 4, 0, 32),
         children: [
           // Profile card kept compact — full settings live under Menu tab
           profileAsync.when(
@@ -295,9 +297,9 @@ class MoreScreen extends ConsumerWidget {
             crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.55,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 2.35,
             children: [
               ToolGridTile(
                 icon: Icons.bar_chart_outlined,
@@ -408,9 +410,9 @@ class MoreScreen extends ConsumerWidget {
             crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.55,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 2.35,
             children: [
               ToolGridTile(
                 icon: Icons.task_alt_outlined,
@@ -530,9 +532,9 @@ class MoreScreen extends ConsumerWidget {
             crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.55,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 2.35,
             children: [
               ToolGridTile(
                 icon: Icons.inventory_2_outlined,
@@ -1011,9 +1013,7 @@ class _StatsBar extends StatelessWidget {
           _StatDivider(),
           _StatCol('${stats.activeProjects}', 'Active'),
           _StatDivider(),
-          _StatCol(formatCurrency(stats.outstanding), 'Due'),
-          _StatDivider(),
-          _StatCol(formatCurrency(stats.revenue), 'Earned'),
+          _StatCol(formatCurrency(stats.outstanding > 0 ? stats.outstanding : stats.revenue), stats.outstanding > 0 ? 'Due' : 'Earned'),
         ],
       ),
     );

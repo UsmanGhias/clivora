@@ -13,6 +13,7 @@ import {
   Headphones,
   KeyRound,
   Link2,
+  Network,
   Shield,
   SlidersHorizontal,
   Store,
@@ -29,6 +30,7 @@ import {
   StatusPill,
 } from "@/components/freelancer/ui";
 import { ManageBillingButton } from "@/components/app/ManageBillingButton";
+import { OdooSyncButton } from "@/components/app/OdooSyncButton";
 import { ProfileEditForm } from "@/components/freelancer/ProfileEditForm";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -223,25 +225,25 @@ function AccountTab({
         title="Account information"
         action={<OutlineButton href="/app/account?edit=1">Edit profile</OutlineButton>}
       >
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex items-start gap-4">
+        <div className="space-y-5">
+          <div className="flex min-w-0 items-start gap-4">
             {profile.avatar_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={profile.avatar_url}
                 alt=""
-                className="h-16 w-16 rounded-full object-cover"
+                className="h-16 w-16 shrink-0 rounded-full object-cover"
               />
             ) : (
-              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-xl font-bold text-white">
+              <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary text-xl font-bold text-white">
                 {(profile.name || profile.email || "?").charAt(0).toUpperCase()}
               </span>
             )}
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="font-display text-lg font-bold text-navy">
                 {profile.name || "Freelancer"}
               </p>
-              <p className="text-sm text-text-secondary">{profile.email}</p>
+              <p className="truncate text-sm text-text-secondary">{profile.email}</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 {plus && (
                   <StatusPill tone="green">
@@ -254,15 +256,27 @@ function AccountTab({
               </div>
             </div>
           </div>
+
           <div className="rounded-xl border border-border bg-primary/5 p-4">
-            <p className="text-xs font-semibold uppercase text-text-muted">Plan</p>
-            <div className="mt-1 flex items-center gap-2">
-              <p className="font-bold text-navy">{plan}</p>
-              {plus && <StatusPill tone="green">Active</StatusPill>}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+                  Plan
+                </p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="font-bold text-navy">{plan}</p>
+                  {plus && <StatusPill tone="green">Active</StatusPill>}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <OutlineButton onClick={() => onGoto("billing")}>Manage billing</OutlineButton>
+                <OutlineButton href="/pro?plan=pro_plus">Plan status</OutlineButton>
+              </div>
             </div>
-            <div className="mt-3">
-              <ManageBillingButton />
-            </div>
+            <p className="mt-3 text-xs text-text-secondary">
+              CLIVORA charges <strong>$20/mo</strong> for Pro Plus. Invoice amounts go client → you
+              directly — keep work on platform.
+            </p>
           </div>
         </div>
       </FreelancerCard>
@@ -750,6 +764,16 @@ function AppsTab({
       manage: false,
       cta: "Open",
     },
+    {
+      name: "Odoo Contacts",
+      desc: "Sync CLIVORA clients into your existing Odoo Contacts app (no new Odoo modules)",
+      icon: Network,
+      connected: false,
+      href: "#odoo",
+      manage: false,
+      cta: "Sync",
+      odoo: true,
+    },
   ];
 
   return (
@@ -779,6 +803,8 @@ function AppsTab({
               <div className="mt-auto">
                 {app.manage ? (
                   <ManageBillingButton />
+                ) : "odoo" in app && app.odoo ? (
+                  <OdooSyncButton />
                 ) : (
                   <OutlineButton href={app.href}>{app.cta}</OutlineButton>
                 )}
