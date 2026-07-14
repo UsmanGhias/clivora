@@ -53,7 +53,22 @@ export default function AdminOverviewPage() {
                 const blob = new Blob(
                   [
                     JSON.stringify(
-                      { exportedAt: new Date().toISOString(), overview: o ?? null },
+                      {
+                        exportedAt: new Date().toISOString(),
+                        purpose: "platform-migration-snapshot",
+                        overview: o ?? null,
+                        users: data?.users ?? [],
+                        freelancers: data?.freelancers ?? [],
+                        clients: data?.clients ?? [],
+                        customers: data?.customers ?? [],
+                        projects: data?.projects ?? [],
+                        invoices: data?.invoices ?? [],
+                        payments: data?.payments ?? [],
+                        jobs: data?.jobs ?? [],
+                        proposals: data?.proposals ?? [],
+                        connect: data?.connect ?? null,
+                        events: data?.events ?? [],
+                      },
                       null,
                       2,
                     ),
@@ -63,12 +78,12 @@ export default function AdminOverviewPage() {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
                 a.href = url;
-                a.download = `clivora-admin-overview-${new Date().toISOString().slice(0, 10)}.json`;
+                a.download = `clivora-platform-export-${new Date().toISOString().slice(0, 10)}.json`;
                 a.click();
                 URL.revokeObjectURL(url);
               }}
             >
-              Export report
+              Export full snapshot
             </AdminBtn>
           </>
         }

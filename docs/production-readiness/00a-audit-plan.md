@@ -2,7 +2,7 @@
 
 **Status:** Phase 1 **accepted** · Phase 2 / **PR-02** inspection complete · **PR-03 remediations applied** (residual tests open)  
 **Graphify:** **Not installed** — `graphify-out/` absent in repo (gap per `AGENTS.md` mandate)  
-**Updated:** 2026-07-14 (PR-03 evidence in `05-pr03-remediation-evidence.md`)
+**Updated:** 2026-07-14 (PR-04 admin/Odoo live-data fixes in `07-pr04-admin-odoo-offline.md`)
 
 ## Prerequisites
 
@@ -20,7 +20,8 @@
 | Phase 1 | Inventory, journeys, role matrix, risk register, GO/NO-GO skeleton | **Accepted** — docs `00`–`03`, `14`, `15` |
 | Phase 2 / PR-02 | Auth, roles, restrictions, admin, RLS, entitlements (inspection) | **Done (inspection)** — `04`, `06`, `09`; findings drove PR-03 |
 | **PR-03** | Server entitlements + admin honesty remediations | **Applied / residual tests open** — `05`, `08`; R-16–R-18 **MITIGATED**; see gate `15` |
-| Later | Batches D–I, PR-01, PR-04–PR-10; Batch I deploy author (R-02) | Not started / partial |
+| **PR-04** | Admin live snapshot + Odoo Contacts + offline/realtime start | **In progress** — `07-pr04-admin-odoo-offline.md` |
+| Later | Batches D–I, PR-01, PR-05–PR-10; Batch I deploy author (R-02) | Not started / partial |
 
 ## Proposed verification batches
 

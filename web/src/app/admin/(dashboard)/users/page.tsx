@@ -30,16 +30,18 @@ export default function AdminUsersPage() {
   const users = data?.users ?? [];
 
   const kpis = useMemo(() => {
-    const total = users.length;
-    const clients = users.filter((u) => String(u.account_type) === "client").length;
-    const freelancers = users.filter((u) => String(u.account_type ?? "freelancer") !== "client").length;
+    const total = data?.overview?.totalUsers || users.length;
+    const clients = data?.overview?.clients || users.filter((u) => String(u.account_type) === "client").length;
+    const freelancers =
+      data?.overview?.freelancers ||
+      users.filter((u) => String(u.account_type ?? "freelancer") !== "client").length;
     const pro = users.filter((u) =>
-      ["pro", "premium"].includes(String(u.subscription_plan || u.plan || "").toLowerCase()),
+      ["pro", "pro_plus", "premium"].includes(String(u.subscription_plan || u.plan || "").toLowerCase()),
     ).length;
     const suspended = users.filter((u) => u.is_blocked || u.is_restricted).length;
     const unverified = users.filter((u) => u.email_verified === false || u.email_confirmed === false).length;
     return { total, clients, freelancers, pro, suspended, unverified };
-  }, [users]);
+  }, [users, data?.overview]);
 
   const filtered = useMemo(() => {
     return users.filter((u) => {

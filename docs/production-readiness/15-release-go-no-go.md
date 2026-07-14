@@ -23,6 +23,13 @@
 
 **Verdict:** **NO-GO** until G-01–G-10 satisfied and owner approves.
 
+### Gate notes (2026-07-14 PR-04 admin/Odoo)
+
+- Root cause of Overview zeros: admin auth assert ignored shared Supabase fallbacks + platform REST selects used wrong column names.
+- Fixes in `admin-auth.ts`, `admin-platform.ts`, Odoo sync route (platform-wide CRM → Contacts + credential PUT).
+- Stored Odoo API key fails authenticate against `clivora.odoo.com` — owner must paste a fresh API key (Admin → Integrations) or update Vercel `ODOO_*`.
+- Decision remains **NO-GO** until PR-04 deploy verified + High residuals closed.
+
 ### Gate notes (2026-07-14 PR-03)
 
 - Admin read APIs no longer 503 when MFA AAL lookup fails with `requireAal2=false` (`web/src/lib/admin-auth.ts`).
@@ -38,6 +45,8 @@
 | --- | --- |
 | Phase 1 (inventory / journeys / matrix / risks) | **Accepted** |
 | Phase 2 / PR-02 (auth, roles, RLS inspection) | **Inspection complete** |
+| PR-03 (server entitlements) | **Applied** — residual tests open |
+| PR-04 (admin live data, Odoo, offline start) | **In progress** — code fixed; deploy + valid Odoo key pending |
 | **PR-03** (Connect Pro Plus RPCs, CRM free caps, admin honesty) | **Applied** — residual verification tests open (`05`) |
 | PR-01, PR-04–PR-10; Batch I (Vercel author R-02) | Not started / out of band as noted |
 

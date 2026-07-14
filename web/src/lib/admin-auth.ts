@@ -2,6 +2,7 @@ import "server-only";
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/supabase-browser";
 
 export type AdminPrincipal = {
   id: string;
@@ -24,10 +25,12 @@ export class AdminAuthError extends Error {
   }
 }
 
+/**
+ * Align with `@/lib/supabase-browser` + `createClient()` so admin API routes do not
+ * 503 when NEXT_PUBLIC_* is unset but the shared fallbacks / SUPABASE_* still work.
+ */
 function assertSupabaseAuthConfig() {
-  const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anonKey) {
+  if (!SUPABASE_URL?.trim() || !SUPABASE_ANON_KEY?.trim()) {
     throw new AdminAuthError(
       "Admin authentication is unavailable.",
       503,
@@ -62,6 +65,7 @@ export async function requireAdmin(options: { requireAal2?: boolean } = {}) {
     .maybeSingle();
 
   if (profileError) {
+    console.error("admin profile lookup failed", profileError.message);
     throw new AdminAuthError(
       "Admin authorization is temporarily unavailable.",
       503,
