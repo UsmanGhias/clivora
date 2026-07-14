@@ -389,13 +389,16 @@ export function MessagesThreadView({
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_240px]">
-      <aside className="space-y-4">
-        <div className="rounded-2xl border border-border bg-surface p-3 shadow-sm">
-          <div className="mb-3 px-1">
+    <div className="grid h-full min-h-[32rem] gap-0 overflow-hidden rounded-2xl border border-border bg-surface shadow-sm xl:grid-cols-[300px_minmax(0,1fr)_240px]">
+      <aside className="flex max-h-[70vh] flex-col border-b border-border xl:max-h-none xl:border-b-0 xl:border-r">
+        <div className="shrink-0 space-y-3 border-b border-border p-3">
+          <div className="flex items-center justify-between px-1">
             <p className="text-xs font-bold uppercase tracking-wide text-text-muted">Inbox</p>
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+              {unreadCount} unread
+            </span>
           </div>
-          <div className="relative mb-3">
+          <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
             <input
               value={search}
@@ -433,6 +436,8 @@ export function MessagesThreadView({
               Archived
             </button>
           </div>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-2">
           {topLevel.length === 0 ? (
             <p className="mt-3 rounded-xl border border-dashed border-border px-4 py-6 text-center text-sm text-text-secondary">
               {filter === "archived"
@@ -442,7 +447,7 @@ export function MessagesThreadView({
                   : "No matching messages."}
             </p>
           ) : (
-            <ul className="mt-3 space-y-2">
+            <ul className="space-y-1.5">
               {topLevel.map((r) => {
                 const incoming = isUnread(r, myUid) || r.from_uid !== myUid;
                 const active = selectedThread?.id === r.id;
@@ -453,12 +458,12 @@ export function MessagesThreadView({
                       type="button"
                       onClick={() => setSelectedId(r.id)}
                       className={`w-full rounded-xl border px-3 py-2.5 text-left transition ${
-                        active ? activeThreadCls : "border-border bg-background hover:border-primary/30"
+                        active ? activeThreadCls : "border-transparent bg-transparent hover:bg-slate-50"
                       }`}
                     >
                       <span className="flex items-center gap-2">
                         <span
-                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${
                             isClient ? "bg-navy" : "bg-primary"
                           }`}
                         >
@@ -493,7 +498,7 @@ export function MessagesThreadView({
         </div>
       </aside>
 
-      <section className="flex min-h-[28rem] flex-col rounded-2xl border border-border bg-surface shadow-sm">
+      <section className="flex min-h-[28rem] flex-col xl:min-h-0">
         {selectedThread ? (
           (() => {
             const replies = repliesFor(selectedThread.id);

@@ -128,7 +128,7 @@ export function FreelancerSettingsPanel({
               <ProfileEditForm profile={profile} onSaved={() => showToast("Profile saved")} />
               <p className="mt-4 text-xs text-text-muted">
                 Connect marketplace listing fields live in{" "}
-                <Link href="/connect/manage" className="font-semibold text-primary">
+                <Link href="/app/connect/manage" className="font-semibold text-primary">
                   Manage Connect
                 </Link>
                 .
@@ -655,7 +655,7 @@ function AppsTab({
       desc: plus ? "Marketplace listing and job posts" : "Requires Pro Plus",
       icon: Store,
       connected: plus,
-      href: plus ? "/connect/manage" : "/pro?plan=pro_plus",
+      href: plus ? "/app/connect/manage" : "/pro?plan=pro_plus",
       manage: false,
       cta: plus ? "Manage" : "Upgrade",
     },

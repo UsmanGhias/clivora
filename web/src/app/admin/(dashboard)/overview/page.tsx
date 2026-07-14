@@ -65,7 +65,23 @@ export default function AdminOverviewPage() {
             <AdminBtn variant="primary" onClick={() => void refresh()}>
               <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
             </AdminBtn>
-            <AdminBtn variant="dark">Export report</AdminBtn>
+            <AdminBtn
+              variant="dark"
+              onClick={() => {
+                const blob = new Blob(
+                  [JSON.stringify({ exportedAt: new Date().toISOString(), overview: o ?? null }, null, 2)],
+                  { type: "application/json" },
+                );
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `clivora-admin-overview-${new Date().toISOString().slice(0, 10)}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+            >
+              Export report
+            </AdminBtn>
           </>
         }
       />

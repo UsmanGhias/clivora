@@ -39,8 +39,8 @@ export default async function MessagesPage() {
   }
 
   return (
-    <div className="space-y-4 pb-8">
-      <div>
+    <div className="flex min-h-[calc(100vh-7.5rem)] flex-col gap-4 pb-4">
+      <div className="shrink-0">
         <h1 className="font-display text-2xl font-extrabold text-navy sm:text-3xl">Messages</h1>
         <p className="mt-1 text-sm text-text-secondary">
           {isClient
@@ -48,12 +48,14 @@ export default async function MessagesPage() {
             : "Talk with clients, share files, and keep project conversations in one place."}
         </p>
       </div>
-      <MessagesThreadView
-        rows={rows}
-        fromEmail={profile?.email ?? ""}
-        myUid={uid}
-        isClient={isClient}
-      />
+      <div className="min-h-0 flex-1">
+        <MessagesThreadView
+          rows={rows}
+          fromEmail={profile?.email ?? ""}
+          myUid={uid}
+          isClient={isClient}
+        />
+      </div>
     </div>
   );
 }

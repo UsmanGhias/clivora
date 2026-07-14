@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { CONNECT_CREDIT_COSTS, parseConnectCreditError } from "@/lib/connect-credits";
@@ -496,7 +497,6 @@ export function ConnectTrust({
   mode: "accepted" | "jobs";
 }) {
   const [showReviewForm, setShowReviewForm] = useState(false);
-  const [showProposalForm, setShowProposalForm] = useState(false);
   const [reviewDone, setReviewDone] = useState(false);
   const [proposalDone, setProposalDone] = useState(false);
 
@@ -549,24 +549,13 @@ export function ConnectTrust({
 
       {mode === "jobs" && needId && (
         <>
-          {!proposalDone && !showProposalForm && (
-            <button
-              type="button"
-              onClick={() => setShowProposalForm(true)}
-              className="rounded-xl bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary-dark hover:bg-primary/20"
+          {!proposalDone && (
+            <Link
+              href={`/app/connect/apply?needId=${encodeURIComponent(needId)}&to=${encodeURIComponent(peerId)}&mode=proposal`}
+              className="inline-flex rounded-xl bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary-dark hover:bg-primary/20"
             >
-              Submit proposal
-            </button>
-          )}
-          {showProposalForm && !proposalDone && (
-            <ProposalForm
-              needId={needId}
-              toUserId={peerId}
-              onDone={() => {
-                setProposalDone(true);
-                setShowProposalForm(false);
-              }}
-            />
+              Open full proposal form →
+            </Link>
           )}
           {proposalDone && (
             <p className="text-xs font-semibold text-green-700">✓ Proposal sent</p>

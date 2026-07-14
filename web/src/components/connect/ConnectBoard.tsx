@@ -605,7 +605,7 @@ export function ConnectBoard({
               </p>
             </div>
             {signedIn && isProPlus && !isClient && (
-              <Link href="/connect/manage" className="text-sm font-semibold text-primary">
+              <Link href="/app/connect/manage" className="text-sm font-semibold text-primary">
                 Edit my profile →
               </Link>
             )}
@@ -616,7 +616,7 @@ export function ConnectBoard({
               ctaHref={
                 signedIn
                   ? isProPlus
-                    ? "/connect/manage"
+                    ? "/app/connect/manage"
                     : "/pro?plan=pro_plus"
                   : `/signup?next=${encodeURIComponent("/pro?plan=pro_plus")}`
               }
@@ -814,25 +814,31 @@ export function ConnectBoard({
               <h2 className="font-display text-xl font-extrabold text-navy">Open jobs</h2>
               <p className="text-sm text-text-secondary">Client briefs looking for freelancers</p>
             </div>
-            {signedIn && isProPlus && isClient && (
-              <Link href="/connect/manage" className="text-sm font-semibold text-primary">
-                Post a job →
+            {signedIn && isProPlus && (
+              <Link href="/app/connect/manage" className="text-sm font-semibold text-primary">
+                {isClient ? "Post a job →" : "Post a need →"}
               </Link>
             )}
           </div>
           {filteredNeeds.length === 0 ? (
             <Empty
-              text="No open jobs match. Clients can post needs from Manage."
+              text={
+                isClient
+                  ? "No open jobs yet. Post a job to reach Pro Plus freelancers."
+                  : "No open jobs match. You can also post a need for peer help."
+              }
               ctaHref={
                 signedIn
                   ? isProPlus
-                    ? "/connect/manage"
+                    ? "/app/connect/manage"
                     : "/pro?plan=pro_plus"
                   : `/signup?next=${encodeURIComponent("/pro?plan=pro_plus")}`
               }
               ctaLabel={
-                signedIn && isProPlus && isClient
-                  ? "Post a job"
+                signedIn && isProPlus
+                  ? isClient
+                    ? "Post a job"
+                    : "Post a need"
                   : `Get Pro Plus · ${site.pricing.proPlusMonthlyLabel}/mo`
               }
             />
@@ -885,22 +891,40 @@ export function ConnectBoard({
                         </button>
                       ))}
                   </div>
-                  <button
-                    type="button"
-                    disabled={n.client_user_id === myUserId}
-                    onClick={() =>
-                      contactGate(() =>
-                        setCompose({
-                          toUserId: n.client_user_id,
-                          targetNeedId: n.id,
-                          label: n.title || "job poster",
-                        }),
-                      )
-                    }
-                    className="mt-4 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
-                  >
-                    Apply / Contact
-                  </button>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Link
+                      href={
+                        signedIn && isProPlus
+                          ? `/app/connect/apply?needId=${encodeURIComponent(n.id)}&to=${encodeURIComponent(n.client_user_id)}&mode=contact`
+                          : "/pro?plan=pro_plus"
+                      }
+                      onClick={(e) => {
+                        if (n.client_user_id === myUserId) {
+                          e.preventDefault();
+                          return;
+                        }
+                        if (signedIn && isProPlus) return;
+                        e.preventDefault();
+                        contactGate(() => {
+                          window.location.href = `/app/connect/apply?needId=${encodeURIComponent(n.id)}&to=${encodeURIComponent(n.client_user_id)}&mode=contact`;
+                        });
+                      }}
+                      className={cn(
+                        "rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white",
+                        n.client_user_id === myUserId && "pointer-events-none opacity-40",
+                      )}
+                    >
+                      Contact
+                    </Link>
+                    {signedIn && isProPlus && myUserId && n.client_user_id !== myUserId && (
+                      <Link
+                        href={`/app/connect/apply?needId=${encodeURIComponent(n.id)}&to=${encodeURIComponent(n.client_user_id)}&mode=proposal`}
+                        className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary-dark hover:bg-primary/20"
+                      >
+                        Submit proposal
+                      </Link>
+                    )}
+                  </div>
                   {signedIn && isProPlus && myUserId && n.client_user_id !== myUserId && (
                     <ConnectTrust
                       requestId={n.id}

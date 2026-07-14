@@ -406,7 +406,7 @@ export function ClientInvoicesPanel({ rows }: { rows: ClientInvoiceRow[] }) {
             <ul className="space-y-2">
               <li>
                 <Link
-                  href="/connect/manage"
+                  href="/app/connect/manage"
                   className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5 text-sm font-semibold text-navy hover:bg-client-surface"
                 >
                   <span className="flex items-center gap-2">

@@ -131,7 +131,7 @@ export function ClientProjectsPanel({ rows }: { rows: ClientProjectRow[] }) {
         icon={FolderKanban}
         actions={
           <>
-            <ClientPrimaryButton href="/connect/manage">
+            <ClientPrimaryButton href="/app/connect/manage">
               <Plus className="h-4 w-4" />
               New project
             </ClientPrimaryButton>

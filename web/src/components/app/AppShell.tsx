@@ -120,6 +120,7 @@ export function AppShell({
   const freelancerNav: NavItem[] = [
     { href: "/app", label: "Dashboard", icon: LayoutDashboard },
     { href: "/app/connect", label: "Find jobs (Connect)", icon: Network },
+    { href: "/app/connect/manage", label: "Post a need", icon: Plus },
     { href: "/app/proposals", label: "Proposals", icon: FileText, badge: counts?.proposals },
     { href: "/app/projects", label: "Projects", icon: FolderKanban, badge: counts?.projects },
     { href: "/app/messages", label: "Messages", icon: MessageSquare, badge: counts?.messages },
@@ -137,7 +138,7 @@ export function AppShell({
 
   const clientTop: NavItem[] = [
     { href: "/app", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/connect/manage", label: "Post a job", icon: Plus },
+    { href: "/app/connect/manage", label: "Post a job", icon: Plus },
     { href: "/app/connect", label: "Marketplace / Connect", icon: Network },
     { href: "/app/proposals", label: "Proposals", icon: FileText, badge: counts?.proposals },
     { href: "/app/projects", label: "Projects", icon: FolderKanban, badge: counts?.projects },
@@ -207,7 +208,7 @@ export function AppShell({
       { href: "/app/settings", label: "Settings", group: "Account" },
       { href: "/app/notifications", label: "Notifications", group: "Account" },
       { href: "/pro", label: "Billing / Plans", group: "Account" },
-      { href: "/connect/manage", label: "Post a job", group: "Actions" },
+      { href: "/app/connect/manage", label: isClient ? "Post a job" : "Post a need", group: "Actions" },
     ];
     if (isClient) {
       common.push(
@@ -292,7 +293,7 @@ export function AppShell({
         isClient && "theme-client",
       )}
     >
-      <aside className="hidden w-64 shrink-0 flex-col bg-navy text-white lg:flex">
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-navy text-white lg:flex">
         <div className="border-b border-white/10 px-4 py-5">
           <Link href="/app" className="block">
             <Logo size="sm" variant="onDark" />
@@ -451,7 +452,7 @@ export function AppShell({
         <div className="border-t border-white/10 p-4">
           {isClient ? (
             <Link
-              href="/connect/manage"
+              href="/app/connect/manage"
               className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-transparent px-3 py-2.5 text-sm font-bold text-white hover:bg-white/5"
             >
               <Plus className="h-4 w-4" />
@@ -459,11 +460,11 @@ export function AppShell({
             </Link>
           ) : (
             <Link
-              href="/connect/manage"
+              href="/app/connect/manage"
               className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-sm font-bold text-white hover:bg-primary-dark"
             >
               <Plus className="h-4 w-4" />
-              Post a Job (Connect)
+              Post a need
             </Link>
           )}
           <div className="rounded-xl border border-white/10 bg-white/5 p-3">

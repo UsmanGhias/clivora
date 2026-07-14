@@ -754,6 +754,12 @@ class _QuickActionsRow extends StatelessWidget {
               icon: Icons.add_business_outlined,
               label: 'Post job',
               onPressed: onPostJob,
+            )
+          else
+            _ActionTextButton(
+              icon: Icons.handshake_outlined,
+              label: 'Post need',
+              onPressed: onPostJob,
             ),
           _ActionTextButton(
             icon: Icons.favorite_border,
@@ -1193,6 +1199,20 @@ class _NeedsTab extends StatelessWidget {
               onPressed: onCreate,
               icon: const Icon(Icons.add, size: 16),
               label: const Text('Post job'),
+              style: TextButton.styleFrom(
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              ),
+            ),
+          )
+        else
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: onCreate,
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('Post need'),
               style: TextButton.styleFrom(
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 visualDensity: VisualDensity.compact,

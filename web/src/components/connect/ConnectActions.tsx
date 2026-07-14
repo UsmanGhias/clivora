@@ -154,7 +154,7 @@ export function ConnectActions({
             </p>
           )}
           <Link
-            href="/connect/manage"
+            href="/app/connect/manage"
             className="mt-3 inline-flex min-h-11 items-center rounded-xl bg-navy px-4 py-2 text-sm font-semibold text-white"
           >
             Manage listing

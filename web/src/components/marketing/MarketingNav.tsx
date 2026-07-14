@@ -3,15 +3,23 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, Globe, Menu, X } from "lucide-react";
+import { ChevronDown, Globe, LayoutDashboard, LogOut, Menu, X } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { marketing } from "@/lib/marketing";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+
+type SessionUser = {
+  email: string | null;
+  name: string | null;
+};
 
 export function MarketingNav({ variant = "light" }: { variant?: "light" | "overlay" }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [user, setUser] = useState<SessionUser | null>(null);
+  const [authReady, setAuthReady] = useState(false);
   const light = variant === "light";
 
   useEffect(() => {
@@ -19,6 +27,53 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    const supabase = createClient();
+    let mounted = true;
+
+    async function load() {
+      const {
+        data: { user: u },
+      } = await supabase.auth.getUser();
+      if (!mounted) return;
+      if (!u) {
+        setUser(null);
+        setAuthReady(true);
+        return;
+      }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("name")
+        .eq("id", u.id)
+        .maybeSingle();
+      if (!mounted) return;
+      setUser({
+        email: u.email ?? null,
+        name: (profile?.name as string | null) ?? null,
+      });
+      setAuthReady(true);
+    }
+
+    void load();
+    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+      void load();
+    });
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
+
+  async function signOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    setUser(null);
+    window.location.href = "/";
+  }
+
+  const loggedIn = authReady && !!user;
+  const displayName = (user?.name || user?.email || "Account").split(" ")[0];
 
   return (
     <>
@@ -31,7 +86,7 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
               : "border-b border-transparent bg-[#F8FAFC]/90 backdrop-blur-md"
             : scrolled
               ? "border-b border-white/10 bg-navy/90 backdrop-blur-xl"
-              : "bg-transparent"
+              : "bg-transparent",
         )}
       >
         <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between gap-4 px-5 lg:px-8">
@@ -41,7 +96,7 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
               <span
                 className={cn(
                   "font-display text-sm font-extrabold tracking-wide",
-                  light ? "text-navy" : "text-white"
+                  light ? "text-navy" : "text-white",
                 )}
               >
                 {marketing.brand.name}
@@ -68,7 +123,7 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
                       "inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                       light
                         ? "text-slate-600 hover:bg-slate-100 hover:text-navy"
-                        : "text-white/75 hover:bg-white/10 hover:text-white"
+                        : "text-white/75 hover:bg-white/10 hover:text-white",
                     )}
                   >
                     {link.label}
@@ -99,33 +154,83 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
               type="button"
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium",
-                light ? "text-slate-500 hover:bg-slate-100" : "text-white/70 hover:bg-white/10"
+                light ? "text-slate-500 hover:bg-slate-100" : "text-white/70 hover:bg-white/10",
               )}
               aria-label="Language"
             >
               <Globe className="h-4 w-4" />
               {marketing.nav.locale}
             </button>
-            <Link
-              href={marketing.nav.login.href}
-              className={cn(
-                "text-sm font-semibold",
-                light ? "text-navy hover:text-primary" : "text-white/80 hover:text-white"
-              )}
-            >
-              {marketing.nav.login.label}
-            </Link>
-            <Link
-              href={marketing.nav.cta.href}
-              className={cn(
-                "rounded-xl px-4 py-2.5 text-sm font-bold transition",
-                light
-                  ? "bg-navy text-white hover:bg-navy/90"
-                  : "bg-white text-navy hover:bg-white/90"
-              )}
-            >
-              {marketing.nav.cta.label}
-            </Link>
+
+            {!authReady ? (
+              <span className="h-9 w-28 animate-pulse rounded-xl bg-slate-200/70" />
+            ) : loggedIn ? (
+              <>
+                <span
+                  className={cn(
+                    "hidden text-sm font-medium xl:inline",
+                    light ? "text-slate-500" : "text-white/70",
+                  )}
+                >
+                  Hi, {displayName}
+                </span>
+                <Link
+                  href="/app"
+                  className={cn(
+                    "inline-flex items-center gap-1.5 text-sm font-semibold",
+                    light ? "text-navy hover:text-primary" : "text-white/90 hover:text-white",
+                  )}
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  Dashboard
+                </Link>
+                <Link
+                  href="/app"
+                  className={cn(
+                    "rounded-xl px-4 py-2.5 text-sm font-bold transition",
+                    light
+                      ? "bg-navy text-white hover:bg-navy/90"
+                      : "bg-white text-navy hover:bg-white/90",
+                  )}
+                >
+                  Open portal
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => void signOut()}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-lg px-2 py-2 text-sm font-medium",
+                    light ? "text-slate-500 hover:bg-slate-100" : "text-white/70 hover:bg-white/10",
+                  )}
+                  aria-label="Sign out"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href={marketing.nav.login.href}
+                  className={cn(
+                    "text-sm font-semibold",
+                    light ? "text-navy hover:text-primary" : "text-white/80 hover:text-white",
+                  )}
+                >
+                  {marketing.nav.login.label}
+                </Link>
+                <Link
+                  href={marketing.nav.cta.href}
+                  className={cn(
+                    "rounded-xl px-4 py-2.5 text-sm font-bold transition",
+                    light
+                      ? "bg-navy text-white hover:bg-navy/90"
+                      : "bg-white text-navy hover:bg-white/90",
+                  )}
+                >
+                  {marketing.nav.cta.label}
+                </Link>
+              </>
+            )}
           </div>
 
           <button
@@ -171,20 +276,44 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
                     : null}
                 </div>
               ))}
-              <Link
-                href={marketing.nav.login.href}
-                onClick={() => setMobileOpen(false)}
-                className="mt-3 py-2 text-base font-semibold text-navy"
-              >
-                {marketing.nav.login.label}
-              </Link>
-              <Link
-                href={marketing.nav.cta.href}
-                onClick={() => setMobileOpen(false)}
-                className="mt-2 rounded-xl bg-navy px-4 py-3 text-center text-sm font-bold text-white"
-              >
-                {marketing.nav.cta.label}
-              </Link>
+              {loggedIn ? (
+                <>
+                  <Link
+                    href="/app"
+                    onClick={() => setMobileOpen(false)}
+                    className="mt-3 rounded-xl bg-navy px-4 py-3 text-center text-sm font-bold text-white"
+                  >
+                    Open portal
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileOpen(false);
+                      void signOut();
+                    }}
+                    className="mt-2 py-2 text-base font-semibold text-slate-600"
+                  >
+                    Sign out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href={marketing.nav.login.href}
+                    onClick={() => setMobileOpen(false)}
+                    className="mt-3 py-2 text-base font-semibold text-navy"
+                  >
+                    {marketing.nav.login.label}
+                  </Link>
+                  <Link
+                    href={marketing.nav.cta.href}
+                    onClick={() => setMobileOpen(false)}
+                    className="mt-2 rounded-xl bg-navy px-4 py-3 text-center text-sm font-bold text-white"
+                  >
+                    {marketing.nav.cta.label}
+                  </Link>
+                </>
+              )}
             </nav>
           </motion.div>
         ) : null}

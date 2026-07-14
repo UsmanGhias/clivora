@@ -187,7 +187,7 @@ export function FreelancerDashboard({
         />
       </div>
 
-      {/* Earnings chart + Recent activity */}
+      {/* Earnings + week + activity (mockup middle band) */}
       <div className="grid gap-4 xl:grid-cols-3">
         <div className="xl:col-span-2">
           <EarningsLineChart
@@ -198,7 +198,10 @@ export function FreelancerDashboard({
             showPreviousLegend
           />
         </div>
-        <ActivityFeed items={activities} viewAllHref="/app/activity" />
+        <div className="space-y-4">
+          <ActivityFeed items={activities} viewAllHref="/app/activity" />
+          <WeekOverview {...week} />
+        </div>
       </div>
 
       {/* Active projects | Top clients | Proposals donut */}
@@ -213,8 +216,27 @@ export function FreelancerDashboard({
         />
       </div>
 
-      {/* This week overview */}
-      <WeekOverview {...week} />
+      {/* Quick actions */}
+      <div className="flex flex-wrap gap-2">
+        <Link
+          href="/app/connect"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white"
+        >
+          Find jobs
+        </Link>
+        <Link
+          href="/app/connect/manage"
+          className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-bold text-primary-dark"
+        >
+          Post a need
+        </Link>
+        <Link
+          href="/app/connect/apply?mode=proposal"
+          className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-navy"
+        >
+          Submit proposal
+        </Link>
+      </div>
 
       {/* AI Assistant banner */}
       <div className="relative overflow-hidden rounded-2xl bg-navy p-6 text-white shadow-sm sm:p-7">

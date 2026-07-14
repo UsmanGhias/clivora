@@ -171,7 +171,7 @@ export function ClientProposalsPanel({ proposals }: { proposals: ProposalRow[] }
                 Post a job on Connect to start receiving freelancer bids.
               </p>
               <Link
-                href="/connect/manage"
+                href="/app/connect/manage"
                 className="mt-4 inline-block text-sm font-semibold text-client-accent"
               >
                 Post a job →
@@ -301,7 +301,7 @@ export function ClientProposalsPanel({ proposals }: { proposals: ProposalRow[] }
           <ClientCard title="Quick actions">
             <ul className="space-y-2">
               {[
-                { href: "/connect/manage", label: "Post a new job", icon: Plus },
+                { href: "/app/connect/manage", label: "Post a new job", icon: Plus },
                 { href: "/app/connect", label: "Invite freelancers", icon: UserPlus },
                 { href: "/app/bookmarks", label: "Manage saved searches", icon: Bookmark },
                 { href: "/app/settings", label: "Proposal settings", icon: Settings },

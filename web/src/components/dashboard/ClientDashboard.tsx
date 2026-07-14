@@ -136,7 +136,7 @@ export function ClientDashboard({
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            href="/connect/manage"
+            href="/app/connect/manage"
             className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-navy px-4 py-2.5 text-sm font-bold text-white hover:bg-navy-light"
           >
             <Plus className="h-4 w-4" />
@@ -158,7 +158,7 @@ export function ClientDashboard({
           value={openJobs}
           sub="New applicants waiting"
           linkLabel="View all jobs →"
-          href="/connect/manage"
+          href="/app/connect/manage"
           icon={Briefcase}
           iconTone="bg-sky-100 text-sky-800"
         />

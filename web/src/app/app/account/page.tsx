@@ -90,7 +90,7 @@ export default async function AccountPage({
           <AccountProfileEditor profile={profile} />
           <p className="mt-4 text-xs text-text-muted">
             For Connect listing fields (skills, rate, bio), use{" "}
-            <Link href="/connect/manage" className="font-semibold text-primary">
+            <Link href="/app/connect/manage" className="font-semibold text-primary">
               Manage Connect
             </Link>
             .
@@ -130,7 +130,7 @@ export default async function AccountPage({
               <p className="mt-1 text-xs text-text-muted">{profile.email}</p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <PrimaryButton href="/app/account?edit=1">Edit Profile</PrimaryButton>
-                <OutlineButton href="/connect/manage">Connect listing</OutlineButton>
+                <OutlineButton href="/app/connect/manage">Connect listing</OutlineButton>
                 <OutlineButton href="/app/connect">View Public Profile</OutlineButton>
               </div>
             </div>

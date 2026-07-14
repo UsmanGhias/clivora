@@ -132,7 +132,7 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
                   label="Jobs posted"
                   value={stats.jobsPosted}
                   sub="View all jobs →"
-                  href="/connect/manage"
+                  href="/app/connect/manage"
                   icon={User}
                   iconTone="bg-violet-100 text-violet-700"
                 />

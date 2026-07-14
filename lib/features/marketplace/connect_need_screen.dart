@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/services/marketplace/connect_marketplace_service.dart';
+import '../../core/auth/auth_service.dart';
+import '../../core/auth/user_roles.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 
@@ -31,8 +33,12 @@ class _ConnectNeedScreenState extends ConsumerState<ConnectNeedScreen> {
   @override
   Widget build(BuildContext context) {
     final hasAccess = ref.watch(isProPlusProvider);
+    final user = ref.watch(authStateProvider).valueOrNull;
+    final isClient = isClientUser(user);
+    final title = isClient ? 'Post a job' : 'Post a need';
+    final publishLabel = isClient ? 'Publish job' : 'Publish need';
     return ClivoraScaffold(
-      title: 'Post a job',
+      title: title,
       showBackButton: true,
       body: !hasAccess
           ? Center(
@@ -91,7 +97,7 @@ class _ConnectNeedScreenState extends ConsumerState<ConnectNeedScreen> {
           const SizedBox(height: 20),
           FilledButton(
             onPressed: _busy ? null : _save,
-            child: Text(_busy ? 'Posting…' : 'Publish job'),
+            child: Text(_busy ? 'Posting…' : publishLabel),
           ),
         ],
       ),

@@ -39,18 +39,21 @@ export function AdminBtn({
   onClick,
   href,
   className,
+  disabled,
 }: {
   children: React.ReactNode;
   variant?: "outline" | "primary" | "dark";
   onClick?: () => void;
   href?: string;
   className?: string;
+  disabled?: boolean;
 }) {
   const styles = cn(
     "inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold transition",
     variant === "outline" && "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
     variant === "primary" && "bg-teal-600 text-white hover:bg-teal-700",
     variant === "dark" && "bg-slate-900 text-white hover:bg-slate-800",
+    disabled && "pointer-events-none opacity-50",
     className,
   );
   if (href) {
@@ -61,7 +64,7 @@ export function AdminBtn({
     );
   }
   return (
-    <button type="button" onClick={onClick} className={styles}>
+    <button type="button" onClick={onClick} disabled={disabled} className={styles}>
       {children}
     </button>
   );
