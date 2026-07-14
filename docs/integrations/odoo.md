@@ -38,7 +38,13 @@ ODOO_API_KEY=<api key>
 
 Fallback: `admin_integration_secrets` table + `admin_get_integration_secret` RPC (admin role required). Never commit keys. Never ship keys in Android APK/AAB.
 
-API: `POST /api/integrations/odoo/sync-contacts` (admin session required).
+API: `GET|POST|PUT /api/integrations/odoo/sync-contacts` (admin session required).
+
+- `GET` — configuration + live auth probe (`ready`, `authOk`, `partnerCount`)
+- `POST` — push **all** CRM customers into Odoo Contacts (create/update by email)
+- `PUT` — verify and save `ODOO_*` into `admin_integration_secrets` (Admin → Integrations form)
+
+If `authOk` is false, regenerate an API key in Odoo (Preferences → Account Security) and save it in Admin or Vercel. Do not store the interactive login password.
 
 ## Security
 
