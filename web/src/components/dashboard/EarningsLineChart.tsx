@@ -86,8 +86,8 @@ export function EarningsLineChart({
           <option>Last month</option>
         </select>
       </div>
-      <div className="relative h-52 w-full">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="relative h-[220px] w-full min-h-[220px]">
+        <ResponsiveContainer width="100%" height={220} debounce={50}>
           <AreaChart data={scaled}>
             <defs>
               <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">

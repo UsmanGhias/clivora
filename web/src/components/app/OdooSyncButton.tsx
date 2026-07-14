@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+/** Admin-only Odoo Contacts sync control. */
 export function OdooSyncButton() {
   const [busy, setBusy] = useState(false);
   const [configured, setConfigured] = useState<boolean | null>(null);
@@ -11,7 +12,12 @@ export function OdooSyncButton() {
     (async () => {
       try {
         const res = await fetch("/api/integrations/odoo/sync-contacts");
-        const json = (await res.json()) as { configured?: boolean };
+        const json = (await res.json()) as { configured?: boolean; error?: string };
+        if (res.status === 401 || res.status === 403) {
+          setConfigured(false);
+          setMsg("Admin sign-in required");
+          return;
+        }
         setConfigured(!!json.configured);
       } catch {
         setConfigured(false);
@@ -36,6 +42,7 @@ export function OdooSyncButton() {
         return;
       }
       setMsg(`Synced to Odoo Contacts · created ${json.created ?? 0}, skipped ${json.skipped ?? 0}`);
+      setConfigured(true);
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Sync failed");
     } finally {
@@ -49,16 +56,21 @@ export function OdooSyncButton() {
         type="button"
         disabled={busy || configured === false}
         onClick={() => void sync()}
-        className="inline-flex rounded-xl border border-border bg-white px-3 py-2 text-sm font-semibold text-navy disabled:opacity-50"
+        className="inline-flex rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
       >
-        {busy ? "Syncing…" : configured === false ? "Configure env first" : "Sync CRM → Contacts"}
+        {busy ? "Syncing…" : configured === false ? "Odoo not configured" : "Sync CRM → Odoo Contacts"}
       </button>
       {configured === false && (
-        <p className="text-[11px] text-text-muted">
-          Set ODOO_URL, ODOO_DB, ODOO_USERNAME, ODOO_API_KEY on the server.
+        <p className="text-[11px] text-slate-500">
+          Configure ODOO_* on Vercel or store secrets via admin integration secrets (server-side only).
         </p>
       )}
-      {msg && <p className="text-xs text-text-secondary">{msg}</p>}
+      {configured === true && (
+        <p className="text-[11px] text-slate-500">
+          Connected · existing Contacts app only · no new Odoo modules.
+        </p>
+      )}
+      {msg && <p className="text-xs text-slate-600">{msg}</p>}
     </div>
   );
 }

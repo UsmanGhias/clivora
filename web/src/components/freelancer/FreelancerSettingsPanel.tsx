@@ -13,7 +13,6 @@ import {
   Headphones,
   KeyRound,
   Link2,
-  Network,
   Shield,
   SlidersHorizontal,
   Store,
@@ -30,7 +29,6 @@ import {
   StatusPill,
 } from "@/components/freelancer/ui";
 import { ManageBillingButton } from "@/components/app/ManageBillingButton";
-import { OdooSyncButton } from "@/components/app/OdooSyncButton";
 import { ProfileEditForm } from "@/components/freelancer/ProfileEditForm";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -764,16 +762,6 @@ function AppsTab({
       manage: false,
       cta: "Open",
     },
-    {
-      name: "Odoo Contacts",
-      desc: "Sync CLIVORA clients into your existing Odoo Contacts app (no new Odoo modules)",
-      icon: Network,
-      connected: false,
-      href: "#odoo",
-      manage: false,
-      cta: "Sync",
-      odoo: true,
-    },
   ];
 
   return (
@@ -803,8 +791,6 @@ function AppsTab({
               <div className="mt-auto">
                 {app.manage ? (
                   <ManageBillingButton />
-                ) : "odoo" in app && app.odoo ? (
-                  <OdooSyncButton />
                 ) : (
                   <OutlineButton href={app.href}>{app.cta}</OutlineButton>
                 )}

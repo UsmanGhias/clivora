@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Database, HardDrive, Save, Shield } from "lucide-react";
+import { Database, HardDrive, Save, Shield, Network } from "lucide-react";
 import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
@@ -14,6 +14,7 @@ import {
   StatusPill,
   ErrorBanner,
 } from "@/components/admin/ui";
+import { OdooSyncButton } from "@/components/app/OdooSyncButton";
 
 export default function AdminSettingsPage() {
   const { data, loading } = useAdminData();
@@ -51,6 +52,7 @@ export default function AdminSettingsPage() {
                 { id: "general", label: "General" },
                 { id: "platform", label: "Platform" },
                 { id: "email", label: "Email" },
+                { id: "integrations", label: "Integrations" },
               ]}
               activeTab={activeTab}
               onTabChange={setActiveTab}
@@ -143,6 +145,27 @@ export default function AdminSettingsPage() {
                       <AdminBtn variant="primary">
                         <Save className="h-3.5 w-3.5" /> Save email
                       </AdminBtn>
+                    </div>
+                  </section>
+                )}
+
+                {activeTab === "integrations" && (
+                  <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="mb-4 flex items-start gap-3">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
+                        <Network className="h-5 w-5" />
+                      </span>
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-900">Odoo (existing apps only)</h3>
+                        <p className="mt-1 text-xs text-slate-500">
+                          Sync CLIVORA CRM customers into your Odoo Contacts app at clivora.odoo.com.
+                          No new Odoo modules are installed. Admin-only — not shown to freelancers or
+                          clients.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <OdooSyncButton />
                     </div>
                   </section>
                 )}
