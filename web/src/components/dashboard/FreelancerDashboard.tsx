@@ -265,7 +265,7 @@ export function FreelancerDashboard({
           total={invoiceTotal}
           accent="teal"
           title="Earnings overview"
-          trendLabel={invoiceTotal > 0 ? "↑ Growing this month" : "Add invoices to populate this chart"}
+          trendLabel={invoiceTotal > 0 ? "Live invoice total" : "No paid/invoiced amount yet"}
           showPreviousLegend
           summaryBoxes={[
             {

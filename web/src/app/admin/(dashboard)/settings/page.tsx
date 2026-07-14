@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Database, HardDrive, Save, Shield, Network } from "lucide-react";
+import { Database, Save, Shield, Network } from "lucide-react";
 import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
@@ -15,6 +15,7 @@ import {
   ErrorBanner,
 } from "@/components/admin/ui";
 import { OdooSyncButton } from "@/components/app/OdooSyncButton";
+import { site } from "@/lib/site";
 
 export default function AdminSettingsPage() {
   const { data, loading } = useAdminData();
@@ -173,7 +174,10 @@ export default function AdminSettingsPage() {
                 <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                   <h3 className="mb-3 text-sm font-bold text-slate-900">Feature flags</h3>
                   {flags.length === 0 ? (
-                    <p className="text-sm text-slate-500">No feature flags loaded.</p>
+                    <p className="text-sm text-slate-500">
+                      No rows in <code>app_feature_flags</code> (or table missing). This is live DB
+                      state — not demo content.
+                    </p>
                   ) : (
                     <ul className="divide-y divide-slate-100">
                       {flags.map((f) => (
@@ -198,24 +202,28 @@ export default function AdminSettingsPage() {
               <div className="space-y-3 text-sm">
                 <div className="flex items-center gap-2">
                   <Shield className="h-4 w-4 text-teal-600" />
-                  <span className="font-bold text-slate-800">v2.10.5</span>
+                  <span className="font-bold text-slate-800">v{site.appVersion}</span>
                 </div>
-                <div>
-                  <div className="mb-1 flex items-center justify-between text-xs text-slate-500">
-                    <span className="inline-flex items-center gap-1">
-                      <HardDrive className="h-3.5 w-3.5" /> Storage
-                    </span>
-                    <span className="font-semibold">42%</span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                    <div className="h-full w-[42%] rounded-full bg-teal-500" />
-                  </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+                  <p>
+                    Users: <strong>{data?.overview.totalUsers ?? "—"}</strong>
+                  </p>
+                  <p className="mt-1">
+                    Source: <strong>{data?.source ?? "unavailable"}</strong>
+                  </p>
+                  <p className="mt-1 text-slate-500">
+                    Storage % is not measured in-app — check Supabase dashboard for DB size.
+                  </p>
                 </div>
                 <div className="flex flex-col gap-2 pt-1">
-                  <AdminBtn variant="outline">
-                    <Database className="h-3.5 w-3.5" /> Run backup
+                  <AdminBtn
+                    variant="outline"
+                    onClick={() => {
+                      window.location.href = "/admin/events";
+                    }}
+                  >
+                    <Database className="h-3.5 w-3.5" /> View events
                   </AdminBtn>
-                  <AdminBtn variant="dark">Download backup</AdminBtn>
                 </div>
               </div>
             </SideCard>

@@ -36,7 +36,9 @@ import {
 import { createBrowserSupabaseClient } from "@/lib/supabase-browser";
 import { cn } from "@/lib/utils";
 
-export const ADMIN_VERSION = "V2.10.5";
+import { site } from "@/lib/site";
+
+export const ADMIN_VERSION = `v${site.appVersion}`;
 
 type NavItem = {
   href: string;
@@ -74,8 +76,8 @@ export type AdminBadgeCounts = Record<string, string | number>;
 export function AdminShell({
   children,
   badges = {},
-  adminName = "Super Admin",
-  adminEmail = "super@clivora.com",
+  adminName = "Admin",
+  adminEmail = "",
   onRefresh,
   refreshing,
 }: {
@@ -194,7 +196,7 @@ export function AdminShell({
             </div>
           )}
           <p className={cn("mt-2 text-center text-[10px] text-slate-500", collapsed && "px-0")}>
-            {collapsed ? "v2.10" : `${ADMIN_VERSION} • Local cache`}
+            {collapsed ? ADMIN_VERSION : `${ADMIN_VERSION} · live`}
           </p>
         </div>
       </aside>

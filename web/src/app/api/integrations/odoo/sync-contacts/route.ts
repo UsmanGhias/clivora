@@ -9,39 +9,58 @@ type OdooCfg = {
   apiKey: string;
 };
 
-async function loadOdooCfg(): Promise<OdooCfg | null> {
-  const fromEnv = (): OdooCfg | null => {
-    const url = process.env.ODOO_URL?.replace(/\/$/, "");
-    const db = process.env.ODOO_DB;
-    const username = process.env.ODOO_USERNAME;
-    const apiKey = process.env.ODOO_API_KEY;
-    if (!url || !db || !username || !apiKey) return null;
-    return { url, db, username, apiKey };
+function envPresence() {
+  return {
+    ODOO_URL: Boolean(process.env.ODOO_URL?.trim()),
+    ODOO_DB: Boolean(process.env.ODOO_DB?.trim()),
+    ODOO_USERNAME: Boolean(process.env.ODOO_USERNAME?.trim()),
+    ODOO_API_KEY: Boolean(process.env.ODOO_API_KEY?.trim()),
   };
+}
 
-  const envCfg = fromEnv();
-  if (envCfg) return envCfg;
+async function loadOdooCfg(): Promise<{ cfg: OdooCfg | null; source: "env" | "db" | null; missing: string[] }> {
+  const presence = envPresence();
+  const missingEnv = Object.entries(presence)
+    .filter(([, ok]) => !ok)
+    .map(([k]) => k);
 
-  // Fallback: admin-only secrets table (no values returned to clients except via this server route).
+  const url = process.env.ODOO_URL?.trim().replace(/\/$/, "");
+  const db = process.env.ODOO_DB?.trim();
+  const username = process.env.ODOO_USERNAME?.trim();
+  const apiKey = process.env.ODOO_API_KEY?.trim();
+  if (url && db && username && apiKey) {
+    return { cfg: { url, db, username, apiKey }, source: "env", missing: [] };
+  }
+
   try {
     const supabase = await createClient();
     const keys = ["ODOO_URL", "ODOO_DB", "ODOO_USERNAME", "ODOO_API_KEY"] as const;
     const values: Partial<Record<(typeof keys)[number], string>> = {};
+    const missingDb: string[] = [];
     for (const key of keys) {
       const { data, error } = await supabase.rpc("admin_get_integration_secret", { p_key: key });
-      if (error || !data) return null;
-      values[key] = String(data);
+      if (error || data == null || String(data).trim() === "") {
+        missingDb.push(key);
+        continue;
+      }
+      values[key] = String(data).trim();
     }
-    const url = values.ODOO_URL?.replace(/\/$/, "");
-    if (!url || !values.ODOO_DB || !values.ODOO_USERNAME || !values.ODOO_API_KEY) return null;
-    return {
-      url,
-      db: values.ODOO_DB,
-      username: values.ODOO_USERNAME,
-      apiKey: values.ODOO_API_KEY,
-    };
+    const dbUrl = values.ODOO_URL?.replace(/\/$/, "");
+    if (dbUrl && values.ODOO_DB && values.ODOO_USERNAME && values.ODOO_API_KEY) {
+      return {
+        cfg: {
+          url: dbUrl,
+          db: values.ODOO_DB,
+          username: values.ODOO_USERNAME,
+          apiKey: values.ODOO_API_KEY,
+        },
+        source: "db",
+        missing: [],
+      };
+    }
+    return { cfg: null, source: null, missing: missingEnv.length ? missingEnv : missingDb };
   } catch {
-    return null;
+    return { cfg: null, source: null, missing: missingEnv };
   }
 }
 
@@ -68,7 +87,6 @@ async function odooJsonRpc(
 
 /**
  * Admin-only: sync CLIVORA CRM customers → Odoo Contacts (existing free app only).
- * Prefers ODOO_* env vars; falls back to admin_integration_secrets via SECURITY DEFINER RPC.
  */
 export async function POST() {
   try {
@@ -77,12 +95,13 @@ export async function POST() {
     return adminErrorResponse(e);
   }
 
-  const odoo = await loadOdooCfg();
+  const { cfg: odoo, missing } = await loadOdooCfg();
   if (!odoo) {
     return NextResponse.json(
       {
         error: "Odoo is not configured",
-        hint: "Set ODOO_URL, ODOO_DB, ODOO_USERNAME, ODOO_API_KEY (Vercel env or Admin → Integrations).",
+        missing,
+        hint: "Set ODOO_URL, ODOO_DB, ODOO_USERNAME, ODOO_API_KEY on Vercel and redeploy, or store them via admin_integration_secrets.",
       },
       { status: 503 },
     );
@@ -96,10 +115,9 @@ export async function POST() {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   }
 
-  // Admin syncs their CRM customers into the existing Odoo Contacts app only.
   const { data: customers, error } = await supabase
     .from("crm_customers")
-    .select("id, name, email, phone, company")
+    .select("id, contact_person, company, emails, phones")
     .eq("owner_uid", user.id)
     .limit(500);
   if (error) {
@@ -120,8 +138,11 @@ export async function POST() {
     let created = 0;
     let skipped = 0;
     for (const c of customers ?? []) {
-      const email = (c.email || "").trim();
-      const name = (c.name || c.company || "CLIVORA contact").trim();
+      const emailList = Array.isArray(c.emails) ? c.emails : [];
+      const phoneList = Array.isArray(c.phones) ? c.phones : [];
+      const email = String(emailList[0] ?? "").trim();
+      const phone = String(phoneList[0] ?? "").trim();
+      const name = (c.contact_person || c.company || "CLIVORA contact").trim();
       if (email) {
         const existing = (await odooJsonRpc(odoo.url, "object", "execute_kw", [
           odoo.db,
@@ -147,7 +168,7 @@ export async function POST() {
           {
             name,
             email: email || false,
-            phone: (c.phone || "").trim() || false,
+            phone: phone || false,
             comment: `Synced from CLIVORA customer ${c.id}`,
           },
         ],
@@ -178,9 +199,12 @@ export async function GET() {
     return adminErrorResponse(e);
   }
 
-  const odoo = await loadOdooCfg();
+  const { cfg: odoo, source, missing } = await loadOdooCfg();
   return NextResponse.json({
     configured: !!odoo,
+    source,
+    missing,
+    envPresence: envPresence(),
     url: odoo?.url ?? null,
     allowedApps: ["Contacts"],
     surface: "admin-only",

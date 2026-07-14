@@ -78,17 +78,15 @@ export async function requireAdmin(options: { requireAal2?: boolean } = {}) {
     throw new AdminAuthError("Admin role required.", 403, "ADMIN_REQUIRED");
   }
 
+  // MFA AAL lookup can fail when the user has no factors enrolled. For read-only
+  // admin gates (requireAal2=false) treat that as aal1 so the console still loads.
   const { data: aal, error: aalError } =
     await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-  if (aalError || !aal) {
-    throw new AdminAuthError(
-      "Admin authentication is temporarily unavailable.",
-      503,
-      "AUTH_UNAVAILABLE",
-    );
-  }
+  const levelRaw = aalError || !aal ? "aal1" : aal.currentLevel;
+  const level: AdminPrincipal["assuranceLevel"] =
+    levelRaw === "aal2" ? "aal2" : "aal1";
 
-  if (options.requireAal2 && aal.currentLevel !== "aal2") {
+  if (options.requireAal2 && level !== "aal2") {
     throw new AdminAuthError(
       "Two-factor authentication is required for this action.",
       403,
@@ -96,19 +94,10 @@ export async function requireAdmin(options: { requireAal2?: boolean } = {}) {
     );
   }
 
-  const level = aal.currentLevel;
-  if (level !== "aal1" && level !== "aal2") {
-    throw new AdminAuthError(
-      "Admin authentication is temporarily unavailable.",
-      503,
-      "AUTH_UNAVAILABLE",
-    );
-  }
-
   return {
     id: user.id,
     email: user.email ?? "",
-    assuranceLevel: level as AdminPrincipal["assuranceLevel"],
+    assuranceLevel: level,
   } satisfies AdminPrincipal;
 }
 

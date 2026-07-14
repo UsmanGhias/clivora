@@ -11,17 +11,7 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 
-const DEMO = [
-  { day: "Jul 1", amount: 420 },
-  { day: "Jul 5", amount: 680 },
-  { day: "Jul 10", amount: 540 },
-  { day: "Jul 15", amount: 920 },
-  { day: "Jul 21", amount: 1150 },
-  { day: "Jul 25", amount: 880 },
-  { day: "Jul 31", amount: 1320 },
-];
-
-const EMPTY = DEMO.map((d) => ({ day: d.day, amount: 0, previous: 0 }));
+export type EarningsPoint = { day: string; amount: number; previous?: number };
 
 export function EarningsLineChart({
   total,
@@ -30,6 +20,7 @@ export function EarningsLineChart({
   trendLabel,
   summaryBoxes,
   showPreviousLegend,
+  series,
 }: {
   total: number;
   accent?: "teal" | "slate";
@@ -37,18 +28,14 @@ export function EarningsLineChart({
   trendLabel?: string;
   summaryBoxes?: Array<{ label: string; value: string; tone: string }>;
   showPreviousLegend?: boolean;
+  /** Real time-series from DB. When omitted/empty, chart shows honest empty state (no demo curve). */
+  series?: EarningsPoint[];
 }) {
   const stroke = accent === "slate" ? "#475569" : "#0D9488";
   const fill = stroke;
   const gradId = accent === "slate" ? "spendGrad" : "earnGrad";
-  const isEmpty = total === 0;
-  const scaled = isEmpty
-    ? EMPTY
-    : DEMO.map((d) => ({
-        ...d,
-        amount: Math.round((d.amount / 1320) * Math.max(total / 6, 200)),
-        previous: Math.round((d.amount / 1320) * Math.max(total / 8, 150) * 0.72),
-      }));
+  const points = (series ?? []).filter((p) => Number.isFinite(p.amount));
+  const isEmpty = points.length === 0 || points.every((p) => p.amount === 0);
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
@@ -81,58 +68,52 @@ export function EarningsLineChart({
             </div>
           )}
         </div>
-        <select className="rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text-secondary">
-          <option>This month</option>
-          <option>Last month</option>
-        </select>
       </div>
       <div className="relative h-[220px] w-full min-h-[220px]">
-        <ResponsiveContainer width="100%" height={220} debounce={50}>
-          <AreaChart data={scaled}>
-            <defs>
-              <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={fill} stopOpacity={isEmpty ? 0.08 : 0.35} />
-                <stop offset="100%" stopColor={fill} stopOpacity={0.02} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
-            <XAxis dataKey="day" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} width={40} />
-            <Tooltip
-              formatter={(v, name) => [
-                `$${Number(v ?? 0).toLocaleString()}`,
-                name === "previous" ? "Previous" : title.includes("Spend") ? "Spend" : "Earnings",
-              ]}
-              contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F0" }}
-            />
-            {showPreviousLegend && !isEmpty && (
+        {isEmpty ? (
+          <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-border bg-slate-50/80 px-4 text-center text-sm font-semibold text-text-secondary">
+            No invoice time-series yet — total above is from live database records.
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={220} debounce={50}>
+            <AreaChart data={points}>
+              <defs>
+                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={fill} stopOpacity={0.35} />
+                  <stop offset="100%" stopColor={fill} stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+              <XAxis dataKey="day" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} width={40} />
+              <Tooltip
+                formatter={(v, name) => [
+                  `$${Number(v ?? 0).toLocaleString()}`,
+                  name === "previous" ? "Previous" : title.includes("Spend") ? "Spend" : "Earnings",
+                ]}
+                contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F0" }}
+              />
+              {showPreviousLegend && (
+                <Area
+                  type="monotone"
+                  dataKey="previous"
+                  stroke="#CBD5E1"
+                  strokeWidth={2}
+                  fill="transparent"
+                  dot={false}
+                />
+              )}
               <Area
                 type="monotone"
-                dataKey="previous"
-                stroke="#CBD5E1"
-                strokeWidth={2}
-                fill="transparent"
-                dot={false}
+                dataKey="amount"
+                stroke={stroke}
+                strokeWidth={2.5}
+                fill={`url(#${gradId})`}
+                dot={{ r: 3, fill: stroke }}
+                activeDot={{ r: 5 }}
               />
-            )}
-            <Area
-              type="monotone"
-              dataKey="amount"
-              stroke={isEmpty ? "#CBD5E1" : stroke}
-              strokeWidth={2.5}
-              strokeDasharray={isEmpty ? "6 4" : undefined}
-              fill={`url(#${gradId})`}
-              dot={isEmpty ? false : { r: 3, fill: stroke }}
-              activeDot={isEmpty ? false : { r: 5 }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-        {isEmpty && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <p className="rounded-lg border border-dashed border-border bg-surface/90 px-4 py-2 text-sm font-semibold text-text-secondary">
-              No data yet
-            </p>
-          </div>
+            </AreaChart>
+          </ResponsiveContainer>
         )}
       </div>
       {summaryBoxes && summaryBoxes.length > 0 && (
