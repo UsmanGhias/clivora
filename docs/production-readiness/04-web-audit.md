@@ -28,13 +28,15 @@
 | W-02 | Low | Admin layout: non-401/403 errors fall through to rendering children (login shell) | `web/src/app/admin/layout.tsx` |
 | W-03 | OK | Admin pages require session + admin role; MFA gate on successful auth | `admin-auth.ts`, `AdminMfaGate.tsx` |
 | W-04 | OK | Signed-in users hitting auth pages redirect to `/app` | middleware |
-| W-05 | Medium | CRM / Connect entitlement UI gates are not API-layer; server gaps documented in `06` / `09` | `plan-gates.ts`, Connect RPCs |
+| W-05 | Low | CRM / Connect entitlement UI gates remain; **PR-03** added server enforcement (see `05`, `06`, `08`) — runtime matrix TO VERIFY | `plan-gates.ts`, `20260714_*.sql` |
+| W-06 | Fixed | Admin read path: AAL lookup failure no longer 503s when `requireAal2=false` (was emptying admin platform UI) | `admin-auth.ts` |
+| W-07 | Fixed | Admin overview/settings: removed demo chart curves / fake storage / fake cache version; live snapshot + `site.appVersion` | `admin/(dashboard)/overview`, `settings`, `AdminDataProvider.tsx` |
 
 ---
 
 ## Admin API surface (spot-check)
 
-Routes under `web/src/app/api/admin/*` call `requireAdmin` / `requireAdminRequest` (AAL2 for mutations). Platform fetch uses service role only after admin check (`admin-platform.ts`, `admin-service.ts`).
+Routes under `web/src/app/api/admin/*` call `requireAdmin` / `requireAdminRequest` (AAL2 for mutations). Platform fetch uses service role only after admin check (`admin-platform.ts`, `admin-service.ts`). Odoo status GET: `api/integrations/odoo/sync-contacts/route.ts` returns `configured` / `source` / `missing` / `envPresence`.
 
 ---
 
