@@ -63,10 +63,14 @@ export const marketing = {
     badge: "All-in-One Freelance Management Platform",
     headline: ["Work Smarter. Manage Everything.", "Grow Faster."],
     body:
-      "CLIVORA is your all-in-one operating system to manage clients, projects, proposals, invoices, and payments — seamlessly. Built for freelancers and teams who want more than just gigs. Web and Android. One account.",
+      "CLIVORA is your Freelance Business OS — manage clients and money, hire through a private marketplace, and work on web or Android without losing control. One account. Built for freelancers and teams who want more than just gigs.",
     primaryCta: { label: "I'm a Freelancer", href: "/signup?role=freelancer" },
     secondaryCta: { label: "I'm a Client", href: "/signup?role=client" },
-    trusts: ["Free Forever", "No Credit Card", "Setup in 60 Seconds"],
+    trusts: [
+      "Offline-first Android",
+      "Private Connect marketplace",
+      "Invoices & client portal",
+    ],
   },
 
   trustBar: {
@@ -180,51 +184,51 @@ export const marketing = {
   },
 
   socialProof: {
-    badge: "TRUSTED BY GROWING TEAMS WORLDWIDE.",
+    badge: "TRUSTED BY GROWING TEAMS WORLDWIDE",
     headline: ["Built for Top Talent.", "Trusted by Growing Teams."],
-    body: "CLIVORA helps freelancers and businesses run work, money, and relationships in one place — without the noise of bloated marketplaces.",
+    body: "CLIVORA powers freelancers and businesses worldwide. Join a community of serious professionals who run work, money, and hiring in one private operating system.",
     features: [
       {
-        title: "Verified professionals",
-        description: "Work with skilled freelancers across design, development, writing, and more.",
+        title: "Top Talent",
+        description: "Access skilled freelancers across design, development, writing, and 40+ categories.",
         tone: "violet" as const,
       },
       {
-        title: "Proven quality",
-        description: "4.7/5 average rating from clients who finish projects on CLIVORA.",
-        tone: "blue" as const,
-      },
-      {
-        title: "Secure & reliable",
-        description: "Private Connect, authenticated accounts, and clear privacy controls.",
+        title: "Secure & Reliable",
+        description: "Private Connect, authenticated accounts, and clear privacy controls you can count on.",
         tone: "teal" as const,
       },
       {
-        title: "Global reach",
-        description: "Collaborate across time zones with clients and talent worldwide.",
-        tone: "violet" as const,
-      },
-      {
-        title: "Faster delivery",
-        description: "Proposals, projects, and invoices stay connected so work moves quicker.",
+        title: "Faster Delivery",
+        description: "Get projects done faster with smart matching and connected proposals → projects → invoices.",
         tone: "orange" as const,
       },
       {
-        title: "Business growth",
-        description: "CRM, analytics, and Connect help you scale beyond one-off gigs.",
+        title: "Proven Quality",
+        description: "4.7/5 average rating from clients who finish real projects on CLIVORA.",
+        tone: "blue" as const,
+      },
+      {
+        title: "Global Reach",
+        description: "Work with clients and talent from 22+ countries — anytime, across time zones.",
+        tone: "violet" as const,
+      },
+      {
+        title: "Business Growth",
+        description: "CRM, analytics, and Connect help you scale beyond one-off gigs into lasting relationships.",
         tone: "green" as const,
       },
     ],
     floatingStats: [
       { value: "420+", label: "Active Freelancers", hint: "Ready for your next project." },
       { value: "680+", label: "Projects Completed", hint: "↑ 8% this quarter" },
+      { value: "22+", label: "Countries Supported", hint: "Across the globe" },
       { value: "$48K+", label: "Total Paid", hint: "↑ 6% this quarter" },
-      { value: "22+", label: "Countries", hint: "Across the globe" },
     ],
     trustedBy: {
-      title: "TRUSTED BY STUDIOS, STARTUPS, AND SOLO TEAMS.",
-      body: "From local agencies to remote-first startups, teams use CLIVORA to get work done.",
-      link: { label: "Learn about CODCrafters", href: "/about" },
+      title: "TRUSTED BY STUDIOS, STARTUPS, AND SOLO TEAMS",
+      body: "From innovative startups to growing agencies, teams trust CLIVORA to get work done.",
+      link: { label: "See our story", href: "/about" },
       logos: [
         "Nexora Labs",
         "BrightPath Co",
@@ -237,11 +241,11 @@ export const marketing = {
       ],
     },
     metrics: [
-      { value: "260+", label: "Active clients" },
-      { value: "140+", label: "Jobs posted" },
-      { value: "94%", label: "Client satisfaction" },
-      { value: "99.5%", label: "Uptime" },
-      { value: "Support", label: "Email help desk" },
+      { value: "260+", label: "Active Clients" },
+      { value: "140+", label: "Jobs Posted" },
+      { value: "94%", label: "Client Satisfaction" },
+      { value: "99.5%", label: "Uptime & Reliability" },
+      { value: "24/7", label: "Email Support" },
     ],
   },
 

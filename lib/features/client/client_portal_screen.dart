@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/cloud/cloud_project_repository.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../shared/widgets/notification_icon_button.dart';
+import '../../shared/widgets/messages_icon_button.dart';
 import 'client_project_detail.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../core/utils/duration_formatter.dart';
@@ -277,12 +278,9 @@ class _ClientDashboardHeader extends StatelessWidget {
             ),
             const NotificationIconButton(isClient: true),
             const SizedBox(width: 4),
-            IconButton(
-              onPressed: () => openFormRoute(context, '/client-messages'),
-              icon: const Icon(
-                Icons.mail_outline_rounded,
-                color: ClivoraColors.clientAccent,
-              ),
+            const MessagesIconButton(
+              route: '/client-messages',
+              iconColor: ClivoraColors.clientAccent,
             ),
           ],
         ),

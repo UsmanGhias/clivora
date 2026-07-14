@@ -167,14 +167,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
               ],
               const SizedBox(height: 16),
+              // Command center: agenda + Connect queue first (research: trust & retention)
+              const FreelancerPriorityStrip(),
+              const SizedBox(height: 8),
+              const TodayOverdueCard(),
+              const SizedBox(height: 12),
               statsAsync.when(
                 loading: () => const StatsGridSkeleton(),
                 error: (_, __) => const SizedBox.shrink(),
                 data: (stats) => _ProfileCompletenessCard(stats: stats, profile: profileAsync.valueOrNull),
               ),
               const SizedBox(height: 14),
-              const FreelancerPriorityStrip(),
-              const SizedBox(height: 4),
               statsAsync.when(
                 loading: () => const StatsGridSkeleton(),
                 error: (_, __) => const StatsGridSkeleton(),
@@ -198,8 +201,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 error: (_, __) => const SizedBox.shrink(),
                 data: (stats) => _SecondaryStatsRow(stats: stats, onNavigate: context.go),
               ),
-              const SizedBox(height: 14),
-              const TodayOverdueCard(),
               const SizedBox(height: 8),
               _QuickActions(ref: ref, l10n: l10n),
               const SizedBox(height: 14),

@@ -150,6 +150,36 @@ class _ConnectMarketplaceScreenState
           : Column(
               children: [
                 const _ConnectCreditsBanner(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: scheme.primaryContainer.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: scheme.primary.withValues(alpha: 0.18),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.lock_outline_rounded, size: 18, color: scheme.primary),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Private marketplace · Verified profiles · Message after mutual accept',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: scheme.onSurface.withValues(alpha: 0.75),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 _QuickActionsRow(
                   isClient: isClient,
                   savedCount: _savedIds.length,
@@ -168,7 +198,10 @@ class _ConnectMarketplaceScreenState
                   tabs: [
                     Tab(text: isClient ? 'Talent' : 'Clients'),
                     Tab(text: isClient ? 'Jobs' : 'Open jobs'),
-                    Tab(text: 'Inbox (${_requests.length})'),
+                    Tab(
+                      text:
+                          'Inbox (${_requests.where((r) => (r['status'] as String?) == 'pending').length})',
+                    ),
                   ],
                 ),
                 if (_error != null)
