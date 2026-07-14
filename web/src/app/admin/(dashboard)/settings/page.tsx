@@ -159,9 +159,9 @@ export default function AdminSettingsPage() {
                       <div>
                         <h3 className="text-sm font-bold text-slate-900">Odoo (existing apps only)</h3>
                         <p className="mt-1 text-xs text-slate-500">
-                          Sync CLIVORA CRM customers into your Odoo Contacts app at clivora.odoo.com.
-                          No new Odoo modules are installed. Admin-only — not shown to freelancers or
-                          clients.
+                          Two-way sync with Odoo Contacts at clivora.odoo.com — pull partners into
+                          CLIVORA CRM and push customers (plus project/invoice tracking notes) back.
+                          No new Odoo modules. Admin-only.
                         </p>
                       </div>
                     </div>

@@ -2,13 +2,16 @@
 
 import { useEffect, useState } from "react";
 
-/** Admin-only Odoo Contacts sync + credential save. */
+type SyncDirection = "push" | "pull" | "both";
+
+/** Admin-only two-way Odoo Contacts sync + credential save. */
 export function OdooSyncButton() {
   const [busy, setBusy] = useState(false);
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [ready, setReady] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);
+  const [partnerCount, setPartnerCount] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [formUrl, setFormUrl] = useState("https://clivora.odoo.com");
   const [formDb, setFormDb] = useState("clivora");
@@ -29,8 +32,8 @@ export function OdooSyncButton() {
         authOk?: boolean | null;
         authError?: string | null;
         partnerCount?: number | null;
-        envPresence?: Record<string, boolean>;
         source?: string | null;
+        note?: string;
       };
       if (res.status === 401 || res.status === 403) {
         setConfigured(false);
@@ -47,6 +50,7 @@ export function OdooSyncButton() {
       setConfigured(!!json.configured);
       setReady(!!json.ready);
       setUrl(json.url ?? null);
+      setPartnerCount(json.partnerCount ?? null);
       if (json.configured && json.authOk === false) {
         setMsg(
           json.authError ||
@@ -63,7 +67,7 @@ export function OdooSyncButton() {
         setShowForm(true);
       } else {
         setMsg(
-          `Connected · source ${json.source ?? "?"} · ${json.partnerCount ?? 0} Odoo contacts`,
+          `Connected · ${json.partnerCount ?? 0} Odoo contacts · two-way ready (Contacts app)`,
         );
       }
     } catch {
@@ -107,23 +111,22 @@ export function OdooSyncButton() {
     }
   }
 
-  async function sync() {
+  async function sync(direction: SyncDirection) {
     setBusy(true);
     setMsg(null);
     try {
       const res = await fetch("/api/integrations/odoo/sync-contacts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ direction, includeTracking: true }),
       });
       const json = (await res.json()) as {
         ok?: boolean;
-        created?: number;
-        updated?: number;
-        skipped?: number;
-        total?: number;
         error?: string;
         hint?: string;
+        push?: { created?: number; updated?: number; linked?: number; total?: number };
+        pull?: { created?: number; updated?: number; skipped?: number; total?: number };
+        note?: string;
       };
       if (!res.ok) {
         setMsg(json.hint || json.error || "Sync failed");
@@ -131,9 +134,19 @@ export function OdooSyncButton() {
       }
       setConfigured(true);
       setReady(true);
-      setMsg(
-        `Synced CRM → Odoo Contacts · created ${json.created ?? 0}, updated ${json.updated ?? 0}, scanned ${json.total ?? 0}`,
-      );
+      const parts: string[] = [];
+      if (json.pull) {
+        parts.push(
+          `Odoo→CLIVORA created ${json.pull.created ?? 0}, updated ${json.pull.updated ?? 0} (scanned ${json.pull.total ?? 0})`,
+        );
+      }
+      if (json.push) {
+        parts.push(
+          `CLIVORA→Odoo created ${json.push.created ?? 0}, updated ${json.push.updated ?? 0} (scanned ${json.push.total ?? 0})`,
+        );
+      }
+      setMsg(parts.join(" · ") || json.note || "Sync complete");
+      await refreshStatus();
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Sync failed");
     } finally {
@@ -147,10 +160,26 @@ export function OdooSyncButton() {
         <button
           type="button"
           disabled={busy || !ready}
-          onClick={() => void sync()}
+          onClick={() => void sync("both")}
           className="inline-flex rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
         >
-          {busy ? "Working…" : ready ? "Sync all CRM → Odoo Contacts" : "Odoo not ready"}
+          {busy ? "Syncing…" : ready ? "Two-way sync" : "Odoo not ready"}
+        </button>
+        <button
+          type="button"
+          disabled={busy || !ready}
+          onClick={() => void sync("pull")}
+          className="inline-flex rounded-xl border border-teal-200 bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-800 disabled:opacity-50"
+        >
+          Odoo → CLIVORA
+        </button>
+        <button
+          type="button"
+          disabled={busy || !ready}
+          onClick={() => void sync("push")}
+          className="inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 disabled:opacity-50"
+        >
+          CLIVORA → Odoo
         </button>
         <button
           type="button"
@@ -163,6 +192,7 @@ export function OdooSyncButton() {
         {ready && (
           <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
             Ready{url ? ` · ${url.replace(/^https?:\/\//, "")}` : ""}
+            {partnerCount != null ? ` · ${partnerCount} contacts` : ""}
           </span>
         )}
         {configured === false && (
@@ -223,18 +253,15 @@ export function OdooSyncButton() {
             >
               Verify & save
             </button>
-            <p className="mt-1 text-[11px] text-slate-500">
-              Create a key in Odoo → Preferences → Account Security → New API Key. Do not paste your
-              login password. Keys are stored server-side only.
-            </p>
           </div>
         </div>
       )}
 
       {msg && <p className="text-xs text-slate-600">{msg}</p>}
       <p className="text-[11px] text-slate-500">
-        Uses Vercel <code>ODOO_*</code> env first, then admin integration secrets. Syncs every CRM
-        customer (all owners) into the existing Contacts app only.
+        Two-way sync uses the existing Odoo <strong>Contacts</strong> app only. Pull imports Odoo
+        partners into CLIVORA CRM; push writes CLIVORA customers back and embeds project/invoice
+        tracking in each contact&apos;s Internal Notes. Linked via <code>odoo_partner_id</code>.
       </p>
     </div>
   );
