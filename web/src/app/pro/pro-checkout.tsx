@@ -4,11 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase-browser";
-import {
-  OFFICIAL_EMAIL,
-  PRO_PLUS_PRICE_USD,
-  PRO_PRICE_USD,
-} from "@/lib/admin-auth";
+import { site } from "@/lib/site";
 import { SubPageChrome } from "@/components/app/SubPageChrome";
 import { Logo } from "@/components/ui/Logo";
 import { SmartAppCta } from "@/components/app/SmartAppCta";
@@ -37,7 +33,7 @@ export default function ProCheckout() {
   const [currentPlan, setCurrentPlan] = useState<string | null>(null);
   const [loadingPlan, setLoadingPlan] = useState(true);
 
-  const amount = plan === "pro_plus" ? PRO_PLUS_PRICE_USD : PRO_PRICE_USD;
+  const amount = plan === "pro_plus" ? site.pricing.proPlusMonthlyUsd : site.pricing.proMonthlyUsd;
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const isClient = accountType === "client";
 
@@ -218,7 +214,7 @@ export default function ProCheckout() {
                 onClick={() => setPlan("pro_plus")}
                 className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white"
               >
-                See Pro Plus · ${PRO_PLUS_PRICE_USD}/mo
+                See Pro Plus · ${site.pricing.proPlusMonthlyUsd}/mo
               </button>
               <Link href="/app" className="rounded-full border border-navy/20 px-4 py-2 text-sm font-semibold text-navy">
                 Back to app
@@ -257,14 +253,14 @@ export default function ProCheckout() {
               <PlanOption
                 active={plan === "pro"}
                 title="Pro"
-                price={`$${PRO_PRICE_USD}/mo`}
+                price={`$${site.pricing.proMonthlyUsd}/mo`}
                 disabled={alreadyPro}
                 onClick={() => !alreadyPro && setPlan("pro")}
               />
               <PlanOption
                 active={plan === "pro_plus"}
                 title="Pro Plus"
-                price={`$${PRO_PLUS_PRICE_USD}/mo`}
+                price={`$${site.pricing.proPlusMonthlyUsd}/mo`}
                 badge="Connect"
                 onClick={() => setPlan("pro_plus")}
               />
@@ -322,7 +318,7 @@ export default function ProCheckout() {
               <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-1 w-full rounded-xl border border-border px-3 py-2.5" rows={2} />
             </label>
             <div className="rounded-xl bg-client-surface p-3 text-xs text-text-secondary">
-              Amount due: <strong className="text-navy">${amount} USD</strong>. Email {OFFICIAL_EMAIL} if approval is delayed.
+              Amount due: <strong className="text-navy">${amount} USD</strong>. Email {site.company.email} if approval is delayed.
             </div>
             {error && <p className="rounded-lg bg-error/10 px-3 py-2 text-sm text-error">{error}</p>}
             <button type="submit" disabled={busy || wantsSameOrLower} className="w-full rounded-full bg-primary py-3 text-sm font-bold text-white disabled:opacity-60">

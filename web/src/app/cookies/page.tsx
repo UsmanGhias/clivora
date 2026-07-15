@@ -94,7 +94,7 @@ export default function CookiesPage() {
 
       <h2>5. Do Not Track</h2>
       <p>
-        Our website does not currently respond to "Do Not Track" browser
+        Our website does not currently respond to &quot;Do Not Track&quot; browser
         signals. You can manage tracking through cookie settings as described
         above.
       </p>
