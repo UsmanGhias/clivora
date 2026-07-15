@@ -14,9 +14,9 @@ export default function TermsPage() {
       description={`Please read these Terms of Service carefully before using ${site.name}.`}
     >
       <p>
-        These Terms of Service ("Terms") govern your use of the {site.name}{" "}
+        These Terms of Service (&quot;Terms&quot;) govern your use of the {site.name}{" "}
         mobile application operated by <strong>{site.company.name}</strong>{" "}
-        ("Company", "we", "us", or "our"), accessible at{" "}
+        (&quot;Company&quot;, &quot;we&quot;, &quot;us&quot;, or &quot;our&quot;), accessible at{" "}
         <a href={site.company.url}>{site.company.url}</a>.
       </p>
 
@@ -87,7 +87,7 @@ export default function TermsPage() {
 
       <h2>8. Disclaimer of Warranties</h2>
       <p>
-        {site.name} is provided "as is" without warranties of any kind. We do
+        {site.name} is provided &quot;as is&quot; without warranties of any kind. We do
         not guarantee uninterrupted service, error-free operation, or that the app
         will meet all your business needs. Financial calculations and reports are
         for informational purposes - consult a qualified professional for tax
