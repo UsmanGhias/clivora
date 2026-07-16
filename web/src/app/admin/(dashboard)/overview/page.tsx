@@ -2,17 +2,6 @@
 
 import Link from "next/link";
 import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import {
   Briefcase,
   CreditCard,
   FolderKanban,
@@ -35,14 +24,6 @@ import {
   relative,
 } from "@/components/admin/ui";
 
-const chartDemo = [
-  { d: "Jul 1", rev: 12, users: 8, freelancers: 5 },
-  { d: "Jul 8", rev: 18, users: 12, freelancers: 7 },
-  { d: "Jul 15", rev: 22, users: 16, freelancers: 10 },
-  { d: "Jul 22", rev: 28, users: 20, freelancers: 14 },
-  { d: "Jul 31", rev: 35, users: 24, freelancers: 18 },
-];
-
 export default function AdminOverviewPage() {
   const { data, loading, error, refresh } = useAdminData();
   const o = data?.overview;
@@ -60,7 +41,7 @@ export default function AdminOverviewPage() {
 
       <AdminPageHeader
         title="Overview"
-        subtitle="Platform health, revenue, and growth across CLIVORA."
+        subtitle="Platform totals from live admin data."
         actions={
           <>
             <AdminBtn variant="primary" onClick={() => void refresh()}>
@@ -94,48 +75,36 @@ export default function AdminOverviewPage() {
           {
             label: "Total Revenue",
             value: money(o?.totalRevenue ?? 0),
-            trend: "↑ vs last 30 days",
-            trendUp: true,
             icon: <Wallet className="h-4 w-4" />,
             iconBg: "bg-emerald-50 text-emerald-600",
           },
           {
             label: "Total Users",
             value: o?.totalUsers ?? 0,
-            trend: "↑ growth",
-            trendUp: true,
             icon: <Users className="h-4 w-4" />,
             iconBg: "bg-blue-50 text-blue-600",
           },
           {
             label: "Freelancers",
             value: o?.freelancers ?? 0,
-            trend: "↑ growth",
-            trendUp: true,
             icon: <Briefcase className="h-4 w-4" />,
             iconBg: "bg-violet-50 text-violet-600",
           },
           {
             label: "Active Projects",
             value: o?.activeProjects ?? 0,
-            trend: "↑ growth",
-            trendUp: true,
             icon: <FolderKanban className="h-4 w-4" />,
             iconBg: "bg-orange-50 text-orange-600",
           },
           {
             label: "Total Jobs",
             value: o?.totalJobs ?? 0,
-            trend: "↑ growth",
-            trendUp: true,
             icon: <Zap className="h-4 w-4" />,
             iconBg: "bg-cyan-50 text-cyan-600",
           },
           {
             label: "Total Payments",
             value: money(o?.totalPayments ?? 0),
-            trend: "↑ growth",
-            trendUp: true,
             icon: <CreditCard className="h-4 w-4" />,
             iconBg: "bg-pink-50 text-pink-600",
           },
@@ -148,23 +117,7 @@ export default function AdminOverviewPage() {
             <div className="grid gap-4 lg:grid-cols-2">
               <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <h3 className="mb-3 text-sm font-bold">Revenue Overview</h3>
-                <div className="h-48">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={chartDemo}>
-                      <defs>
-                        <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#0D9488" stopOpacity={0.35} />
-                          <stop offset="100%" stopColor="#0D9488" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                      <XAxis dataKey="d" tick={{ fontSize: 11 }} />
-                      <YAxis tick={{ fontSize: 11 }} />
-                      <Tooltip />
-                      <Area type="monotone" dataKey="rev" stroke="#0D9488" fill="url(#rev)" strokeWidth={2} />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
+                <EmptySeries label="No revenue time-series available yet" />
                 <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
                   <Metric label="Total Revenue" value={money(o?.totalRevenue ?? 0)} />
                   <Metric label="Platform Fee" value={money(o?.platformFee ?? 0)} />
@@ -175,18 +128,7 @@ export default function AdminOverviewPage() {
 
               <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <h3 className="mb-3 text-sm font-bold">User Growth</h3>
-                <div className="h-48">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartDemo}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                      <XAxis dataKey="d" tick={{ fontSize: 11 }} />
-                      <YAxis tick={{ fontSize: 11 }} />
-                      <Tooltip />
-                      <Line type="monotone" dataKey="users" stroke="#3B82F6" strokeWidth={2} dot={false} />
-                      <Line type="monotone" dataKey="freelancers" stroke="#10B981" strokeWidth={2} dot={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
+                <EmptySeries label="No user growth time-series available yet" />
                 <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
                   <Metric label="Total Users" value={String(o?.totalUsers ?? 0)} />
                   <Metric label="New Users" value={String(o?.newUsers ?? 0)} />
@@ -199,11 +141,10 @@ export default function AdminOverviewPage() {
             <div className="grid gap-4 lg:grid-cols-3">
               <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:col-span-1">
                 <h3 className="mb-3 text-sm font-bold">Platform Health</h3>
-                <HealthRow label="Server" ok />
-                <HealthRow label="Database" ok />
-                <HealthRow label="Queue" ok />
-                <HealthRow label="Storage" ok={false} detail="78% Used" />
-                <div className="mt-3 text-xs text-slate-500">Cache Hit Rate · 92.4%</div>
+                <p className="text-sm text-slate-500">
+                  Live health checks are not instrumented in this build. Use events and logs for
+                  operational signal.
+                </p>
                 <Link href="/admin/events" className="mt-3 inline-block text-xs font-bold text-teal-600">
                   View system logs →
                 </Link>
@@ -263,14 +204,10 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function HealthRow({ label, ok, detail }: { label: string; ok: boolean; detail?: string }) {
+function EmptySeries({ label }: { label: string }) {
   return (
-    <div className="mb-2 flex items-center justify-between text-sm">
-      <div className="flex items-center gap-2 font-medium">
-        <span className={`h-2 w-2 rounded-full ${ok ? "bg-emerald-500" : "bg-amber-400"}`} />
-        {label}
-      </div>
-      <span className="text-xs text-slate-500">{detail ?? (ok ? "Operational" : "Attention")}</span>
+    <div className="flex h-48 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50">
+      <p className="px-4 text-center text-sm font-medium text-slate-500">{label}</p>
     </div>
   );
 }

@@ -147,8 +147,7 @@ export function FreelancerDashboard({
         <KpiCard
           label="Total Earnings"
           value={`$${invoiceTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-          sub="This month"
-          trend={invoiceTotal > 0 ? "+18.2% vs last month" : undefined}
+          sub="From invoices"
           icon={TrendingUp}
           href="/app/earnings"
           iconTone="bg-emerald-100 text-emerald-700"
@@ -194,8 +193,6 @@ export function FreelancerDashboard({
             total={invoiceTotal}
             accent="teal"
             title="Earnings overview"
-            trendLabel={invoiceTotal > 0 ? "↑ Growing this month" : undefined}
-            showPreviousLegend
           />
         </div>
         <ActivityFeed items={activities} viewAllHref="/app/activity" />

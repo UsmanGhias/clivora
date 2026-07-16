@@ -5,7 +5,6 @@ import {
   Briefcase,
   CheckCircle2,
   Clock,
-  Download,
   FileText,
   Star,
   TrendingUp,
@@ -18,6 +17,7 @@ import { EarningsLineChart } from "@/components/dashboard/EarningsLineChart";
 import { DonutChart } from "@/components/dashboard/DonutChart";
 import { MonthlyBarChart } from "@/components/dashboard/MonthlyBarChart";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
+import { PaymentDisclaimer } from "@/components/payments/PaymentDisclaimer";
 import {
   FreelancerCard,
   FreelancerPageHeader,
@@ -94,6 +94,7 @@ export default async function AnalyticsPage() {
             </ClientPrimaryButton>
           }
         />
+        <PaymentDisclaimer />
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <ClientStatCard label="Total spend" value={clientMoney(total)} icon={Wallet} />
           <ClientStatCard label="Paid" value={clientMoney(paid)} icon={CheckCircle2} iconTone="bg-emerald-100 text-emerald-700" />
@@ -153,30 +154,27 @@ export default async function AnalyticsPage() {
   const hoursLabel = `${Math.floor(fin.timeHours)}h ${Math.round((fin.timeHours % 1) * 60)}m`;
   const successRate = fin.projects.length
     ? Math.round((completedProjects / Math.max(1, fin.projects.length)) * 100)
-    : 98;
+    : null;
 
+  const nonBillable = Math.max(0, fin.timeHours - fin.billableHours);
   const performance = [
-    { name: "Billable", value: Math.max(1, Math.round(fin.billableHours || 75)), color: "#0D9488" },
-    { name: "Non-billable", value: Math.max(1, Math.round((fin.timeHours - fin.billableHours) || 18)), color: "#0EA5E9" },
-    { name: "Untracked", value: 7, color: "#F59E0B" },
-  ];
+    fin.billableHours > 0
+      ? { name: "Billable", value: Math.round(fin.billableHours * 10) / 10, color: "#0D9488" }
+      : null,
+    nonBillable > 0
+      ? { name: "Non-billable", value: Math.round(nonBillable * 10) / 10, color: "#0EA5E9" }
+      : null,
+  ].filter(Boolean) as Array<{ name: string; value: number; color: string }>;
 
   const projectSlices = [
-    { name: "Completed", value: completedProjects || 1, color: "#0EA5E9" },
-    { name: "In Progress", value: activeProjects || 1, color: "#0D9488" },
+    { name: "Completed", value: completedProjects, color: "#0EA5E9" },
+    { name: "In Progress", value: activeProjects, color: "#0D9488" },
     {
       name: "On Hold",
-      value: fin.projects.filter((p) => (p.status || "").toLowerCase().includes("hold")).length || 0,
+      value: fin.projects.filter((p) => (p.status || "").toLowerCase().includes("hold")).length,
       color: "#F59E0B",
     },
   ].filter((x) => x.value > 0);
-
-  const categories = [
-    { name: "Web Development", amount: fin.totalRevenue * 0.5, pct: 50 },
-    { name: "UI/UX Design", amount: fin.totalRevenue * 0.25, pct: 25 },
-    { name: "Mobile Apps", amount: fin.totalRevenue * 0.15, pct: 15 },
-    { name: "Consulting", amount: fin.totalRevenue * 0.1, pct: 10 },
-  ];
 
   return (
     <div className="space-y-6 pb-10">
@@ -185,57 +183,49 @@ export default async function AnalyticsPage() {
         subtitle="Track your performance, earnings, projects and growth."
         icon={BarChart3}
         actions={
-          <>
-            <span className="inline-flex min-h-11 items-center rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-navy">
-              Jul 1 – Jul 31, 2026
-            </span>
-            <PrimaryButton href="/app/earnings">
-              <Download className="h-4 w-4" />
-              Export Report
-            </PrimaryButton>
-          </>
+          <PrimaryButton href="/app/earnings">
+            <Wallet className="h-4 w-4" />
+            View earnings
+          </PrimaryButton>
         }
       />
+
+      <PaymentDisclaimer />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <FreelancerStatCard
           label="Total Earnings"
           value={money(fin.totalRevenue)}
-          trend="+18.2%"
           icon={TrendingUp}
         />
         <FreelancerStatCard
           label="Billable Hours"
           value={hoursLabel}
-          trend="+16.4%"
           icon={Clock}
           iconTone="bg-sky-100 text-sky-800"
         />
         <FreelancerStatCard
           label="Active Projects"
           value={activeProjects || fin.projects.length}
-          trend="+12.5%"
           icon={Briefcase}
           iconTone="bg-violet-100 text-violet-800"
         />
         <FreelancerStatCard
           label="Completed Projects"
           value={completedProjects}
-          trend="+22.2%"
           icon={CheckCircle2}
           iconTone="bg-emerald-100 text-emerald-700"
         />
         <FreelancerStatCard
-          label="New Clients"
+          label="Clients"
           value={fin.customers.length}
-          trend="+40%"
           icon={Users}
           iconTone="bg-amber-100 text-amber-800"
         />
         <FreelancerStatCard
           label="Success Rate"
-          value={`${successRate}%`}
-          trend="+5%"
+          value={successRate == null ? "—" : `${successRate}%`}
+          sub={successRate == null ? "No projects yet" : "Completed / total projects"}
           icon={Star}
           iconTone="bg-fuchsia-100 text-fuchsia-800"
         />
@@ -249,62 +239,47 @@ export default async function AnalyticsPage() {
             accent="teal"
             summaryBoxes={[
               {
-                label: "Avg. daily earnings",
-                value: money(fin.totalRevenue > 0 ? fin.totalRevenue / 31 : 0),
+                label: "Invoice total",
+                value: money(fin.totalRevenue),
                 tone: "bg-primary/10 text-primary-dark",
               },
               {
-                label: "Highest day",
-                value: money(fin.totalRevenue > 0 ? fin.totalRevenue / 9 : 0),
+                label: "Paid",
+                value: money(fin.paid),
                 tone: "bg-sky-50 text-sky-800",
               },
             ]}
           />
         </div>
-        <DonutChart title="Performance breakdown" slices={performance} centerLabel="Hours" />
+        <DonutChart
+          title="Hours breakdown"
+          slices={performance}
+          centerLabel="Hours"
+        />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <FreelancerCard title="Earnings by month" className="lg:col-span-1">
-          <MonthlyBarChart total={fin.totalRevenue} />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <FreelancerCard title="Earnings by month">
+          <MonthlyBarChart series={[]} />
         </FreelancerCard>
         <DonutChart
           title="Projects summary"
-          slices={projectSlices.length ? projectSlices : [{ name: "No projects", value: 1, color: "#E2E8F0" }]}
+          slices={projectSlices}
           centerValue={fin.projects.length}
           centerLabel="Total"
         />
-        <FreelancerCard title="Top earning categories">
-          <ul className="space-y-3">
-            {categories.map((c) => (
-              <li key={c.name}>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-semibold text-navy">{c.name}</span>
-                  <span className="font-bold text-navy">{money(c.amount)}</span>
-                </div>
-                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-background">
-                  <div className="h-full rounded-full bg-primary" style={{ width: `${c.pct}%` }} />
-                </div>
-              </li>
-            ))}
-          </ul>
-        </FreelancerCard>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-2">
         <ActivityFeed items={fin.activities} viewAllHref="/app/notifications" />
         <FreelancerCard title="Insights">
           <ul className="space-y-3 text-sm">
             <li className="rounded-xl bg-primary/5 px-3 py-3">
-              <p className="font-bold text-navy">Great job!</p>
+              <p className="font-bold text-navy">Keep going</p>
               <p className="mt-1 text-text-secondary">
-                Your completion rate is strong. Keep delivering on time to stay Top Rated.
-              </p>
-            </li>
-            <li className="rounded-xl bg-sky-50 px-3 py-3">
-              <p className="font-bold text-navy">Time to scale</p>
-              <p className="mt-1 text-text-secondary">
-                You have capacity for more Connect proposals this month.
+                {fin.projects.length === 0
+                  ? "Create a project or send a proposal to start building your track record."
+                  : "Track hours and invoices so your analytics stay grounded in real activity."}
               </p>
             </li>
             <li>
@@ -313,22 +288,6 @@ export default async function AnalyticsPage() {
               </Link>
             </li>
           </ul>
-        </FreelancerCard>
-        <FreelancerCard title="Client retention">
-          <p className="font-display text-4xl font-extrabold text-navy">92%</p>
-          <p className="mt-1 text-sm text-text-secondary">Repeat engagement across active clients</p>
-          <div className="mt-4 flex flex-wrap gap-1.5">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <span
-                key={i}
-                className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white ${
-                  i < 8 ? "bg-primary" : "bg-slate-300"
-                }`}
-              >
-                {i + 1}
-              </span>
-            ))}
-          </div>
         </FreelancerCard>
       </div>
     </div>
