@@ -335,17 +335,6 @@ export default async function AppHomePage() {
   const timeTracked = timeMinutes > 0 ? `${hours}h ${mins}m` : "0h 00m";
 
   if (client) {
-    const spendBase = invoiceTotal || paidTotal || 0;
-    const spendSlices =
-      spendBase > 0
-        ? [
-            { name: "Web Development", value: Math.round(spendBase * 0.503), color: "#475569" },
-            { name: "Design & Creative", value: Math.round(spendBase * 0.254), color: "#0EA5E9" },
-            { name: "Mobile Development", value: Math.round(spendBase * 0.172), color: "#8B5CF6" },
-            { name: "Writing & Content", value: Math.round(spendBase * 0.071), color: "#F59E0B" },
-          ]
-        : [];
-
     return (
       <ClientDashboard
         profile={profile}
@@ -353,14 +342,13 @@ export default async function AppHomePage() {
         projectCount={projectCount}
         totalSpent={invoiceTotal}
         paidTotal={paidTotal}
-        escrowHeld={Math.round(outstandingTotal * 0.6)}
         refunds={0}
         outstanding={outstandingTotal}
         credits={credits}
         activities={activities}
         projects={projects}
         freelancers={freelancers}
-        spendSlices={spendSlices}
+        spendSlices={[]}
       />
     );
   }
@@ -389,7 +377,7 @@ export default async function AppHomePage() {
       opportunities={opportunities}
       week={{
         timeTracked,
-        earned: money(paidTotal || Math.round(invoiceTotal * 0.35)),
+        earned: money(paidTotal),
         tasksDone,
         productivity: successScore,
       }}

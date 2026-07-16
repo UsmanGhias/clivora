@@ -37,7 +37,6 @@ type Props = {
   projectCount: number;
   totalSpent: number;
   paidTotal: number;
-  escrowHeld: number;
   refunds: number;
   outstanding?: number;
   credits: ConnectCreditSummary | null;
@@ -97,7 +96,6 @@ export function ClientDashboard({
   projectCount,
   totalSpent,
   paidTotal,
-  escrowHeld,
   refunds,
   outstanding = 0,
   credits,
@@ -192,8 +190,7 @@ export function ClientDashboard({
         <ClientKpi
           label="Total Spent"
           value={money(totalSpent)}
-          sub="This month"
-          trend={totalSpent > 0 ? "↑ 18.2% vs last month" : undefined}
+          sub="Invoice totals shared with you"
           href="/app/invoices"
           icon={DollarSign}
           iconTone="bg-emerald-100 text-emerald-800"
@@ -206,14 +203,7 @@ export function ClientDashboard({
             total={totalSpent}
             accent="slate"
             title="Spending overview"
-            trendLabel={totalSpent > 0 ? "↑ 18.2% vs last month" : undefined}
-            showPreviousLegend
             summaryBoxes={[
-              {
-                label: "Escrow Held",
-                value: money(escrowHeld),
-                tone: "bg-sky-50 text-sky-800",
-              },
               {
                 label: "Paid to Freelancers",
                 value: money(paidTotal),

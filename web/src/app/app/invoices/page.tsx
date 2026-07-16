@@ -10,6 +10,7 @@ import { InvoicesCrmPanel } from "@/components/crm/CrmPanels";
 import { createClient } from "@/lib/supabase/server";
 import { AlertTriangle, Clock, FileText, Plus, Settings, TrendingUp } from "lucide-react";
 import { DonutChart } from "@/components/dashboard/DonutChart";
+import { PaymentDisclaimer } from "@/components/payments/PaymentDisclaimer";
 import {
   FreelancerCard,
   FreelancerPageHeader,
@@ -139,11 +140,12 @@ export default async function InvoicesPage() {
         }
       />
 
+      <PaymentDisclaimer />
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <FreelancerStatCard
           label="Total Revenue"
           value={money(totalRevenue)}
-          trend={totalRevenue > 0 ? "+18.2% vs last month" : undefined}
           icon={TrendingUp}
         />
         <FreelancerStatCard
@@ -190,17 +192,17 @@ export default async function InvoicesPage() {
           <DonutChart
             title="Invoice analytics"
             slices={[
-              { name: "Paid", value: Math.max(paid, 1), color: "#10B981" },
-              { name: "Pending", value: Math.max(pending, 1), color: "#F59E0B" },
-              { name: "Overdue", value: Math.max(overdue, 1), color: "#DC2626" },
+              ...(paid > 0 ? [{ name: "Paid", value: paid, color: "#10B981" }] : []),
+              ...(pending > 0 ? [{ name: "Pending", value: pending, color: "#F59E0B" }] : []),
+              ...(overdue > 0 ? [{ name: "Overdue", value: overdue, color: "#DC2626" }] : []),
             ]}
             centerValue={money(totalRevenue, 0)}
             centerLabel="Total"
           />
           <FreelancerCard title="How you get paid">
             <p className="text-sm text-text-secondary">
-              CLIVORA records invoices and payments. Card/gateway payouts are coming soon. Use
-              JazzCash, bank transfer, or Google Play for subscriptions.
+              CLIVORA does not currently process client-to-freelancer payments. Record invoices here
+              and settle funds directly with your clients for now.
             </p>
             <ul className="mt-3 space-y-2 text-sm">
               <li className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5">

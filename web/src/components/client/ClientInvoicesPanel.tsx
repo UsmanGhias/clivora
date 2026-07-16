@@ -21,6 +21,7 @@ import {
   ClientStatusPill,
   money,
 } from "@/components/client/ui";
+import { PaymentDisclaimer } from "@/components/payments/PaymentDisclaimer";
 import { cn } from "@/lib/utils";
 
 export type ClientInvoiceRow = {
@@ -114,13 +115,6 @@ export function ClientInvoicesPanel({ rows }: { rows: ClientInvoiceRow[] }) {
     });
   }, [rows, tab, query]);
 
-  const activities = [
-    { title: "Payment made", detail: "Invoice marked paid", time: "2h ago", tone: "green" as const },
-    { title: "Invoice sent", detail: "New invoice shared", time: "1d ago", tone: "blue" as const },
-    { title: "Payment overdue", detail: "Follow up needed", time: "2d ago", tone: "red" as const },
-    { title: "Invoice viewed", detail: "Freelancer opened link", time: "3d ago", tone: "slate" as const },
-  ];
-
   return (
     <div className="space-y-6 pb-10">
       <ClientPageHeader
@@ -129,11 +123,12 @@ export function ClientInvoicesPanel({ rows }: { rows: ClientInvoiceRow[] }) {
         icon={FileText}
       />
 
+      <PaymentDisclaimer />
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <ClientStatCard
           label="Total invoices"
           value={counts.all}
-          trend={counts.all > 0 ? "↑ 22% vs last 30 days" : undefined}
           icon={FileText}
           iconTone="bg-sky-100 text-sky-800"
         />
@@ -163,9 +158,6 @@ export function ClientInvoicesPanel({ rows }: { rows: ClientInvoiceRow[] }) {
       <p className="text-sm text-text-secondary">
         Total amount:{" "}
         <span className="font-bold text-navy">{money(totals.all)}</span>
-        {totals.all > 0 && (
-          <span className="ml-2 text-xs font-semibold text-success">↑ 18% vs last 30 days</span>
-        )}
       </p>
 
       <div className="grid gap-4 xl:grid-cols-[1fr_280px]">
@@ -367,61 +359,54 @@ export function ClientInvoicesPanel({ rows }: { rows: ClientInvoiceRow[] }) {
             <ul className="space-y-3 text-sm">
               <li className="flex items-center justify-between">
                 <span className="text-text-secondary">Total paid</span>
-                <span className="font-bold text-navy">
-                  {money(totals.paid)}{" "}
-                  <span className="text-[10px] text-success">↑</span>
-                </span>
+                <span className="font-bold text-navy">{money(totals.paid)}</span>
               </li>
               <li className="flex items-center justify-between">
                 <span className="text-text-secondary">Total pending</span>
-                <span className="font-bold text-navy">
-                  {money(totals.pending)}{" "}
-                  <span className="text-[10px] text-success">↑</span>
-                </span>
+                <span className="font-bold text-navy">{money(totals.pending)}</span>
               </li>
               <li className="flex items-center justify-between">
                 <span className="text-text-secondary">Total overdue</span>
-                <span className="font-bold text-navy">
-                  {money(totals.overdue)}{" "}
-                  <span className="text-[10px] text-error">↓</span>
-                </span>
+                <span className="font-bold text-navy">{money(totals.overdue)}</span>
               </li>
             </ul>
             <Link
               href="/app/payments"
               className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-client-accent hover:underline"
             >
-              View full report <ArrowRight className="h-3.5 w-3.5" />
+              View payments <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </ClientCard>
 
-          <ClientCard title="Recent activity">
-            <ul className="space-y-3">
-              {activities.map((a) => (
-                <li key={a.title} className="flex gap-3">
-                  <span
-                    className={cn(
-                      "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
-                      a.tone === "green" && "bg-emerald-50 text-emerald-700",
-                      a.tone === "blue" && "bg-sky-50 text-sky-700",
-                      a.tone === "red" && "bg-red-50 text-red-700",
-                      a.tone === "slate" && "bg-client-surface text-client-accent",
-                    )}
-                  >
-                    {a.tone === "red" ? (
-                      <AlertTriangle className="h-3.5 w-3.5" />
-                    ) : (
-                      <FileText className="h-3.5 w-3.5" />
-                    )}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-navy">{a.title}</p>
-                    <p className="text-xs text-text-muted">{a.detail}</p>
-                  </div>
-                  <span className="shrink-0 text-[10px] text-text-muted">{a.time}</span>
-                </li>
-              ))}
-            </ul>
+          <ClientCard title="Recent invoices">
+            {rows.length === 0 ? (
+              <p className="text-sm text-text-secondary">No shared invoices yet.</p>
+            ) : (
+              <ul className="space-y-3">
+                {rows.slice(0, 5).map((r) => (
+                  <li key={r.share_id} className="flex gap-3">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-client-surface text-client-accent">
+                      {(r.status || "").toLowerCase() === "overdue" ? (
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                      ) : (
+                        <FileText className="h-3.5 w-3.5" />
+                      )}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-navy">
+                        {r.invoice_number || r.share_id}
+                      </p>
+                      <p className="truncate text-xs text-text-muted">
+                        {r.freelancer_email || r.freelancer_name || "Freelancer"}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-[10px] text-text-muted">
+                      {formatDate(r.updated_at || r.issue_date)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </ClientCard>
 
           <ClientCard title="Quick actions">
