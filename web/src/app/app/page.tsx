@@ -42,6 +42,7 @@ export default async function AppHomePage() {
   let invoiceTotal = 0;
   let paidTotal = 0;
   let outstandingTotal = 0;
+  let unpaidInvoiceCount = 0;
   let profileCompleteness = 85;
   let successScore = 98;
   let projectCount = 0;
@@ -89,7 +90,7 @@ export default async function AppHomePage() {
       client
         ? supabase
             .from("invoice_shares")
-            .select("share_id, total, status, currency")
+            .select("share_id, total, status, currency, due_date")
             .eq("client_uid", uid)
             .limit(200)
         : supabase
@@ -214,17 +215,35 @@ export default async function AppHomePage() {
     }
 
     if (client && crmInvoices.data) {
-      const rows = crmInvoices.data as Array<{ total?: number; status?: string }>;
+      const rows = crmInvoices.data as Array<{
+        total?: number;
+        status?: string;
+        due_date?: string | null;
+      }>;
       invoiceTotal = rows.reduce((s, i) => s + (Number(i.total) || 0), 0);
       paidTotal = rows
-        .filter((i) => (i.status || "").toLowerCase() === "paid")
-        .reduce((s, i) => s + (Number(i.total) || 0), 0);
-      outstandingTotal = rows
         .filter((i) => {
           const st = (i.status || "").toLowerCase();
-          return st !== "paid" && st !== "cancelled";
+          return st === "paid" || st === "completed";
         })
         .reduce((s, i) => s + (Number(i.total) || 0), 0);
+      const openRows = rows.filter((i) => {
+        const st = (i.status || "").toLowerCase();
+        if (st === "paid" || st === "completed" || st === "cancelled" || st === "draft") {
+          return false;
+        }
+        if (st === "overdue" || st === "unpaid" || st === "pending" || st === "sent" || st === "partial") {
+          return true;
+        }
+        // Status missing/unknown: treat past-due shares as needing action
+        if (i.due_date) {
+          const due = new Date(i.due_date);
+          if (!Number.isNaN(due.getTime()) && due.getTime() < Date.now()) return true;
+        }
+        return st.length === 0 || st === "shared";
+      });
+      unpaidInvoiceCount = openRows.length;
+      outstandingTotal = openRows.reduce((s, i) => s + (Number(i.total) || 0), 0);
     }
 
     if (!client && crmProjects.data?.length) {
@@ -344,6 +363,7 @@ export default async function AppHomePage() {
         paidTotal={paidTotal}
         refunds={0}
         outstanding={outstandingTotal}
+        unpaidInvoiceCount={unpaidInvoiceCount}
         credits={credits}
         activities={activities}
         projects={projects}
