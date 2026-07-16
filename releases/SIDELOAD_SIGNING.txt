@@ -1,5 +1,0 @@
-Picked up JAVA_TOOL_OPTIONS: -Xmx2048m
-Signer #1 certificate DN: CN=CLIVORA Agent Sideload, OU=CodCrafters, O=CodCrafters, L=Lahore, ST=Punjab, C=PK
-Signer #1 certificate SHA-256 digest: aaa6330f893acf84b027dbe1810b22daaac80228164326bcbd64b8be3181935b
-Signer #1 certificate SHA-1 digest: 1f114c6025130d9079b9fcb3ddb312eec3cdfe37
-Signer #1 certificate MD5 digest: 06d135daf8b26ae66a3b37f98d0fb814
