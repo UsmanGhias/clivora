@@ -6,6 +6,8 @@ import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
   ExportImportAdd,
+  downloadCsv,
+  matchesAdminQuery,
   KpiGrid,
   FilterBar,
   AdminTable,
@@ -27,6 +29,7 @@ function nameOf(u: Record<string, unknown>) {
 export default function AdminUsersPage() {
   const { data, loading } = useAdminData();
   const [activeTab, setActiveTab] = useState("all");
+  const [q, setQ] = useState("");
   const users = data?.users ?? [];
 
   const kpis = useMemo(() => {
@@ -43,6 +46,7 @@ export default function AdminUsersPage() {
 
   const filtered = useMemo(() => {
     return users.filter((u) => {
+      if (!matchesAdminQuery(u, q)) return false;
       const type = String(u.account_type ?? "freelancer").toLowerCase();
       const plan = String(u.subscription_plan || u.plan || "").toLowerCase();
       if (activeTab === "clients") return type === "client";
@@ -51,7 +55,7 @@ export default function AdminUsersPage() {
       if (activeTab === "suspended") return Boolean(u.is_blocked || u.is_restricted);
       return true;
     });
-  }, [users, activeTab]);
+  }, [users, activeTab, q]);
 
   return (
     <div>
@@ -67,7 +71,24 @@ export default function AdminUsersPage() {
       <AdminPageHeader
         title="Users"
         subtitle="Manage clients, freelancers, and platform accounts."
-        actions={<ExportImportAdd entity="Users" addLabel="Add User" />}
+        actions={
+          <ExportImportAdd
+            entity="Users"
+            onExport={() =>
+              downloadCsv(
+                "users.csv",
+                ["id", "email", "full_name", "account_type", "plan"],
+                filtered.map((u) => [
+                  String(u.id ?? ""),
+                  String(u.email ?? ""),
+                  String(u.full_name || u.name || ""),
+                  String(u.account_type ?? ""),
+                  String(u.subscription_plan || u.plan || ""),
+                ]),
+              )
+            }
+          />
+        }
       />
 
       <KpiGrid
@@ -116,6 +137,8 @@ export default function AdminUsersPage() {
           <div>
             <FilterBar
               searchPlaceholder="Search users by name or email…"
+              searchValue={q}
+              onSearchChange={setQ}
               tabs={[
                 { id: "all", label: "All", count: kpis.total },
                 { id: "clients", label: "Clients", count: kpis.clients },
@@ -125,7 +148,7 @@ export default function AdminUsersPage() {
               ]}
               activeTab={activeTab}
               onTabChange={setActiveTab}
-              onReset={() => setActiveTab("all")}
+              onReset={() => { setActiveTab("all"); setQ(""); }}
             />
 
             {!data && loading ? (

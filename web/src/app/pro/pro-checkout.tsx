@@ -51,8 +51,7 @@ export default function ProCheckout() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
-  const [stripeBusy, setStripeBusy] = useState(false);
-  const [currentPlan, setCurrentPlan] = useState<string | null>(null);
+  const [currentPlan, setCurrentPlan] = useState<string | null>(null)
   const [loadingPlan, setLoadingPlan] = useState(true);
 
   const amount = plan === "pro_plus" ? PRO_PLUS_PRICE_USD : PRO_PRICE_USD;
@@ -459,40 +458,11 @@ export default function ProCheckout() {
                 : `Submit ${plan === "pro_plus" ? "Pro Plus" : "Pro"} request`}
             </button>
 
-            <div className="relative flex items-center gap-3">
-              <div className="flex-1 border-t border-border" />
-              <span className="text-xs text-text-muted">or</span>
-              <div className="flex-1 border-t border-border" />
-            </div>
-            <button
-              type="button"
-              disabled={stripeBusy || wantsSameOrLower}
-              onClick={async () => {
-                setStripeBusy(true);
-                setError("");
-                try {
-                  const res = await fetch("/api/stripe/checkout", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      plan,
-                      email: email.trim().toLowerCase(),
-                      promoCode: promoCode.trim() || undefined,
-                    }),
-                  });
-                  const json = await res.json();
-                  if (!res.ok) throw new Error(json.error || "Stripe checkout unavailable");
-                  if (json.url) window.location.href = json.url;
-                } catch (err) {
-                  setError(err instanceof Error ? err.message : "Stripe checkout failed");
-                } finally {
-                  setStripeBusy(false);
-                }
-              }}
-              className="w-full rounded-xl border border-border bg-white py-3 text-sm font-bold text-navy shadow-sm hover:bg-slate-50 disabled:opacity-60"
-            >
-              {stripeBusy ? "Redirecting…" : "Pay with Stripe"}
-            </button>
+            {/* Stripe is dormant until STRIPE_ENABLED=true (master plan §4). Manual/Play only. */}
+            <p className="rounded-xl border border-dashed border-border bg-slate-50 px-3 py-3 text-center text-xs text-text-muted">
+              Card checkout via Stripe is <strong className="text-navy">coming soon</strong>. Use
+              JazzCash / bank transfer above, or subscribe inside the Android app with Google Play.
+            </p>
           </form>
         )}
 

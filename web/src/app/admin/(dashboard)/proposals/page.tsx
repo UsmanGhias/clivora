@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { CheckCircle2, Clock, Send } from "lucide-react";
 import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
   ExportImportAdd,
+  downloadCsv,
+  matchesAdminQuery,
   KpiGrid,
   FilterBar,
   AdminTable,
@@ -21,6 +23,7 @@ import {
 
 export default function AdminProposalsPage() {
   const { data, loading } = useAdminData();
+  const [q, setQ] = useState("");
   const proposals = data?.proposals ?? [];
 
   const kpis = useMemo(() => {
@@ -33,6 +36,11 @@ export default function AdminProposalsPage() {
     ).length;
     return { total, pending, accepted };
   }, [proposals]);
+
+  const filtered = useMemo(
+    () => proposals.filter((row) => matchesAdminQuery(row, q)),
+    [proposals, q],
+  );
 
   return (
     <div>
@@ -48,7 +56,18 @@ export default function AdminProposalsPage() {
       <AdminPageHeader
         title="Proposals"
         subtitle="Freelancer proposals on Connect needs."
-        actions={<ExportImportAdd entity="Proposals" addLabel="Add Proposal" />}
+        actions={
+          <ExportImportAdd
+            entity="Proposals"
+            onExport={() =>
+              downloadCsv(
+                "proposals.csv",
+                Object.keys(filtered[0] ?? { id: "" }),
+                filtered.map((row) => Object.keys(filtered[0] ?? { id: "" }).map((k) => String(row[k] ?? ""))),
+              )
+            }
+          />
+        }
       />
 
       <KpiGrid
@@ -77,7 +96,12 @@ export default function AdminProposalsPage() {
       <PageLayout
         main={
           <div>
-            <FilterBar searchPlaceholder="Search proposals…" onReset={() => undefined} />
+            <FilterBar
+              searchPlaceholder="Search proposals…"
+              searchValue={q}
+              onSearchChange={setQ}
+              onReset={() => setQ("")}
+            />
 
             {!data && loading ? (
               <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
@@ -86,16 +110,16 @@ export default function AdminProposalsPage() {
             ) : (
               <AdminTable
                 headers={["Proposal ID", "Status", "Amount", "Submitted", "Actions"]}
-                footer={<span>Showing {proposals.length} proposals</span>}
+                footer={<span>Showing {filtered.length} proposals</span>}
               >
-                {proposals.length === 0 ? (
+                {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-3 py-10 text-center text-sm text-slate-500">
                       No proposals found.
                     </td>
                   </tr>
                 ) : (
-                  proposals.map((p) => (
+                  filtered.map((p) => (
                     <tr key={String(p.id)} className="hover:bg-slate-50/80">
                       <td className="px-3 py-3">
                         <input type="checkbox" className="rounded border-slate-300" aria-label="Select row" />

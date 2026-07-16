@@ -6,6 +6,8 @@ import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
   ExportImportAdd,
+  downloadCsv,
+  matchesAdminQuery,
   KpiGrid,
   FilterBar,
   AdminTable,
@@ -27,6 +29,7 @@ function nameOf(u: Record<string, unknown>) {
 export default function AdminPaymentsPage() {
   const { data, loading } = useAdminData();
   const [activeTab, setActiveTab] = useState("all");
+  const [q, setQ] = useState("");
   const payments = data?.payments ?? [];
 
   const kpis = useMemo(() => {
@@ -46,7 +49,7 @@ export default function AdminPaymentsPage() {
   const filtered = useMemo(() => {
     if (activeTab === "all") return payments;
     return payments.filter((p) => String(p.status).toLowerCase() === activeTab);
-  }, [payments, activeTab]);
+  }, [payments, activeTab, q]);
 
   const tabs = [
     { id: "all", label: "All", count: payments.length },
@@ -71,7 +74,7 @@ export default function AdminPaymentsPage() {
       <AdminPageHeader
         title="Payments"
         subtitle="Pro payment requests and platform transactions."
-        actions={<ExportImportAdd entity="Payments" addLabel="Add Payment" />}
+        actions={null}
       />
 
       <KpiGrid
@@ -102,10 +105,12 @@ export default function AdminPaymentsPage() {
           <div>
             <FilterBar
               searchPlaceholder="Search payments…"
+              searchValue={q}
+              onSearchChange={setQ}
               tabs={tabs}
               activeTab={activeTab}
               onTabChange={setActiveTab}
-              onReset={() => setActiveTab("all")}
+              onReset={() => { setActiveTab("all"); setQ(""); }}
             />
 
             {!data && loading ? (

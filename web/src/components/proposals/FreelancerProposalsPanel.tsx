@@ -10,6 +10,7 @@ import {
   Smartphone,
 } from "lucide-react";
 import { proposalStatusLabel, type ProposalRow } from "@/lib/connect-proposals-shared";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 const TABS = ["all", "pending", "viewed", "shortlisted", "hired", "declined"] as const;
@@ -45,10 +46,13 @@ function JobIcon({ title }: { title: string }) {
 export function FreelancerProposalsPanel({ proposals }: { proposals: ProposalRow[] }) {
   const [tab, setTab] = useState<(typeof TABS)[number]>("all");
   const [query, setQuery] = useState("");
+  const [rows, setRows] = useState(proposals);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const counts = useMemo(() => {
-    const fresh = { all: proposals.length, pending: 0, viewed: 0, shortlisted: 0, hired: 0, declined: 0 };
-    for (const p of proposals) {
+    const fresh = { all: rows.length, pending: 0, viewed: 0, shortlisted: 0, hired: 0, declined: 0 };
+    for (const p of rows) {
       const b = statusBucket(p.status);
       if (b === "pending") fresh.pending += 1;
       else if (b === "viewed") fresh.viewed += 1;
@@ -58,18 +62,36 @@ export function FreelancerProposalsPanel({ proposals }: { proposals: ProposalRow
       else fresh.pending += 1;
     }
     return fresh;
-  }, [proposals]);
+  }, [rows]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return proposals.filter((p) => {
+    return rows.filter((p) => {
       const bucket = statusBucket(p.status);
       if (tab !== "all" && bucket !== tab) return false;
       if (!q) return true;
       const hay = [p.need_title, p.to_name, p.message].filter(Boolean).join(" ").toLowerCase();
       return hay.includes(q);
     });
-  }, [proposals, tab, query]);
+  }, [rows, tab, query]);
+
+  async function withdraw(id: string) {
+    setBusyId(id);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const { error: err } = await supabase
+        .from("connect_proposals")
+        .update({ status: "withdrawn" })
+        .eq("id", id);
+      if (err) throw err;
+      setRows((prev) => prev.map((p) => (p.id === id ? { ...p, status: "withdrawn" } : p)));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not withdraw proposal");
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -79,6 +101,10 @@ export function FreelancerProposalsPanel({ proposals }: { proposals: ProposalRow
           Track and manage all proposals you&apos;ve submitted.
         </p>
       </div>
+
+      {error && (
+        <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+      )}
 
       <div className="flex flex-wrap gap-2 border-b border-border pb-2">
         {TABS.map((t) => (
@@ -103,19 +129,17 @@ export function FreelancerProposalsPanel({ proposals }: { proposals: ProposalRow
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search your proposals…"
-          className="w-full rounded-xl border border-border py-2.5 pl-10 pr-3 text-sm outline-none ring-primary focus:ring-2"
+          placeholder="Search by job or client…"
+          className="w-full rounded-xl border border-border bg-surface py-2.5 pl-10 pr-3 text-sm outline-none focus:border-primary"
         />
       </div>
 
       {filtered.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border bg-surface p-10 text-center">
-          <p className="font-semibold text-navy">No proposals yet</p>
-          <p className="mt-2 text-sm text-text-secondary">
-            Browse Connect jobs and submit your first proposal.
-          </p>
-          <Link href="/app/connect" className="mt-4 inline-block text-sm font-semibold text-primary">
-            Find jobs →
+          <CheckCircle2 className="mx-auto h-10 w-10 text-primary/40" />
+          <p className="mt-3 font-semibold text-navy">No proposals in this view</p>
+          <Link href="/connect" className="mt-3 inline-block text-sm font-semibold text-primary">
+            Browse Connect jobs →
           </Link>
         </div>
       ) : (
@@ -123,30 +147,19 @@ export function FreelancerProposalsPanel({ proposals }: { proposals: ProposalRow
           {filtered.map((p) => {
             const bucket = statusBucket(p.status);
             const hired = bucket === "hired";
+            const withdrawn = p.status.toLowerCase() === "withdrawn";
             return (
-              <li
-                key={p.id}
-                className="rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-primary/30"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex gap-3">
-                    <JobIcon title={p.need_title ?? ""} />
-                    <div>
-                      <h3 className="font-bold text-navy">{p.need_title}</h3>
-                      <p className="text-xs text-text-muted">
-                        {p.need_budget || "Fixed price"} · Posted{" "}
-                        {new Date(p.created_at).toLocaleDateString()}
-                      </p>
-                      <p className="mt-2 font-display text-lg font-extrabold text-primary">
-                        ${Number(p.amount ?? 0).toLocaleString()}{" "}
-                        <span className="text-sm font-semibold text-text-secondary">your bid</span>
-                      </p>
-                      <p className="mt-1 inline-flex items-center gap-1 text-xs text-text-secondary">
-                        Client: {p.to_name}
-                        <CheckCircle2 className="h-3.5 w-3.5 text-success" />
-                        <span className="text-success">Verified</span>
-                      </p>
-                    </div>
+              <li key={p.id} className="rounded-2xl border border-border bg-white p-4 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <JobIcon title={p.need_title || ""} />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-navy">{p.need_title || "Open job"}</p>
+                    <p className="mt-0.5 text-sm text-text-secondary">
+                      {p.to_name || "Client"} · {proposalStatusLabel(p.status)}
+                    </p>
+                    {p.message && (
+                      <p className="mt-2 line-clamp-2 text-sm text-text-muted">{p.message}</p>
+                    )}
                   </div>
                   <span
                     className={cn(
@@ -158,26 +171,31 @@ export function FreelancerProposalsPanel({ proposals }: { proposals: ProposalRow
                   </span>
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4">
-                  {!hired ? (
+                  {!hired && !withdrawn ? (
                     <>
-                      <button type="button" className="text-sm font-semibold text-text-secondary">
-                        Withdraw
-                      </button>
                       <button
                         type="button"
+                        disabled={busyId === p.id}
+                        onClick={() => void withdraw(p.id)}
+                        className="text-sm font-semibold text-text-secondary disabled:opacity-50"
+                      >
+                        {busyId === p.id ? "Withdrawing…" : "Withdraw"}
+                      </button>
+                      <Link
+                        href="/app/messages"
                         className="rounded-xl border-2 border-primary px-4 py-2 text-sm font-semibold text-primary"
                       >
-                        Edit proposal
-                      </button>
+                        Discuss / revise
+                      </Link>
                     </>
-                  ) : (
+                  ) : hired ? (
                     <Link
                       href="/app/projects"
                       className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white"
                     >
                       View project
                     </Link>
-                  )}
+                  ) : null}
                   <Link
                     href="/app/messages"
                     className="ml-auto inline-flex items-center gap-1 text-sm font-semibold text-primary"

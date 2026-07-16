@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { ScrollText } from "lucide-react";
 import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
   ExportImportAdd,
+  downloadCsv,
+  matchesAdminQuery,
   KpiGrid,
   FilterBar,
   AdminTable,
@@ -23,6 +25,7 @@ import {
 
 export default function AdminAuditPage() {
   const { data, loading } = useAdminData();
+  const [q, setQ] = useState("");
   const events = data?.events ?? [];
 
   const audit = useMemo(
@@ -34,7 +37,15 @@ export default function AdminAuditPage() {
     [events],
   );
 
-  const rows = audit.length > 0 ? audit : events.slice(0, 40);
+  const rows = useMemo(
+    () => (audit.length > 0 ? audit : events.slice(0, 40)),
+    [audit, events],
+  );
+
+  const filtered = useMemo(
+    () => rows.filter((row) => matchesAdminQuery(row, q)),
+    [rows, q],
+  );
 
   return (
     <div>
@@ -50,7 +61,18 @@ export default function AdminAuditPage() {
       <AdminPageHeader
         title="Audit Logs"
         subtitle="Security and admin action trail."
-        actions={<ExportImportAdd entity="Audit" />}
+        actions={
+          <ExportImportAdd
+            entity="Audit"
+            onExport={() =>
+              downloadCsv(
+                "audit.csv",
+                Object.keys(filtered[0] ?? { id: "" }),
+                filtered.map((row) => Object.keys(filtered[0] ?? { id: "" }).map((k) => String(row[k] ?? ""))),
+              )
+            }
+          />
+        }
       />
 
       <KpiGrid
@@ -69,7 +91,12 @@ export default function AdminAuditPage() {
       <PageLayout
         main={
           <div>
-            <FilterBar searchPlaceholder="Search audit logs…" onReset={() => undefined} />
+            <FilterBar
+              searchPlaceholder="Search audit logs…"
+              searchValue={q}
+              onSearchChange={setQ}
+              onReset={() => setQ("")}
+            />
             {!data && loading ? (
               <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
                 Loading audit logs…
@@ -77,16 +104,16 @@ export default function AdminAuditPage() {
             ) : (
               <AdminTable
                 headers={["Event", "Actor", "Type", "When", "Actions"]}
-                footer={<span>Showing {rows.length} audit-related events</span>}
+                footer={<span>Showing {filtered.length} of {rows.length} audit-related events</span>}
               >
-                {rows.length === 0 ? (
+                {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-3 py-10 text-center text-sm text-slate-500">
                       No audit events found.
                     </td>
                   </tr>
                 ) : (
-                  rows.map((e) => (
+                  filtered.map((e) => (
                     <tr key={String(e.id)} className="hover:bg-slate-50/80">
                       <td className="px-3 py-3">
                         <input type="checkbox" className="rounded border-slate-300" aria-label="Select row" />

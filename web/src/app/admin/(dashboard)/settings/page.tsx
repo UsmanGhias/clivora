@@ -7,6 +7,8 @@ import {
   AdminPageHeader,
   AdminBtn,
   ExportImportAdd,
+  downloadCsv,
+  matchesAdminQuery,
   FilterBar,
   PageLayout,
   SidePanel,
@@ -18,6 +20,7 @@ import {
 export default function AdminSettingsPage() {
   const { data, loading } = useAdminData();
   const [activeTab, setActiveTab] = useState("general");
+  const [q, setQ] = useState("");
   const [siteName, setSiteName] = useState("CLIVORA");
   const [supportEmail, setSupportEmail] = useState("support@clivora.com");
   const [commission, setCommission] = useState("10");
@@ -39,7 +42,7 @@ export default function AdminSettingsPage() {
       <AdminPageHeader
         title="System Settings"
         subtitle="Configure platform defaults, email, and feature flags."
-        actions={<ExportImportAdd entity="Settings" addLabel="Save Changes" />}
+        actions={null}
       />
 
       <PageLayout
@@ -47,6 +50,8 @@ export default function AdminSettingsPage() {
           <div>
             <FilterBar
               searchPlaceholder="Search settings…"
+              searchValue={q}
+              onSearchChange={setQ}
               tabs={[
                 { id: "general", label: "General" },
                 { id: "platform", label: "Platform" },
@@ -54,7 +59,7 @@ export default function AdminSettingsPage() {
               ]}
               activeTab={activeTab}
               onTabChange={setActiveTab}
-              onReset={() => setActiveTab("general")}
+              onReset={() => { setActiveTab("general"); setQ(""); }}
             />
 
             {!data && loading ? (

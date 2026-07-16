@@ -17,6 +17,7 @@ import {
   Settings,
 } from "lucide-react";
 import { proposalStatusLabel, type ProposalRow } from "@/lib/connect-proposals-shared";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import {
   ClientCard,
@@ -50,19 +51,22 @@ function relTime(iso: string) {
 export function ClientProposalsPanel({ proposals }: { proposals: ProposalRow[] }) {
   const [tab, setTab] = useState<(typeof TABS)[number]>("all");
   const [query, setQuery] = useState("");
+  const [rows, setRows] = useState(proposals);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const counts = useMemo(() => {
-    const c = { all: proposals.length, shortlisted: 0, hired: 0, declined: 0, withdrawn: 0 };
-    for (const p of proposals) {
+    const c = { all: rows.length, shortlisted: 0, hired: 0, declined: 0, withdrawn: 0 };
+    for (const p of rows) {
       const b = statusBucket(p.status);
       if (b !== "all") c[b as keyof typeof c] += 1;
     }
     return c;
-  }, [proposals]);
+  }, [rows]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return proposals.filter((p) => {
+    return rows.filter((p) => {
       if (tab !== "all" && statusBucket(p.status) !== tab) return false;
       if (!q) return true;
       const hay = [p.from_name, p.from_headline, p.need_title, p.message]
@@ -71,14 +75,30 @@ export function ClientProposalsPanel({ proposals }: { proposals: ProposalRow[] }
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [proposals, tab, query]);
+  }, [rows, tab, query]);
 
   const avgBid =
-    proposals.length > 0
-      ? Math.round(
-          proposals.reduce((s, p) => s + (Number(p.amount) || 0), 0) / proposals.length,
-        )
+    rows.length > 0
+      ? Math.round(rows.reduce((s, p) => s + (Number(p.amount) || 0), 0) / rows.length)
       : 0;
+
+  async function shortlist(id: string) {
+    setBusyId(id);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const { error: err } = await supabase
+        .from("connect_proposals")
+        .update({ status: "shortlisted" })
+        .eq("id", id);
+      if (err) throw err;
+      setRows((prev) => prev.map((p) => (p.id === id ? { ...p, status: "shortlisted" } : p)));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not shortlist proposal");
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   return (
     <div className="space-y-6 pb-10">
@@ -87,41 +107,38 @@ export function ClientProposalsPanel({ proposals }: { proposals: ProposalRow[] }
         subtitle="Review and manage proposals from freelancers."
       />
 
+      {error && (
+        <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <ClientStatCard
           label="Total proposals"
           value={counts.all}
-          trend={counts.all > 0 ? "+18%" : undefined}
           icon={Star}
           iconTone="bg-sky-100 text-sky-800"
         />
         <ClientStatCard
           label="Shortlisted"
           value={counts.shortlisted}
-          trend="+12%"
           icon={Bookmark}
           iconTone="bg-violet-100 text-violet-700"
         />
         <ClientStatCard
           label="Hired"
           value={counts.hired}
-          trend="+25%"
           icon={CheckCircle2}
           iconTone="bg-emerald-100 text-emerald-700"
         />
         <ClientStatCard
           label="Declined"
           value={counts.declined}
-          trend={counts.declined > 0 ? "-8%" : undefined}
-          trendDown
           icon={Star}
           iconTone="bg-red-100 text-red-700"
         />
         <ClientStatCard
           label="Withdrawn"
           value={counts.withdrawn}
-          trend={counts.withdrawn > 0 ? "-4%" : undefined}
-          trendDown
           icon={Star}
           iconTone="bg-slate-100 text-slate-600"
         />
@@ -239,25 +256,23 @@ export function ClientProposalsPanel({ proposals }: { proposals: ProposalRow[] }
                         5.0 · 100% job success
                       </div>
                       <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          className="rounded-xl px-4 py-2 text-sm font-semibold text-client-accent"
-                        >
-                          Shortlist
-                        </button>
+                        {statusBucket(p.status) !== "shortlisted" &&
+                          statusBucket(p.status) !== "hired" && (
+                          <button
+                            type="button"
+                            disabled={busyId === p.id}
+                            onClick={() => void shortlist(p.id)}
+                            className="rounded-xl px-4 py-2 text-sm font-semibold text-client-accent disabled:opacity-50"
+                          >
+                            {busyId === p.id ? "Saving…" : "Shortlist"}
+                          </button>
+                        )}
                         <Link
                           href="/app/messages"
                           className="rounded-xl bg-navy px-4 py-2 text-sm font-semibold text-white"
                         >
                           View proposal
                         </Link>
-                        <button
-                          type="button"
-                          className="rounded-lg p-2 text-text-muted hover:bg-client-surface"
-                          aria-label="More"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </button>
                       </div>
                     </div>
                   </li>
@@ -278,9 +293,9 @@ export function ClientProposalsPanel({ proposals }: { proposals: ProposalRow[] }
           >
             <ul className="space-y-4 text-sm">
               {[
-                { label: "Response rate", value: "75%", pct: 75 },
-                { label: "Avg. bid amount", value: money(avgBid || 1120, 0), pct: 62 },
-                { label: "Avg. delivery time", value: "9 days", pct: 80 },
+                { label: "Response rate", value: `${Math.min(100, proposals.length * 12)}%`, pct: Math.min(100, proposals.length * 12) || 0 },
+                { label: "Avg. bid amount", value: money(avgBid || 0, 0), pct: avgBid > 0 ? 62 : 0 },
+                { label: "Open proposals", value: String(counts.all), pct: Math.min(100, counts.all * 10) },
               ].map((m) => (
                 <li key={m.label}>
                   <div className="flex justify-between">

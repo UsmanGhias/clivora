@@ -197,19 +197,27 @@ export default async function InvoicesPage() {
             centerValue={money(totalRevenue, 0)}
             centerLabel="Total"
           />
-          <FreelancerCard title="Payment methods">
-            <ul className="space-y-2 text-sm">
-              {["Stripe", "PayPal", "Wise"].map((m) => (
-                <li
-                  key={m}
-                  className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5"
-                >
-                  <span className="font-semibold text-navy">{m}</span>
-                  <span className="text-xs font-bold text-success">Connected</span>
-                </li>
-              ))}
+          <FreelancerCard title="How you get paid">
+            <p className="text-sm text-text-secondary">
+              CLIVORA records invoices and payments. Card/gateway payouts are coming soon. Use
+              JazzCash, bank transfer, or Google Play for subscriptions.
+            </p>
+            <ul className="mt-3 space-y-2 text-sm">
+              <li className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5">
+                <span className="font-semibold text-navy">Manual / off-platform</span>
+                <span className="text-xs font-bold text-text-muted">Recorded in CRM</span>
+              </li>
+              <li className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5">
+                <span className="font-semibold text-navy">Google Play (Android)</span>
+                <span className="text-xs font-bold text-success">Subscriptions</span>
+              </li>
             </ul>
-            <p className="mt-3 text-sm font-semibold text-primary">+ Add Payment Method</p>
+            <a
+              href="/pro"
+              className="mt-3 inline-block text-sm font-semibold text-primary hover:underline"
+            >
+              Manage plan →
+            </a>
           </FreelancerCard>
           <FreelancerCard title="Quick actions">
             <ul className="space-y-2 text-sm font-semibold text-navy">
@@ -219,13 +227,13 @@ export default async function InvoicesPage() {
                 </a>
               </li>
               <li>
-                <a href="#create" className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40">
-                  Create Quote <span>→</span>
+                <a href="/app/proposals" className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40">
+                  View proposals <span>→</span>
                 </a>
               </li>
               <li>
                 <a href="/app/settings" className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40">
-                  Invoice Templates <span>→</span>
+                  Invoice settings <span>→</span>
                 </a>
               </li>
               <li>

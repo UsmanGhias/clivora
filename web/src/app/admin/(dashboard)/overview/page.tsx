@@ -25,6 +25,7 @@ import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminBtn,
   AdminPageHeader,
+  downloadCsv,
   ErrorBanner,
   KpiGrid,
   PageLayout,
@@ -65,7 +66,25 @@ export default function AdminOverviewPage() {
             <AdminBtn variant="primary" onClick={() => void refresh()}>
               <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
             </AdminBtn>
-            <AdminBtn variant="dark">Export report</AdminBtn>
+            <AdminBtn
+              variant="dark"
+              onClick={() =>
+                downloadCsv(
+                  "overview-kpis.csv",
+                  ["metric", "value"],
+                  [
+                    ["totalRevenue", o?.totalRevenue ?? 0],
+                    ["totalUsers", o?.totalUsers ?? 0],
+                    ["activeProjects", o?.activeProjects ?? 0],
+                    ["totalPayments", o?.totalPayments ?? 0],
+                    ["escrowHeld", o?.escrowHeld ?? 0],
+                    ["totalPayouts", o?.totalPayouts ?? 0],
+                  ],
+                )
+              }
+            >
+              Export report
+            </AdminBtn>
           </>
         }
       />

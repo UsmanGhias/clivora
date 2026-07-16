@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { BadgeCheck, Briefcase, DollarSign, UserCheck } from "lucide-react";
 import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
   ExportImportAdd,
+  downloadCsv,
+  matchesAdminQuery,
   KpiGrid,
   FilterBar,
   AdminTable,
@@ -26,6 +28,7 @@ function nameOf(u: Record<string, unknown>) {
 
 export default function AdminFreelancersPage() {
   const { data, loading } = useAdminData();
+  const [q, setQ] = useState("");
   const freelancers = data?.freelancers ?? [];
 
   const kpis = useMemo(() => {
@@ -35,6 +38,11 @@ export default function AdminFreelancersPage() {
     const earnings = freelancers.reduce((s, f) => s + Number(f.earnings ?? f.total_earned ?? 0), 0);
     return { total, verified, active, earnings };
   }, [freelancers]);
+
+  const filtered = useMemo(
+    () => freelancers.filter((row) => matchesAdminQuery(row, q)),
+    [freelancers, q],
+  );
 
   return (
     <div>
@@ -50,7 +58,18 @@ export default function AdminFreelancersPage() {
       <AdminPageHeader
         title="Freelancers"
         subtitle="Talent profiles, verification, and earnings."
-        actions={<ExportImportAdd entity="Freelancers" addLabel="Add Freelancer" />}
+        actions={
+          <ExportImportAdd
+            entity="Freelancers"
+            onExport={() =>
+              downloadCsv(
+                "freelancers.csv",
+                Object.keys(filtered[0] ?? { id: "" }),
+                filtered.map((row) => Object.keys(filtered[0] ?? { id: "" }).map((k) => String(row[k] ?? ""))),
+              )
+            }
+          />
+        }
       />
 
       <KpiGrid
@@ -85,7 +104,12 @@ export default function AdminFreelancersPage() {
       <PageLayout
         main={
           <div>
-            <FilterBar searchPlaceholder="Search freelancers…" onReset={() => undefined} />
+            <FilterBar
+              searchPlaceholder="Search freelancers…"
+              searchValue={q}
+              onSearchChange={setQ}
+              onReset={() => setQ("")}
+            />
 
             {!data && loading ? (
               <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
@@ -94,16 +118,16 @@ export default function AdminFreelancersPage() {
             ) : (
               <AdminTable
                 headers={["Freelancer", "Skills", "Status", "Joined", "Actions"]}
-                footer={<span>Showing {freelancers.length} freelancers</span>}
+                footer={<span>Showing {filtered.length} freelancers</span>}
               >
-                {freelancers.length === 0 ? (
+                {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-3 py-10 text-center text-sm text-slate-500">
                       No freelancers found.
                     </td>
                   </tr>
                 ) : (
-                  freelancers.map((f) => {
+                  filtered.map((f) => {
                     const skills = Array.isArray(f.skills)
                       ? (f.skills as string[]).slice(0, 3).join(", ")
                       : String(f.headline || f.skills || "—");

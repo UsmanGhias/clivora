@@ -6,6 +6,8 @@ import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
   ExportImportAdd,
+  downloadCsv,
+  matchesAdminQuery,
   KpiGrid,
   FilterBar,
   AdminTable,
@@ -22,6 +24,7 @@ import {
 export default function AdminProjectsPage() {
   const { data, loading } = useAdminData();
   const [activeTab, setActiveTab] = useState("all");
+  const [q, setQ] = useState("");
   const projects = data?.projects ?? [];
 
   const kpis = useMemo(() => {
@@ -44,7 +47,7 @@ export default function AdminProjectsPage() {
   const filtered = useMemo(() => {
     if (activeTab === "all") return projects;
     return projects.filter((p) => String(p.status).toLowerCase() === activeTab);
-  }, [projects, activeTab]);
+  }, [projects, activeTab, q]);
 
   const tabs = [
     { id: "all", label: "All", count: projects.length },
@@ -69,7 +72,7 @@ export default function AdminProjectsPage() {
       <AdminPageHeader
         title="Projects"
         subtitle="CRM projects across clients and freelancers."
-        actions={<ExportImportAdd entity="Projects" addLabel="Add Project" />}
+        actions={null}
       />
 
       <KpiGrid
@@ -106,10 +109,12 @@ export default function AdminProjectsPage() {
           <div>
             <FilterBar
               searchPlaceholder="Search projects…"
+              searchValue={q}
+              onSearchChange={setQ}
               tabs={tabs}
               activeTab={activeTab}
               onTabChange={setActiveTab}
-              onReset={() => setActiveTab("all")}
+              onReset={() => { setActiveTab("all"); setQ(""); }}
             />
 
             {!data && loading ? (

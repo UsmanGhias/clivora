@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Building2, UserPlus, Users } from "lucide-react";
 import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
   ExportImportAdd,
+  downloadCsv,
+  matchesAdminQuery,
   KpiGrid,
   FilterBar,
   AdminTable,
@@ -26,6 +28,7 @@ function nameOf(u: Record<string, unknown>) {
 
 export default function AdminClientsPage() {
   const { data, loading } = useAdminData();
+  const [q, setQ] = useState("");
   const clients = data?.clients ?? [];
 
   const kpis = useMemo(() => {
@@ -38,6 +41,11 @@ export default function AdminClientsPage() {
     }).length;
     return { total, active, newCount };
   }, [clients]);
+
+  const filtered = useMemo(
+    () => clients.filter((row) => matchesAdminQuery(row, q)),
+    [clients, q],
+  );
 
   return (
     <div>
@@ -53,7 +61,18 @@ export default function AdminClientsPage() {
       <AdminPageHeader
         title="Clients"
         subtitle="Companies and buyers hiring on CLIVORA."
-        actions={<ExportImportAdd entity="Clients" addLabel="Add Client" />}
+        actions={
+          <ExportImportAdd
+            entity="Clients"
+            onExport={() =>
+              downloadCsv(
+                "clients.csv",
+                Object.keys(filtered[0] ?? { id: "" }),
+                filtered.map((row) => Object.keys(filtered[0] ?? { id: "" }).map((k) => String(row[k] ?? ""))),
+              )
+            }
+          />
+        }
       />
 
       <KpiGrid
@@ -83,7 +102,12 @@ export default function AdminClientsPage() {
       <PageLayout
         main={
           <div>
-            <FilterBar searchPlaceholder="Search clients…" onReset={() => undefined} />
+            <FilterBar
+              searchPlaceholder="Search clients…"
+              searchValue={q}
+              onSearchChange={setQ}
+              onReset={() => setQ("")}
+            />
 
             {!data && loading ? (
               <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
@@ -92,16 +116,16 @@ export default function AdminClientsPage() {
             ) : (
               <AdminTable
                 headers={["Client", "Company / Email", "Status", "Joined", "Actions"]}
-                footer={<span>Showing {clients.length} clients</span>}
+                footer={<span>Showing {filtered.length} clients</span>}
               >
-                {clients.length === 0 ? (
+                {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-3 py-10 text-center text-sm text-slate-500">
                       No clients found.
                     </td>
                   </tr>
                 ) : (
-                  clients.map((c) => {
+                  filtered.map((c) => {
                     const status = c.is_blocked || c.is_restricted ? "suspended" : "active";
                     return (
                       <tr key={String(c.id)} className="hover:bg-slate-50/80">

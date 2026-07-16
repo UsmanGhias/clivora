@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { PlayCircle, Zap } from "lucide-react";
 import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
   ExportImportAdd,
+  downloadCsv,
+  matchesAdminQuery,
   KpiGrid,
   FilterBar,
   AdminTable,
@@ -21,6 +23,7 @@ import {
 
 export default function AdminJobsPage() {
   const { data, loading } = useAdminData();
+  const [q, setQ] = useState("");
   const jobs = data?.jobs ?? [];
 
   const kpis = useMemo(() => {
@@ -30,6 +33,11 @@ export default function AdminJobsPage() {
     ).length;
     return { total, active };
   }, [jobs]);
+
+  const filtered = useMemo(
+    () => jobs.filter((row) => matchesAdminQuery(row, q)),
+    [jobs, q],
+  );
 
   return (
     <div>
@@ -45,7 +53,18 @@ export default function AdminJobsPage() {
       <AdminPageHeader
         title="Jobs"
         subtitle="Connect need posts and open opportunities."
-        actions={<ExportImportAdd entity="Jobs" addLabel="Add Job" />}
+        actions={
+          <ExportImportAdd
+            entity="Jobs"
+            onExport={() =>
+              downloadCsv(
+                "jobs.csv",
+                Object.keys(filtered[0] ?? { id: "" }),
+                filtered.map((row) => Object.keys(filtered[0] ?? { id: "" }).map((k) => String(row[k] ?? ""))),
+              )
+            }
+          />
+        }
       />
 
       <KpiGrid
@@ -68,7 +87,12 @@ export default function AdminJobsPage() {
       <PageLayout
         main={
           <div>
-            <FilterBar searchPlaceholder="Search jobs…" onReset={() => undefined} />
+            <FilterBar
+              searchPlaceholder="Search jobs…"
+              searchValue={q}
+              onSearchChange={setQ}
+              onReset={() => setQ("")}
+            />
 
             {!data && loading ? (
               <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
@@ -77,16 +101,16 @@ export default function AdminJobsPage() {
             ) : (
               <AdminTable
                 headers={["Job title", "Status", "Budget range", "Created", "Actions"]}
-                footer={<span>Showing {jobs.length} jobs</span>}
+                footer={<span>Showing {filtered.length} jobs</span>}
               >
-                {jobs.length === 0 ? (
+                {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-3 py-10 text-center text-sm text-slate-500">
                       No jobs found.
                     </td>
                   </tr>
                 ) : (
-                  jobs.map((j) => {
+                  filtered.map((j) => {
                     const min = Number(j.budget_min ?? 0);
                     const max = Number(j.budget_max ?? 0);
                     const range =

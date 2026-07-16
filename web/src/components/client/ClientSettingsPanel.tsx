@@ -103,14 +103,21 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
                       </p>
                       <p className="text-sm text-text-secondary">{profile.email}</p>
                       <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <ClientStatusPill tone="green">
-                          <span className="inline-flex items-center gap-1">
-                            <BadgeCheck className="h-3 w-3" /> Verified
-                          </span>
-                        </ClientStatusPill>
-                        <span className="text-xs text-text-muted">Lahore, Pakistan</span>
+                        {profile.email ? (
+                          <ClientStatusPill tone="green">
+                            <span className="inline-flex items-center gap-1">
+                              <BadgeCheck className="h-3 w-3" /> Account active
+                            </span>
+                          </ClientStatusPill>
+                        ) : null}
+                        <span className="text-xs text-text-muted capitalize">
+                          {profile.account_type || "client"}
+                        </span>
                       </div>
-                      <p className="mt-2 text-xs text-text-muted">Member since Aug 1, 2024</p>
+                      <p className="mt-2 text-xs text-text-muted">
+                        Plan: {plan}
+                        {plus ? " · Pro Plus" : ""}
+                      </p>
                     </div>
                   </div>
                   <div className="rounded-xl border border-border bg-client-surface/50 p-4">
@@ -119,7 +126,9 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
                       <p className="font-bold text-navy">{plan}</p>
                       {plus && <ClientStatusPill tone="green">Active</ClientStatusPill>}
                     </div>
-                    <p className="mt-1 text-xs text-text-secondary">Renews on Aug 1, 2026</p>
+                    <p className="mt-1 text-xs text-text-secondary">
+                      {plus ? "Pro Plus features unlocked" : "Upgrade anytime via /pro or Play"}
+                    </p>
                     <div className="mt-3">
                       <ManageBillingButton />
                     </div>
@@ -165,10 +174,10 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
               <ClientCard title="Quick actions">
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   {[
-                    { label: "Change password", icon: KeyRound, href: "#", danger: false },
-                    { label: "Payment methods", icon: CreditCard, href: "/app/payments/payment-methods", danger: false },
-                    { label: "Notification settings", icon: Bell, href: "#", danger: false },
-                    { label: "Delete account", icon: Trash2, href: "#", danger: true },
+                    { label: "Change password", icon: KeyRound, href: "#security", danger: false },
+                    { label: "Payment methods", icon: CreditCard, href: "/pro", danger: false },
+                    { label: "Notification settings", icon: Bell, href: "#notifications", danger: false },
+                    { label: "Delete account", icon: Trash2, href: "/delete-account", danger: true },
                   ].map((a) => {
                     const Icon = a.icon;
                     return (
@@ -176,10 +185,13 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
                         key={a.label}
                         href={a.href}
                         onClick={(e) => {
-                          if (a.href === "#") {
+                          if (a.href === "#security") {
                             e.preventDefault();
-                            if (a.label === "Change password") setTab("security");
-                            if (a.label === "Notification settings") setTab("notifications");
+                            setTab("security");
+                          }
+                          if (a.href === "#notifications") {
+                            e.preventDefault();
+                            setTab("notifications");
                           }
                         }}
                         className={cn(
@@ -213,34 +225,21 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
 
           {tab === "notifications" && (
             <ClientCard title="Notification settings">
-              <ul className="space-y-3">
-                {[
-                  "New proposals",
-                  "Invoice updates",
-                  "Project milestones",
-                  "Messages from freelancers",
-                  "Marketing emails",
-                ].map((label) => (
-                  <li
-                    key={label}
-                    className="flex items-center justify-between rounded-xl border border-border px-4 py-3"
-                  >
-                    <span className="text-sm font-semibold text-navy">{label}</span>
-                    <input type="checkbox" defaultChecked className="h-4 w-4 accent-client-accent" />
-                  </li>
-                ))}
-              </ul>
+              <NotificationPrefs />
             </ClientCard>
           )}
 
           {tab === "security" && (
             <ClientCard title="Security">
               <p className="text-sm text-text-secondary">
-                Protect your account with a strong password and optional two-factor authentication.
+                Update your password from the reset-password flow, or enable MFA after upgrading to
+                Pro Plus in Account settings on the freelancer workspace / mobile app.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
-                <ClientPrimaryButton>Change password</ClientPrimaryButton>
-                <ClientOutlineButton>Enable 2FA</ClientOutlineButton>
+                <ClientPrimaryButton href="/auth/reset-password">
+                  Reset password email
+                </ClientPrimaryButton>
+                <ClientOutlineButton href="/pro?plan=pro_plus">Pro Plus for MFA</ClientOutlineButton>
               </div>
             </ClientCard>
           )}
@@ -249,8 +248,8 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
             <ClientCard title={tab === "payment" ? "Payment methods" : "Billing & plans"}>
               <p className="text-sm text-text-secondary">
                 {tab === "payment"
-                  ? "Add or update cards used for hiring and invoices."
-                  : `You are on ${plan}. Manage renewal and invoices via Stripe.`}
+                  ? "Card payouts are coming soon. Pay freelancers off-platform and keep invoices in CLIVORA."
+                  : `You are on ${plan}. Renew with JazzCash/manual on /pro or Google Play on Android.`}
               </p>
               <div className="mt-4">
                 <ManageBillingButton />
@@ -261,12 +260,33 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
           {(tab === "team" || tab === "preferences" || tab === "apps") && (
             <ClientCard title={NAV.find((n) => n.key === tab)?.label}>
               <p className="text-sm text-text-secondary">
-                Configure {NAV.find((n) => n.key === tab)?.label.toLowerCase()} for your client
-                workspace. More controls are rolling out with Pro Plus.
+                {tab === "team"
+                  ? "Invite collaborators from Team when your org is set up."
+                  : tab === "preferences"
+                    ? "Notification preferences are above under Notifications."
+                    : "Connected apps and OAuth links will appear here as they ship."}
               </p>
-              <Link href="/pro?plan=pro_plus" className="mt-4 inline-block text-sm font-semibold text-client-accent">
-                Learn more about Pro Plus →
-              </Link>
+              <div className="mt-4 flex flex-wrap gap-3">
+                {tab === "team" && (
+                  <Link href="/app/team" className="text-sm font-semibold text-client-accent">
+                    Open Team →
+                  </Link>
+                )}
+                {tab === "preferences" && (
+                  <button
+                    type="button"
+                    onClick={() => setTab("notifications")}
+                    className="text-sm font-semibold text-client-accent"
+                  >
+                    Notification settings →
+                  </button>
+                )}
+                {tab === "apps" && (
+                  <Link href="/connect" className="text-sm font-semibold text-client-accent">
+                    Open Connect →
+                  </Link>
+                )}
+              </div>
             </ClientCard>
           )}
 
@@ -294,3 +314,60 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
     </div>
   );
 }
+
+const PREF_KEYS = [
+  "New proposals",
+  "Invoice updates",
+  "Project milestones",
+  "Messages from freelancers",
+  "Marketing emails",
+] as const;
+
+function NotificationPrefs() {
+  const storageKey = "clivora.client.notifPrefs";
+  const [prefs, setPrefs] = useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") {
+      return Object.fromEntries(PREF_KEYS.map((k) => [k, true]));
+    }
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) return { ...Object.fromEntries(PREF_KEYS.map((k) => [k, true])), ...JSON.parse(raw) };
+    } catch {
+      /* ignore */
+    }
+    return Object.fromEntries(PREF_KEYS.map((k) => [k, true]));
+  });
+  const [saved, setSaved] = useState(false);
+
+  function toggle(label: string) {
+    setPrefs((prev) => {
+      const next = { ...prev, [label]: !prev[label] };
+      localStorage.setItem(storageKey, JSON.stringify(next));
+      setSaved(true);
+      return next;
+    });
+  }
+
+  return (
+    <div className="space-y-3">
+      <ul className="space-y-3">
+        {PREF_KEYS.map((label) => (
+          <li
+            key={label}
+            className="flex items-center justify-between rounded-xl border border-border px-4 py-3"
+          >
+            <span className="text-sm font-semibold text-navy">{label}</span>
+            <input
+              type="checkbox"
+              checked={Boolean(prefs[label])}
+              onChange={() => toggle(label)}
+              className="h-4 w-4 accent-client-accent"
+            />
+          </li>
+        ))}
+      </ul>
+      {saved && <p className="text-xs font-semibold text-emerald-700">Saved on this device.</p>}
+    </div>
+  );
+}
+

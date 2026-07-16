@@ -6,6 +6,8 @@ import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
   ExportImportAdd,
+  downloadCsv,
+  matchesAdminQuery,
   KpiGrid,
   FilterBar,
   AdminTable,
@@ -22,6 +24,7 @@ import {
 export default function AdminInvoicesPage() {
   const { data, loading } = useAdminData();
   const [activeTab, setActiveTab] = useState("all");
+  const [q, setQ] = useState("");
   const invoices = data?.invoices ?? [];
 
   const kpis = useMemo(() => {
@@ -43,7 +46,7 @@ export default function AdminInvoicesPage() {
   const filtered = useMemo(() => {
     if (activeTab === "all") return invoices;
     return invoices.filter((i) => String(i.status).toLowerCase() === activeTab);
-  }, [invoices, activeTab]);
+  }, [invoices, activeTab, q]);
 
   const tabs = [
     { id: "all", label: "All", count: invoices.length },
@@ -68,7 +71,7 @@ export default function AdminInvoicesPage() {
       <AdminPageHeader
         title="Invoices"
         subtitle="CRM invoices and billing status."
-        actions={<ExportImportAdd entity="Invoices" addLabel="Add Invoice" />}
+        actions={null}
       />
 
       <KpiGrid
@@ -111,10 +114,12 @@ export default function AdminInvoicesPage() {
           <div>
             <FilterBar
               searchPlaceholder="Search invoices…"
+              searchValue={q}
+              onSearchChange={setQ}
               tabs={tabs}
               activeTab={activeTab}
               onTabChange={setActiveTab}
-              onReset={() => setActiveTab("all")}
+              onReset={() => { setActiveTab("all"); setQ(""); }}
             />
 
             {!data && loading ? (

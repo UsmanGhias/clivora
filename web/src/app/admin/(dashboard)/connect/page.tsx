@@ -6,6 +6,8 @@ import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
   ExportImportAdd,
+  downloadCsv,
+  matchesAdminQuery,
   KpiGrid,
   FilterBar,
   AdminTable,
@@ -27,6 +29,7 @@ function nameOf(u: Record<string, unknown>) {
 export default function AdminConnectPage() {
   const { data, loading } = useAdminData();
   const [activeTab, setActiveTab] = useState("all");
+  const [q, setQ] = useState("");
   const connect = data?.connect;
   const profiles = connect?.profiles ?? [];
   const needs = connect?.needs ?? [];
@@ -61,7 +64,7 @@ export default function AdminConnectPage() {
       <AdminPageHeader
         title="Connect"
         subtitle="Profiles, needs, and connection requests."
-        actions={<ExportImportAdd entity="Connect" addLabel="Add Connection" />}
+        actions={null}
       />
 
       <KpiGrid
@@ -98,6 +101,8 @@ export default function AdminConnectPage() {
           <div>
             <FilterBar
               searchPlaceholder="Search connect…"
+              searchValue={q}
+              onSearchChange={setQ}
               tabs={[
                 { id: "all", label: "All Connections", count: kpis.connections },
                 { id: "profiles", label: "Profiles", count: kpis.profiles },
@@ -106,7 +111,7 @@ export default function AdminConnectPage() {
               ]}
               activeTab={activeTab}
               onTabChange={setActiveTab}
-              onReset={() => setActiveTab("all")}
+              onReset={() => { setActiveTab("all"); setQ(""); }}
             />
 
             {!data && loading ? (

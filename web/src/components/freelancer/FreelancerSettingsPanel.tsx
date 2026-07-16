@@ -624,22 +624,22 @@ function AppsTab({
 }) {
   const apps = [
     {
-      name: "Stripe",
-      desc: "Subscription billing and customer portal",
+      name: "Google Play / Manual Pro",
+      desc: "Subscriptions via Android Play Billing or JazzCash on /pro",
       icon: CreditCard,
-      connected: hasStripeBilling,
+      connected: false,
       href: "/pro",
-      manage: hasStripeBilling,
-      cta: hasStripeBilling ? "Manage" : "Connect",
+      manage: false,
+      cta: "Manage plan",
     },
     {
-      name: "Google",
-      desc: "Sign in with Google OAuth",
+      name: "Google Sign-In",
+      desc: "Sign in with Google OAuth (Supabase Auth)",
       icon: Globe,
       connected: false,
       href: "/login",
       manage: false,
-      cta: "Connect",
+      cta: "Open login",
     },
     {
       name: "JazzCash / Easypaisa",

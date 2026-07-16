@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Activity } from "lucide-react";
 import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
   ExportImportAdd,
+  downloadCsv,
+  matchesAdminQuery,
   KpiGrid,
   FilterBar,
   AdminTable,
@@ -27,7 +29,13 @@ function nameOf(u: Record<string, unknown>) {
 
 export default function AdminTransactionsPage() {
   const { data, loading } = useAdminData();
+  const [q, setQ] = useState("");
   const payments = data?.payments ?? [];
+
+  const filtered = useMemo(
+    () => payments.filter((row) => matchesAdminQuery(row, q)),
+    [payments, q],
+  );
 
   const volume = useMemo(
     () => payments.reduce((s, p) => s + Number(p.amount_usd ?? p.amount ?? 0), 0),
@@ -48,7 +56,18 @@ export default function AdminTransactionsPage() {
       <AdminPageHeader
         title="Transactions"
         subtitle="Payment ledger across the platform."
-        actions={<ExportImportAdd entity="Transactions" />}
+        actions={
+          <ExportImportAdd
+            entity="Transactions"
+            onExport={() =>
+              downloadCsv(
+                "transactions.csv",
+                Object.keys(filtered[0] ?? { id: "" }),
+                filtered.map((row) => Object.keys(filtered[0] ?? { id: "" }).map((k) => String(row[k] ?? ""))),
+              )
+            }
+          />
+        }
       />
 
       <KpiGrid
@@ -67,7 +86,12 @@ export default function AdminTransactionsPage() {
       <PageLayout
         main={
           <div>
-            <FilterBar searchPlaceholder="Search transactions…" onReset={() => undefined} />
+            <FilterBar
+              searchPlaceholder="Search transactions…"
+              searchValue={q}
+              onSearchChange={setQ}
+              onReset={() => setQ("")}
+            />
             {!data && loading ? (
               <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
                 Loading transactions…
@@ -77,14 +101,14 @@ export default function AdminTransactionsPage() {
                 headers={["ID", "From", "Amount", "Status", "Date", "Actions"]}
                 footer={<span>{payments.length} transactions</span>}
               >
-                {payments.length === 0 ? (
+                {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-3 py-10 text-center text-sm text-slate-500">
                       No transactions found.
                     </td>
                   </tr>
                 ) : (
-                  payments.map((p) => (
+                  filtered.map((p) => (
                     <tr key={String(p.id)} className="hover:bg-slate-50/80">
                       <td className="px-3 py-3">
                         <input type="checkbox" className="rounded border-slate-300" aria-label="Select row" />

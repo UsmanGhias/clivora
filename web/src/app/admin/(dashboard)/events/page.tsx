@@ -1,3 +1,4 @@
+import { useState } from "react";
 "use client";
 
 import { Flag } from "lucide-react";
@@ -5,6 +6,8 @@ import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
   ExportImportAdd,
+  downloadCsv,
+  matchesAdminQuery,
   KpiGrid,
   FilterBar,
   AdminTable,
@@ -22,7 +25,13 @@ import {
 
 export default function AdminEventsPage() {
   const { data, loading } = useAdminData();
+  const [q, setQ] = useState("");
   const events = data?.events ?? [];
+
+  const filtered = useMemo(
+    () => events.filter((row) => matchesAdminQuery(row, q)),
+    [events, q],
+  );
 
   return (
     <div>
@@ -38,7 +47,18 @@ export default function AdminEventsPage() {
       <AdminPageHeader
         title="Events"
         subtitle="Live platform event stream."
-        actions={<ExportImportAdd entity="Events" />}
+        actions={
+          <ExportImportAdd
+            entity="Events"
+            onExport={() =>
+              downloadCsv(
+                "events.csv",
+                Object.keys(filtered[0] ?? { id: "" }),
+                filtered.map((row) => Object.keys(filtered[0] ?? { id: "" }).map((k) => String(row[k] ?? ""))),
+              )
+            }
+          />
+        }
       />
 
       <KpiGrid
@@ -57,7 +77,12 @@ export default function AdminEventsPage() {
       <PageLayout
         main={
           <div>
-            <FilterBar searchPlaceholder="Search events…" onReset={() => undefined} />
+            <FilterBar
+              searchPlaceholder="Search events…"
+              searchValue={q}
+              onSearchChange={setQ}
+              onReset={() => setQ("")}
+            />
             {!data && loading ? (
               <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
                 Loading events…
@@ -65,16 +90,16 @@ export default function AdminEventsPage() {
             ) : (
               <AdminTable
                 headers={["Event", "User", "Amount", "When", "Actions"]}
-                footer={<span>Showing {events.length} events</span>}
+                footer={<span>Showing {filtered.length} events</span>}
               >
-                {events.length === 0 ? (
+                {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-3 py-10 text-center text-sm text-slate-500">
                       No events found.
                     </td>
                   </tr>
                 ) : (
-                  events.map((e) => (
+                  filtered.map((e) => (
                     <tr key={String(e.id)} className="hover:bg-slate-50/80">
                       <td className="px-3 py-3">
                         <input type="checkbox" className="rounded border-slate-300" aria-label="Select row" />

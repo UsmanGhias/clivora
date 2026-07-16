@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Wallet } from "lucide-react";
 import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
   ExportImportAdd,
+  downloadCsv,
+  matchesAdminQuery,
   KpiGrid,
   FilterBar,
   AdminTable,
@@ -27,6 +29,7 @@ function nameOf(u: Record<string, unknown>) {
 
 export default function AdminSubscriptionsPage() {
   const { data, loading } = useAdminData();
+  const [q, setQ] = useState("");
   const users = data?.users ?? [];
 
   const subs = useMemo(
@@ -36,6 +39,11 @@ export default function AdminSubscriptionsPage() {
         return plan && plan !== "free" && plan !== "none";
       }),
     [users],
+  );
+
+  const filtered = useMemo(
+    () => subs.filter((row) => matchesAdminQuery(row, q)),
+    [subs, q],
   );
 
   const pro = subs.filter((u) =>
@@ -56,7 +64,18 @@ export default function AdminSubscriptionsPage() {
       <AdminPageHeader
         title="Subscriptions"
         subtitle="Active plans and billing subscriptions."
-        actions={<ExportImportAdd entity="Subscriptions" />}
+        actions={
+          <ExportImportAdd
+            entity="Subscriptions"
+            onExport={() =>
+              downloadCsv(
+                "subscriptions.csv",
+                Object.keys(filtered[0] ?? { id: "" }),
+                filtered.map((row) => Object.keys(filtered[0] ?? { id: "" }).map((k) => String(row[k] ?? ""))),
+              )
+            }
+          />
+        }
       />
 
       <KpiGrid
@@ -75,7 +94,12 @@ export default function AdminSubscriptionsPage() {
       <PageLayout
         main={
           <div>
-            <FilterBar searchPlaceholder="Search subscriptions…" onReset={() => undefined} />
+            <FilterBar
+              searchPlaceholder="Search subscriptions…"
+              searchValue={q}
+              onSearchChange={setQ}
+              onReset={() => setQ("")}
+            />
             {!data && loading ? (
               <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
                 Loading subscriptions…
@@ -83,16 +107,16 @@ export default function AdminSubscriptionsPage() {
             ) : (
               <AdminTable
                 headers={["User", "Plan", "Status", "Joined", "Actions"]}
-                footer={<span>{subs.length} subscriptions</span>}
+                footer={<span>Showing {filtered.length} of {subs.length} subscriptions</span>}
               >
-                {subs.length === 0 ? (
+                {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-3 py-10 text-center text-sm text-slate-500">
                       No subscriptions found.
                     </td>
                   </tr>
                 ) : (
-                  subs.map((u) => (
+                  filtered.map((u) => (
                     <tr key={String(u.id)} className="hover:bg-slate-50/80">
                       <td className="px-3 py-3">
                         <input type="checkbox" className="rounded border-slate-300" aria-label="Select row" />
