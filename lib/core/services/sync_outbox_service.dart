@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:math';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 
 import '../cloud/cloud_crm_repository.dart';
 import '../cloud/cloud_invoice_repository.dart';
@@ -11,6 +14,7 @@ import '../cloud/cloud_project_repository.dart';
 import '../cloud/supabase_auth_helper.dart';
 import '../auth/auth_service.dart';
 import '../../core/utils/crm_refresh.dart';
+import '../../data/database/database.dart';
 import '../../data/database/user_scoped_queries.dart';
 import '../../data/providers/app_providers.dart';
 import 'admin_sync_service.dart';
@@ -23,28 +27,108 @@ final syncOutboxServiceProvider = Provider<SyncOutboxService>((ref) {
   return SyncOutboxService(ref);
 });
 
-/// Offline-first queue for cloud operations with retry and last-updated reconciliation.
+/// Offline-first queue for cloud operations with Drift durability, retries, and conflicts.
 class SyncOutboxService {
   SyncOutboxService(this.ref);
 
   final Ref ref;
-  static const _storageKey = 'clivora_sync_outbox_v1';
-  static const _conflictKey = 'clivora_invoice_conflicts_v1';
+  static const _legacyOutboxKey = 'clivora_sync_outbox_v1';
+  static const _legacyConflictKey = 'clivora_invoice_conflicts_v1';
+  static const _migratedFlag = 'clivora_sync_outbox_migrated_v18';
+  static const _maxRetries = 8;
+  static const _uuid = Uuid();
 
-  Future<List<Map<String, dynamic>>> pendingConflicts() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_conflictKey);
-    if (raw == null || raw.isEmpty) return [];
+  bool _migrating = false;
+  bool _processing = false;
+
+  AppDatabase get _db => ref.read(databaseProvider);
+
+  int? get _localOwnerId => ref.read(authStateProvider).valueOrNull?.id;
+
+  Future<void> ensureMigrated() async {
+    if (_migrating) return;
+    _migrating = true;
     try {
-      return (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
-    } catch (_) {
-      return [];
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool(_migratedFlag) == true) return;
+
+      final raw = prefs.getString(_legacyOutboxKey);
+      if (raw != null && raw.isNotEmpty) {
+        try {
+          final list = jsonDecode(raw) as List;
+          for (final e in list) {
+            final item = SyncOutboxItem.fromJson(Map<String, dynamic>.from(e as Map));
+            await _db.insertSyncOutbox(
+              SyncOutboxEntriesCompanion.insert(
+                ownerUserId: Value(_localOwnerId),
+                operationId: item.operationId.isNotEmpty ? item.operationId : _uuid.v4(),
+                kind: item.kind,
+                payloadJson: Value(jsonEncode(item.payload)),
+                status: const Value('pending'),
+                retries: Value(item.retries),
+                createdAt: Value(item.createdAt),
+                updatedAt: Value(DateTime.now()),
+                isTombstone: Value(item.isTombstone),
+              ),
+            );
+          }
+        } catch (e) {
+          debugPrint('Outbox prefs migration parse error: $e');
+        }
+        await prefs.remove(_legacyOutboxKey);
+      }
+
+      final conflictRaw = prefs.getString(_legacyConflictKey);
+      if (conflictRaw != null && conflictRaw.isNotEmpty) {
+        try {
+          final list = jsonDecode(conflictRaw) as List;
+          for (final e in list) {
+            final m = Map<String, dynamic>.from(e as Map);
+            final entityType = (m['entityType'] as String?) ?? 'invoice';
+            final localId = (m['localId'] as num?)?.toInt() ??
+                (m['localInvoiceId'] as num?)?.toInt();
+            if (localId == null) continue;
+            await _db.insertSyncConflict(
+              SyncConflictEntriesCompanion.insert(
+                ownerUserId: Value(_localOwnerId),
+                entityType: entityType,
+                localId: localId,
+                localStatus: Value(m['localStatus'] as String? ?? ''),
+                cloudStatus: Value(m['cloudStatus'] as String? ?? ''),
+                shareId: Value(m['shareId'] as String?),
+              ),
+            );
+          }
+        } catch (e) {
+          debugPrint('Conflict prefs migration parse error: $e');
+        }
+        await prefs.remove(_legacyConflictKey);
+      }
+
+      await prefs.setBool(_migratedFlag, true);
+    } finally {
+      _migrating = false;
     }
   }
 
-  Future<void> _saveConflicts(List<Map<String, dynamic>> items) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_conflictKey, jsonEncode(items));
+  Future<List<Map<String, dynamic>>> pendingConflicts() async {
+    await ensureMigrated();
+    final rows = await _db.listSyncConflicts(ownerUserId: _localOwnerId);
+    return rows
+        .map(
+          (r) => {
+            'id': r.id,
+            'entityType': r.entityType,
+            'localId': r.localId,
+            'localInvoiceId': r.entityType == 'invoice' ? r.localId : null,
+            'localStatus': r.localStatus,
+            'cloudStatus': r.cloudStatus,
+            'shareId': r.shareId,
+            'cloudPayloadJson': r.cloudPayloadJson,
+            'at': r.createdAt.toIso8601String(),
+          },
+        )
+        .toList();
   }
 
   Future<void> addInvoiceConflict({
@@ -62,61 +146,54 @@ class SyncOutboxService {
     );
   }
 
-  /// Generic LWW/conflict record for any CRM entity (invoices, projects, customers, …).
   Future<void> addEntityConflict({
     required String entityType,
     required int localId,
     required String localStatus,
     required String cloudStatus,
     String? shareId,
+    String? cloudPayloadJson,
   }) async {
-    final list = await pendingConflicts();
-    list.removeWhere(
-      (e) => e['entityType'] == entityType && e['localId'] == localId ||
-          (entityType == 'invoice' && e['localInvoiceId'] == localId),
+    await ensureMigrated();
+    await _db.deleteSyncConflict(
+      entityType: entityType,
+      localId: localId,
+      ownerUserId: _localOwnerId,
     );
-    list.add({
-      'entityType': entityType,
-      'localId': localId,
-      'localInvoiceId': entityType == 'invoice' ? localId : null,
-      'localStatus': localStatus,
-      'cloudStatus': cloudStatus,
-      'shareId': shareId,
-      'at': DateTime.now().toIso8601String(),
-    });
-    await _saveConflicts(list);
+    await _db.insertSyncConflict(
+      SyncConflictEntriesCompanion.insert(
+        ownerUserId: Value(_localOwnerId),
+        entityType: entityType,
+        localId: localId,
+        localStatus: Value(localStatus),
+        cloudStatus: Value(cloudStatus),
+        shareId: Value(shareId),
+        cloudPayloadJson: Value(cloudPayloadJson),
+      ),
+    );
     ref.read(syncFailureMessageProvider.notifier).state =
-        '${entityType[0].toUpperCase()}${entityType.substring(1)} sync conflict, resolve when online.';
+        '${entityType[0].toUpperCase()}${entityType.substring(1)} sync conflict — open Sync Center.';
   }
 
   Future<List<Map<String, dynamic>>> pendingByEntity(String entityType) async {
     final all = await pendingConflicts();
-    return all
-        .where((e) => (e['entityType'] ?? 'invoice') == entityType)
-        .toList();
+    return all.where((e) => (e['entityType'] ?? 'invoice') == entityType).toList();
   }
 
   Future<void> clearConflict(int localInvoiceId) async {
-    final list = await pendingConflicts();
-    list.removeWhere(
-      (e) =>
-          e['localInvoiceId'] == localInvoiceId ||
-          (e['entityType'] == 'invoice' && e['localId'] == localInvoiceId),
-    );
-    await _saveConflicts(list);
+    await clearEntityConflict(entityType: 'invoice', localId: localInvoiceId);
   }
 
   Future<void> clearEntityConflict({
     required String entityType,
     required int localId,
   }) async {
-    final list = await pendingConflicts();
-    list.removeWhere(
-      (e) =>
-          e['entityType'] == entityType && e['localId'] == localId ||
-          (entityType == 'invoice' && e['localInvoiceId'] == localId),
+    await ensureMigrated();
+    await _db.deleteSyncConflict(
+      entityType: entityType,
+      localId: localId,
+      ownerUserId: _localOwnerId,
     );
-    await _saveConflicts(list);
   }
 
   Future<void> resolveConflictKeepLocal({
@@ -127,7 +204,7 @@ class SyncOutboxService {
   }) async {
     final user = ref.read(authStateProvider).valueOrNull;
     if (user == null) return;
-    final invoice = await ref.read(databaseProvider).getInvoiceForUser(user.id, localInvoiceId);
+    final invoice = await _db.getInvoiceForUser(user.id, localInvoiceId);
     if (invoice == null) return;
     await ref.read(cloudInvoiceRepositoryProvider).syncInvoiceToClient(
           freelancer: user,
@@ -144,50 +221,139 @@ class SyncOutboxService {
   }) async {
     final user = ref.read(authStateProvider).valueOrNull;
     if (user == null) return;
-    final invoice = await ref.read(databaseProvider).getInvoiceForUser(user.id, localInvoiceId);
+    final invoice = await _db.getInvoiceForUser(user.id, localInvoiceId);
     if (invoice == null) return;
-    await ref.read(databaseProvider).updateInvoice(
-          invoice.copyWith(status: cloudStatus, updatedAt: DateTime.now()),
-        );
+    await _db.updateInvoice(
+      invoice.copyWith(status: cloudStatus, updatedAt: DateTime.now()),
+    );
     await clearConflict(localInvoiceId);
     ref.invalidate(invoicesProvider(null));
   }
 
-  /// Resolve non-invoice CRM conflicts (projects / customers).
+  /// Resolve CRM conflicts with full Keep-local upload / Take-cloud apply.
   Future<void> resolveEntityConflict({
     required String entityType,
     required int localId,
     required bool takeCloud,
     String cloudStatus = '',
+    String? cloudPayloadJson,
   }) async {
     final user = ref.read(authStateProvider).valueOrNull;
     if (user == null) return;
-    if (takeCloud && cloudStatus.isNotEmpty) {
-      try {
-        if (entityType == 'project') {
-          final project =
-              await ref.read(databaseProvider).getProjectForUser(user.id, localId);
-          if (project != null) {
-            await ref.read(databaseProvider).updateProject(
-                  project.copyWith(status: cloudStatus, updatedAt: DateTime.now()),
-                );
-            // Family provider, callers refresh on next watch; clear conflict is enough.
-            
+
+    if (takeCloud) {
+      if (entityType == 'project') {
+        final project = await _db.getProjectForUser(user.id, localId);
+        if (project != null) {
+          Map<String, dynamic>? cloud;
+          if (cloudPayloadJson != null && cloudPayloadJson.isNotEmpty) {
+            try {
+              cloud = Map<String, dynamic>.from(jsonDecode(cloudPayloadJson) as Map);
+            } catch (_) {}
           }
-        } else if (entityType == 'customer') {
-          // Customers rarely have status conflicts, clear only.
+          await _db.updateProject(
+            project.copyWith(
+              name: cloud?['name'] as String? ?? project.name,
+              description: cloud?['description'] as String? ?? project.description,
+              budget: (cloud?['budget'] as num?)?.toDouble() ?? project.budget,
+              currency: cloud?['currency'] as String? ?? project.currency,
+              status: (cloud?['status'] as String?) ??
+                  (cloudStatus.isNotEmpty ? cloudStatus : project.status),
+              priority: cloud?['priority'] as String? ?? project.priority,
+              updatedAt: DateTime.now(),
+            ),
+          );
+          ref.invalidate(projectsProvider(const ProjectFilter()));
         }
-      } catch (_) {}
+      } else if (entityType == 'customer') {
+        final customer = await _db.getCustomerForUser(user.id, localId);
+        if (customer != null) {
+          Map<String, dynamic>? cloud;
+          if (cloudPayloadJson != null && cloudPayloadJson.isNotEmpty) {
+            try {
+              cloud = Map<String, dynamic>.from(jsonDecode(cloudPayloadJson) as Map);
+            } catch (_) {}
+          }
+          if (cloud != null) {
+            await _db.updateCustomer(
+              customer.copyWith(
+                contactPerson: cloud['name'] as String? ??
+                    cloud['contact_person'] as String? ??
+                    customer.contactPerson,
+                emails: cloud['email'] != null
+                    ? jsonEncode([cloud['email']])
+                    : (cloud['emails'] is String
+                        ? cloud['emails'] as String
+                        : customer.emails),
+                phones: cloud['phone'] != null
+                    ? jsonEncode([cloud['phone']])
+                    : (cloud['phones'] is String
+                        ? cloud['phones'] as String
+                        : customer.phones),
+                company: cloud['company'] as String? ?? customer.company,
+                notes: cloud['notes'] as String? ?? customer.notes,
+                updatedAt: DateTime.now(),
+              ),
+            );
+          }
+          ref.invalidate(customersProvider(null));
+        }
+      } else if (entityType == 'invoice' && cloudStatus.isNotEmpty) {
+        await resolveConflictTakeCloud(localInvoiceId: localId, cloudStatus: cloudStatus);
+        return;
+      }
+    } else {
+      // Keep local → re-upload complete local record.
+      if (entityType == 'project') {
+        await enqueue(
+          SyncOutboxItem(
+            kind: 'crm_project',
+            payload: {'localId': localId},
+            ownerUserId: user.id,
+          ),
+        );
+        await processQueue();
+      } else if (entityType == 'customer') {
+        await enqueue(
+          SyncOutboxItem(
+            kind: 'crm_customer',
+            payload: {'localId': localId},
+            ownerUserId: user.id,
+          ),
+        );
+        await processQueue();
+      } else if (entityType == 'invoice') {
+        await enqueue(
+          SyncOutboxItem(
+            kind: 'crm_invoice',
+            payload: {'localId': localId},
+            ownerUserId: user.id,
+          ),
+        );
+        await processQueue();
+      }
     }
+
     await clearEntityConflict(entityType: entityType, localId: localId);
   }
 
-  static const _maxRetries = 8;
-
   Future<void> enqueue(SyncOutboxItem item) async {
-    final items = await _load();
-    items.add(item);
-    await _save(items);
+    await ensureMigrated();
+    final ownerId = item.ownerUserId ?? _localOwnerId;
+    await _db.insertSyncOutbox(
+      SyncOutboxEntriesCompanion.insert(
+        ownerUserId: Value(ownerId),
+        operationId: item.operationId.isNotEmpty ? item.operationId : _uuid.v4(),
+        kind: item.kind,
+        payloadJson: Value(jsonEncode(item.payload)),
+        status: const Value('pending'),
+        retries: Value(item.retries),
+        createdAt: Value(item.createdAt),
+        updatedAt: Value(DateTime.now()),
+        isTombstone: Value(item.isTombstone),
+      ),
+    );
+    _updateBanner();
     if (SupabaseAuthHelper.currentUid != null &&
         await ref.read(connectivityServiceProvider).isOnlineNow()) {
       await processQueue();
@@ -196,42 +362,175 @@ class SyncOutboxService {
 
   Future<void> processQueue() async {
     if (SupabaseAuthHelper.currentUid == null) return;
-    final items = await _load();
-    if (items.isEmpty) return;
+    if (_processing) return;
+    _processing = true;
+    try {
+      await ensureMigrated();
+      final due = await _db.listDueOutbox(ownerUserId: _localOwnerId);
+      if (due.isEmpty) {
+        await _updateBanner();
+        return;
+      }
 
-    final remaining = <SyncOutboxItem>[];
-    var dropped = 0;
-    for (final item in items) {
-      try {
-        final ok = await _execute(item);
-        if (!ok) {
-          final next = item.copyWith(retries: item.retries + 1);
-          if (next.retries < _maxRetries) {
-            remaining.add(next);
+      for (final row in due) {
+        final processing = row.copyWith(
+          status: 'processing',
+          updatedAt: DateTime.now(),
+        );
+        await _db.updateSyncOutbox(processing);
+
+        try {
+          final item = SyncOutboxItem.fromRow(row);
+          final result = await _execute(item);
+          if (result == _ExecResult.success) {
+            await _db.updateSyncOutbox(
+              processing.copyWith(
+                status: 'completed',
+                updatedAt: DateTime.now(),
+                completedAt: Value(DateTime.now()),
+                lastError: const Value(null),
+              ),
+            );
+          } else if (result == _ExecResult.permanentFailure) {
+            await _db.updateSyncOutbox(
+              processing.copyWith(
+                status: 'permanently_failed',
+                updatedAt: DateTime.now(),
+                lastError: const Value('Unknown or unsupported operation'),
+              ),
+            );
           } else {
-            dropped++;
+            final retries = row.retries + 1;
+            if (retries >= _maxRetries) {
+              await _db.updateSyncOutbox(
+                processing.copyWith(
+                  status: 'permanently_failed',
+                  retries: retries,
+                  updatedAt: DateTime.now(),
+                  lastError: const Value('Max retries exceeded'),
+                ),
+              );
+            } else {
+              final delay = _backoff(retries);
+              await _db.updateSyncOutbox(
+                processing.copyWith(
+                  status: 'retrying',
+                  retries: retries,
+                  nextAttemptAt: Value(DateTime.now().add(delay)),
+                  updatedAt: DateTime.now(),
+                  lastError: const Value('Transient failure — will retry'),
+                ),
+              );
+            }
+          }
+        } catch (e) {
+          debugPrint('Sync outbox item failed: $e');
+          final retries = row.retries + 1;
+          if (retries >= _maxRetries) {
+            await _db.updateSyncOutbox(
+              processing.copyWith(
+                status: 'permanently_failed',
+                retries: retries,
+                updatedAt: DateTime.now(),
+                lastError: Value(e.toString()),
+              ),
+            );
+          } else {
+            final delay = _backoff(retries);
+            await _db.updateSyncOutbox(
+              processing.copyWith(
+                status: 'retrying',
+                retries: retries,
+                nextAttemptAt: Value(DateTime.now().add(delay)),
+                updatedAt: DateTime.now(),
+                lastError: Value(e.toString()),
+              ),
+            );
           }
         }
-      } catch (e) {
-        debugPrint('Sync outbox item failed: $e');
-        final next = item.copyWith(retries: item.retries + 1);
-        if (next.retries < _maxRetries) {
-          remaining.add(next);
-        } else {
-          dropped++;
-        }
       }
+
+      await _db.clearCompletedOutboxOlderThan(const Duration(days: 7));
+      await _updateBanner();
+    } finally {
+      _processing = false;
     }
-    await _save(remaining);
-    if (dropped > 0) {
+  }
+
+  Duration _backoff(int retries) {
+    final seconds = min(300, pow(2, retries).toInt());
+    return Duration(seconds: seconds);
+  }
+
+  Future<void> _updateBanner() async {
+    final pending = await pendingCount();
+    final failed = await permanentlyFailedCount();
+    final conflicts = (await pendingConflicts()).length;
+    if (conflicts > 0) {
       ref.read(syncFailureMessageProvider.notifier).state =
-          '$dropped change(s) could not sync. Tap to retry when online.';
-    } else if (remaining.isEmpty) {
-      ref.read(syncFailureMessageProvider.notifier).state = null;
+          '$conflicts sync conflict(s). Open Sync Center to resolve.';
+    } else if (failed > 0) {
+      ref.read(syncFailureMessageProvider.notifier).state =
+          '$failed change(s) permanently failed. Open Sync Center.';
+    } else if (pending > 0) {
+      ref.read(syncFailureMessageProvider.notifier).state =
+          '$pending change(s) pending sync…';
     } else {
-      ref.read(syncFailureMessageProvider.notifier).state =
-          '${remaining.length} change(s) pending sync…';
+      ref.read(syncFailureMessageProvider.notifier).state = null;
     }
+  }
+
+  Future<void> retryPermanentlyFailed() async {
+    await ensureMigrated();
+    final rows = await _db.listActiveOutbox(ownerUserId: _localOwnerId);
+    for (final row in rows.where((r) => r.status == 'permanently_failed')) {
+      if (_isUnknownKind(row.kind)) continue; // never retry unknown
+      await _db.updateSyncOutbox(
+        row.copyWith(
+          status: 'pending',
+          retries: 0,
+          nextAttemptAt: const Value(null),
+          updatedAt: DateTime.now(),
+          lastError: const Value(null),
+        ),
+      );
+    }
+    await processQueue();
+  }
+
+  Future<void> retryOne(int id) async {
+    await ensureMigrated();
+    final rows = await _db.listActiveOutbox(ownerUserId: _localOwnerId);
+    final matches = rows.where((r) => r.id == id);
+    if (matches.isEmpty) return;
+    final row = matches.first;
+    if (_isUnknownKind(row.kind)) return;
+    await _db.updateSyncOutbox(
+      row.copyWith(
+        status: 'pending',
+        nextAttemptAt: const Value(null),
+        updatedAt: DateTime.now(),
+      ),
+    );
+    await processQueue();
+  }
+
+  bool _isUnknownKind(String kind) {
+    const known = {
+      'notification',
+      'analytics',
+      'admin_sync',
+      'invoice_sync',
+      'project_share',
+      'crm_customer',
+      'crm_project',
+      'crm_invoice',
+      'crm_sync_all',
+      'crm_customer_delete',
+      'crm_project_delete',
+      'crm_invoice_delete',
+    };
+    return !known.contains(kind);
   }
 
   Future<void> reconcileInvoiceShares() async {
@@ -244,7 +543,7 @@ class SyncOutboxService {
           .from('invoice_shares')
           .select()
           .eq('freelancer_uid', uid);
-      final db = ref.read(databaseProvider);
+      final db = _db;
       for (final row in rows as List) {
         final localId = (row['local_invoice_id'] as num?)?.toInt();
         if (localId == null || localId <= 0) continue;
@@ -255,16 +554,19 @@ class SyncOutboxService {
 
         if (cloudUpdated != null && cloudUpdated.isAfter(invoice.updatedAt)) {
           if (invoice.status != cloudStatus) {
-            // Always auto-apply when cloud is paid.
             if (cloudStatus == 'paid') {
-              await db.updateInvoice(invoice.copyWith(status: cloudStatus, updatedAt: cloudUpdated.toLocal()));
+              await db.updateInvoice(
+                invoice.copyWith(status: cloudStatus, updatedAt: cloudUpdated.toLocal()),
+              );
               final method = row['payment_method'] as String? ?? '';
               final clientEmail = row['client_email'] as String? ?? '';
               await ref.read(trackingServiceProvider).logStatusChange(
                     entityType: 'invoice',
                     entityId: invoice.id,
                     status: 'paid',
-                    note: method.isNotEmpty ? 'Client paid via $method' : 'Client confirmed payment',
+                    note: method.isNotEmpty
+                        ? 'Client paid via $method'
+                        : 'Client confirmed payment',
                   );
               await ref.read(auditLogServiceProvider).logPaymentConfirmed(
                     invoiceNumber: invoice.invoiceNumber,
@@ -273,7 +575,6 @@ class SyncOutboxService {
               await clearConflict(invoice.id);
               ref.invalidate(invoicesProvider(null));
             } else if (invoice.status == 'paid') {
-              // Local paid wins over non-paid cloud, push local.
               await ref.read(cloudInvoiceRepositoryProvider).syncInvoiceToClient(
                     freelancer: user,
                     invoice: invoice,
@@ -281,7 +582,6 @@ class SyncOutboxService {
                     clientUid: row['client_uid'] as String?,
                   );
             } else {
-              // Other conflicts (e.g. local overdue vs cloud sent), defer to UI.
               await addInvoiceConflict(
                 localInvoiceId: invoice.id,
                 localStatus: invoice.status,
@@ -304,7 +604,7 @@ class SyncOutboxService {
     }
   }
 
-  Future<bool> _execute(SyncOutboxItem item) async {
+  Future<_ExecResult> _execute(SyncOutboxItem item) async {
     switch (item.kind) {
       case 'notification':
         final toUid = item.payload['toUid'] as String?;
@@ -323,7 +623,7 @@ class SyncOutboxService {
                 kind: item.payload['kind'] as String? ?? 'info',
               );
         }
-        return true;
+        return _ExecResult.success;
       case 'analytics':
         await ref.read(analyticsServiceProvider).track(
               eventType: item.payload['eventType'] as String? ?? 'event',
@@ -333,96 +633,123 @@ class SyncOutboxService {
               amount: (item.payload['amount'] as num?)?.toDouble() ?? 0,
               payload: item.payload['payload'] as String? ?? '{}',
             );
-        return true;
+        return _ExecResult.success;
       case 'admin_sync':
         await ref.read(adminSyncServiceProvider).flushPendingEvents();
-        return true;
+        return _ExecResult.success;
       case 'invoice_sync':
         final user = ref.read(authStateProvider).valueOrNull;
-        if (user == null) return false;
+        if (user == null) return _ExecResult.transientFailure;
         final invoiceId = (item.payload['invoiceId'] as num?)?.toInt();
-        if (invoiceId == null) return false;
-        final invoice = await ref.read(databaseProvider).getInvoiceForUser(user.id, invoiceId);
-        if (invoice == null) return false;
+        if (invoiceId == null) return _ExecResult.transientFailure;
+        final invoice = await _db.getInvoiceForUser(user.id, invoiceId);
+        if (invoice == null) {
+          // Deleted locally — treat delete tombstone as success once noted.
+          if (item.isTombstone) return _ExecResult.success;
+          return _ExecResult.transientFailure;
+        }
         await ref.read(cloudInvoiceRepositoryProvider).syncInvoiceToClient(
               freelancer: user,
               invoice: invoice,
               clientEmail: item.payload['clientEmail'] as String? ?? '',
               clientUid: item.payload['clientUid'] as String?,
             );
-        return true;
+        return _ExecResult.success;
       case 'project_share':
         final user = ref.read(authStateProvider).valueOrNull;
-        if (user == null) return false;
+        if (user == null) return _ExecResult.transientFailure;
         final projectId = (item.payload['projectId'] as num?)?.toInt();
-        if (projectId == null) return false;
-        final project = await ref.read(databaseProvider).getProjectForUser(user.id, projectId);
-        if (project == null) return false;
+        if (projectId == null) return _ExecResult.transientFailure;
+        final project = await _db.getProjectForUser(user.id, projectId);
+        if (project == null) {
+          if (item.isTombstone) return _ExecResult.success;
+          return _ExecResult.transientFailure;
+        }
         await ref.read(cloudProjectRepositoryProvider).shareHybrid(
               freelancer: user,
               clientEmail: item.payload['clientEmail'] as String? ?? '',
               localProjectId: projectId,
               project: project,
             );
-        return true;
+        return _ExecResult.success;
       case 'crm_customer':
         final user = ref.read(authStateProvider).valueOrNull;
         final localId = (item.payload['localId'] as num?)?.toInt();
-        if (user == null || localId == null) return false;
+        if (user == null || localId == null) return _ExecResult.transientFailure;
         await ref.read(cloudCrmRepositoryProvider).pushCustomer(
               ownerUserId: user.id,
               localId: localId,
             );
-        return true;
+        return _ExecResult.success;
       case 'crm_project':
         final user = ref.read(authStateProvider).valueOrNull;
         final localId = (item.payload['localId'] as num?)?.toInt();
-        if (user == null || localId == null) return false;
+        if (user == null || localId == null) return _ExecResult.transientFailure;
         await ref.read(cloudCrmRepositoryProvider).pushProject(
               ownerUserId: user.id,
               localId: localId,
             );
-        return true;
+        return _ExecResult.success;
       case 'crm_invoice':
         final user = ref.read(authStateProvider).valueOrNull;
         final localId = (item.payload['localId'] as num?)?.toInt();
-        if (user == null || localId == null) return false;
+        if (user == null || localId == null) return _ExecResult.transientFailure;
         await ref.read(cloudCrmRepositoryProvider).pushInvoice(
               ownerUserId: user.id,
               localId: localId,
             );
-        return true;
+        return _ExecResult.success;
       case 'crm_sync_all':
         await ref.read(cloudCrmRepositoryProvider).syncAllForSignedInUser();
-        return true;
+        return _ExecResult.success;
+      case 'crm_customer_delete':
+      case 'crm_project_delete':
+      case 'crm_invoice_delete':
+        // Tombstone ops: local row already gone; cloud delete is best-effort via push paths.
+        debugPrint('Sync tombstone processed: ${item.kind} ${item.payload}');
+        return _ExecResult.success;
       default:
-        // Never treat unknown operations as success (master plan P0).
         debugPrint('Sync outbox permanent error: unknown kind "${item.kind}"');
         ref.read(syncFailureMessageProvider.notifier).state =
-            'A queued change could not sync (unknown type). Contact support if this persists.';
-        return false;
+            'A queued change could not sync (unknown type). See Sync Center.';
+        return _ExecResult.permanentFailure;
     }
   }
 
-  Future<List<SyncOutboxItem>> _load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_storageKey);
-    if (raw == null || raw.isEmpty) return [];
-    try {
-      final list = jsonDecode(raw) as List;
-      return list.map((e) => SyncOutboxItem.fromJson(e as Map<String, dynamic>)).toList();
-    } catch (_) {
-      return [];
+  Future<int> pendingCount() async {
+    await ensureMigrated();
+    return _db.countPendingOutbox(ownerUserId: _localOwnerId);
+  }
+
+  Future<int> permanentlyFailedCount() async {
+    await ensureMigrated();
+    final rows = await _db.listActiveOutbox(ownerUserId: _localOwnerId);
+    return rows.where((r) => r.status == 'permanently_failed').length;
+  }
+
+  Future<List<SyncOutboxEntry>> listVisibleEntries() async {
+    await ensureMigrated();
+    return _db.listActiveOutbox(ownerUserId: _localOwnerId);
+  }
+
+  Future<DateTime?> lastSyncAt() async {
+    await ensureMigrated();
+    return _db.lastSuccessfulSyncAt(ownerUserId: _localOwnerId);
+  }
+
+  /// Clear this user's queue on logout / account switch (keeps other users' rows).
+  Future<void> clearForCurrentUser() async {
+    await ensureMigrated();
+    final id = _localOwnerId;
+    if (id != null) {
+      await _db.deleteOutboxForUser(id);
+      await _db.deleteAllSyncConflicts(ownerUserId: id);
     }
+    ref.read(syncFailureMessageProvider.notifier).state = null;
   }
-
-  Future<void> _save(List<SyncOutboxItem> items) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_storageKey, jsonEncode(items.map((e) => e.toJson()).toList()));
-  }
-
-  Future<int> pendingCount() async => (await _load()).length;
 }
+
+enum _ExecResult { success, transientFailure, permanentFailure }
 
 class SyncOutboxItem {
   SyncOutboxItem({
@@ -430,18 +757,28 @@ class SyncOutboxItem {
     required this.payload,
     this.retries = 0,
     DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now();
+    String? operationId,
+    this.ownerUserId,
+    this.isTombstone = false,
+  })  : createdAt = createdAt ?? DateTime.now(),
+        operationId = operationId ?? const Uuid().v4();
 
   final String kind;
   final Map<String, dynamic> payload;
   final int retries;
   final DateTime createdAt;
+  final String operationId;
+  final int? ownerUserId;
+  final bool isTombstone;
 
   SyncOutboxItem copyWith({int? retries}) => SyncOutboxItem(
         kind: kind,
         payload: payload,
         retries: retries ?? this.retries,
         createdAt: createdAt,
+        operationId: operationId,
+        ownerUserId: ownerUserId,
+        isTombstone: isTombstone,
       );
 
   Map<String, dynamic> toJson() => {
@@ -449,18 +786,39 @@ class SyncOutboxItem {
         'payload': payload,
         'retries': retries,
         'createdAt': createdAt.toIso8601String(),
+        'operationId': operationId,
+        'ownerUserId': ownerUserId,
+        'isTombstone': isTombstone,
       };
 
   factory SyncOutboxItem.fromJson(Map<String, dynamic> json) => SyncOutboxItem(
         kind: json['kind'] as String? ?? '',
         payload: Map<String, dynamic>.from(json['payload'] as Map? ?? {}),
         retries: (json['retries'] as num?)?.toInt() ?? 0,
-        createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+        createdAt:
+            DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+        operationId: json['operationId'] as String?,
+        ownerUserId: (json['ownerUserId'] as num?)?.toInt(),
+        isTombstone: json['isTombstone'] as bool? ?? false,
       );
+
+  factory SyncOutboxItem.fromRow(SyncOutboxEntry row) {
+    Map<String, dynamic> payload = {};
+    try {
+      payload = Map<String, dynamic>.from(jsonDecode(row.payloadJson) as Map);
+    } catch (_) {}
+    return SyncOutboxItem(
+      kind: row.kind,
+      payload: payload,
+      retries: row.retries,
+      createdAt: row.createdAt,
+      operationId: row.operationId,
+      ownerUserId: row.ownerUserId,
+      isTombstone: row.isTombstone,
+    );
+  }
 }
 
-/// Shows Keep local / Take cloud dialogs for pending sync conflicts
-/// (invoices, projects, customers).
 Future<void> showInvoiceConflictDialog(BuildContext context, WidgetRef ref) async {
   await showEntityConflictDialog(context, ref);
 }
@@ -473,12 +831,13 @@ Future<void> showEntityConflictDialog(BuildContext context, WidgetRef ref) async
   for (final c in List<Map<String, dynamic>>.from(conflicts)) {
     if (!context.mounted) return;
     final entityType = (c['entityType'] as String?) ?? 'invoice';
-    final localId = (c['localId'] as num?)?.toInt() ??
-        (c['localInvoiceId'] as num?)?.toInt();
+    final localId =
+        (c['localId'] as num?)?.toInt() ?? (c['localInvoiceId'] as num?)?.toInt();
     if (localId == null) continue;
     final localStatus = c['localStatus'] as String? ?? '';
     final cloudStatus = c['cloudStatus'] as String? ?? '';
     final shareId = c['shareId'] as String? ?? '';
+    final cloudPayloadJson = c['cloudPayloadJson'] as String?;
     final label = entityType == 'project'
         ? 'Project'
         : entityType == 'customer'
@@ -490,7 +849,8 @@ Future<void> showEntityConflictDialog(BuildContext context, WidgetRef ref) async
       builder: (ctx) => AlertDialog(
         title: Text('$label sync conflict'),
         content: Text(
-          '$label #$localId differs: local is "$localStatus", cloud is "$cloudStatus".',
+          '$label #$localId differs: local is "$localStatus", cloud is "$cloudStatus".\n\n'
+          'Keep local uploads your full local record. Take cloud replaces local with cloud.',
         ),
         actions: [
           TextButton(
@@ -504,6 +864,8 @@ Future<void> showEntityConflictDialog(BuildContext context, WidgetRef ref) async
         ],
       ),
     );
+
+    if (choice == null) continue;
 
     if (entityType == 'invoice') {
       if (choice == 'local') {
@@ -531,13 +893,12 @@ Future<void> showEntityConflictDialog(BuildContext context, WidgetRef ref) async
         );
       }
     } else {
-      // Projects / customers: drop the conflict after user chooses a side.
-      // Cloud-first for "Take cloud"; keep local by discarding the conflict entry.
       await outbox.resolveEntityConflict(
         entityType: entityType,
         localId: localId,
         takeCloud: choice == 'cloud',
         cloudStatus: cloudStatus,
+        cloudPayloadJson: cloudPayloadJson,
       );
     }
   }

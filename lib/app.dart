@@ -104,6 +104,7 @@ class _ClivoraAppState extends ConsumerState<ClivoraApp> with WidgetsBindingObse
     try {
       await ref.read(overdueInvoiceServiceProvider).scanAndPromote();
     } catch (_) {}
+    await ref.read(syncOutboxServiceProvider).ensureMigrated();
     await ref.read(syncOutboxServiceProvider).processQueue();
     await ref.read(syncOutboxServiceProvider).reconcileInvoiceShares();
     await ref.read(contractSyncServiceProvider).reconcileSignedContracts();
