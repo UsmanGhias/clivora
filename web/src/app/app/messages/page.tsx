@@ -8,10 +8,12 @@ export type MessageRow = {
   subject?: string | null;
   created_at?: string | null;
   from_email?: string | null;
+  to_email?: string | null;
   from_uid?: string | null;
   to_uid?: string | null;
   parent_message_id?: string | null;
   read_at?: string | null;
+  is_read?: boolean | null;
   attachments?: unknown;
 };
 
@@ -26,7 +28,7 @@ export default async function MessagesPage() {
     const { data, error } = await supabase
       .from("client_messages")
       .select(
-        "id, body, subject, created_at, from_email, from_uid, to_uid, parent_message_id, read_at, attachments",
+        "id, body, subject, created_at, from_email, to_email, from_uid, to_uid, parent_message_id, read_at, is_read, attachments",
       )
       .or(`from_uid.eq.${uid},to_uid.eq.${uid}`)
       .order("created_at", { ascending: true })
@@ -37,13 +39,13 @@ export default async function MessagesPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-8">
       <div>
-        <h1 className="text-2xl font-extrabold">Messages</h1>
-        <p className="text-sm text-text-secondary">
+        <h1 className="font-display text-2xl font-extrabold text-navy sm:text-3xl">Messages</h1>
+        <p className="mt-1 text-sm text-text-secondary">
           {isClient
             ? "Talk with freelancers after Connect accept or on shared work."
-            : "Cloud inbox for clients, CRM contacts, and Connect matches."}
+            : "Talk with clients, share files, and keep project conversations in one place."}
         </p>
       </div>
       <MessagesThreadView

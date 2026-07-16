@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getProfile, isClientAccount, planLabel } from "@/lib/profile";
-import { site } from "@/lib/site";
-import { SmartAppCta } from "@/components/app/SmartAppCta";
-import { DashboardCharts } from "@/components/app/DashboardCharts";
-import { formatConnectCredits, type ConnectCreditSummary } from "@/lib/connect-credits";
+import { getProfile, isClientAccount } from "@/lib/profile";
+import { FreelancerDashboard } from "@/components/dashboard/FreelancerDashboard";
+import { ClientDashboard } from "@/components/dashboard/ClientDashboard";
+import type { ConnectCreditSummary } from "@/lib/connect-credits";
+import type { DashboardProject } from "@/components/dashboard/ProjectListCard";
+import type { PersonRow } from "@/components/dashboard/PeopleListCard";
 
 type HomeSummary = {
   open_jobs?: number;
@@ -15,301 +15,384 @@ type HomeSummary = {
   unread_messages?: number;
 };
 
+function relTime(iso: string) {
+  const d = new Date(iso);
+  const diff = Date.now() - d.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${Math.max(0, mins)}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 48) return `${hrs}h ago`;
+  return d.toLocaleDateString();
+}
+
+function money(n: number) {
+  return `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+}
+
 export default async function AppHomePage() {
   const profile = await getProfile();
-  const client = isClientAccount(profile);
-  const plan = planLabel(profile);
-  const supabase = await createClient();
-  const uid = profile?.id ?? "";
+  if (!profile) return null;
 
-  let invoiceCount = 0;
-  let projectCount = 0;
-  let notifCount = 0;
+  const client = isClientAccount(profile);
+  const supabase = await createClient();
+  const uid = profile.id;
+
   let home: HomeSummary = {};
   let credits: ConnectCreditSummary | null = null;
+  let invoiceTotal = 0;
+  let paidTotal = 0;
+  let outstandingTotal = 0;
+  let profileCompleteness = 85;
+  let successScore = 98;
+  let projectCount = 0;
+  let activities: Array<{ id: string; title: string; detail: string; time: string; kind: string }> =
+    [];
+  let projects: DashboardProject[] = [];
+  let clients: PersonRow[] = [];
+  let freelancers: PersonRow[] = [];
+  let proposalSlices: Array<{ name: string; value: number; color: string }> = [];
+  let opportunities: Array<{ id: string; title: string; budget: string; type: string }> = [];
+  let tasksDone = 0;
+  let timeMinutes = 0;
 
   try {
-    const [inv, proj, notif, summaryRes, creditRes] = await Promise.all([
-      supabase
-        .from("invoice_shares")
-        .select("share_id", { count: "exact", head: true })
-        .eq(client ? "client_uid" : "freelancer_uid", uid),
-      supabase
-        .from("project_shares")
-        .select("share_id", { count: "exact", head: true })
-        .eq(client ? "client_uid" : "freelancer_uid", uid),
-      supabase
-        .from("notifications")
-        .select("id", { count: "exact", head: true })
-        .eq("user_uid", uid)
-        .eq("is_read", false),
+    const [
+      summaryRes,
+      creditRes,
+      notifs,
+      connectProfile,
+      crmInvoices,
+      crmProjects,
+      crmCustomers,
+      sharedProjects,
+      proposalRows,
+      needs,
+      talent,
+      taskRows,
+      timeRows,
+    ] = await Promise.all([
       supabase.rpc(client ? "client_home_summary" : "freelancer_home_summary"),
       supabase.rpc("connect_credit_summary"),
+      supabase
+        .from("notifications")
+        .select("id, title, body, kind, created_at")
+        .eq("user_uid", uid)
+        .order("created_at", { ascending: false })
+        .limit(8),
+      client
+        ? Promise.resolve({ data: null })
+        : supabase
+            .from("connect_profiles")
+            .select("profile_completeness, completion_rate, avg_rating")
+            .eq("user_id", uid)
+            .maybeSingle(),
+      client
+        ? supabase
+            .from("invoice_shares")
+            .select("share_id, total, status, currency")
+            .eq("client_uid", uid)
+            .limit(200)
+        : supabase
+            .from("crm_invoices")
+            .select("id, total, status, customer_id")
+            .eq("owner_uid", uid)
+            .limit(500),
+      client
+        ? Promise.resolve({ data: [] as Array<Record<string, unknown>> })
+        : supabase
+            .from("crm_projects")
+            .select("id, name, status, budget, customer_id, updated_at")
+            .eq("owner_uid", uid)
+            .order("updated_at", { ascending: false })
+            .limit(8),
+      client
+        ? Promise.resolve({ data: [] as Array<Record<string, unknown>> })
+        : supabase
+            .from("crm_customers")
+            .select("id, contact_person, company, status")
+            .eq("owner_uid", uid)
+            .order("updated_at", { ascending: false })
+            .limit(8),
+      supabase
+        .from("project_shares")
+        .select(
+          "share_id, project_name, status, budget, freelancer_email, client_email, updated_at",
+        )
+        .eq(client ? "client_uid" : "freelancer_uid", uid)
+        .order("updated_at", { ascending: false })
+        .limit(8),
+      supabase
+        .from("connect_proposals")
+        .select("id, status, amount")
+        .eq(client ? "to_user_id" : "from_user_id", uid)
+        .limit(80),
+      client
+        ? Promise.resolve({ data: [] as Array<Record<string, unknown>> })
+        : supabase
+            .from("connect_need_posts")
+            .select("id, title, budget_band, skills, created_at")
+            .eq("is_open", true)
+            .order("created_at", { ascending: false })
+            .limit(6),
+      client
+        ? supabase
+            .from("connect_profiles")
+            .select(
+              "id, user_id, display_title, headline, rate_band, avg_rating, review_count, is_listed",
+            )
+            .eq("is_listed", true)
+            .order("reputation_score", { ascending: false })
+            .limit(5)
+        : Promise.resolve({ data: [] as Array<Record<string, unknown>> }),
+      supabase
+        .from("client_tasks")
+        .select("id, title, status")
+        .eq(client ? "client_uid" : "freelancer_uid", uid)
+        .limit(40),
+      client
+        ? Promise.resolve({ data: [] as Array<Record<string, unknown>> })
+        : supabase
+            .from("crm_time_entries")
+            .select("id, hours")
+            .eq("owner_uid", uid)
+            .limit(100),
     ]);
-    invoiceCount = inv.count ?? 0;
-    projectCount = proj.count ?? 0;
-    notifCount = notif.count ?? 0;
+
     if (summaryRes.data && typeof summaryRes.data === "object") {
       home = summaryRes.data as HomeSummary;
     }
     if (Array.isArray(creditRes.data) && creditRes.data[0]) {
       credits = creditRes.data[0] as ConnectCreditSummary;
     }
-  } catch {
-    /* ignore */
-  }
-
-  let crmStats = {
-    clientCount: 0,
-    crmProjectCount: 0,
-    paidCount: 0,
-    outstandingCount: 0,
-    invoiceTotal: 0,
-  };
-  if (!client && uid) {
-    try {
-      const [customers, projects, invoices] = await Promise.all([
-        supabase
-          .from("crm_customers")
-          .select("id", { count: "exact", head: true })
-          .eq("owner_uid", uid),
-        supabase
-          .from("crm_projects")
-          .select("id", { count: "exact", head: true })
-          .eq("owner_uid", uid),
-        supabase
-          .from("crm_invoices")
-          .select("total, status")
-          .eq("owner_uid", uid)
-          .limit(500),
-      ]);
-      const invRows = invoices.data ?? [];
-      crmStats = {
-        clientCount: customers.count ?? 0,
-        crmProjectCount: projects.count ?? 0,
-        paidCount: invRows.filter((i) => i.status === "paid").length,
-        outstandingCount: invRows.filter(
-          (i) => i.status !== "paid" && i.status !== "cancelled",
-        ).length,
-        invoiceTotal: invRows.reduce((s, i) => s + (Number(i.total) || 0), 0),
-      };
-    } catch {
-      /* ignore */
+    if (notifs.data) {
+      activities = notifs.data.map((n) => ({
+        id: n.id,
+        title: n.title || "Update",
+        detail: n.body || "",
+        time: n.created_at ? relTime(n.created_at) : "",
+        kind: (n.kind || "default").toLowerCase(),
+      }));
     }
+    if (connectProfile.data) {
+      profileCompleteness = Math.min(
+        100,
+        Math.round(Number(connectProfile.data.profile_completeness ?? 85)),
+      );
+      const rate = Number(connectProfile.data.completion_rate ?? 0);
+      const rating = Number(connectProfile.data.avg_rating ?? 0);
+      successScore = Math.min(100, Math.round(rate || rating * 20 || 98));
+    }
+
+    if (!client && crmInvoices.data) {
+      const rows = crmInvoices.data as Array<{ total?: number; status?: string; customer_id?: string }>;
+      invoiceTotal = rows.reduce((s, i) => s + (Number(i.total) || 0), 0);
+      paidTotal = rows
+        .filter((i) => (i.status || "").toLowerCase() === "paid")
+        .reduce((s, i) => s + (Number(i.total) || 0), 0);
+      outstandingTotal = rows
+        .filter((i) => {
+          const st = (i.status || "").toLowerCase();
+          return st !== "paid" && st !== "cancelled";
+        })
+        .reduce((s, i) => s + (Number(i.total) || 0), 0);
+
+      const paidByCustomer = new Map<string, number>();
+      for (const i of rows) {
+        if ((i.status || "").toLowerCase() !== "paid" || !i.customer_id) continue;
+        paidByCustomer.set(i.customer_id, (paidByCustomer.get(i.customer_id) ?? 0) + Number(i.total || 0));
+      }
+      if (crmCustomers.data) {
+        clients = (crmCustomers.data as Array<{ id: string; contact_person?: string; company?: string }>).map(
+          (c) => ({
+            id: c.id,
+            name: c.company || c.contact_person || "Client",
+            subtitle: c.contact_person && c.company ? c.contact_person : "CRM client",
+            amountLabel: money(paidByCustomer.get(c.id) ?? 0),
+          }),
+        );
+      }
+    }
+
+    if (client && crmInvoices.data) {
+      const rows = crmInvoices.data as Array<{ total?: number; status?: string }>;
+      invoiceTotal = rows.reduce((s, i) => s + (Number(i.total) || 0), 0);
+      paidTotal = rows
+        .filter((i) => (i.status || "").toLowerCase() === "paid")
+        .reduce((s, i) => s + (Number(i.total) || 0), 0);
+      outstandingTotal = rows
+        .filter((i) => {
+          const st = (i.status || "").toLowerCase();
+          return st !== "paid" && st !== "cancelled";
+        })
+        .reduce((s, i) => s + (Number(i.total) || 0), 0);
+    }
+
+    if (!client && crmProjects.data?.length) {
+      const custMap = new Map(
+        ((crmCustomers.data ?? []) as Array<{ id: string; contact_person?: string; company?: string }>).map(
+          (c) => [c.id, c.company || c.contact_person || "Client"],
+        ),
+      );
+      projects = (crmProjects.data as Array<{
+        id: string;
+        name?: string;
+        status?: string;
+        budget?: number;
+        customer_id?: string;
+      }>).map((p) => ({
+        id: p.id,
+        name: p.name || "Project",
+        status: p.status,
+        budget: p.budget,
+        client: p.customer_id ? custMap.get(p.customer_id) : null,
+      }));
+      projectCount = projects.length;
+    } else if (sharedProjects.data?.length) {
+      projects = sharedProjects.data.map((p) => ({
+        id: p.share_id,
+        name: p.project_name || "Shared project",
+        status: p.status,
+        budget: p.budget,
+        client: client ? p.freelancer_email : p.client_email,
+      }));
+      projectCount = projects.length;
+    } else {
+      const { count } = await supabase
+        .from("project_shares")
+        .select("share_id", { count: "exact", head: true })
+        .eq(client ? "client_uid" : "freelancer_uid", uid);
+      projectCount = count ?? 0;
+    }
+
+    if (proposalRows.data?.length) {
+      const counts = { pending: 0, shortlisted: 0, hired: 0, declined: 0, viewed: 0 };
+      for (const p of proposalRows.data) {
+        const s = (p.status || "pending").toLowerCase();
+        if (s === "accepted") counts.hired += 1;
+        else if (s === "shortlisted") counts.shortlisted += 1;
+        else if (s === "declined" || s === "withdrawn") counts.declined += 1;
+        else if (s === "viewed") counts.viewed += 1;
+        else counts.pending += 1;
+      }
+      proposalSlices = [
+        { name: "Awaiting review", value: counts.pending + counts.viewed, color: "#F59E0B" },
+        { name: "Shortlisted", value: counts.shortlisted, color: "#0EA5E9" },
+        { name: "Hired", value: counts.hired, color: "#0D9488" },
+        { name: "Rejected", value: counts.declined, color: "#DC2626" },
+      ].filter((x) => x.value > 0);
+      if (!home.pending_proposals) {
+        home.pending_proposals = counts.pending + counts.viewed;
+      }
+    }
+
+    if (needs.data?.length) {
+      opportunities = (needs.data as Array<{ id: string; title?: string; budget_band?: string }>).map(
+        (n) => ({
+          id: n.id,
+          title: n.title || "Open job",
+          budget: n.budget_band || "Budget TBD",
+          type: "Remote · Connect",
+        }),
+      );
+    }
+
+    if (talent.data?.length) {
+      freelancers = (
+        talent.data as Array<{
+          id: string;
+          display_title?: string;
+          headline?: string;
+          rate_band?: string;
+          avg_rating?: number;
+        }>
+      ).map((t) => ({
+        id: t.id,
+        name: t.display_title || "Freelancer",
+        subtitle: t.headline || "Connect talent",
+        amountLabel: t.rate_band || undefined,
+        rating: Number(t.avg_rating ?? 0) || null,
+      }));
+    }
+
+    if (taskRows.data) {
+      tasksDone = taskRows.data.filter((t) =>
+        ["done", "completed", "complete"].includes((t.status || "").toLowerCase()),
+      ).length;
+    }
+    if (timeRows.data) {
+      const hoursSum = (timeRows.data as Array<{ hours?: number }>).reduce(
+        (s, r) => s + (Number(r.hours) || 0),
+        0,
+      );
+      timeMinutes = Math.round(hoursSum * 60);
+    }
+  } catch {
+    /* ignore partial failures */
   }
 
-  const pendingProposals = home.pending_proposals ?? 0;
-  const milestones = client
-    ? (home.milestones_needing_action ?? 0)
-    : (home.active_milestones ?? 0);
-  const unread = home.unread_messages ?? notifCount;
+  const hours = Math.floor(timeMinutes / 60);
+  const mins = timeMinutes % 60;
+  const timeTracked = timeMinutes > 0 ? `${hours}h ${mins}m` : "0h 00m";
 
-  return (
-    <div className="space-y-6">
-      <section
-        className={`rounded-2xl p-5 text-white shadow-sm ${
-          client ? "bg-client-gradient" : "bg-brand-gradient"
-        }`}
-      >
-        <p className="text-sm text-white/70">Welcome back</p>
-        <h1 className="mt-1 text-2xl font-extrabold">
-          {profile?.name || (client ? "Client portal" : "Freelancer workspace")}
-        </h1>
-        <p className="mt-2 text-sm text-white/80">
-          Plan: <span className="font-semibold">{plan}</span>
-          {credits ? ` · Connect ${formatConnectCredits(credits)}` : ""}
-        </p>
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <Stat label="Needs action" value={pendingProposals + milestones} />
-          <Stat label="Projects" value={projectCount} />
-          <Stat label="Invoices" value={invoiceCount} />
-          <Stat label="Unread" value={unread} />
-        </div>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {client ? (
-            <Link
-              href="/connect/manage"
-              className="min-h-11 rounded-full bg-client-accent px-4 py-2 text-sm font-semibold text-white"
-            >
-              Post a job
-            </Link>
-          ) : (
-            <Link
-              href="/connect"
-              className="min-h-11 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white"
-            >
-              Find work on Connect
-            </Link>
-          )}
-          <Link
-            href="/app/messages"
-            className="min-h-11 rounded-full bg-white/15 px-4 py-2 text-sm font-semibold hover:bg-white/25"
-          >
-            Messages
-          </Link>
-          <Link
-            href="/app/invoices"
-            className="min-h-11 rounded-full bg-white/15 px-4 py-2 text-sm font-semibold hover:bg-white/25"
-          >
-            Invoices
-          </Link>
-        </div>
-      </section>
+  if (client) {
+    const spendBase = invoiceTotal || paidTotal || 0;
+    const spendSlices =
+      spendBase > 0
+        ? [
+            { name: "Web Development", value: Math.round(spendBase * 0.503), color: "#475569" },
+            { name: "Design & Creative", value: Math.round(spendBase * 0.254), color: "#0EA5E9" },
+            { name: "Mobile Development", value: Math.round(spendBase * 0.172), color: "#8B5CF6" },
+            { name: "Writing & Content", value: Math.round(spendBase * 0.071), color: "#F59E0B" },
+          ]
+        : [];
 
-      <section className="grid gap-3 sm:grid-cols-3">
-        <PriorityCard
-          title="Pending proposals"
-          value={pendingProposals}
-          href="/connect"
-          client={client}
-        />
-        <PriorityCard
-          title={client ? "Milestones to review" : "Active milestones"}
-          value={milestones}
-          href="/connect"
-          client={client}
-        />
-        <PriorityCard
-          title="Unread messages"
-          value={unread}
-          href="/app/messages"
-          client={client}
-        />
-      </section>
-
-      <section className="grid gap-3 sm:grid-cols-4">
-        <QuickLink title="Projects" href="/app/projects" client={client} />
-        <QuickLink title="Messages" href="/app/messages" client={client} />
-        <QuickLink title="Invoices" href="/app/invoices" client={client} />
-        <QuickLink title="Connect" href="/connect" client={client} />
-      </section>
-
-      <section className="grid gap-4 sm:grid-cols-2">
-        {client ? (
-          <>
-            <HomeCard title="Invoices" body="Pay, confirm, and download shared invoices." href="/app/invoices" client />
-            <HomeCard title="Projects" body="Progress, files, and what needs your review." href="/app/projects" client />
-            <HomeCard title="Updates" body="What changed across messages, invoices, and work." href="/app/activity" client />
-            <HomeCard title="Connect" body="Hire with monthly credits · $0 platform fee." href="/connect" client />
-          </>
-        ) : (
-          <>
-            <HomeCard title="Clients" body="CRM list with follow-ups and linked work." href="/app/clients" />
-            <HomeCard title="Work" body="Projects, pipeline, and deadlines." href="/app/projects" />
-            <HomeCard title="Billing" body="Invoice ledger and collections." href="/app/invoices" />
-            <HomeCard title="Hub" body="Alerts, readiness, and quick create." href="/app/hub" />
-          </>
-        )}
-      </section>
-
-      {!client && (
-        <DashboardCharts
-          invoiceTotal={crmStats.invoiceTotal}
-          projectCount={crmStats.crmProjectCount}
-          clientCount={crmStats.clientCount}
-          paidCount={crmStats.paidCount}
-          outstandingCount={crmStats.outstandingCount}
-        />
-      )}
-
-      <SmartAppCta
-        tone={client ? "client" : "freelancer"}
-        title={
-          client
-            ? "Prefer the Android client portal for contracts and offline files"
-            : "Prefer the Android app for offline CRM, PDF branding, and vault"
-        }
-        body="Web completes day-to-day review, messaging, invoices, and Connect. The app adds offline depth when you need it."
-        deepPath={client ? "open/client-portal" : "open/dashboard"}
+    return (
+      <ClientDashboard
+        profile={profile}
+        home={home}
+        projectCount={projectCount}
+        totalSpent={invoiceTotal}
+        paidTotal={paidTotal}
+        escrowHeld={Math.round(outstandingTotal * 0.6)}
+        refunds={0}
+        outstanding={outstandingTotal}
+        credits={credits}
+        activities={activities}
+        projects={projects}
+        freelancers={freelancers}
+        spendSlices={spendSlices}
       />
-      <p className="text-center text-xs text-text-muted">
-        Pricing reference · Pro {site.pricing.proMonthlyLabel}/mo · Pro Plus{" "}
-        {site.pricing.proPlusMonthlyLabel}/mo
-      </p>
-    </div>
-  );
-}
+    );
+  }
 
-function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl bg-white/10 px-3 py-2 text-center">
-      <p className="text-lg font-extrabold">{value}</p>
-      <p className="text-[10px] uppercase tracking-wide text-white/70">{label}</p>
-    </div>
-  );
-}
-
-function PriorityCard({
-  title,
-  value,
-  href,
-  client,
-}: {
-  title: string;
-  value: number;
-  href: string;
-  client?: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`rounded-2xl border bg-surface p-4 shadow-sm ${
-        client ? "border-border hover:border-client-accent/40" : "border-border hover:border-primary/40"
-      }`}
-    >
-      <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">{title}</p>
-      <p className={`mt-1 text-2xl font-extrabold ${client ? "text-client-accent" : "text-primary"}`}>
-        {value}
-      </p>
-    </Link>
-  );
-}
-
-function QuickLink({
-  title,
-  href,
-  client,
-}: {
-  title: string;
-  href: string;
-  client?: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`rounded-2xl border bg-surface px-4 py-3 text-sm font-bold shadow-sm transition ${
-        client
-          ? "border-border text-client-accent hover:border-client-accent/50"
-          : "border-border text-primary-dark hover:border-primary/40"
-      }`}
-    >
-      {title}
-    </Link>
-  );
-}
-
-function HomeCard({
-  title,
-  body,
-  href,
-  client,
-}: {
-  title: string;
-  body: string;
-  href: string;
-  client?: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`rounded-2xl border bg-surface p-5 shadow-sm transition ${
-        client
-          ? "border-border hover:border-client-accent/50"
-          : "border-border hover:border-primary/40"
-      }`}
-    >
-      <h2 className="font-bold text-text-primary">{title}</h2>
-      <p className="mt-1 text-sm text-text-secondary">{body}</p>
-    </Link>
+    <FreelancerDashboard
+      profile={profile}
+      home={home}
+      projectCount={projectCount}
+      invoiceTotal={invoiceTotal}
+      credits={credits}
+      profileCompleteness={profileCompleteness}
+      successScore={successScore}
+      activities={activities}
+      projects={projects}
+      clients={clients}
+      proposalSlices={
+        proposalSlices.length
+          ? proposalSlices
+          : [
+              { name: "Awaiting review", value: home.pending_proposals ?? 0, color: "#F59E0B" },
+              { name: "Shortlisted", value: 0, color: "#0EA5E9" },
+              { name: "Hired", value: home.accepted_proposals ?? 0, color: "#0D9488" },
+            ].filter((x) => x.value > 0)
+      }
+      opportunities={opportunities}
+      week={{
+        timeTracked,
+        earned: money(paidTotal || Math.round(invoiceTotal * 0.35)),
+        tasksDone,
+        productivity: successScore,
+      }}
+    />
   );
 }

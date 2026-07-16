@@ -239,10 +239,16 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
                   IconButton(
                     onPressed: () => context.pop(),
                     icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                    style: IconButton.styleFrom(
+                      backgroundColor: ClivoraColors.chipBackground,
+                    ),
                   ),
-                  Text(
-                    widget.projectId != null ? 'Edit Project' : 'New Project',
-                    style: Theme.of(context).textTheme.headlineMedium,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      widget.projectId != null ? 'Edit Project' : 'New Project',
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800),
+                    ),
                   ),
                 ],
               ),
@@ -304,8 +310,9 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
                           ClivoraTextField(
                             controller: _nameController,
                             label: 'Project Name',
-                            hint: 'e.g. Website Redesign, Marketing',
+                            hint: 'e.g. Website Redesign, Marketing Campaign',
                             required: true,
+                            prefixIcon: Icons.description_outlined,
                           ),
                           const SizedBox(height: 16),
                           ClivoraTextField(
@@ -313,6 +320,7 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
                             label: 'Description',
                             hint: 'Scope, deliverables, and key details.',
                             maxLines: 4,
+                            prefixIcon: Icons.notes_outlined,
                           ),
                         ],
                       ),

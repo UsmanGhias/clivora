@@ -32,20 +32,22 @@ class AppShell extends ConsumerWidget {
 
   final Widget child;
 
+  /// CRM mockup: Home · Clients · Hub · Billing · More
   static const _freelancerBaseTabs = [
-    _NavItem('/dashboard', Icons.space_dashboard_outlined, Icons.space_dashboard, 'Home'),
+    _NavItem('/dashboard', Icons.home_outlined, Icons.home_rounded, 'Home'),
     _NavItem('/customers', Icons.groups_outlined, Icons.groups, 'Clients'),
-    _NavItem('/projects', Icons.view_kanban_outlined, Icons.view_kanban, 'Work'),
-    _NavItem('/invoices', Icons.payments_outlined, Icons.payments, 'Billing'),
     _NavItem('/more', Icons.hub_outlined, Icons.hub, 'Hub'),
+    _NavItem('/invoices', Icons.receipt_long_outlined, Icons.receipt_long, 'Billing'),
+    _NavItem('/menu', Icons.apps_outlined, Icons.apps, 'More'),
   ];
 
+  /// Pro Plus: Connect replaces Clients on the bar (Clients stay in Hub).
   static const _freelancerPlusTabs = [
-    _NavItem('/dashboard', Icons.space_dashboard_outlined, Icons.space_dashboard, 'Home'),
+    _NavItem('/dashboard', Icons.home_outlined, Icons.home_rounded, 'Home'),
     _NavItem('/customers', Icons.groups_outlined, Icons.groups, 'Clients'),
-    _NavItem('/connect', Icons.hub_outlined, Icons.hub, 'Connect', connectBadge: true),
-    _NavItem('/invoices', Icons.payments_outlined, Icons.payments, 'Billing'),
-    _NavItem('/more', Icons.apps_outlined, Icons.apps, 'Hub'),
+    _NavItem('/connect', Icons.travel_explore_outlined, Icons.travel_explore, 'Connect', connectBadge: true),
+    _NavItem('/invoices', Icons.receipt_long_outlined, Icons.receipt_long, 'Billing'),
+    _NavItem('/more', Icons.hub_outlined, Icons.hub, 'Hub'),
   ];
 
   /// Free client: keep Account (profile/login) on the bar. Hub lives inside Account.

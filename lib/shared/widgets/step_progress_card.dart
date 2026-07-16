@@ -19,34 +19,38 @@ class StepProgressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = currentStep / totalSteps;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: ClivoraColors.borderLight),
+        border: Border.all(
+          color: isDark ? ClivoraColors.darkBorder : ClivoraColors.borderLight,
+        ),
       ),
       child: Column(
         children: [
           Row(
             children: [
               SizedBox(
-                width: 52,
-                height: 52,
+                width: 56,
+                height: 56,
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
                     CircularProgressIndicator(
                       value: progress,
                       strokeWidth: 4,
-                      backgroundColor: ClivoraColors.chipBackground,
-                      color: ClivoraColors.successGreen,
+                      backgroundColor: ClivoraColors.primaryLight,
+                      color: ClivoraColors.primary,
                     ),
                     Text(
                       '$currentStep of $totalSteps',
                       style: const TextStyle(
                         fontSize: 11,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
+                        color: ClivoraColors.textPrimary,
                       ),
                     ),
                   ],
@@ -57,11 +61,18 @@ class StepProgressCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
                     const SizedBox(height: 4),
                     Text(
                       'Next: $nextLabel',
-                      style: Theme.of(context).textTheme.bodySmall,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: ClivoraColors.textSecondary,
+                          ),
                     ),
                   ],
                 ),
@@ -74,8 +85,8 @@ class StepProgressCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 4,
-              backgroundColor: ClivoraColors.chipBackground,
-              color: ClivoraColors.successGreen,
+              backgroundColor: ClivoraColors.primaryLight,
+              color: ClivoraColors.primary,
             ),
           ),
         ],
@@ -104,7 +115,11 @@ class ClivoraFieldLabel extends StatelessWidget {
         children: [
           Text(
             label.toUpperCase(),
-            style: Theme.of(context).textTheme.labelSmall,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: ClivoraColors.labelGray,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.6,
+                ),
           ),
           if (required)
             const Text(' *', style: TextStyle(color: ClivoraColors.errorRed)),
@@ -118,6 +133,7 @@ class ClivoraFieldLabel extends StatelessWidget {
   }
 }
 
+/// Mockup-aligned field: uppercase label + rounded input with teal icon well.
 class ClivoraTextField extends StatelessWidget {
   const ClivoraTextField({
     super.key,
@@ -128,6 +144,10 @@ class ClivoraTextField extends StatelessWidget {
     this.maxLines = 1,
     this.keyboardType,
     this.trailing,
+    this.prefixIcon,
+    this.readOnly = false,
+    this.onTap,
+    this.onSubmitted,
   });
 
   final TextEditingController controller;
@@ -137,9 +157,14 @@ class ClivoraTextField extends StatelessWidget {
   final int maxLines;
   final TextInputType? keyboardType;
   final Widget? trailing;
+  final IconData? prefixIcon;
+  final bool readOnly;
+  final VoidCallback? onTap;
+  final ValueChanged<String>? onSubmitted;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -153,9 +178,63 @@ class ClivoraTextField extends StatelessWidget {
           controller: controller,
           maxLines: maxLines,
           keyboardType: keyboardType,
-          decoration: InputDecoration(hintText: hint),
+          readOnly: readOnly,
+          onTap: onTap,
+          onSubmitted: onSubmitted,
+          decoration: InputDecoration(
+            hintText: hint,
+            filled: true,
+            fillColor: Theme.of(context).cardColor,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: prefixIcon != null ? 12 : 16,
+              vertical: maxLines > 1 ? 16 : 14,
+            ),
+            prefixIcon: prefixIcon == null
+                ? null
+                : Padding(
+                    padding: const EdgeInsets.only(left: 10, right: 8),
+                    child: _IconWell(icon: prefixIcon!),
+                  ),
+            prefixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 40),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(
+                color: isDark ? ClivoraColors.darkBorder : ClivoraColors.borderLight,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: ClivoraColors.primary, width: 1.5),
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(
+                color: isDark ? ClivoraColors.darkBorder : ClivoraColors.borderLight,
+              ),
+            ),
+          ),
         ),
       ],
+    );
+  }
+}
+
+class _IconWell extends StatelessWidget {
+  const _IconWell({required this.icon});
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 36,
+      height: 36,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: ClivoraColors.primaryLight,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Icon(icon, size: 18, color: ClivoraColors.primary),
     );
   }
 }

@@ -26,9 +26,9 @@ class ChatAttachmentService {
           fileOptions: FileOptions(contentType: contentType, upsert: true),
         );
 
-    // Prefer signed URL (works even if bucket is not public).
+    // Short-lived signed URL only (bucket is private; never use getPublicUrl).
     try {
-      return await _client.storage.from(bucket).createSignedUrl(path, 60 * 60 * 24 * 7);
+      return await _client.storage.from(bucket).createSignedUrl(path, 60 * 60);
     } catch (e) {
       debugPrint('Chat attachment signed URL failed: $e');
       throw StateError('Could not create secure attachment link. Try again when online.');

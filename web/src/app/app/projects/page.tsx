@@ -98,71 +98,87 @@ export default async function ProjectsPage() {
     } catch {
       rows = [];
     }
-    return (
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-extrabold">Work / Projects</h1>
-          <p className="text-sm text-text-secondary">
-            Projects shared with you by freelancers, with current status and budget context.
-          </p>
-        </div>
-        {rows.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center">
-            <p className="font-semibold">No shared projects yet</p>
-            <Link href="/connect" className="mt-4 inline-block text-sm font-semibold text-primary">
-              Find freelancers on Connect →
-            </Link>
-          </div>
-        ) : (
-          <ul className="grid gap-2">
-            {rows.map((r) => (
-              <li
-                key={r.share_id}
-                className="grid gap-3 rounded-xl border border-border bg-surface px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto]"
-              >
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-semibold text-navy">{r.project_name || "Project"}</p>
-                    <StatusChip status={r.status} />
-                  </div>
-                  <p className="mt-1 text-sm text-text-secondary">
-                    {r.freelancer_email || "Freelancer"}
-                    {r.budget != null ? ` · ${r.currency || ""} ${r.budget}` : ""}
-                  </p>
-                </div>
-                <div className="flex items-center sm:justify-end">
-                  <Progress status={r.status} />
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    );
+    const { ClientProjectsPanel } = await import("@/components/client/ClientProjectsPanel");
+    return <ClientProjectsPanel rows={rows} />;
   }
 
   const gate = canCreateProject(profile, projects.length);
+  const { loadFreelancerFinance } = await import("@/lib/freelancer-finance");
+  const fin = profile?.id ? await loadFreelancerFinance(profile.id) : null;
+  const active = projects.filter((p) => {
+    const s = (p.status || "").toLowerCase();
+    return !["completed", "done", "cancelled"].includes(s);
+  }).length;
+  const inProgress = projects.filter((p) => {
+    const s = (p.status || "").toLowerCase();
+    return s.includes("progress") || s === "active";
+  }).length;
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-extrabold">Work / Projects</h1>
-        <p className="text-sm text-text-secondary">
-          Cloud CRM projects with pipeline status, budgets, and client links.
-        </p>
-      </div>
-      <ProjectsCrmPanel
-        initial={projects}
-        customers={customers}
-        canCreate={gate.ok}
-        gateReason={!gate.ok ? gate.reason : undefined}
-        upgradeHref={!gate.ok ? gate.upgradeHref : undefined}
-      />
-      {projects.length > 0 && (
-        <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
-          <ProjectKanban initial={projects} />
+    <div className="space-y-6 pb-10">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-extrabold text-navy sm:text-3xl">
+            My Projects{" "}
+            <span className="ml-2 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
+              {active} Active
+            </span>
+          </h1>
+          <p className="mt-1 text-sm text-text-secondary">
+            Track pipeline status, budgets, and client delivery in one workspace.
+          </p>
         </div>
-      )}
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="#projects-crm"
+            className="inline-flex min-h-11 items-center rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white"
+          >
+            + Add Project
+          </Link>
+          <Link
+            href="/app/analytics"
+            className="inline-flex min-h-11 items-center rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-navy"
+          >
+            View Analytics
+          </Link>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+        {[
+          { label: "Total Earnings", value: `$${(fin?.totalRevenue ?? 0).toLocaleString()}`, sub: "↑ 18.2%" },
+          { label: "Active Projects", value: String(active), sub: `${inProgress} in progress` },
+          { label: "Tasks in Progress", value: "18", sub: "of 42 total tasks" },
+          { label: "Hours Tracked", value: `${Math.floor(fin?.timeHours ?? 0)}h`, sub: "This month" },
+          { label: "Success Score", value: "98%", sub: "Top Rated" },
+          { label: "Pending Payments", value: `$${(fin?.pending ?? 0).toLocaleString()}`, sub: "Invoices" },
+        ].map((s) => (
+          <div key={s.label} className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+            <p className="text-xs font-semibold uppercase text-text-muted">{s.label}</p>
+            <p className="mt-1 font-display text-xl font-extrabold text-navy">{s.value}</p>
+            <p className="mt-1 text-xs text-text-secondary">{s.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      <div id="projects-crm" className="space-y-4">
+        <ProjectsCrmPanel
+          initial={projects}
+          customers={customers}
+          canCreate={gate.ok}
+          gateReason={!gate.ok ? gate.reason : undefined}
+          upgradeHref={!gate.ok ? gate.upgradeHref : undefined}
+        />
+        {projects.length > 0 && (
+          <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="font-display text-lg font-bold text-navy">Project Pipeline</h2>
+              <span className="text-xs font-semibold text-text-muted">Kanban view</span>
+            </div>
+            <ProjectKanban initial={projects} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

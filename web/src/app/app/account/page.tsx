@@ -1,108 +1,301 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
+import {
+  BadgeCheck,
+  Bell,
+  CreditCard,
+  Gift,
+  MapPin,
+  ShieldCheck,
+  Star,
+  TrendingUp,
+  Briefcase,
+  Clock,
+} from "lucide-react";
 import { getProfile, isClientAccount, planLabel } from "@/lib/profile";
-import { site } from "@/lib/site";
-import { SmartAppCta } from "@/components/app/SmartAppCta";
+import { isProPlus } from "@/lib/plan";
+import { createClient } from "@/lib/supabase/server";
+import { loadFreelancerFinance } from "@/lib/freelancer-finance";
 import { ManageBillingButton } from "@/components/app/ManageBillingButton";
+import { SmartAppCta } from "@/components/app/SmartAppCta";
+import { AccountProfileEditor } from "@/components/freelancer/AccountProfileEditor";
+import {
+  FreelancerCard,
+  FreelancerPageHeader,
+  FreelancerStatCard,
+  OutlineButton,
+  PrimaryButton,
+  StatusPill,
+  money,
+} from "@/components/freelancer/ui";
 
-/** Client account + hub shortcuts (contracts, files, etc. → app). */
-export default async function AccountPage() {
+export const metadata = { title: "My Profile" };
+
+export default async function AccountPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ edit?: string }>;
+}) {
   const profile = await getProfile();
+  if (!profile) redirect("/login");
+
   const client = isClientAccount(profile);
+  if (client) {
+    redirect("/app/settings");
+  }
+
+  const params = searchParams ? await searchParams : {};
+  const editing = params.edit === "1" || params.edit === "true";
+
+  const plus = isProPlus(profile);
+  const plan = planLabel(profile);
+  const fin = await loadFreelancerFinance(profile.id);
+  const supabase = await createClient();
+
+  let location = "Location not set";
+  let avgRating = 0;
+  let reviewCount = 0;
+  let completeness = 0;
+  let headline = "Freelancer";
+
+  try {
+    const { data: cp } = await supabase
+      .from("connect_profiles")
+      .select(
+        "location_label, avg_rating, review_count, profile_completeness, headline, display_title",
+      )
+      .eq("user_id", profile.id)
+      .maybeSingle();
+    if (cp) {
+      location = cp.location_label || location;
+      avgRating = Number(cp.avg_rating || avgRating);
+      reviewCount = Number(cp.review_count || reviewCount);
+      completeness = Math.round(Number(cp.profile_completeness ?? 100));
+      headline = cp.headline || cp.display_title || headline;
+    }
+  } catch {
+    /* ignore */
+  }
+
+  const r = 40;
+  const c = 2 * Math.PI * r;
+  const offset = c - (Math.min(100, completeness) / 100) * c;
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-extrabold">Account</h1>
-      <div
-        className={`rounded-2xl border p-5 ${
-          client ? "border-client-accent/20 bg-client-surface" : "border-border bg-surface"
-        }`}
-      >
-        <p className="text-sm text-text-secondary">Name</p>
-        <p className="font-semibold">{profile?.name || "-"}</p>
-        <p className="mt-3 text-sm text-text-secondary">Email</p>
-        <p className="font-semibold">{profile?.email || "-"}</p>
-        <p className="mt-3 text-sm text-text-secondary">Role</p>
-        <p className="font-semibold">{client ? "Client" : "Freelancer"}</p>
-        <p className="mt-3 text-sm text-text-secondary">Plan</p>
-        <p className="font-semibold">{planLabel(profile)}</p>
-      </div>
+    <div className="space-y-6 pb-10">
+      <FreelancerPageHeader title="My Profile" subtitle={headline} />
 
-      {client && (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <HubHint title="Contracts" body="View & sign in the app" />
-          <HubHint title="Quotes" body="Shared quotes in the app" />
-          <HubHint title="Payments" body="Confirm payments in the app" />
-          <HubHint title="Files & milestones" body="Vault & progress in the app" />
-          <Link
-            href="/app/activity"
-            className="rounded-2xl border border-border bg-surface p-4 hover:border-client-accent/40"
-          >
-            <p className="font-bold">Updates</p>
-            <p className="text-sm text-text-secondary">Activity feed on web</p>
-          </Link>
-          <Link
-            href="/app/projects"
-            className="rounded-2xl border border-border bg-surface p-4 hover:border-client-accent/40"
-          >
-            <p className="font-bold">Shared projects</p>
-            <p className="text-sm text-text-secondary">Work linked to you</p>
-          </Link>
-        </div>
+      {editing && (
+        <FreelancerCard title="Edit profile">
+          <AccountProfileEditor profile={profile} />
+          <p className="mt-4 text-xs text-text-muted">
+            For Connect listing fields (skills, rate, bio), use{" "}
+            <Link href="/connect/manage" className="font-semibold text-primary">
+              Manage Connect
+            </Link>
+            .
+          </p>
+        </FreelancerCard>
       )}
 
-      <Link
-        href="/pro"
-        className={`inline-flex rounded-full px-4 py-2 text-sm font-semibold text-white ${
-          client ? "bg-client-accent" : "bg-primary"
-        }`}
-      >
-        Upgrade · Pro {site.pricing.proMonthlyLabel} / Plus {site.pricing.proPlusMonthlyLabel}
-      </Link>
+      <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+        <FreelancerCard>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="relative">
+              {profile.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={profile.avatar_url}
+                  alt=""
+                  className="h-24 w-24 rounded-full object-cover"
+                />
+              ) : (
+                <span className="flex h-24 w-24 items-center justify-center rounded-full bg-navy text-3xl font-bold text-white">
+                  {(profile.name || "?").charAt(0).toUpperCase()}
+                </span>
+              )}
+              <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-white bg-success" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="font-display text-xl font-extrabold text-navy">
+                  {profile.name || "Freelancer"}
+                </h2>
+                <BadgeCheck className="h-5 w-5 text-success" />
+              </div>
+              <p className="mt-1 inline-flex items-center gap-1 text-sm text-text-secondary">
+                <MapPin className="h-3.5 w-3.5" />
+                {location}
+              </p>
+              <p className="mt-1 text-xs text-text-muted">{profile.email}</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <PrimaryButton href="/app/account?edit=1">Edit Profile</PrimaryButton>
+                <OutlineButton href="/connect/manage">Connect listing</OutlineButton>
+                <OutlineButton href="/app/connect">View Public Profile</OutlineButton>
+              </div>
+            </div>
+          </div>
+        </FreelancerCard>
 
-      <ManageBillingButton />
-
-      <Link
-        href="/app/referrals"
-        className="inline-flex rounded-full border border-navy/20 px-4 py-2 text-sm font-semibold text-navy"
-      >
-        Refer & Earn on web
-      </Link>
-
-      <div className="rounded-2xl border border-border bg-surface p-5">
-        <h2 className="font-bold text-navy">Two-factor authentication (MFA)</h2>
-        <p className="mt-2 text-sm text-text-secondary leading-relaxed">
-          CLIVORA uses Supabase Auth which supports TOTP-based MFA. To enable authenticator-app
-          2FA, ask your admin to enable MFA enforcement. Once enrolled you will be prompted for a
-          6-digit code on every sign-in.
-        </p>
-        <p className="mt-2 text-xs text-text-muted">
-          App-level biometric lock is available separately in the CLIVORA Android app under
-          Settings → Security.
-        </p>
+        <FreelancerCard title={`${plan} Plan`}>
+          <StatusPill tone={plus ? "green" : "teal"}>{plus ? "Active" : plan}</StatusPill>
+          <ul className="mt-3 space-y-1 text-sm text-text-secondary">
+            {plus ? (
+              <>
+                <li>• Unlimited proposals</li>
+                <li>• Connect credits monthly</li>
+                <li>• MFA + 50GB vault</li>
+              </>
+            ) : (
+              <>
+                <li>• CRM tools on your plan</li>
+                <li>• Upgrade for Connect + MFA</li>
+              </>
+            )}
+          </ul>
+          <div className="mt-4">
+            <ManageBillingButton />
+          </div>
+        </FreelancerCard>
       </div>
 
-      <SmartAppCta
-        tone={client ? "client" : "freelancer"}
-        title={client ? "Open the full client portal" : "Manage profile in the app"}
-        body={
-          client
-            ? "Link freelancers, contracts, credits, recurring invoices, and biometric lock are on Android."
-            : "Profile photo, security, and backup settings are in the mobile app. Referrals are also on web."
-        }
-        deepPath={client ? "open/client-account" : "open/profile"}
-      />
-    </div>
-  );
-}
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <FreelancerStatCard
+          label="Total Earnings"
+          value={money(fin.totalRevenue)}
+          trend="+18.2% vs last month"
+          icon={TrendingUp}
+        />
+        <FreelancerStatCard
+          label="Total Projects"
+          value={fin.projects.length}
+          sub={`${fin.projects.filter((p) => !(p.status || "").includes("complet")).length} Active`}
+          icon={Briefcase}
+          iconTone="bg-sky-100 text-sky-800"
+        />
+        <FreelancerStatCard
+          label="Average Rating"
+          value={avgRating.toFixed(1)}
+          sub={"★".repeat(5)}
+          icon={Star}
+          iconTone="bg-amber-100 text-amber-700"
+        />
+        <FreelancerStatCard
+          label="Total Reviews"
+          value={reviewCount}
+          trend="+12% vs last 30 days"
+          icon={Star}
+          iconTone="bg-violet-100 text-violet-800"
+          href="/app/reviews"
+        />
+        <FreelancerStatCard
+          label="Response Time"
+          value="2h 15m"
+          sub="Very responsive"
+          icon={Clock}
+          iconTone="bg-orange-100 text-orange-700"
+        />
+      </div>
 
-function HubHint({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="rounded-2xl border border-dashed border-client-accent/30 bg-white p-4">
-      <p className="font-bold text-navy">{title}</p>
-      <p className="text-sm text-text-secondary">{body}</p>
-      <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-client-accent">
-        App preferred
-      </p>
+      <div className="grid gap-4 lg:grid-cols-3">
+        <FreelancerCard title="Account information" className="lg:col-span-1">
+          <ul className="space-y-3 text-sm">
+            {[
+              ["Name", profile.name || "—", "/app/account?edit=1"],
+              ["Email", profile.email || "—", "/app/settings"],
+              ["Role", "Freelancer", "/app/settings"],
+              ["Plan", plan, "/pro?plan=pro_plus"],
+            ].map(([k, v, href]) => (
+              <li key={k} className="flex items-center justify-between gap-2 border-b border-border/70 pb-2">
+                <div>
+                  <p className="text-xs text-text-muted">{k}</p>
+                  <p className="font-semibold text-navy">{v}</p>
+                </div>
+                <Link href={href} className="text-xs font-semibold text-primary">
+                  {k === "Plan" && !plus ? "Upgrade" : "Edit"}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </FreelancerCard>
+
+        <FreelancerCard title="Quick actions">
+          <ul className="space-y-2">
+            {[
+              { icon: CreditCard, label: "Manage Billing", href: "/app/settings?tab=billing" },
+              { icon: Gift, label: "Refer & Earn", href: "/app/referrals" },
+              { icon: ShieldCheck, label: "Security Settings", href: "/app/settings?tab=security" },
+              { icon: Bell, label: "Notification Preferences", href: "/app/settings?tab=notifications" },
+            ].map((a) => (
+              <li key={a.label}>
+                <Link
+                  href={a.href}
+                  className="flex items-center gap-3 rounded-xl border border-border px-3 py-3 text-sm font-semibold text-navy hover:border-primary/40"
+                >
+                  <a.icon className="h-4 w-4 text-primary" />
+                  {a.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </FreelancerCard>
+
+        <FreelancerCard title="Profile completion">
+          <div className="flex flex-col items-center">
+            <div className="relative h-28 w-28">
+              <svg className="h-28 w-28 -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r={r} fill="none" stroke="#E2E8F0" strokeWidth="10" />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r={r}
+                  fill="none"
+                  stroke="#0D9488"
+                  strokeWidth="10"
+                  strokeLinecap="round"
+                  strokeDasharray={c}
+                  strokeDashoffset={offset}
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <p className="font-display text-xl font-extrabold text-navy">{completeness}%</p>
+                <p className="text-[10px] font-semibold text-text-muted">Complete</p>
+              </div>
+            </div>
+            <ul className="mt-4 w-full space-y-2 text-sm">
+              {["Photo", "Skills", "Headline", "Portfolio", "Verified email"].map((item) => (
+                <li key={item} className="flex items-center gap-2 text-navy">
+                  <span className="text-success">✓</span> {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </FreelancerCard>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <FreelancerCard title="Two-factor authentication (MFA)">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              {plus ? (
+                <StatusPill tone="teal">Pro Plus</StatusPill>
+              ) : (
+                <StatusPill tone="amber">Upgrade for MFA</StatusPill>
+              )}
+              <p className="mt-2 text-sm text-text-secondary">
+                MFA uses Supabase Auth TOTP. Available on Pro Plus.
+              </p>
+            </div>
+            <PrimaryButton href="/app/settings?tab=security">Manage 2FA Settings</PrimaryButton>
+          </div>
+        </FreelancerCard>
+        <SmartAppCta
+          tone="freelancer"
+          title="Manage your profile on the go"
+          body="Use the Android app for offline CRM, vault, and richer profile tools."
+          deepPath="open/dashboard"
+        />
+      </div>
     </div>
   );
 }

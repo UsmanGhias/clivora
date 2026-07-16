@@ -17,6 +17,7 @@ import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_logo.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 import '../../shared/widgets/country_picker_field.dart';
+import '../../shared/widgets/step_progress_card.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -302,35 +303,37 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   onRefresh: _refreshVerification,
                 ),
                 const SizedBox(height: 24),
-                TextField(
+                ClivoraTextField(
                   controller: _nameController,
-                  decoration: const InputDecoration(labelText: 'FULL NAME', prefixIcon: Icon(Icons.person_outline)),
+                  label: 'Full Name',
+                  prefixIcon: Icons.person_outline,
                 ),
                 const SizedBox(height: 16),
-                TextField(
+                ClivoraTextField(
                   controller: _emailController,
+                  label: 'Email',
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(labelText: 'EMAIL', prefixIcon: Icon(Icons.email_outlined)),
+                  prefixIcon: Icons.email_outlined,
                 ),
                 const SizedBox(height: 16),
-                TextField(
+                ClivoraTextField(
                   controller: _phoneController,
+                  label: 'Phone',
+                  hint: 'Add your phone number',
                   keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(labelText: 'PHONE', prefixIcon: Icon(Icons.phone_outlined)),
+                  prefixIcon: Icons.phone_outlined,
                 ),
                 const SizedBox(height: 16),
-                TextField(
+                ClivoraTextField(
                   controller: _bioController,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    labelText: isClient ? 'ABOUT YOU' : 'BIO / TAGLINE',
-                    prefixIcon: const Icon(Icons.info_outline),
-                    hintText: isClient ? 'Tell freelancers about yourself…' : 'What you do, your niche…',
-                  ),
+                  label: isClient ? 'About You' : 'Bio / Tagline',
+                  hint: isClient ? 'Tell freelancers about yourself…' : 'Tell us about your business...',
+                  maxLines: 4,
+                  prefixIcon: Icons.info_outline,
                 ),
                 if (!isClient) ...[
                   const SizedBox(height: 20),
-                  Text('Skills', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                  Text('Skills', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
@@ -347,72 +350,112 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: TextField(
+                        child: ClivoraTextField(
                           controller: _skillInputController,
-                          textCapitalization: TextCapitalization.words,
-                          decoration: const InputDecoration(
-                            hintText: 'Add skill (e.g. Flutter, Design)',
-                            isDense: true,
-                          ),
+                          hint: 'Add skill (e.g. Flutter, Dart, UI/UX)',
+                          prefixIcon: Icons.auto_awesome_outlined,
                           onSubmitted: (_) => _addSkill(),
                         ),
                       ),
-                      IconButton(onPressed: _addSkill, icon: const Icon(Icons.add_circle_outline)),
+                      const SizedBox(width: 10),
+                      Material(
+                        color: ClivoraColors.primaryLight,
+                        borderRadius: BorderRadius.circular(14),
+                        child: InkWell(
+                          onTap: _addSkill,
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            width: 52,
+                            height: 52,
+                            alignment: Alignment.center,
+                            child: Container(
+                              width: 28,
+                              height: 28,
+                              decoration: const BoxDecoration(
+                                color: ClivoraColors.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.add, color: Colors.white, size: 18),
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ],
                 if (isClient) ...[
                   const SizedBox(height: 16),
-                  TextField(
+                  ClivoraTextField(
                     controller: _clientCompanyController,
-                    decoration: const InputDecoration(
-                      labelText: 'COMPANY / ORGANIZATION',
-                      prefixIcon: Icon(Icons.business_outlined),
-                    ),
+                    label: 'Company / Organization',
+                    prefixIcon: Icons.business_outlined,
                   ),
                   const SizedBox(height: 16),
-                  TextField(
+                  ClivoraTextField(
                     controller: _clientIndustryController,
-                    decoration: const InputDecoration(
-                      labelText: 'INDUSTRY',
-                      prefixIcon: Icon(Icons.category_outlined),
-                      hintText: 'e.g. Retail, Tech, Healthcare',
-                    ),
+                    label: 'Industry',
+                    hint: 'e.g. Retail, Tech, Healthcare',
+                    prefixIcon: Icons.category_outlined,
                   ),
                   const SizedBox(height: 16),
-                  TextField(
+                  ClivoraTextField(
                     controller: _clientWebsiteController,
+                    label: 'Website (optional)',
                     keyboardType: TextInputType.url,
-                    decoration: const InputDecoration(
-                      labelText: 'WEBSITE (optional)',
-                      prefixIcon: Icon(Icons.language_outlined),
-                    ),
+                    prefixIcon: Icons.language_outlined,
                   ),
                 ],
                 const SizedBox(height: 16),
-                TextField(
+                ClivoraTextField(
                   controller: _addressController,
-                  decoration: InputDecoration(
-                    labelText: isClient ? 'ADDRESS' : 'BUSINESS ADDRESS',
-                    prefixIcon: const Icon(Icons.location_on_outlined),
-                  ),
+                  label: isClient ? 'Address' : 'Business Address',
+                  hint: isClient ? null : 'Add your business address',
+                  prefixIcon: Icons.location_on_outlined,
                 ),
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    Expanded(child: TextField(controller: _cityController, decoration: const InputDecoration(labelText: 'CITY'))),
+                    Expanded(
+                      child: ClivoraTextField(
+                        controller: _cityController,
+                        label: 'City',
+                        hint: 'Enter city',
+                      ),
+                    ),
                     const SizedBox(width: 12),
-                    Expanded(child: TextField(controller: _postalController, decoration: const InputDecoration(labelText: 'POSTAL'))),
+                    Expanded(
+                      child: ClivoraTextField(
+                        controller: _postalController,
+                        label: 'Postal',
+                        hint: 'Enter postal code',
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
                 CountryPickerField(value: _country, onChanged: (v) => setState(() => _country = v)),
                 const SizedBox(height: 32),
-                ElevatedButton(onPressed: _save, child: const Text('Save Profile')),
-                const SizedBox(height: 16),
-                OutlinedButton(
-                  onPressed: _signOut,
-                  child: const Text('Sign Out', style: TextStyle(color: ClivoraColors.errorRed)),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _saving ? null : _save,
+                    child: _saving
+                        ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : Text(isClient ? 'Save Profile' : 'Save Changes'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: _signOut,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: ClivoraColors.errorRed,
+                      side: BorderSide(color: ClivoraColors.primary.withValues(alpha: 0.35)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: const Text('Sign Out', style: TextStyle(color: ClivoraColors.errorRed, fontWeight: FontWeight.w700)),
+                  ),
                 ),
               ],
             ),

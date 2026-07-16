@@ -15,7 +15,7 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
-import { getProfile, isClientAccount, planLabel } from "@/lib/profile";
+import { getProfile, isClientAccount, isPro, planLabel } from "@/lib/profile";
 import { site } from "@/lib/site";
 import { SmartAppCta } from "@/components/app/SmartAppCta";
 import { AskAi } from "@/components/app/AskAi";
@@ -24,8 +24,9 @@ import { getHubKpis } from "@/lib/hub-kpis";
 /** Freelancer hub, mirrors Flutter /more with app-preferred tools called out. */
 export default async function HubPage() {
   const profile = await getProfile();
-  if (isClientAccount(profile)) redirect("/app/account");
+  if (isClientAccount(profile)) redirect("/app/team");
   const plan = planLabel(profile);
+  const pro = isPro(profile);
   const kpis = profile?.id
     ? await getHubKpis(profile.id)
     : { overdueInvoices: 0, pendingConnect: 0, profileCompleteness: null };
@@ -135,7 +136,7 @@ export default async function HubPage() {
         </div>
       </div>
 
-      <AskAi />
+      <AskAi isPro={pro} />
 
       <SmartAppCta
         title="Open the full freelancer toolkit"

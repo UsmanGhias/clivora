@@ -396,7 +396,11 @@ class SyncOutboxService {
         await ref.read(cloudCrmRepositoryProvider).syncAllForSignedInUser();
         return true;
       default:
-        return true;
+        // Never treat unknown operations as success (master plan P0).
+        debugPrint('Sync outbox permanent error: unknown kind "${item.kind}"');
+        ref.read(syncFailureMessageProvider.notifier).state =
+            'A queued change could not sync (unknown type). Contact support if this persists.';
+        return false;
     }
   }
 
