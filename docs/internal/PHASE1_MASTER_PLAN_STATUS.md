@@ -1,62 +1,34 @@
-# CLIVORA — Phase 1 status (Master Production Plan)
+# CLIVORA — Phase 1–5 launch readiness status
 
-**Date:** 16 July 2026 (updated)  
-**Source plan:** `docs/internal/CLIVORA_CURSOR_MASTER_PRODUCTION_IMPROVEMENT_PLAN.md`  
-**Repos:** `UsmanGhias/clivora` (source of truth) · `UsmanGhias/clivora-web` (Vercel mirror via `web/push-to-clivora-web.sh`)
+**Date:** 16 July 2026  
+**Branch:** `cursor/cloud-agent-1784230796340-n5s0o` (single combined PR)
 
-## Legend
+| Phase | Status |
+|-------|--------|
+| 1 Drift sync outbox + conflicts + Sync Center | **Done** (schema v18, tests pass) |
+| 2 Private storage buckets + inventory | **Done** (migration applied on Clivora) |
+| 3 Truthful UI / dead metrics | **Done** (web) |
+| 4 Calendar / contracts CTA | **Done** (minimal) |
+| 5 Client needs-action home | **Done** |
+| Stripe / pentest / funded escrow | Deferred |
+| Signed AAB / APK in this cloud env | Blocked (no Android SDK) — build locally |
 
-| Status | Meaning |
-|--------|---------|
-| Already Done | Present and working; do not rebuild |
-| Needs Improvement | Exists with known gaps |
-| Deferred | Explicitly out of scope for now |
+## Local Android release commands
 
-## Payments
+```bash
+flutter pub get
+flutter analyze
+flutter test
+flutter build appbundle --release
+flutter build apk --release
+```
 
-| Item | Status |
-|------|--------|
-| No live Stripe/gateway | Already Done (Coming soon UI) |
-| Manual JazzCash / bank | Already Done |
-| Play Billing | Already Done |
-| Live escrow funding | Deferred |
+## Web release
 
-## P0 Privacy / storage
+```bash
+cd web && npm ci && npm run lint && npm run typecheck && npm run build
+bash push-to-clivora-web.sh
+```
 
-| Item | Status |
-|------|--------|
-| chat-attachments private + owner-only | **Fixed** — migration `p0_chat_storage_owner_only` on Clivora |
-| Signed URL TTL 1h | Fixed (Flutter) |
-| Other private buckets | Needs Improvement |
-
-## P0 Sync
-
-| Item | Status |
-|------|--------|
-| Unknown outbox kind no longer success | Fixed |
-| Drift-backed outbox | Needs Improvement |
-
-## UI / responsive (this push)
-
-| Item | Status |
-|------|--------|
-| Marketing responsive (Navbar lg, Connect, Hero) | Done |
-| Admin FilterBar search + CSV export | Done |
-| Dead Export/Import/Add / fake backups | Removed or wired |
-| Freelancer withdraw + honest earnings | Done |
-| Client shortlist + invoice CSV + notif prefs | Done |
-
-## Deferred by owner
-
-- Live Stripe
-- Strix / production pentest
-
-## Next
-
-1. Drift outbox + conflict re-upload  
-2. Remaining private storage  
-3. Admin settings server API  
-4. `bash web/push-to-clivora-web.sh`  
-5. Flutter screenshot bug pass  
-
-WhatsApp brief: `docs/internal/WHATSAPP_DONE_LEFT_IDEA.md`
+WhatsApp brief: `docs/internal/WHATSAPP_DONE_LEFT_IDEA.md`  
+Storage inventory: `docs/internal/STORAGE_BUCKET_INVENTORY.md`

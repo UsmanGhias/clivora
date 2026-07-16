@@ -579,6 +579,12 @@ class MoreScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           const SectionHeader(title: 'Workspace settings'),
           _SettingsTile(
+            icon: Icons.sync_outlined,
+            label: 'Sync Center',
+            subtitle: 'Pending changes, conflicts, last sync time',
+            onTap: () => context.push('/sync-center'),
+          ),
+          _SettingsTile(
             icon: Icons.person_outline,
             label: 'My Profile',
             subtitle: 'Photo, name, email, address',

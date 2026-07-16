@@ -438,3 +438,37 @@ class InvoicePayments extends Table {
   DateTimeColumn get paidAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
+
+/// Durable offline sync queue (replaces SharedPreferences outbox).
+class SyncOutboxEntries extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  /// Local Drift user id; null only for pre-auth / legacy migrated rows.
+  IntColumn get ownerUserId => integer().nullable().references(Users, #id)();
+  /// Stable idempotency / operation id (UUID).
+  TextColumn get operationId => text()();
+  TextColumn get kind => text()();
+  TextColumn get payloadJson => text().withDefault(const Constant('{}'))();
+  /// pending | processing | retrying | conflicted | permanently_failed | completed
+  TextColumn get status => text().withDefault(const Constant('pending'))();
+  IntColumn get retries => integer().withDefault(const Constant(0))();
+  DateTimeColumn get nextAttemptAt => dateTime().nullable()();
+  TextColumn get lastError => text().nullable()();
+  /// Soft-delete / entity tombstone marker when kind is a delete op.
+  BoolColumn get isTombstone => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get completedAt => dateTime().nullable()();
+}
+
+/// Pending Keep-local / Take-cloud conflict records.
+class SyncConflictEntries extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get ownerUserId => integer().nullable().references(Users, #id)();
+  TextColumn get entityType => text()();
+  IntColumn get localId => integer()();
+  TextColumn get localStatus => text().withDefault(const Constant(''))();
+  TextColumn get cloudStatus => text().withDefault(const Constant(''))();
+  TextColumn get shareId => text().nullable()();
+  TextColumn get cloudPayloadJson => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
