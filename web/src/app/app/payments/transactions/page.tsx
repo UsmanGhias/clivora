@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getProfile, isClientAccount } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 import { ClientCard, ClientPageHeader, money } from "@/components/client/ui";
+import { PaymentDisclaimer } from "@/components/payments/PaymentDisclaimer";
 import { ArrowLeftRight } from "lucide-react";
 
 export const metadata = { title: "Transactions" };
@@ -39,6 +40,7 @@ export default async function TransactionsPage() {
         subtitle="A chronological view of invoice-related payment activity."
         icon={ArrowLeftRight}
       />
+      <PaymentDisclaimer />
       <ClientCard>
         {rows.length === 0 ? (
           <p className="text-sm text-text-secondary">No transactions yet.</p>

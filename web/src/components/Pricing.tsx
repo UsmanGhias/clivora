@@ -40,7 +40,7 @@ export function Pricing() {
     <section id="pricing" className="relative py-24 lg:py-32">
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-primary/5" />
 
-      <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
+      <div className="relative mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
         <AnimatedSection className="text-center">
           <span className="text-sm font-semibold uppercase tracking-widest text-primary">
             Pricing

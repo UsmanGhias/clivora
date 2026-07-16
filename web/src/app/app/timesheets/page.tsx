@@ -206,7 +206,7 @@ export default async function TimesheetsPage() {
       supabase
         .from("crm_time_entries")
         .select(
-          "id, owner_uid, project_id, customer_id, description, hours, date, status, minutes, work_date, approval_status, created_at",
+          "id, owner_uid, project_id, customer_id, description, hours, date, status, minutes, work_date, approval_status, hourly_rate, created_at",
         )
         .eq("owner_uid", uid)
         .order("created_at", { ascending: false })
@@ -223,7 +223,11 @@ export default async function TimesheetsPage() {
   const billable = entries
     .filter((e) => (e.status || "").toLowerCase() !== "rejected")
     .reduce((s, e) => s + (Number(e.hours) || 0), 0);
-  const earnings = billable * 80;
+  const earnings = entries.reduce((s, e) => {
+    const hours = Number(e.hours) || 0;
+    const rate = Number(e.hourly_rate) || 0;
+    return s + hours * rate;
+  }, 0);
   const trackedDays = new Set(entries.map((e) => e.date).filter(Boolean)).size;
 
   const hoursLabel = `${Math.floor(totalHours)}h ${Math.round((totalHours % 1) * 60)
@@ -233,11 +237,44 @@ export default async function TimesheetsPage() {
     .toString()
     .padStart(2, "0")}m`;
 
+  const hoursByProject = new Map<string, number>();
+  for (const e of entries) {
+    if (!e.project_id) continue;
+    hoursByProject.set(e.project_id, (hoursByProject.get(e.project_id) ?? 0) + (Number(e.hours) || 0));
+  }
+  const topProjects = [...hoursByProject.entries()]
+    .map(([id, hours]) => ({
+      id,
+      name: projects.find((p) => p.id === id)?.name || "Project",
+      hours,
+    }))
+    .sort((a, b) => b.hours - a.hours)
+    .slice(0, 4);
+  const topHoursTotal = topProjects.reduce((s, p) => s + p.hours, 0);
+
+  const monthBuckets = new Map<string, number>();
+  for (const e of entries) {
+    const d = e.date || e.work_date;
+    if (!d) continue;
+    const key = d.slice(0, 7);
+    monthBuckets.set(key, (monthBuckets.get(key) ?? 0) + (Number(e.hours) || 0));
+  }
+  const monthlySeries = [...monthBuckets.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(-6)
+    .map(([key, amount]) => {
+      const [y, m] = key.split("-");
+      const label = new Date(Number(y), Number(m) - 1, 1).toLocaleString(undefined, {
+        month: "short",
+      });
+      return { month: label, amount: Math.round(amount * 10) / 10 };
+    });
+
   return (
     <div className="space-y-6 pb-10">
       <FreelancerPageHeader
         title="Timesheets"
-        subtitle="Log billable time, track productivity, and export weekly sheets."
+        subtitle="Log billable time, track productivity, and review weekly sheets."
         actions={
           <>
             <PrimaryButton href="#log-time">
@@ -246,7 +283,7 @@ export default async function TimesheetsPage() {
             </PrimaryButton>
             <OutlineButton href="/app/analytics">
               <Download className="h-4 w-4" />
-              Export
+              View analytics
             </OutlineButton>
             <OutlineButton href="/app/settings">
               <Settings2 className="h-4 w-4" />
@@ -257,7 +294,7 @@ export default async function TimesheetsPage() {
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <FreelancerStatCard label="Total Hours" value={hoursLabel} trend="+15%" icon={Clock} />
+        <FreelancerStatCard label="Total Hours" value={hoursLabel} icon={Clock} />
         <FreelancerStatCard
           label="Billable Hours"
           value={billableLabel}
@@ -272,27 +309,31 @@ export default async function TimesheetsPage() {
         <FreelancerStatCard
           label="Earnings"
           value={money(earnings)}
-          trend={earnings > 0 ? undefined : undefined}
+          sub={earnings > 0 ? "From logged hourly rates" : "Set hourly rates on entries"}
           icon={Clock}
           iconTone="bg-emerald-100 text-emerald-700"
         />
         <FreelancerStatCard
           label="Tracked Days"
           value={trackedDays}
-          sub="This week"
+          sub="With logged entries"
         />
         <FreelancerStatCard
           label="Projects"
           value={projects.length}
-          sub="Active"
+          sub="In CRM"
           href="/app/projects"
         />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1fr_300px]">
         <div className="space-y-4">
-          <FreelancerCard title="Weekly time overview">
-            <MonthlyBarChart total={totalHours * 100} />
+          <FreelancerCard title="Monthly time overview">
+            <MonthlyBarChart
+              series={monthlySeries}
+              valueLabel="Hours"
+              formatAsMoney={false}
+            />
           </FreelancerCard>
           <div id="log-time">
             <TimesheetsClient initial={entries} ownerUid={uid} />
@@ -305,33 +346,38 @@ export default async function TimesheetsPage() {
             projectId={projects[0]?.id}
           />
           <DonutChart
-            title="Today’s summary"
+            title="Hours summary"
             slices={
               totalHours > 0
                 ? [
-                    { name: "Billable", value: Math.round(billable), color: "#0D9488" },
+                    { name: "Billable", value: Math.round(billable * 10) / 10, color: "#0D9488" },
                     {
                       name: "Non-billable",
-                      value: Math.round(Math.max(0, totalHours - billable)),
+                      value: Math.round(Math.max(0, totalHours - billable) * 10) / 10,
                       color: "#94A3B8",
                     },
                   ].filter((s) => s.value > 0)
                 : []
             }
-            centerLabel="Today"
+            centerLabel="Hours"
           />
           <FreelancerCard title="Top projects by time">
             <ul className="space-y-3">
-              {projects.length === 0 ? (
-                <li className="text-sm text-text-secondary">No projects yet</li>
+              {topProjects.length === 0 ? (
+                <li className="text-sm text-text-secondary">
+                  Log time against projects to see a breakdown.
+                </li>
               ) : (
-                projects.slice(0, 4).map((p, i) => {
-                  const pct = Math.max(8, Math.round(100 / Math.min(4, projects.length)) - i * 8);
+                topProjects.map((p) => {
+                  const pct =
+                    topHoursTotal > 0 ? Math.round((p.hours / topHoursTotal) * 100) : 0;
                   return (
                     <li key={p.id}>
                       <div className="flex justify-between text-sm">
                         <span className="font-semibold text-navy">{p.name}</span>
-                        <span className="text-text-muted">{pct}%</span>
+                        <span className="text-text-muted">
+                          {p.hours.toFixed(1)}h · {pct}%
+                        </span>
                       </div>
                       <div className="mt-1 h-2 rounded-full bg-background">
                         <div
@@ -348,7 +394,7 @@ export default async function TimesheetsPage() {
           <FreelancerCard title="Productivity score">
             <p className="font-display text-4xl font-extrabold text-primary">
               {totalHours > 0
-                ? `${Math.min(99, Math.round((billable / Math.max(0.01, totalHours)) * 100))}%`
+                ? `${Math.min(100, Math.round((billable / Math.max(0.01, totalHours)) * 100))}%`
                 : "—"}
             </p>
             <p className="mt-2 text-sm text-text-secondary">

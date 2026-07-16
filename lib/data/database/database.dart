@@ -43,6 +43,8 @@ part 'database.g.dart';
     PurchaseOrders,
     Credits,
     InvoicePayments,
+    SyncOutboxEntries,
+    SyncConflictEntries,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -51,7 +53,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 18;
 
   bool _databaseRepaired = false;
 
@@ -165,6 +167,10 @@ class AppDatabase extends _$AppDatabase {
             if (!await _columnExists('invoices', 'quote_id')) {
               await m.addColumn(invoices, invoices.quoteId);
             }
+          }
+          if (from < 18) {
+            await m.createTable(syncOutboxEntries);
+            await m.createTable(syncConflictEntries);
           }
         },
       );
@@ -898,6 +904,124 @@ class AppDatabase extends _$AppDatabase {
           ..where((t) => t.ownerUserId.equals(ownerUserId))
           ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
         .get();
+  }
+
+  // ── Sync outbox / conflicts (schema v18) ─────────────────────────────
+
+  Future<int> insertSyncOutbox(SyncOutboxEntriesCompanion entry) =>
+      into(syncOutboxEntries).insert(entry);
+
+  Future<List<SyncOutboxEntry>> listActiveOutbox({int? ownerUserId}) {
+    final q = select(syncOutboxEntries)
+      ..where(
+        (t) =>
+            t.status.isNotIn(const ['completed']) &
+            (ownerUserId == null
+                ? const Constant(true)
+                : t.ownerUserId.equals(ownerUserId) | t.ownerUserId.isNull()),
+      )
+      ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]);
+    return q.get();
+  }
+
+  Future<List<SyncOutboxEntry>> listDueOutbox({int? ownerUserId}) async {
+    final now = DateTime.now();
+    final rows = await listActiveOutbox(ownerUserId: ownerUserId);
+    return rows
+        .where(
+          (r) =>
+              r.status == 'pending' ||
+              r.status == 'retrying' ||
+              (r.status == 'processing' &&
+                  r.updatedAt.isBefore(now.subtract(const Duration(minutes: 5)))),
+        )
+        .where((r) => r.nextAttemptAt == null || !r.nextAttemptAt!.isAfter(now))
+        .toList();
+  }
+
+  Future<bool> updateSyncOutbox(SyncOutboxEntry entry) =>
+      update(syncOutboxEntries).replace(entry);
+
+  Future<int> clearCompletedOutboxOlderThan(Duration age) {
+    final cutoff = DateTime.now().subtract(age);
+    return (delete(syncOutboxEntries)
+          ..where(
+            (t) =>
+                t.status.equals('completed') & t.completedAt.isSmallerThanValue(cutoff),
+          ))
+        .go();
+  }
+
+  Future<int> deleteOutboxForUser(int ownerUserId) =>
+      (delete(syncOutboxEntries)..where((t) => t.ownerUserId.equals(ownerUserId))).go();
+
+  Future<int> countPendingOutbox({int? ownerUserId}) async {
+    final rows = await (select(syncOutboxEntries)
+          ..where(
+            (t) =>
+                t.status.isIn(const ['pending', 'processing', 'retrying', 'conflicted']) &
+                (ownerUserId == null
+                    ? const Constant(true)
+                    : t.ownerUserId.equals(ownerUserId) | t.ownerUserId.isNull()),
+          ))
+        .get();
+    return rows.length;
+  }
+
+  Future<DateTime?> lastSuccessfulSyncAt({int? ownerUserId}) async {
+    final rows = await (select(syncOutboxEntries)
+          ..where(
+            (t) =>
+                t.status.equals('completed') &
+                (ownerUserId == null
+                    ? const Constant(true)
+                    : t.ownerUserId.equals(ownerUserId) | t.ownerUserId.isNull()),
+          )
+          ..orderBy([(t) => OrderingTerm.desc(t.completedAt)])
+          ..limit(1))
+        .get();
+    if (rows.isEmpty) return null;
+    return rows.first.completedAt ?? rows.first.updatedAt;
+  }
+
+  Future<int> insertSyncConflict(SyncConflictEntriesCompanion entry) =>
+      into(syncConflictEntries).insert(entry);
+
+  Future<List<SyncConflictEntry>> listSyncConflicts({int? ownerUserId}) {
+    final q = select(syncConflictEntries)
+      ..where(
+        (t) => ownerUserId == null
+            ? const Constant(true)
+            : t.ownerUserId.equals(ownerUserId) | t.ownerUserId.isNull(),
+      )
+      ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]);
+    return q.get();
+  }
+
+  Future<int> deleteSyncConflict({
+    required String entityType,
+    required int localId,
+    int? ownerUserId,
+  }) {
+    return (delete(syncConflictEntries)
+          ..where(
+            (t) =>
+                t.entityType.equals(entityType) &
+                t.localId.equals(localId) &
+                (ownerUserId == null
+                    ? const Constant(true)
+                    : t.ownerUserId.equals(ownerUserId) | t.ownerUserId.isNull()),
+          ))
+        .go();
+  }
+
+  Future<int> deleteAllSyncConflicts({int? ownerUserId}) {
+    if (ownerUserId == null) {
+      return delete(syncConflictEntries).go();
+    }
+    return (delete(syncConflictEntries)
+          ..where((t) => t.ownerUserId.equals(ownerUserId) | t.ownerUserId.isNull()))
+        .go();
   }
 }
 

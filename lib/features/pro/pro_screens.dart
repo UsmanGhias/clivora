@@ -630,7 +630,7 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-            if (status == 'sent')
+            if (status == 'draft' || status == 'sent')
               TextButton(
                 onPressed: () async {
                   await _shareContractWithClient(ctx, contract, contentCtrl.text.trim(), attachmentPath);
