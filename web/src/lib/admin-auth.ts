@@ -88,7 +88,9 @@ export async function requireAdmin(options: { requireAal2?: boolean } = {}) {
     );
   }
 
-  if (options.requireAal2 && aal.currentLevel !== "aal2") {
+  const currentLevel = aal.currentLevel === "aal2" ? "aal2" : "aal1";
+
+  if (options.requireAal2 && currentLevel !== "aal2") {
     throw new AdminAuthError(
       "Two-factor authentication is required for this action.",
       403,
@@ -96,19 +98,10 @@ export async function requireAdmin(options: { requireAal2?: boolean } = {}) {
     );
   }
 
-  const level = aal.currentLevel;
-  if (level !== "aal1" && level !== "aal2") {
-    throw new AdminAuthError(
-      "Admin authentication is temporarily unavailable.",
-      503,
-      "AUTH_UNAVAILABLE",
-    );
-  }
-
   return {
     id: user.id,
     email: user.email ?? "",
-    assuranceLevel: level as AdminPrincipal["assuranceLevel"],
+    assuranceLevel: currentLevel,
   } satisfies AdminPrincipal;
 }
 

@@ -5,11 +5,6 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Check, Shield, Sparkles, HardDrive } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase-browser";
-import {
-  OFFICIAL_EMAIL,
-  PRO_PLUS_PRICE_USD,
-  PRO_PRICE_USD,
-} from "@/lib/pricing";
 import { site } from "@/lib/site";
 import { SubPageChrome } from "@/components/app/SubPageChrome";
 import { Logo } from "@/components/ui/Logo";
@@ -51,10 +46,10 @@ export default function ProCheckout() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
-  const [currentPlan, setCurrentPlan] = useState<string | null>(null)
+  const [currentPlan, setCurrentPlan] = useState<string | null>(null);
   const [loadingPlan, setLoadingPlan] = useState(true);
 
-  const amount = plan === "pro_plus" ? PRO_PLUS_PRICE_USD : PRO_PRICE_USD;
+  const amount = plan === "pro_plus" ? site.pricing.proPlusMonthlyUsd : site.pricing.proMonthlyUsd;
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const isClient = accountType === "client";
 
@@ -236,7 +231,7 @@ export default function ProCheckout() {
                 onClick={() => setPlan("pro_plus")}
                 className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white"
               >
-                See Pro Plus · ${PRO_PLUS_PRICE_USD}/mo
+                See Pro Plus · ${site.pricing.proPlusMonthlyUsd}/mo
               </button>
               <Link href="/app" className="rounded-xl border border-navy/20 px-4 py-2 text-sm font-semibold text-navy">
                 Back to app
@@ -329,7 +324,7 @@ export default function ProCheckout() {
               <PlanOption
                 active={plan === "pro"}
                 title="Pro"
-                price={`$${PRO_PRICE_USD}/mo`}
+                price={`$${site.pricing.proMonthlyUsd}/mo`}
                 blurb={`${site.proLimits.fileVaultGb}GB vault · CRM unlimited`}
                 disabled={alreadyPro}
                 onClick={() => !alreadyPro && setPlan("pro")}
@@ -337,7 +332,7 @@ export default function ProCheckout() {
               <PlanOption
                 active={plan === "pro_plus"}
                 title="Pro Plus"
-                price={`$${PRO_PLUS_PRICE_USD}/mo`}
+                price={`$${site.pricing.proPlusMonthlyUsd}/mo`}
                 blurb={`All Pro + Connect + MFA · ${site.proPlusLimits.fileVaultGb}GB`}
                 badge="Best value"
                 onClick={() => setPlan("pro_plus")}
@@ -444,8 +439,8 @@ export default function ProCheckout() {
             </label>
             <div className="rounded-xl bg-teal-50 px-3 py-2 text-xs text-text-secondary">
               Amount due: <strong className="text-navy">${amount} USD</strong>
-              {plan === "pro_plus" && " · Pro Plus includes all Pro features"}. Email {OFFICIAL_EMAIL}{" "}
-              if approval is delayed.
+              {plan === "pro_plus" && " · Pro Plus includes all Pro features"}. Email{" "}
+              {site.company.email} if approval is delayed.
             </div>
             {error && <p className="rounded-lg bg-error/10 px-3 py-2 text-sm text-error">{error}</p>}
             <button
