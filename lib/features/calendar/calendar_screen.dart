@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/constants/plan_features.dart';
 import '../../core/utils/navigation_helper.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../data/providers/app_providers.dart';
@@ -186,14 +185,22 @@ class _MonthGrid extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
           child: Container(
             decoration: BoxDecoration(
-              color: isSelected ? ClivoraColors.primary.withValues(alpha: 0.15) : null,
-              border: isToday ? Border.all(color: ClivoraColors.primary, width: 1.5) : null,
+              color: isSelected ? ClivoraColors.primary : null,
+              border: !isSelected && isToday
+                  ? Border.all(color: ClivoraColors.primary, width: 1.5)
+                  : null,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('$day', style: TextStyle(fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500)),
+                Text(
+                  '$day',
+                  style: TextStyle(
+                    fontWeight: isSelected || isToday ? FontWeight.w800 : FontWeight.w500,
+                    color: isSelected ? Colors.white : null,
+                  ),
+                ),
                 if (hasEvent)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -201,7 +208,10 @@ class _MonthGrid extends StatelessWidget {
                           width: 5,
                           height: 5,
                           margin: const EdgeInsets.only(top: 2, left: 1, right: 1),
-                          decoration: BoxDecoration(color: e.color, shape: BoxShape.circle),
+                          decoration: BoxDecoration(
+                            color: isSelected ? Colors.white : e.color,
+                            shape: BoxShape.circle,
+                          ),
                         )).toList(),
                   ),
               ],

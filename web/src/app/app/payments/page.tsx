@@ -11,11 +11,11 @@ import {
 import { getProfile, isClientAccount } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 import {
-  ClientCard,
   ClientPageHeader,
   ClientStatCard,
   money,
 } from "@/components/client/ui";
+import { PaymentDisclaimer } from "@/components/payments/PaymentDisclaimer";
 
 export const metadata = { title: "Payments" };
 
@@ -67,6 +67,8 @@ export default async function PaymentsOverviewPage() {
         icon={Wallet}
       />
 
+      <PaymentDisclaimer />
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <ClientStatCard label="Total volume" value={money(total)} icon={Wallet} iconTone="bg-client-surface text-client-accent" />
         <ClientStatCard label="Paid" value={money(paid)} icon={CheckCircle2} iconTone="bg-emerald-100 text-emerald-700" />
@@ -101,22 +103,6 @@ export default async function PaymentsOverviewPage() {
           );
         })}
       </div>
-
-      <ClientCard title="Aging snapshot">
-        <div className="grid gap-3 sm:grid-cols-4">
-          {[
-            { label: "Current", value: money(pending * 0.55) },
-            { label: "1–30 days", value: money(pending * 0.25 + overdue * 0.4) },
-            { label: "31–60 days", value: money(overdue * 0.35) },
-            { label: "60+ days", value: money(overdue * 0.25) },
-          ].map((b) => (
-            <div key={b.label} className="rounded-xl bg-client-surface px-3 py-3">
-              <p className="text-[10px] font-bold uppercase text-text-muted">{b.label}</p>
-              <p className="mt-1 font-bold text-navy">{b.value}</p>
-            </div>
-          ))}
-        </div>
-      </ClientCard>
     </div>
   );
 }

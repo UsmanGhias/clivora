@@ -20,6 +20,7 @@ import {
   StatusPill,
   money,
 } from "@/components/freelancer/ui";
+import { PaymentDisclaimer } from "@/components/payments/PaymentDisclaimer";
 
 export const metadata = { title: "Earnings" };
 
@@ -72,6 +73,8 @@ export default async function EarningsPage() {
           </>
         }
       />
+
+      <PaymentDisclaimer />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <FreelancerStatCard
@@ -203,8 +206,8 @@ export default async function EarningsPage() {
 
           <FreelancerCard title="How you get paid">
             <p className="mb-3 text-sm text-text-secondary">
-              Payout gateways are coming soon. Track earnings from paid invoices in CLIVORA; settle
-              with clients off-platform for now.
+              CLIVORA does not currently process client-to-freelancer payments. Track earnings from
+              invoices here; settle funds with clients off-platform for now.
             </p>
             <ul className="space-y-3">
               <li className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5">

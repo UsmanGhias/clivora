@@ -3,93 +3,58 @@
 **Updated:** 16 July 2026  
 **Live:** https://clivora.codcrafters.org  
 **Repos:** github.com/UsmanGhias/clivora · github.com/UsmanGhias/clivora-web  
-**Company:** CODCrafters  
 
 ---
 
-## 1. The idea (copy/paste for other AIs)
+## Idea
 
-CLIVORA is a **business operating system for freelancers, agencies, and clients**, not only a job board.
-
-After a hire (optional **CLIVORA Connect** marketplace), work continues in the **same product**: CRM, projects, invoices, messages, meetings, team, analytics · on **Android (offline-first Flutter)** + **Web (Next.js)** · one **Supabase** account.
-
-**USP**
-- **$0 platform fee** on deals (subscription, not commission)
-- **Private contact** until mutual accept on Connect
-- **Browse free** · contact/post = **Pro Plus**
-- Plans: Free · Pro (~$9) · Pro Plus (~$19)
-- Auth = **Supabase only** (Google + email)
-- Payments today: **manual JazzCash/bank** + **Google Play** on Android · **no live card gateway**
-
-Ask any AI: “Using this brief + done/left lists, propose the highest-impact next 5 improvements without rebuilding Done items.”
+CLIVORA = freelancer/agency **business OS** + optional **$0-fee Connect** marketplace. Android offline-first + Next.js web, one Supabase account. Monetize subscriptions (Free / Pro $9 / Pro Plus $19), not take rates. Auth = Supabase only. Payments today = JazzCash/manual + Google Play — **no live card gateway**.
 
 ---
 
-## 2. DONE (this push)
+## DONE (this release candidate push)
 
-### Supabase (Clivora project only — `jtzjwgovqczlccyeujhq`)
-- Migration **chat-attachments private + owner-folder only**
+### Phase 1 — Offline sync integrity
+- Drift `sync_outbox_entries` + `sync_conflict_entries` (schema **v18**)
+- One-time SharedPreferences → Drift migration
+- States: pending / processing / retrying / conflicted / permanently_failed / completed
+- Idempotency keys (UUID), exponential backoff, max 8 retries
+- Unknown kinds → permanently_failed (retained, never success)
+- Keep local re-uploads full CRM record; Take cloud applies cloud fields
+- Sync Center screen (`/sync-center`) + logout clears user queue
+- Unit tests for outbox table / failure retention / conflict CRUD
 
-### Marketing / home (responsive)
-- Connect comparison: mobile cards + desktop table
-- Navbar: hamburger until `lg` (no mid-width overcrowding)
-- Connect pillars: 1-col until `md`
-- Pricing banner stacks on small screens
-- Hero tracking uses `sm:` (no invalid `xs:`)
+### Phase 2 — Storage
+- Inventory doc + migration creating private buckets (contracts, invoice-docs, project-files, identity, disputes, support, temp-exports) with owner-folder RLS
+- Avatars / portfolio thumbs public read; chat-attachments already private
 
-### Admin
-- FilterBar search wired across list pages + Reset clears query
-- Dead Export/Import/Add hidden unless handler provided; CSV export where data exists
-- Overview “Export report” downloads KPI CSV
-- Settings Save → browser draft (no fake backup buttons)
-- Support page: no fake ticket rows
+### Phase 3 — Truthful UI
+- Removed fake MoM %, demo charts, fake escrow held, admin “All systems operational”
+- Payment disclaimer on invoices/earnings/payments surfaces
+- Marketing responsive polish continued
 
-### Freelancer
-- Proposal **Withdraw** updates Supabase status
-- Earnings: removed fake % withdrawn/available; honest labels; View invoices CTA
-- Stripe “Connect” / fake gateway Connected badges removed
+### Phase 4 — Flutter blockers
+- Calendar selected vs today styling clarified
+- Contracts Send CTA works for drafts
 
-### Client
-- Proposal **Shortlist** updates Supabase
-- Settings: real plan/account copy; notification prefs persist in localStorage
-- Invoice Export CSV works; dead Filters/Status buttons removed
-- Team / prefs / apps link to real routes
+### Phase 5 — Client needs-action
+- Client home “Needs your action” from real invoice/proposal/message counts
 
-### Deferred on purpose
-- Live Stripe / card gateways
-- Strix / production pentest
+### Deferred (on purpose)
+- Live Stripe / funded escrow / pentest / Meilisearch / iOS / major redesign
 
 ---
 
-## 3. LEFT (next phases — honest)
+## LEFT before hard launch gate
 
-- [ ] Drift-backed sync outbox (still SharedPreferences)
-- [ ] Project conflict “Keep local” must re-upload
-- [ ] Private policies for remaining storage buckets
-- [ ] Admin server-side settings API (draft is local only)
-- [ ] Push web mirror: `cd web && bash push-to-clivora-web.sh`
-- [ ] Client needs-action home polish
-- [ ] Timesheet/analytics fake trend % cleanup where still present
-- [ ] Flutter screenshot bugs (calendar, coach marks, contracts CTA, etc.)
+- [ ] Relationship-based storage ACL (shared project/invoice files)
+- [ ] Full RC test matrix on separate role accounts
+- [ ] Signed AAB Play internal track upgrade test
+- [ ] `cd web && bash push-to-clivora-web.sh` after merge
+- [ ] Flutter coach-mark TalkBack / deep-link edge cases retest
 
 ---
 
-## 4. How to ask other AIs for improvements
+## Ask other AIs
 
-Paste:
-1. This file  
-2. `docs/internal/CLIVORA-DONE-WORK-INVENTORY.md`  
-3. `docs/internal/CLIVORA_CURSOR_MASTER_PRODUCTION_IMPROVEMENT_PLAN.md` §7  
-
-Prompt:
-> Rank remaining items by impact/effort. Do not rebuild Done. Prefer dead buttons and truthful UI. Propose one PR-sized phase. Skip Stripe and pentest.
-
----
-
-## 5. Deploy
-
-```bash
-cd web && bash push-to-clivora-web.sh   # mirrors to clivora-web / Vercel
-```
-
-*CODCrafters · CLIVORA · WhatsApp / ChatGPT / Claude / Cursor*
+Paste this file + `CLIVORA-DONE-WORK-INVENTORY.md` + master plan §7. Prompt: rank remaining LEFT items; do not rebuild Done; skip Stripe/pentest.
