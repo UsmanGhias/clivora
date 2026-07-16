@@ -1,0 +1,1 @@
+6f66f68029f9509039fb076c59fd8e198299f20f17fbe0a983859d4ef2bcd28c  clivora-2.19.0-sideload-arm64.apk
