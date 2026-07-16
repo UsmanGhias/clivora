@@ -11,20 +11,15 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 
-const DEMO = [
-  { day: "Jul 1", amount: 420 },
-  { day: "Jul 5", amount: 680 },
-  { day: "Jul 10", amount: 540 },
-  { day: "Jul 15", amount: 920 },
-  { day: "Jul 21", amount: 1150 },
-  { day: "Jul 25", amount: 880 },
-  { day: "Jul 31", amount: 1320 },
-];
-
-const EMPTY = DEMO.map((d) => ({ day: d.day, amount: 0, previous: 0 }));
+export type EarningsSeriesPoint = {
+  day: string;
+  amount: number;
+  previous?: number;
+};
 
 export function EarningsLineChart({
   total,
+  series,
   accent = "teal",
   title = "Earnings overview",
   trendLabel,
@@ -32,6 +27,8 @@ export function EarningsLineChart({
   showPreviousLegend,
 }: {
   total: number;
+  /** Real time-series points only. When omitted or empty, an empty state is shown. */
+  series?: EarningsSeriesPoint[];
   accent?: "teal" | "slate";
   title?: string;
   trendLabel?: string;
@@ -41,14 +38,8 @@ export function EarningsLineChart({
   const stroke = accent === "slate" ? "#475569" : "#0D9488";
   const fill = stroke;
   const gradId = accent === "slate" ? "spendGrad" : "earnGrad";
-  const isEmpty = total === 0;
-  const scaled = isEmpty
-    ? EMPTY
-    : DEMO.map((d) => ({
-        ...d,
-        amount: Math.round((d.amount / 1320) * Math.max(total / 6, 200)),
-        previous: Math.round((d.amount / 1320) * Math.max(total / 8, 150) * 0.72),
-      }));
+  const data = series && series.length > 0 ? series : [];
+  const isEmpty = data.length === 0;
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
@@ -81,58 +72,54 @@ export function EarningsLineChart({
             </div>
           )}
         </div>
-        <select className="rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text-secondary">
-          <option>This month</option>
-          <option>Last month</option>
-        </select>
       </div>
       <div className="relative h-52 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={scaled}>
-            <defs>
-              <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={fill} stopOpacity={isEmpty ? 0.08 : 0.35} />
-                <stop offset="100%" stopColor={fill} stopOpacity={0.02} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
-            <XAxis dataKey="day" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} width={40} />
-            <Tooltip
-              formatter={(v, name) => [
-                `$${Number(v ?? 0).toLocaleString()}`,
-                name === "previous" ? "Previous" : title.includes("Spend") ? "Spend" : "Earnings",
-              ]}
-              contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F0" }}
-            />
-            {showPreviousLegend && !isEmpty && (
-              <Area
-                type="monotone"
-                dataKey="previous"
-                stroke="#CBD5E1"
-                strokeWidth={2}
-                fill="transparent"
-                dot={false}
-              />
-            )}
-            <Area
-              type="monotone"
-              dataKey="amount"
-              stroke={isEmpty ? "#CBD5E1" : stroke}
-              strokeWidth={2.5}
-              strokeDasharray={isEmpty ? "6 4" : undefined}
-              fill={`url(#${gradId})`}
-              dot={isEmpty ? false : { r: 3, fill: stroke }}
-              activeDot={isEmpty ? false : { r: 5 }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-        {isEmpty && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <p className="rounded-lg border border-dashed border-border bg-surface/90 px-4 py-2 text-sm font-semibold text-text-secondary">
-              No data yet
+        {isEmpty ? (
+          <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-border bg-background/50">
+            <p className="px-4 py-2 text-center text-sm font-semibold text-text-secondary">
+              No time-series data yet
             </p>
           </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data}>
+              <defs>
+                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={fill} stopOpacity={0.35} />
+                  <stop offset="100%" stopColor={fill} stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+              <XAxis dataKey="day" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} width={40} />
+              <Tooltip
+                formatter={(v, name) => [
+                  `$${Number(v ?? 0).toLocaleString()}`,
+                  name === "previous" ? "Previous" : title.includes("Spend") ? "Spend" : "Earnings",
+                ]}
+                contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F0" }}
+              />
+              {showPreviousLegend && (
+                <Area
+                  type="monotone"
+                  dataKey="previous"
+                  stroke="#CBD5E1"
+                  strokeWidth={2}
+                  fill="transparent"
+                  dot={false}
+                />
+              )}
+              <Area
+                type="monotone"
+                dataKey="amount"
+                stroke={stroke}
+                strokeWidth={2.5}
+                fill={`url(#${gradId})`}
+                dot={{ r: 3, fill: stroke }}
+                activeDot={{ r: 5 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
         )}
       </div>
       {summaryBoxes && summaryBoxes.length > 0 && (

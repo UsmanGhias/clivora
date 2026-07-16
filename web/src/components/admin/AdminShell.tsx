@@ -14,13 +14,11 @@ import {
   Flag,
   Handshake,
   LayoutDashboard,
-  LifeBuoy,
   Menu,
   Moon,
   RefreshCw,
   Search,
   Settings,
-  Shield,
   Sun,
   Ticket,
   Users,
@@ -184,17 +182,8 @@ export function AdminShell({
         </nav>
 
         <div className="border-t border-white/5 p-3">
-          {!collapsed && (
-            <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-              <div className="flex items-center gap-2 text-xs font-semibold text-white">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
-                System Status
-              </div>
-              <p className="mt-1 text-[11px] text-slate-400">All systems operational.</p>
-            </div>
-          )}
-          <p className={cn("mt-2 text-center text-[10px] text-slate-500", collapsed && "px-0")}>
-            {collapsed ? "v2.10" : `${ADMIN_VERSION} • Local cache`}
+          <p className={cn("text-center text-[10px] text-slate-500", collapsed && "px-0")}>
+            {collapsed ? "v2.10" : ADMIN_VERSION}
           </p>
         </div>
       </aside>
@@ -230,17 +219,6 @@ export function AdminShell({
             aria-label="Toggle theme"
           >
             {dark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-          </button>
-
-          <button
-            type="button"
-            className="relative rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50 dark:border-slate-700"
-            aria-label="Notifications"
-          >
-            <LifeBuoy className="h-4 w-4" />
-            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-teal-500 px-1 text-[9px] font-bold text-white">
-              12
-            </span>
           </button>
 
           <button
