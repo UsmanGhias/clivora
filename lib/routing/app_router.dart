@@ -44,6 +44,7 @@ import '../features/marketplace/connect_need_screen.dart';
 import '../features/settings/legal_document_screen.dart';
 import '../features/settings/notification_settings_screen.dart';
 import '../features/settings/security_settings_screen.dart';
+import '../features/sync/sync_center_screen.dart';
 import '../features/invoices/payment_confirmations_screen.dart';
 import '../features/client/client_milestones_screen.dart';
 import '../core/constants/legal_documents.dart';
@@ -469,6 +470,11 @@ final appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/security',
       builder: (context, state) => const SecuritySettingsScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/sync-center',
+      builder: (context, state) => const SyncCenterScreen(),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,

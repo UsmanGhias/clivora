@@ -19149,6 +19149,1358 @@ class InvoicePaymentsCompanion extends UpdateCompanion<InvoicePayment> {
   }
 }
 
+class $SyncOutboxEntriesTable extends SyncOutboxEntries
+    with TableInfo<$SyncOutboxEntriesTable, SyncOutboxEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncOutboxEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _ownerUserIdMeta = const VerificationMeta(
+    'ownerUserId',
+  );
+  @override
+  late final GeneratedColumn<int> ownerUserId = GeneratedColumn<int>(
+    'owner_user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  static const VerificationMeta _operationIdMeta = const VerificationMeta(
+    'operationId',
+  );
+  @override
+  late final GeneratedColumn<String> operationId = GeneratedColumn<String>(
+    'operation_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _payloadJsonMeta = const VerificationMeta(
+    'payloadJson',
+  );
+  @override
+  late final GeneratedColumn<String> payloadJson = GeneratedColumn<String>(
+    'payload_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('{}'),
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _retriesMeta = const VerificationMeta(
+    'retries',
+  );
+  @override
+  late final GeneratedColumn<int> retries = GeneratedColumn<int>(
+    'retries',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _nextAttemptAtMeta = const VerificationMeta(
+    'nextAttemptAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> nextAttemptAt =
+      GeneratedColumn<DateTime>(
+        'next_attempt_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _lastErrorMeta = const VerificationMeta(
+    'lastError',
+  );
+  @override
+  late final GeneratedColumn<String> lastError = GeneratedColumn<String>(
+    'last_error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isTombstoneMeta = const VerificationMeta(
+    'isTombstone',
+  );
+  @override
+  late final GeneratedColumn<bool> isTombstone = GeneratedColumn<bool>(
+    'is_tombstone',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_tombstone" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _completedAtMeta = const VerificationMeta(
+    'completedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
+    'completed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    ownerUserId,
+    operationId,
+    kind,
+    payloadJson,
+    status,
+    retries,
+    nextAttemptAt,
+    lastError,
+    isTombstone,
+    createdAt,
+    updatedAt,
+    completedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_outbox_entries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncOutboxEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('owner_user_id')) {
+      context.handle(
+        _ownerUserIdMeta,
+        ownerUserId.isAcceptableOrUnknown(
+          data['owner_user_id']!,
+          _ownerUserIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('operation_id')) {
+      context.handle(
+        _operationIdMeta,
+        operationId.isAcceptableOrUnknown(
+          data['operation_id']!,
+          _operationIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_operationIdMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('payload_json')) {
+      context.handle(
+        _payloadJsonMeta,
+        payloadJson.isAcceptableOrUnknown(
+          data['payload_json']!,
+          _payloadJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('retries')) {
+      context.handle(
+        _retriesMeta,
+        retries.isAcceptableOrUnknown(data['retries']!, _retriesMeta),
+      );
+    }
+    if (data.containsKey('next_attempt_at')) {
+      context.handle(
+        _nextAttemptAtMeta,
+        nextAttemptAt.isAcceptableOrUnknown(
+          data['next_attempt_at']!,
+          _nextAttemptAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_error')) {
+      context.handle(
+        _lastErrorMeta,
+        lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta),
+      );
+    }
+    if (data.containsKey('is_tombstone')) {
+      context.handle(
+        _isTombstoneMeta,
+        isTombstone.isAcceptableOrUnknown(
+          data['is_tombstone']!,
+          _isTombstoneMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+        _completedAtMeta,
+        completedAt.isAcceptableOrUnknown(
+          data['completed_at']!,
+          _completedAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SyncOutboxEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncOutboxEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      ownerUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}owner_user_id'],
+      ),
+      operationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}operation_id'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      payloadJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload_json'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      retries: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}retries'],
+      )!,
+      nextAttemptAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}next_attempt_at'],
+      ),
+      lastError: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_error'],
+      ),
+      isTombstone: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_tombstone'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      completedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}completed_at'],
+      ),
+    );
+  }
+
+  @override
+  $SyncOutboxEntriesTable createAlias(String alias) {
+    return $SyncOutboxEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class SyncOutboxEntry extends DataClass implements Insertable<SyncOutboxEntry> {
+  final int id;
+
+  /// Local Drift user id; null only for pre-auth / legacy migrated rows.
+  final int? ownerUserId;
+
+  /// Stable idempotency / operation id (UUID).
+  final String operationId;
+  final String kind;
+  final String payloadJson;
+
+  /// pending | processing | retrying | conflicted | permanently_failed | completed
+  final String status;
+  final int retries;
+  final DateTime? nextAttemptAt;
+  final String? lastError;
+
+  /// Soft-delete / entity tombstone marker when kind is a delete op.
+  final bool isTombstone;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? completedAt;
+  const SyncOutboxEntry({
+    required this.id,
+    this.ownerUserId,
+    required this.operationId,
+    required this.kind,
+    required this.payloadJson,
+    required this.status,
+    required this.retries,
+    this.nextAttemptAt,
+    this.lastError,
+    required this.isTombstone,
+    required this.createdAt,
+    required this.updatedAt,
+    this.completedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    if (!nullToAbsent || ownerUserId != null) {
+      map['owner_user_id'] = Variable<int>(ownerUserId);
+    }
+    map['operation_id'] = Variable<String>(operationId);
+    map['kind'] = Variable<String>(kind);
+    map['payload_json'] = Variable<String>(payloadJson);
+    map['status'] = Variable<String>(status);
+    map['retries'] = Variable<int>(retries);
+    if (!nullToAbsent || nextAttemptAt != null) {
+      map['next_attempt_at'] = Variable<DateTime>(nextAttemptAt);
+    }
+    if (!nullToAbsent || lastError != null) {
+      map['last_error'] = Variable<String>(lastError);
+    }
+    map['is_tombstone'] = Variable<bool>(isTombstone);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || completedAt != null) {
+      map['completed_at'] = Variable<DateTime>(completedAt);
+    }
+    return map;
+  }
+
+  SyncOutboxEntriesCompanion toCompanion(bool nullToAbsent) {
+    return SyncOutboxEntriesCompanion(
+      id: Value(id),
+      ownerUserId: ownerUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerUserId),
+      operationId: Value(operationId),
+      kind: Value(kind),
+      payloadJson: Value(payloadJson),
+      status: Value(status),
+      retries: Value(retries),
+      nextAttemptAt: nextAttemptAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nextAttemptAt),
+      lastError: lastError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastError),
+      isTombstone: Value(isTombstone),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      completedAt: completedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAt),
+    );
+  }
+
+  factory SyncOutboxEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncOutboxEntry(
+      id: serializer.fromJson<int>(json['id']),
+      ownerUserId: serializer.fromJson<int?>(json['ownerUserId']),
+      operationId: serializer.fromJson<String>(json['operationId']),
+      kind: serializer.fromJson<String>(json['kind']),
+      payloadJson: serializer.fromJson<String>(json['payloadJson']),
+      status: serializer.fromJson<String>(json['status']),
+      retries: serializer.fromJson<int>(json['retries']),
+      nextAttemptAt: serializer.fromJson<DateTime?>(json['nextAttemptAt']),
+      lastError: serializer.fromJson<String?>(json['lastError']),
+      isTombstone: serializer.fromJson<bool>(json['isTombstone']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'ownerUserId': serializer.toJson<int?>(ownerUserId),
+      'operationId': serializer.toJson<String>(operationId),
+      'kind': serializer.toJson<String>(kind),
+      'payloadJson': serializer.toJson<String>(payloadJson),
+      'status': serializer.toJson<String>(status),
+      'retries': serializer.toJson<int>(retries),
+      'nextAttemptAt': serializer.toJson<DateTime?>(nextAttemptAt),
+      'lastError': serializer.toJson<String?>(lastError),
+      'isTombstone': serializer.toJson<bool>(isTombstone),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'completedAt': serializer.toJson<DateTime?>(completedAt),
+    };
+  }
+
+  SyncOutboxEntry copyWith({
+    int? id,
+    Value<int?> ownerUserId = const Value.absent(),
+    String? operationId,
+    String? kind,
+    String? payloadJson,
+    String? status,
+    int? retries,
+    Value<DateTime?> nextAttemptAt = const Value.absent(),
+    Value<String?> lastError = const Value.absent(),
+    bool? isTombstone,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> completedAt = const Value.absent(),
+  }) => SyncOutboxEntry(
+    id: id ?? this.id,
+    ownerUserId: ownerUserId.present ? ownerUserId.value : this.ownerUserId,
+    operationId: operationId ?? this.operationId,
+    kind: kind ?? this.kind,
+    payloadJson: payloadJson ?? this.payloadJson,
+    status: status ?? this.status,
+    retries: retries ?? this.retries,
+    nextAttemptAt: nextAttemptAt.present
+        ? nextAttemptAt.value
+        : this.nextAttemptAt,
+    lastError: lastError.present ? lastError.value : this.lastError,
+    isTombstone: isTombstone ?? this.isTombstone,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    completedAt: completedAt.present ? completedAt.value : this.completedAt,
+  );
+  SyncOutboxEntry copyWithCompanion(SyncOutboxEntriesCompanion data) {
+    return SyncOutboxEntry(
+      id: data.id.present ? data.id.value : this.id,
+      ownerUserId: data.ownerUserId.present
+          ? data.ownerUserId.value
+          : this.ownerUserId,
+      operationId: data.operationId.present
+          ? data.operationId.value
+          : this.operationId,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      payloadJson: data.payloadJson.present
+          ? data.payloadJson.value
+          : this.payloadJson,
+      status: data.status.present ? data.status.value : this.status,
+      retries: data.retries.present ? data.retries.value : this.retries,
+      nextAttemptAt: data.nextAttemptAt.present
+          ? data.nextAttemptAt.value
+          : this.nextAttemptAt,
+      lastError: data.lastError.present ? data.lastError.value : this.lastError,
+      isTombstone: data.isTombstone.present
+          ? data.isTombstone.value
+          : this.isTombstone,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      completedAt: data.completedAt.present
+          ? data.completedAt.value
+          : this.completedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncOutboxEntry(')
+          ..write('id: $id, ')
+          ..write('ownerUserId: $ownerUserId, ')
+          ..write('operationId: $operationId, ')
+          ..write('kind: $kind, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('status: $status, ')
+          ..write('retries: $retries, ')
+          ..write('nextAttemptAt: $nextAttemptAt, ')
+          ..write('lastError: $lastError, ')
+          ..write('isTombstone: $isTombstone, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('completedAt: $completedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    ownerUserId,
+    operationId,
+    kind,
+    payloadJson,
+    status,
+    retries,
+    nextAttemptAt,
+    lastError,
+    isTombstone,
+    createdAt,
+    updatedAt,
+    completedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncOutboxEntry &&
+          other.id == this.id &&
+          other.ownerUserId == this.ownerUserId &&
+          other.operationId == this.operationId &&
+          other.kind == this.kind &&
+          other.payloadJson == this.payloadJson &&
+          other.status == this.status &&
+          other.retries == this.retries &&
+          other.nextAttemptAt == this.nextAttemptAt &&
+          other.lastError == this.lastError &&
+          other.isTombstone == this.isTombstone &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.completedAt == this.completedAt);
+}
+
+class SyncOutboxEntriesCompanion extends UpdateCompanion<SyncOutboxEntry> {
+  final Value<int> id;
+  final Value<int?> ownerUserId;
+  final Value<String> operationId;
+  final Value<String> kind;
+  final Value<String> payloadJson;
+  final Value<String> status;
+  final Value<int> retries;
+  final Value<DateTime?> nextAttemptAt;
+  final Value<String?> lastError;
+  final Value<bool> isTombstone;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> completedAt;
+  const SyncOutboxEntriesCompanion({
+    this.id = const Value.absent(),
+    this.ownerUserId = const Value.absent(),
+    this.operationId = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.payloadJson = const Value.absent(),
+    this.status = const Value.absent(),
+    this.retries = const Value.absent(),
+    this.nextAttemptAt = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.isTombstone = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.completedAt = const Value.absent(),
+  });
+  SyncOutboxEntriesCompanion.insert({
+    this.id = const Value.absent(),
+    this.ownerUserId = const Value.absent(),
+    required String operationId,
+    required String kind,
+    this.payloadJson = const Value.absent(),
+    this.status = const Value.absent(),
+    this.retries = const Value.absent(),
+    this.nextAttemptAt = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.isTombstone = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.completedAt = const Value.absent(),
+  }) : operationId = Value(operationId),
+       kind = Value(kind);
+  static Insertable<SyncOutboxEntry> custom({
+    Expression<int>? id,
+    Expression<int>? ownerUserId,
+    Expression<String>? operationId,
+    Expression<String>? kind,
+    Expression<String>? payloadJson,
+    Expression<String>? status,
+    Expression<int>? retries,
+    Expression<DateTime>? nextAttemptAt,
+    Expression<String>? lastError,
+    Expression<bool>? isTombstone,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? completedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (ownerUserId != null) 'owner_user_id': ownerUserId,
+      if (operationId != null) 'operation_id': operationId,
+      if (kind != null) 'kind': kind,
+      if (payloadJson != null) 'payload_json': payloadJson,
+      if (status != null) 'status': status,
+      if (retries != null) 'retries': retries,
+      if (nextAttemptAt != null) 'next_attempt_at': nextAttemptAt,
+      if (lastError != null) 'last_error': lastError,
+      if (isTombstone != null) 'is_tombstone': isTombstone,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (completedAt != null) 'completed_at': completedAt,
+    });
+  }
+
+  SyncOutboxEntriesCompanion copyWith({
+    Value<int>? id,
+    Value<int?>? ownerUserId,
+    Value<String>? operationId,
+    Value<String>? kind,
+    Value<String>? payloadJson,
+    Value<String>? status,
+    Value<int>? retries,
+    Value<DateTime?>? nextAttemptAt,
+    Value<String?>? lastError,
+    Value<bool>? isTombstone,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? completedAt,
+  }) {
+    return SyncOutboxEntriesCompanion(
+      id: id ?? this.id,
+      ownerUserId: ownerUserId ?? this.ownerUserId,
+      operationId: operationId ?? this.operationId,
+      kind: kind ?? this.kind,
+      payloadJson: payloadJson ?? this.payloadJson,
+      status: status ?? this.status,
+      retries: retries ?? this.retries,
+      nextAttemptAt: nextAttemptAt ?? this.nextAttemptAt,
+      lastError: lastError ?? this.lastError,
+      isTombstone: isTombstone ?? this.isTombstone,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      completedAt: completedAt ?? this.completedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (ownerUserId.present) {
+      map['owner_user_id'] = Variable<int>(ownerUserId.value);
+    }
+    if (operationId.present) {
+      map['operation_id'] = Variable<String>(operationId.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (payloadJson.present) {
+      map['payload_json'] = Variable<String>(payloadJson.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (retries.present) {
+      map['retries'] = Variable<int>(retries.value);
+    }
+    if (nextAttemptAt.present) {
+      map['next_attempt_at'] = Variable<DateTime>(nextAttemptAt.value);
+    }
+    if (lastError.present) {
+      map['last_error'] = Variable<String>(lastError.value);
+    }
+    if (isTombstone.present) {
+      map['is_tombstone'] = Variable<bool>(isTombstone.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<DateTime>(completedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncOutboxEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('ownerUserId: $ownerUserId, ')
+          ..write('operationId: $operationId, ')
+          ..write('kind: $kind, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('status: $status, ')
+          ..write('retries: $retries, ')
+          ..write('nextAttemptAt: $nextAttemptAt, ')
+          ..write('lastError: $lastError, ')
+          ..write('isTombstone: $isTombstone, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('completedAt: $completedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SyncConflictEntriesTable extends SyncConflictEntries
+    with TableInfo<$SyncConflictEntriesTable, SyncConflictEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncConflictEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _ownerUserIdMeta = const VerificationMeta(
+    'ownerUserId',
+  );
+  @override
+  late final GeneratedColumn<int> ownerUserId = GeneratedColumn<int>(
+    'owner_user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES users (id)',
+    ),
+  );
+  static const VerificationMeta _entityTypeMeta = const VerificationMeta(
+    'entityType',
+  );
+  @override
+  late final GeneratedColumn<String> entityType = GeneratedColumn<String>(
+    'entity_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localIdMeta = const VerificationMeta(
+    'localId',
+  );
+  @override
+  late final GeneratedColumn<int> localId = GeneratedColumn<int>(
+    'local_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localStatusMeta = const VerificationMeta(
+    'localStatus',
+  );
+  @override
+  late final GeneratedColumn<String> localStatus = GeneratedColumn<String>(
+    'local_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _cloudStatusMeta = const VerificationMeta(
+    'cloudStatus',
+  );
+  @override
+  late final GeneratedColumn<String> cloudStatus = GeneratedColumn<String>(
+    'cloud_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _shareIdMeta = const VerificationMeta(
+    'shareId',
+  );
+  @override
+  late final GeneratedColumn<String> shareId = GeneratedColumn<String>(
+    'share_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _cloudPayloadJsonMeta = const VerificationMeta(
+    'cloudPayloadJson',
+  );
+  @override
+  late final GeneratedColumn<String> cloudPayloadJson = GeneratedColumn<String>(
+    'cloud_payload_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    ownerUserId,
+    entityType,
+    localId,
+    localStatus,
+    cloudStatus,
+    shareId,
+    cloudPayloadJson,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_conflict_entries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncConflictEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('owner_user_id')) {
+      context.handle(
+        _ownerUserIdMeta,
+        ownerUserId.isAcceptableOrUnknown(
+          data['owner_user_id']!,
+          _ownerUserIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('entity_type')) {
+      context.handle(
+        _entityTypeMeta,
+        entityType.isAcceptableOrUnknown(data['entity_type']!, _entityTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityTypeMeta);
+    }
+    if (data.containsKey('local_id')) {
+      context.handle(
+        _localIdMeta,
+        localId.isAcceptableOrUnknown(data['local_id']!, _localIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_localIdMeta);
+    }
+    if (data.containsKey('local_status')) {
+      context.handle(
+        _localStatusMeta,
+        localStatus.isAcceptableOrUnknown(
+          data['local_status']!,
+          _localStatusMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cloud_status')) {
+      context.handle(
+        _cloudStatusMeta,
+        cloudStatus.isAcceptableOrUnknown(
+          data['cloud_status']!,
+          _cloudStatusMeta,
+        ),
+      );
+    }
+    if (data.containsKey('share_id')) {
+      context.handle(
+        _shareIdMeta,
+        shareId.isAcceptableOrUnknown(data['share_id']!, _shareIdMeta),
+      );
+    }
+    if (data.containsKey('cloud_payload_json')) {
+      context.handle(
+        _cloudPayloadJsonMeta,
+        cloudPayloadJson.isAcceptableOrUnknown(
+          data['cloud_payload_json']!,
+          _cloudPayloadJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SyncConflictEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncConflictEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      ownerUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}owner_user_id'],
+      ),
+      entityType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_type'],
+      )!,
+      localId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}local_id'],
+      )!,
+      localStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_status'],
+      )!,
+      cloudStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cloud_status'],
+      )!,
+      shareId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}share_id'],
+      ),
+      cloudPayloadJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cloud_payload_json'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SyncConflictEntriesTable createAlias(String alias) {
+    return $SyncConflictEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class SyncConflictEntry extends DataClass
+    implements Insertable<SyncConflictEntry> {
+  final int id;
+  final int? ownerUserId;
+  final String entityType;
+  final int localId;
+  final String localStatus;
+  final String cloudStatus;
+  final String? shareId;
+  final String? cloudPayloadJson;
+  final DateTime createdAt;
+  const SyncConflictEntry({
+    required this.id,
+    this.ownerUserId,
+    required this.entityType,
+    required this.localId,
+    required this.localStatus,
+    required this.cloudStatus,
+    this.shareId,
+    this.cloudPayloadJson,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    if (!nullToAbsent || ownerUserId != null) {
+      map['owner_user_id'] = Variable<int>(ownerUserId);
+    }
+    map['entity_type'] = Variable<String>(entityType);
+    map['local_id'] = Variable<int>(localId);
+    map['local_status'] = Variable<String>(localStatus);
+    map['cloud_status'] = Variable<String>(cloudStatus);
+    if (!nullToAbsent || shareId != null) {
+      map['share_id'] = Variable<String>(shareId);
+    }
+    if (!nullToAbsent || cloudPayloadJson != null) {
+      map['cloud_payload_json'] = Variable<String>(cloudPayloadJson);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  SyncConflictEntriesCompanion toCompanion(bool nullToAbsent) {
+    return SyncConflictEntriesCompanion(
+      id: Value(id),
+      ownerUserId: ownerUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerUserId),
+      entityType: Value(entityType),
+      localId: Value(localId),
+      localStatus: Value(localStatus),
+      cloudStatus: Value(cloudStatus),
+      shareId: shareId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shareId),
+      cloudPayloadJson: cloudPayloadJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cloudPayloadJson),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory SyncConflictEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncConflictEntry(
+      id: serializer.fromJson<int>(json['id']),
+      ownerUserId: serializer.fromJson<int?>(json['ownerUserId']),
+      entityType: serializer.fromJson<String>(json['entityType']),
+      localId: serializer.fromJson<int>(json['localId']),
+      localStatus: serializer.fromJson<String>(json['localStatus']),
+      cloudStatus: serializer.fromJson<String>(json['cloudStatus']),
+      shareId: serializer.fromJson<String?>(json['shareId']),
+      cloudPayloadJson: serializer.fromJson<String?>(json['cloudPayloadJson']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'ownerUserId': serializer.toJson<int?>(ownerUserId),
+      'entityType': serializer.toJson<String>(entityType),
+      'localId': serializer.toJson<int>(localId),
+      'localStatus': serializer.toJson<String>(localStatus),
+      'cloudStatus': serializer.toJson<String>(cloudStatus),
+      'shareId': serializer.toJson<String?>(shareId),
+      'cloudPayloadJson': serializer.toJson<String?>(cloudPayloadJson),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  SyncConflictEntry copyWith({
+    int? id,
+    Value<int?> ownerUserId = const Value.absent(),
+    String? entityType,
+    int? localId,
+    String? localStatus,
+    String? cloudStatus,
+    Value<String?> shareId = const Value.absent(),
+    Value<String?> cloudPayloadJson = const Value.absent(),
+    DateTime? createdAt,
+  }) => SyncConflictEntry(
+    id: id ?? this.id,
+    ownerUserId: ownerUserId.present ? ownerUserId.value : this.ownerUserId,
+    entityType: entityType ?? this.entityType,
+    localId: localId ?? this.localId,
+    localStatus: localStatus ?? this.localStatus,
+    cloudStatus: cloudStatus ?? this.cloudStatus,
+    shareId: shareId.present ? shareId.value : this.shareId,
+    cloudPayloadJson: cloudPayloadJson.present
+        ? cloudPayloadJson.value
+        : this.cloudPayloadJson,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  SyncConflictEntry copyWithCompanion(SyncConflictEntriesCompanion data) {
+    return SyncConflictEntry(
+      id: data.id.present ? data.id.value : this.id,
+      ownerUserId: data.ownerUserId.present
+          ? data.ownerUserId.value
+          : this.ownerUserId,
+      entityType: data.entityType.present
+          ? data.entityType.value
+          : this.entityType,
+      localId: data.localId.present ? data.localId.value : this.localId,
+      localStatus: data.localStatus.present
+          ? data.localStatus.value
+          : this.localStatus,
+      cloudStatus: data.cloudStatus.present
+          ? data.cloudStatus.value
+          : this.cloudStatus,
+      shareId: data.shareId.present ? data.shareId.value : this.shareId,
+      cloudPayloadJson: data.cloudPayloadJson.present
+          ? data.cloudPayloadJson.value
+          : this.cloudPayloadJson,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncConflictEntry(')
+          ..write('id: $id, ')
+          ..write('ownerUserId: $ownerUserId, ')
+          ..write('entityType: $entityType, ')
+          ..write('localId: $localId, ')
+          ..write('localStatus: $localStatus, ')
+          ..write('cloudStatus: $cloudStatus, ')
+          ..write('shareId: $shareId, ')
+          ..write('cloudPayloadJson: $cloudPayloadJson, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    ownerUserId,
+    entityType,
+    localId,
+    localStatus,
+    cloudStatus,
+    shareId,
+    cloudPayloadJson,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncConflictEntry &&
+          other.id == this.id &&
+          other.ownerUserId == this.ownerUserId &&
+          other.entityType == this.entityType &&
+          other.localId == this.localId &&
+          other.localStatus == this.localStatus &&
+          other.cloudStatus == this.cloudStatus &&
+          other.shareId == this.shareId &&
+          other.cloudPayloadJson == this.cloudPayloadJson &&
+          other.createdAt == this.createdAt);
+}
+
+class SyncConflictEntriesCompanion extends UpdateCompanion<SyncConflictEntry> {
+  final Value<int> id;
+  final Value<int?> ownerUserId;
+  final Value<String> entityType;
+  final Value<int> localId;
+  final Value<String> localStatus;
+  final Value<String> cloudStatus;
+  final Value<String?> shareId;
+  final Value<String?> cloudPayloadJson;
+  final Value<DateTime> createdAt;
+  const SyncConflictEntriesCompanion({
+    this.id = const Value.absent(),
+    this.ownerUserId = const Value.absent(),
+    this.entityType = const Value.absent(),
+    this.localId = const Value.absent(),
+    this.localStatus = const Value.absent(),
+    this.cloudStatus = const Value.absent(),
+    this.shareId = const Value.absent(),
+    this.cloudPayloadJson = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  SyncConflictEntriesCompanion.insert({
+    this.id = const Value.absent(),
+    this.ownerUserId = const Value.absent(),
+    required String entityType,
+    required int localId,
+    this.localStatus = const Value.absent(),
+    this.cloudStatus = const Value.absent(),
+    this.shareId = const Value.absent(),
+    this.cloudPayloadJson = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : entityType = Value(entityType),
+       localId = Value(localId);
+  static Insertable<SyncConflictEntry> custom({
+    Expression<int>? id,
+    Expression<int>? ownerUserId,
+    Expression<String>? entityType,
+    Expression<int>? localId,
+    Expression<String>? localStatus,
+    Expression<String>? cloudStatus,
+    Expression<String>? shareId,
+    Expression<String>? cloudPayloadJson,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (ownerUserId != null) 'owner_user_id': ownerUserId,
+      if (entityType != null) 'entity_type': entityType,
+      if (localId != null) 'local_id': localId,
+      if (localStatus != null) 'local_status': localStatus,
+      if (cloudStatus != null) 'cloud_status': cloudStatus,
+      if (shareId != null) 'share_id': shareId,
+      if (cloudPayloadJson != null) 'cloud_payload_json': cloudPayloadJson,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  SyncConflictEntriesCompanion copyWith({
+    Value<int>? id,
+    Value<int?>? ownerUserId,
+    Value<String>? entityType,
+    Value<int>? localId,
+    Value<String>? localStatus,
+    Value<String>? cloudStatus,
+    Value<String?>? shareId,
+    Value<String?>? cloudPayloadJson,
+    Value<DateTime>? createdAt,
+  }) {
+    return SyncConflictEntriesCompanion(
+      id: id ?? this.id,
+      ownerUserId: ownerUserId ?? this.ownerUserId,
+      entityType: entityType ?? this.entityType,
+      localId: localId ?? this.localId,
+      localStatus: localStatus ?? this.localStatus,
+      cloudStatus: cloudStatus ?? this.cloudStatus,
+      shareId: shareId ?? this.shareId,
+      cloudPayloadJson: cloudPayloadJson ?? this.cloudPayloadJson,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (ownerUserId.present) {
+      map['owner_user_id'] = Variable<int>(ownerUserId.value);
+    }
+    if (entityType.present) {
+      map['entity_type'] = Variable<String>(entityType.value);
+    }
+    if (localId.present) {
+      map['local_id'] = Variable<int>(localId.value);
+    }
+    if (localStatus.present) {
+      map['local_status'] = Variable<String>(localStatus.value);
+    }
+    if (cloudStatus.present) {
+      map['cloud_status'] = Variable<String>(cloudStatus.value);
+    }
+    if (shareId.present) {
+      map['share_id'] = Variable<String>(shareId.value);
+    }
+    if (cloudPayloadJson.present) {
+      map['cloud_payload_json'] = Variable<String>(cloudPayloadJson.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncConflictEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('ownerUserId: $ownerUserId, ')
+          ..write('entityType: $entityType, ')
+          ..write('localId: $localId, ')
+          ..write('localStatus: $localStatus, ')
+          ..write('cloudStatus: $cloudStatus, ')
+          ..write('shareId: $shareId, ')
+          ..write('cloudPayloadJson: $cloudPayloadJson, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -19201,6 +20553,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $InvoicePaymentsTable invoicePayments = $InvoicePaymentsTable(
     this,
   );
+  late final $SyncOutboxEntriesTable syncOutboxEntries =
+      $SyncOutboxEntriesTable(this);
+  late final $SyncConflictEntriesTable syncConflictEntries =
+      $SyncConflictEntriesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -19236,6 +20592,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     purchaseOrders,
     credits,
     invoicePayments,
+    syncOutboxEntries,
+    syncConflictEntries,
   ];
 }
 
@@ -19767,6 +21125,48 @@ final class $$UsersTableReferences
 
     final cache = $_typedResult.readTableOrNull(
       _invoicePaymentsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$SyncOutboxEntriesTable, List<SyncOutboxEntry>>
+  _syncOutboxEntriesRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.syncOutboxEntries,
+        aliasName: 'users__id__sync_outbox_entries__owner_user_id',
+      );
+
+  $$SyncOutboxEntriesTableProcessedTableManager get syncOutboxEntriesRefs {
+    final manager = $$SyncOutboxEntriesTableTableManager(
+      $_db,
+      $_db.syncOutboxEntries,
+    ).filter((f) => f.ownerUserId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _syncOutboxEntriesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$SyncConflictEntriesTable, List<SyncConflictEntry>>
+  _syncConflictEntriesRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.syncConflictEntries,
+        aliasName: 'users__id__sync_conflict_entries__owner_user_id',
+      );
+
+  $$SyncConflictEntriesTableProcessedTableManager get syncConflictEntriesRefs {
+    final manager = $$SyncConflictEntriesTableTableManager(
+      $_db,
+      $_db.syncConflictEntries,
+    ).filter((f) => f.ownerUserId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _syncConflictEntriesRefsTable($_db),
     );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
@@ -20473,6 +21873,56 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
           }) => $$InvoicePaymentsTableFilterComposer(
             $db: $db,
             $table: $db.invoicePayments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> syncOutboxEntriesRefs(
+    Expression<bool> Function($$SyncOutboxEntriesTableFilterComposer f) f,
+  ) {
+    final $$SyncOutboxEntriesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.syncOutboxEntries,
+      getReferencedColumn: (t) => t.ownerUserId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SyncOutboxEntriesTableFilterComposer(
+            $db: $db,
+            $table: $db.syncOutboxEntries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> syncConflictEntriesRefs(
+    Expression<bool> Function($$SyncConflictEntriesTableFilterComposer f) f,
+  ) {
+    final $$SyncConflictEntriesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.syncConflictEntries,
+      getReferencedColumn: (t) => t.ownerUserId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SyncConflictEntriesTableFilterComposer(
+            $db: $db,
+            $table: $db.syncConflictEntries,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -21243,6 +22693,58 @@ class $$UsersTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> syncOutboxEntriesRefs<T extends Object>(
+    Expression<T> Function($$SyncOutboxEntriesTableAnnotationComposer a) f,
+  ) {
+    final $$SyncOutboxEntriesTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.syncOutboxEntries,
+          getReferencedColumn: (t) => t.ownerUserId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$SyncOutboxEntriesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.syncOutboxEntries,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> syncConflictEntriesRefs<T extends Object>(
+    Expression<T> Function($$SyncConflictEntriesTableAnnotationComposer a) f,
+  ) {
+    final $$SyncConflictEntriesTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.syncConflictEntries,
+          getReferencedColumn: (t) => t.ownerUserId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$SyncConflictEntriesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.syncConflictEntries,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$UsersTableTableManager
@@ -21285,6 +22787,8 @@ class $$UsersTableTableManager
             bool purchaseOrdersRefs,
             bool creditsRefs,
             bool invoicePaymentsRefs,
+            bool syncOutboxEntriesRefs,
+            bool syncConflictEntriesRefs,
           })
         > {
   $$UsersTableTableManager(_$AppDatabase db, $UsersTable table)
@@ -21380,6 +22884,8 @@ class $$UsersTableTableManager
                 purchaseOrdersRefs = false,
                 creditsRefs = false,
                 invoicePaymentsRefs = false,
+                syncOutboxEntriesRefs = false,
+                syncConflictEntriesRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -21410,6 +22916,8 @@ class $$UsersTableTableManager
                     if (purchaseOrdersRefs) db.purchaseOrders,
                     if (creditsRefs) db.credits,
                     if (invoicePaymentsRefs) db.invoicePayments,
+                    if (syncOutboxEntriesRefs) db.syncOutboxEntries,
+                    if (syncConflictEntriesRefs) db.syncConflictEntries,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -21896,6 +23404,48 @@ class $$UsersTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (syncOutboxEntriesRefs)
+                        await $_getPrefetchedData<
+                          User,
+                          $UsersTable,
+                          SyncOutboxEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UsersTableReferences
+                              ._syncOutboxEntriesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UsersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).syncOutboxEntriesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.ownerUserId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (syncConflictEntriesRefs)
+                        await $_getPrefetchedData<
+                          User,
+                          $UsersTable,
+                          SyncConflictEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$UsersTableReferences
+                              ._syncConflictEntriesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$UsersTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).syncConflictEntriesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.ownerUserId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -21943,6 +23493,8 @@ typedef $$UsersTableProcessedTableManager =
         bool purchaseOrdersRefs,
         bool creditsRefs,
         bool invoicePaymentsRefs,
+        bool syncOutboxEntriesRefs,
+        bool syncConflictEntriesRefs,
       })
     >;
 typedef $$CustomersTableCreateCompanionBuilder =
@@ -39690,6 +41242,909 @@ typedef $$InvoicePaymentsTableProcessedTableManager =
         bool customerId,
       })
     >;
+typedef $$SyncOutboxEntriesTableCreateCompanionBuilder =
+    SyncOutboxEntriesCompanion Function({
+      Value<int> id,
+      Value<int?> ownerUserId,
+      required String operationId,
+      required String kind,
+      Value<String> payloadJson,
+      Value<String> status,
+      Value<int> retries,
+      Value<DateTime?> nextAttemptAt,
+      Value<String?> lastError,
+      Value<bool> isTombstone,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<DateTime?> completedAt,
+    });
+typedef $$SyncOutboxEntriesTableUpdateCompanionBuilder =
+    SyncOutboxEntriesCompanion Function({
+      Value<int> id,
+      Value<int?> ownerUserId,
+      Value<String> operationId,
+      Value<String> kind,
+      Value<String> payloadJson,
+      Value<String> status,
+      Value<int> retries,
+      Value<DateTime?> nextAttemptAt,
+      Value<String?> lastError,
+      Value<bool> isTombstone,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<DateTime?> completedAt,
+    });
+
+final class $$SyncOutboxEntriesTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $SyncOutboxEntriesTable,
+          SyncOutboxEntry
+        > {
+  $$SyncOutboxEntriesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $UsersTable _ownerUserIdTable(_$AppDatabase db) =>
+      db.users.createAlias('sync_outbox_entries__owner_user_id__users__id');
+
+  $$UsersTableProcessedTableManager? get ownerUserId {
+    final $_column = $_itemColumn<int>('owner_user_id');
+    if ($_column == null) return null;
+    final manager = $$UsersTableTableManager(
+      $_db,
+      $_db.users,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_ownerUserIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$SyncOutboxEntriesTableFilterComposer
+    extends Composer<_$AppDatabase, $SyncOutboxEntriesTable> {
+  $$SyncOutboxEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get operationId => $composableBuilder(
+    column: $table.operationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get retries => $composableBuilder(
+    column: $table.retries,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get nextAttemptAt => $composableBuilder(
+    column: $table.nextAttemptAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastError => $composableBuilder(
+    column: $table.lastError,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isTombstone => $composableBuilder(
+    column: $table.isTombstone,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$UsersTableFilterComposer get ownerUserId {
+    final $$UsersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ownerUserId,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableFilterComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SyncOutboxEntriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $SyncOutboxEntriesTable> {
+  $$SyncOutboxEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get operationId => $composableBuilder(
+    column: $table.operationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get retries => $composableBuilder(
+    column: $table.retries,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get nextAttemptAt => $composableBuilder(
+    column: $table.nextAttemptAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastError => $composableBuilder(
+    column: $table.lastError,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isTombstone => $composableBuilder(
+    column: $table.isTombstone,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$UsersTableOrderingComposer get ownerUserId {
+    final $$UsersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ownerUserId,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableOrderingComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SyncOutboxEntriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SyncOutboxEntriesTable> {
+  $$SyncOutboxEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get operationId => $composableBuilder(
+    column: $table.operationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get retries =>
+      $composableBuilder(column: $table.retries, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get nextAttemptAt => $composableBuilder(
+    column: $table.nextAttemptAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lastError =>
+      $composableBuilder(column: $table.lastError, builder: (column) => column);
+
+  GeneratedColumn<bool> get isTombstone => $composableBuilder(
+    column: $table.isTombstone,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => column,
+  );
+
+  $$UsersTableAnnotationComposer get ownerUserId {
+    final $$UsersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ownerUserId,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SyncOutboxEntriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SyncOutboxEntriesTable,
+          SyncOutboxEntry,
+          $$SyncOutboxEntriesTableFilterComposer,
+          $$SyncOutboxEntriesTableOrderingComposer,
+          $$SyncOutboxEntriesTableAnnotationComposer,
+          $$SyncOutboxEntriesTableCreateCompanionBuilder,
+          $$SyncOutboxEntriesTableUpdateCompanionBuilder,
+          (SyncOutboxEntry, $$SyncOutboxEntriesTableReferences),
+          SyncOutboxEntry,
+          PrefetchHooks Function({bool ownerUserId})
+        > {
+  $$SyncOutboxEntriesTableTableManager(
+    _$AppDatabase db,
+    $SyncOutboxEntriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncOutboxEntriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncOutboxEntriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SyncOutboxEntriesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int?> ownerUserId = const Value.absent(),
+                Value<String> operationId = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<String> payloadJson = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int> retries = const Value.absent(),
+                Value<DateTime?> nextAttemptAt = const Value.absent(),
+                Value<String?> lastError = const Value.absent(),
+                Value<bool> isTombstone = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> completedAt = const Value.absent(),
+              }) => SyncOutboxEntriesCompanion(
+                id: id,
+                ownerUserId: ownerUserId,
+                operationId: operationId,
+                kind: kind,
+                payloadJson: payloadJson,
+                status: status,
+                retries: retries,
+                nextAttemptAt: nextAttemptAt,
+                lastError: lastError,
+                isTombstone: isTombstone,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                completedAt: completedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int?> ownerUserId = const Value.absent(),
+                required String operationId,
+                required String kind,
+                Value<String> payloadJson = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int> retries = const Value.absent(),
+                Value<DateTime?> nextAttemptAt = const Value.absent(),
+                Value<String?> lastError = const Value.absent(),
+                Value<bool> isTombstone = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> completedAt = const Value.absent(),
+              }) => SyncOutboxEntriesCompanion.insert(
+                id: id,
+                ownerUserId: ownerUserId,
+                operationId: operationId,
+                kind: kind,
+                payloadJson: payloadJson,
+                status: status,
+                retries: retries,
+                nextAttemptAt: nextAttemptAt,
+                lastError: lastError,
+                isTombstone: isTombstone,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                completedAt: completedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$SyncOutboxEntriesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({ownerUserId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (ownerUserId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.ownerUserId,
+                                referencedTable:
+                                    $$SyncOutboxEntriesTableReferences
+                                        ._ownerUserIdTable(db),
+                                referencedColumn:
+                                    $$SyncOutboxEntriesTableReferences
+                                        ._ownerUserIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SyncOutboxEntriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SyncOutboxEntriesTable,
+      SyncOutboxEntry,
+      $$SyncOutboxEntriesTableFilterComposer,
+      $$SyncOutboxEntriesTableOrderingComposer,
+      $$SyncOutboxEntriesTableAnnotationComposer,
+      $$SyncOutboxEntriesTableCreateCompanionBuilder,
+      $$SyncOutboxEntriesTableUpdateCompanionBuilder,
+      (SyncOutboxEntry, $$SyncOutboxEntriesTableReferences),
+      SyncOutboxEntry,
+      PrefetchHooks Function({bool ownerUserId})
+    >;
+typedef $$SyncConflictEntriesTableCreateCompanionBuilder =
+    SyncConflictEntriesCompanion Function({
+      Value<int> id,
+      Value<int?> ownerUserId,
+      required String entityType,
+      required int localId,
+      Value<String> localStatus,
+      Value<String> cloudStatus,
+      Value<String?> shareId,
+      Value<String?> cloudPayloadJson,
+      Value<DateTime> createdAt,
+    });
+typedef $$SyncConflictEntriesTableUpdateCompanionBuilder =
+    SyncConflictEntriesCompanion Function({
+      Value<int> id,
+      Value<int?> ownerUserId,
+      Value<String> entityType,
+      Value<int> localId,
+      Value<String> localStatus,
+      Value<String> cloudStatus,
+      Value<String?> shareId,
+      Value<String?> cloudPayloadJson,
+      Value<DateTime> createdAt,
+    });
+
+final class $$SyncConflictEntriesTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $SyncConflictEntriesTable,
+          SyncConflictEntry
+        > {
+  $$SyncConflictEntriesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $UsersTable _ownerUserIdTable(_$AppDatabase db) =>
+      db.users.createAlias('sync_conflict_entries__owner_user_id__users__id');
+
+  $$UsersTableProcessedTableManager? get ownerUserId {
+    final $_column = $_itemColumn<int>('owner_user_id');
+    if ($_column == null) return null;
+    final manager = $$UsersTableTableManager(
+      $_db,
+      $_db.users,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_ownerUserIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$SyncConflictEntriesTableFilterComposer
+    extends Composer<_$AppDatabase, $SyncConflictEntriesTable> {
+  $$SyncConflictEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get localId => $composableBuilder(
+    column: $table.localId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get localStatus => $composableBuilder(
+    column: $table.localStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cloudStatus => $composableBuilder(
+    column: $table.cloudStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get shareId => $composableBuilder(
+    column: $table.shareId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cloudPayloadJson => $composableBuilder(
+    column: $table.cloudPayloadJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$UsersTableFilterComposer get ownerUserId {
+    final $$UsersTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ownerUserId,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableFilterComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SyncConflictEntriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $SyncConflictEntriesTable> {
+  $$SyncConflictEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get localId => $composableBuilder(
+    column: $table.localId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get localStatus => $composableBuilder(
+    column: $table.localStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cloudStatus => $composableBuilder(
+    column: $table.cloudStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get shareId => $composableBuilder(
+    column: $table.shareId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cloudPayloadJson => $composableBuilder(
+    column: $table.cloudPayloadJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$UsersTableOrderingComposer get ownerUserId {
+    final $$UsersTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ownerUserId,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableOrderingComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SyncConflictEntriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SyncConflictEntriesTable> {
+  $$SyncConflictEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get localId =>
+      $composableBuilder(column: $table.localId, builder: (column) => column);
+
+  GeneratedColumn<String> get localStatus => $composableBuilder(
+    column: $table.localStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get cloudStatus => $composableBuilder(
+    column: $table.cloudStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get shareId =>
+      $composableBuilder(column: $table.shareId, builder: (column) => column);
+
+  GeneratedColumn<String> get cloudPayloadJson => $composableBuilder(
+    column: $table.cloudPayloadJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$UsersTableAnnotationComposer get ownerUserId {
+    final $$UsersTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.ownerUserId,
+      referencedTable: $db.users,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$UsersTableAnnotationComposer(
+            $db: $db,
+            $table: $db.users,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SyncConflictEntriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SyncConflictEntriesTable,
+          SyncConflictEntry,
+          $$SyncConflictEntriesTableFilterComposer,
+          $$SyncConflictEntriesTableOrderingComposer,
+          $$SyncConflictEntriesTableAnnotationComposer,
+          $$SyncConflictEntriesTableCreateCompanionBuilder,
+          $$SyncConflictEntriesTableUpdateCompanionBuilder,
+          (SyncConflictEntry, $$SyncConflictEntriesTableReferences),
+          SyncConflictEntry,
+          PrefetchHooks Function({bool ownerUserId})
+        > {
+  $$SyncConflictEntriesTableTableManager(
+    _$AppDatabase db,
+    $SyncConflictEntriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncConflictEntriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncConflictEntriesTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$SyncConflictEntriesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int?> ownerUserId = const Value.absent(),
+                Value<String> entityType = const Value.absent(),
+                Value<int> localId = const Value.absent(),
+                Value<String> localStatus = const Value.absent(),
+                Value<String> cloudStatus = const Value.absent(),
+                Value<String?> shareId = const Value.absent(),
+                Value<String?> cloudPayloadJson = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => SyncConflictEntriesCompanion(
+                id: id,
+                ownerUserId: ownerUserId,
+                entityType: entityType,
+                localId: localId,
+                localStatus: localStatus,
+                cloudStatus: cloudStatus,
+                shareId: shareId,
+                cloudPayloadJson: cloudPayloadJson,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int?> ownerUserId = const Value.absent(),
+                required String entityType,
+                required int localId,
+                Value<String> localStatus = const Value.absent(),
+                Value<String> cloudStatus = const Value.absent(),
+                Value<String?> shareId = const Value.absent(),
+                Value<String?> cloudPayloadJson = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => SyncConflictEntriesCompanion.insert(
+                id: id,
+                ownerUserId: ownerUserId,
+                entityType: entityType,
+                localId: localId,
+                localStatus: localStatus,
+                cloudStatus: cloudStatus,
+                shareId: shareId,
+                cloudPayloadJson: cloudPayloadJson,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$SyncConflictEntriesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({ownerUserId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (ownerUserId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.ownerUserId,
+                                referencedTable:
+                                    $$SyncConflictEntriesTableReferences
+                                        ._ownerUserIdTable(db),
+                                referencedColumn:
+                                    $$SyncConflictEntriesTableReferences
+                                        ._ownerUserIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SyncConflictEntriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SyncConflictEntriesTable,
+      SyncConflictEntry,
+      $$SyncConflictEntriesTableFilterComposer,
+      $$SyncConflictEntriesTableOrderingComposer,
+      $$SyncConflictEntriesTableAnnotationComposer,
+      $$SyncConflictEntriesTableCreateCompanionBuilder,
+      $$SyncConflictEntriesTableUpdateCompanionBuilder,
+      (SyncConflictEntry, $$SyncConflictEntriesTableReferences),
+      SyncConflictEntry,
+      PrefetchHooks Function({bool ownerUserId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -39754,4 +42209,8 @@ class $AppDatabaseManager {
       $$CreditsTableTableManager(_db, _db.credits);
   $$InvoicePaymentsTableTableManager get invoicePayments =>
       $$InvoicePaymentsTableTableManager(_db, _db.invoicePayments);
+  $$SyncOutboxEntriesTableTableManager get syncOutboxEntries =>
+      $$SyncOutboxEntriesTableTableManager(_db, _db.syncOutboxEntries);
+  $$SyncConflictEntriesTableTableManager get syncConflictEntries =>
+      $$SyncConflictEntriesTableTableManager(_db, _db.syncConflictEntries);
 }
