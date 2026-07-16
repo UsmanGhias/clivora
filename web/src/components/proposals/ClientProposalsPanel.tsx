@@ -7,7 +7,6 @@ import {
   Headphones,
   MapPin,
   MessageSquare,
-  MoreHorizontal,
   Search,
   ShieldCheck,
   Star,

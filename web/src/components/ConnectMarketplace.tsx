@@ -48,7 +48,7 @@ export function ConnectMarketplace() {
           already run your business on.
         </p>
 
-        <div className="mt-10 grid gap-5 sm:grid-cols-3">
+        <div className="mt-10 grid gap-5 md:grid-cols-3">
           {pillars.map((item) => (
             <div
               key={item.title}

@@ -52,11 +52,11 @@ export default async function AccountPage({
   const fin = await loadFreelancerFinance(profile.id);
   const supabase = await createClient();
 
-  let location = "Lahore, Pakistan";
-  let avgRating = 4.9;
-  let reviewCount = 27;
-  let completeness = 100;
-  let headline = "Full Stack Developer";
+  let location = "Location not set";
+  let avgRating = 0;
+  let reviewCount = 0;
+  let completeness = 0;
+  let headline = "Freelancer";
 
   try {
     const { data: cp } = await supabase

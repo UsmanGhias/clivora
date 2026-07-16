@@ -1,6 +1,6 @@
 # CLIVORA — WhatsApp / AI brief (Done · Left · Idea)
 
-**Updated:** 17 July 2026  
+**Updated:** 16 July 2026  
 **Live:** https://clivora.codcrafters.org  
 **Repos:** github.com/UsmanGhias/clivora · github.com/UsmanGhias/clivora-web  
 **Company:** CODCrafters  
@@ -25,85 +25,71 @@ Ask any AI: “Using this brief + done/left lists, propose the highest-impact ne
 
 ---
 
-## 2. DONE recently (this session)
+## 2. DONE (this push)
 
-### Supabase (clivora project)
-- Applied migration **chat-attachments private + owner-folder only** (fixes any-user read of chat files)
+### Supabase (Clivora project only — `jtzjwgovqczlccyeujhq`)
+- Migration **chat-attachments private + owner-folder only**
 
 ### Marketing / home (responsive)
-- Connect comparison: **mobile cards** + scrollable desktop table
-- Navbar mobile: **Marketplace + Get Pro**
-- Pricing banner: stacks on small screens
-- Hero title: tighter tracking on narrow phones
-
-### Truthful UI (no fake “Connected” gateways)
-- Invoices / Earnings: removed fake Stripe/PayPal/Wise/Payoneer “Connected”
-- Client payment methods + billing copy: **coming soon** / manual/Play
-- Freelancer Apps tab: removed fake Stripe “Connect”
-- Client settings: password → reset flow · delete → `/delete-account` · MFA → Pro Plus
-- Admin FilterBar: search can bind · removed dead Filters button
-
-### Earlier Phase 1 (still true)
-- Stripe checkout button removed from `/pro` (Coming soon)
-- Sync outbox: unknown kinds no longer marked success
-- Chat signed URLs: 1 hour TTL
-- Master plan + status docs in `docs/internal/`
-
----
-
-## 3. LEFT (honest backlog · do in small phases)
-
-### P0 product truth / reliability
-- [ ] Drift-backed sync outbox (still SharedPreferences)
-- [ ] Project/client conflict “Keep local” must re-upload
-- [ ] Wire admin FilterBar `onSearchChange` on each admin list page
-- [ ] More private storage policies (contracts/vault) beyond chat
-- [ ] Push web mirror: `bash web/push-to-clivora-web.sh` + Vercel deploy
-
-### Freelancer web
-- [ ] Dead/empty actions pass (quotes create, reminders)
-- [ ] Timesheet / Hub KPI edge cases
-- [ ] Connect mobile parity with web trust UI
-
-### Client web
-- [ ] Needs-action home (overdue, approvals, unread)
-- [ ] Real notification prefs persistence
-- [ ] Deliverable approval flows polish
+- Connect comparison: mobile cards + desktop table
+- Navbar: hamburger until `lg` (no mid-width overcrowding)
+- Connect pillars: 1-col until `md`
+- Pricing banner stacks on small screens
+- Hero tracking uses `sm:` (no invalid `xs:`)
 
 ### Admin
-- [ ] Every FilterBar wired to real queries
-- [ ] Export/import buttons that actually work or are hidden
-- [ ] No fake zero metrics on fetch failure
+- FilterBar search wired across list pages + Reset clears query
+- Dead Export/Import/Add hidden unless handler provided; CSV export where data exists
+- Overview “Export report” downloads KPI CSV
+- Settings Save → browser draft (no fake backup buttons)
+- Support page: no fake ticket rows
 
-### Explicitly deferred (owner decision)
+### Freelancer
+- Proposal **Withdraw** updates Supabase status
+- Earnings: removed fake % withdrawn/available; honest labels; View invoices CTA
+- Stripe “Connect” / fake gateway Connected badges removed
+
+### Client
+- Proposal **Shortlist** updates Supabase
+- Settings: real plan/account copy; notification prefs persist in localStorage
+- Invoice Export CSV works; dead Filters/Status buttons removed
+- Team / prefs / apps link to real routes
+
+### Deferred on purpose
 - Live Stripe / card gateways
 - Strix / production pentest
-- Full Urdu i18n, Meilisearch, portfolio gallery, live escrow funding
 
 ---
 
-## 4. How to improve with other AIs
+## 3. LEFT (next phases — honest)
+
+- [ ] Drift-backed sync outbox (still SharedPreferences)
+- [ ] Project conflict “Keep local” must re-upload
+- [ ] Private policies for remaining storage buckets
+- [ ] Admin server-side settings API (draft is local only)
+- [ ] Push web mirror: `cd web && bash push-to-clivora-web.sh`
+- [ ] Client needs-action home polish
+- [ ] Timesheet/analytics fake trend % cleanup where still present
+- [ ] Flutter screenshot bugs (calendar, coach marks, contracts CTA, etc.)
+
+---
+
+## 4. How to ask other AIs for improvements
 
 Paste:
 1. This file  
 2. `docs/internal/CLIVORA-DONE-WORK-INVENTORY.md`  
-3. `docs/internal/CLIVORA_CURSOR_MASTER_PRODUCTION_IMPROVEMENT_PLAN.md` §7 (backlog only)
+3. `docs/internal/CLIVORA_CURSOR_MASTER_PRODUCTION_IMPROVEMENT_PLAN.md` §7  
 
 Prompt:
-> Rank §7 items by impact/effort. Do not rebuild Done. Prefer fixing dead buttons and truthful payment UI. Propose one PR-sized phase.
+> Rank remaining items by impact/effort. Do not rebuild Done. Prefer dead buttons and truthful UI. Propose one PR-sized phase. Skip Stripe and pentest.
 
 ---
 
-## 5. Deploy reminder
-
-Source of truth web = `Clivora/web`. Mirror to clivora-web for Vercel:
+## 5. Deploy
 
 ```bash
-cd web && bash push-to-clivora-web.sh
+cd web && bash push-to-clivora-web.sh   # mirrors to clivora-web / Vercel
 ```
 
-Android: Flutter app in same monorepo; Play SKUs must stay Active in Console.
-
----
-
-*CODCrafters · CLIVORA · for WhatsApp / ChatGPT / Claude / Cursor*
+*CODCrafters · CLIVORA · WhatsApp / ChatGPT / Claude / Cursor*

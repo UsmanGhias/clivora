@@ -8,7 +8,6 @@ import {
   Download,
   Eye,
   FileText,
-  Filter,
   Search,
   Wallet,
   AlertTriangle,
@@ -185,22 +184,45 @@ export function ClientInvoicesPanel({ rows }: { rows: ClientInvoiceRow[] }) {
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-semibold text-text-secondary"
+                  onClick={() => {
+                    const headers = [
+                      "invoice",
+                      "freelancer",
+                      "project",
+                      "status",
+                      "total",
+                      "issue_date",
+                      "due_date",
+                    ];
+                    const esc = (c: string | number) => `"${String(c).replace(/"/g, '""')}"`;
+                    const lines = [
+                      headers.join(","),
+                      ...filtered.map((r) =>
+                        [
+                          r.invoice_number || r.share_id,
+                          r.freelancer_name || r.freelancer_email || "",
+                          r.project_name || "",
+                          r.status || "",
+                          r.total ?? 0,
+                          r.issue_date || "",
+                          r.due_date || "",
+                        ]
+                          .map(esc)
+                          .join(","),
+                      ),
+                    ];
+                    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "client-invoices.csv";
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-semibold text-text-secondary hover:bg-client-surface"
                 >
-                  <Filter className="h-3.5 w-3.5" />
-                  Filters
-                </button>
-                <button
-                  type="button"
-                  className="rounded-xl border border-border px-3 py-2 text-xs font-semibold text-text-secondary"
-                >
-                  Status
-                </button>
-                <button
-                  type="button"
-                  className="rounded-xl border border-border px-3 py-2 text-xs font-semibold text-text-secondary"
-                >
-                  Export
+                  <Download className="h-3.5 w-3.5" />
+                  Export CSV
                 </button>
               </div>
             </div>

@@ -6,7 +6,6 @@ import {
   FolderKanban,
   Plus,
   Search,
-  MoreHorizontal,
   Headphones,
   Pause,
   CheckCircle2,
@@ -290,13 +289,13 @@ export function ClientProjectsPanel({ rows }: { rows: ClientProjectRow[] }) {
                           Due {formatDate(r.due_date || r.updated_at)}
                         </p>
                       </div>
-                      <button
-                        type="button"
+                      <Link
+                        href="/app/messages"
                         className="rounded-lg p-2 text-text-muted hover:bg-client-surface"
-                        aria-label="More"
+                        aria-label="Message"
                       >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </button>
+                        <MessageSquare className="h-4 w-4" />
+                      </Link>
                     </div>
                   </li>
                 );
