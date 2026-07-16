@@ -48,7 +48,7 @@ export function ConnectMarketplace() {
           already run your business on.
         </p>
 
-        <div className="mt-10 grid gap-5 sm:grid-cols-3">
+        <div className="mt-10 grid gap-5 md:grid-cols-3">
           {pillars.map((item) => (
             <div
               key={item.title}
@@ -61,34 +61,57 @@ export function ConnectMarketplace() {
           ))}
         </div>
 
-        <div className="mt-12 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
-          <div className="grid grid-cols-[1.4fr_1fr_1fr] gap-2 border-b border-white/10 px-4 py-3 text-xs font-bold uppercase tracking-wide text-white/50 sm:px-6 sm:text-sm">
-            <span>Why teams switch</span>
-            <span className="text-center text-teal-300">CLIVORA</span>
-            <span className="text-center">Open marketplaces</span>
-          </div>
+        {/* Mobile: stacked cards · Desktop: comparison table */}
+        <div className="mt-12 space-y-3 sm:hidden">
           {rows.map((row) => (
             <div
               key={row.feature}
-              className="grid grid-cols-[1.4fr_1fr_1fr] items-center gap-2 border-b border-white/5 px-4 py-3 text-sm last:border-0 sm:px-6"
+              className="rounded-2xl border border-white/10 bg-white/[0.04] p-4"
             >
-              <span className="text-white/80">{row.feature}</span>
-              <span className="flex justify-center">
-                {row.clivora ? (
-                  <Check className="h-5 w-5 text-teal-300" />
-                ) : (
-                  <X className="h-5 w-5 text-white/25" />
-                )}
-              </span>
-              <span className="flex justify-center">
-                {row.others ? (
-                  <Check className="h-5 w-5 text-white/35" />
-                ) : (
-                  <X className="h-5 w-5 text-white/25" />
-                )}
-              </span>
+              <p className="text-sm font-medium text-white/90">{row.feature}</p>
+              <div className="mt-3 flex gap-4 text-xs">
+                <span className="inline-flex items-center gap-1.5 text-teal-300">
+                  {row.clivora ? <Check className="h-4 w-4" /> : <X className="h-4 w-4 text-white/25" />}
+                  CLIVORA
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-white/50">
+                  {row.others ? <Check className="h-4 w-4" /> : <X className="h-4 w-4 text-white/25" />}
+                  Others
+                </span>
+              </div>
             </div>
           ))}
+        </div>
+        <div className="mt-12 hidden overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.03] sm:block">
+          <div className="min-w-[520px]">
+            <div className="grid grid-cols-[1.4fr_1fr_1fr] gap-2 border-b border-white/10 px-4 py-3 text-xs font-bold uppercase tracking-wide text-white/50 sm:px-6 sm:text-sm">
+              <span>Why teams switch</span>
+              <span className="text-center text-teal-300">CLIVORA</span>
+              <span className="text-center">Open marketplaces</span>
+            </div>
+            {rows.map((row) => (
+              <div
+                key={row.feature}
+                className="grid grid-cols-[1.4fr_1fr_1fr] items-center gap-2 border-b border-white/5 px-4 py-3 text-sm last:border-0 sm:px-6"
+              >
+                <span className="text-white/80">{row.feature}</span>
+                <span className="flex justify-center">
+                  {row.clivora ? (
+                    <Check className="h-5 w-5 text-teal-300" />
+                  ) : (
+                    <X className="h-5 w-5 text-white/25" />
+                  )}
+                </span>
+                <span className="flex justify-center">
+                  {row.others ? (
+                    <Check className="h-5 w-5 text-white/35" />
+                  ) : (
+                    <X className="h-5 w-5 text-white/25" />
+                  )}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">

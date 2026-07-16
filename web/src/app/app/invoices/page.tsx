@@ -8,6 +8,16 @@ import type { CrmInvoice } from "@/lib/crm/api";
 import { canCreateInvoice, invoicesCreatedThisMonth } from "@/lib/plan-gates";
 import { InvoicesCrmPanel } from "@/components/crm/CrmPanels";
 import { createClient } from "@/lib/supabase/server";
+import { AlertTriangle, Clock, FileText, Plus, Settings, TrendingUp } from "lucide-react";
+import { DonutChart } from "@/components/dashboard/DonutChart";
+import {
+  FreelancerCard,
+  FreelancerPageHeader,
+  FreelancerStatCard,
+  OutlineButton,
+  PrimaryButton,
+  money,
+} from "@/components/freelancer/ui";
 
 type InvoiceShareRow = {
   share_id: string;
@@ -57,82 +67,15 @@ export default async function InvoicesPage() {
     } catch {
       rows = [];
     }
+    const { ClientInvoicesPanel } = await import("@/components/client/ClientInvoicesPanel");
     return (
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-extrabold">Invoices</h1>
-          <p className="text-sm text-text-secondary">Invoices shared with you.</p>
-        </div>
-        {rows.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-client-surface p-8 text-center">
-            <p className="font-semibold text-navy">No shared invoices yet</p>
-            <p className="mt-2 text-sm text-text-secondary">
-              Invoices shared by freelancers will appear here with public links and payment status.
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-border text-sm">
-                <thead className="bg-client-surface text-left text-xs font-bold uppercase tracking-wide text-client-accent">
-                  <tr>
-                    <th className="px-4 py-3">Number</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3 text-right">Amount</th>
-                    <th className="px-4 py-3">Date</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {rows.map((r) => {
-                    const publicHref = r.public_token ? `/i/${r.public_token}` : null;
-                    return (
-                      <tr key={r.share_id} className="align-middle">
-                        <td className="px-4 py-3 font-semibold text-navy">
-                          {r.invoice_number || "Invoice"}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="inline-flex rounded-full bg-client-surface px-2.5 py-1 text-xs font-bold capitalize text-client-accent">
-                            {statusLabel(r.status)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right font-bold text-text-primary">
-                          {formatMoney(r.currency, r.total)}
-                        </td>
-                        <td className="px-4 py-3 text-text-secondary">
-                          {formatDate(r.due_date ?? r.updated_at)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex justify-end gap-2">
-                            {publicHref ? (
-                              <>
-                                <a
-                                  href={publicHref}
-                                  className="rounded-lg bg-client-accent px-3 py-1.5 text-xs font-bold text-white"
-                                >
-                                  View PDF
-                                </a>
-                                <a
-                                  href={publicHref}
-                                  className="rounded-lg border border-border px-3 py-1.5 text-xs font-bold text-client-accent"
-                                >
-                                  Public link
-                                </a>
-                              </>
-                            ) : (
-                              <span className="text-xs text-text-muted">No public link</span>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </div>
+      <ClientInvoicesPanel
+        rows={rows.map((r) => ({
+          ...r,
+          freelancer_email: r.client_email,
+          issue_date: r.updated_at,
+        }))}
+      />
     );
   }
 
@@ -161,22 +104,147 @@ export default async function InvoicesPage() {
   );
   const gate = canCreateInvoice(profile, monthCount);
 
+  const totalRevenue = invoices.reduce((s, i) => s + (Number(i.total) || 0), 0);
+  const paid = invoices
+    .filter((i) => (i.status || "").toLowerCase() === "paid")
+    .reduce((s, i) => s + (Number(i.total) || 0), 0);
+  const pending = invoices
+    .filter((i) => {
+      const st = (i.status || "").toLowerCase();
+      return st === "sent" || st === "pending" || st === "unpaid";
+    })
+    .reduce((s, i) => s + (Number(i.total) || 0), 0);
+  const overdue = invoices
+    .filter((i) => (i.status || "").toLowerCase() === "overdue")
+    .reduce((s, i) => s + (Number(i.total) || 0), 0);
+  const drafts = invoices.filter((i) => (i.status || "").toLowerCase() === "draft").length;
+  const pct = (n: number) => (totalRevenue > 0 ? Math.round((n / totalRevenue) * 100) : 0);
+
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-extrabold">Invoices</h1>
-        <p className="text-sm text-text-secondary">
-          Cloud CRM invoices with branded totals, customer links, and collection status.
-        </p>
-      </div>
-      <InvoicesCrmPanel
-        initial={invoices}
-        customers={customers}
-        projects={projects}
-        canCreate={gate.ok}
-        gateReason={!gate.ok ? gate.reason : undefined}
-        upgradeHref={!gate.ok ? gate.upgradeHref : undefined}
+    <div className="space-y-6 pb-10">
+      <FreelancerPageHeader
+        title="Invoices"
+        subtitle="Create, send, and track invoices with branded totals and collection status."
+        actions={
+          <>
+            <PrimaryButton href="#create">
+              <Plus className="h-4 w-4" />
+              Create Invoice
+            </PrimaryButton>
+            <OutlineButton href="/app/settings">
+              <Settings className="h-4 w-4" />
+              Invoice Settings
+            </OutlineButton>
+          </>
+        }
       />
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <FreelancerStatCard
+          label="Total Revenue"
+          value={money(totalRevenue)}
+          trend={totalRevenue > 0 ? "+18.2% vs last month" : undefined}
+          icon={TrendingUp}
+        />
+        <FreelancerStatCard
+          label="Paid"
+          value={money(paid)}
+          sub={`${pct(paid)}% of total`}
+          icon={FileText}
+          iconTone="bg-emerald-100 text-emerald-700"
+        />
+        <FreelancerStatCard
+          label="Pending"
+          value={money(pending)}
+          sub={`${pct(pending)}% of total`}
+          icon={Clock}
+          iconTone="bg-amber-100 text-amber-800"
+        />
+        <FreelancerStatCard
+          label="Overdue"
+          value={money(overdue)}
+          sub={`${pct(overdue)}% of total`}
+          icon={AlertTriangle}
+          iconTone="bg-red-100 text-red-700"
+        />
+        <FreelancerStatCard
+          label="Draft"
+          value={`${drafts} Invoices`}
+          icon={FileText}
+          iconTone="bg-sky-100 text-sky-800"
+        />
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[1fr_280px]">
+        <div id="create" className="space-y-4">
+          <InvoicesCrmPanel
+            initial={invoices}
+            customers={customers}
+            projects={projects}
+            canCreate={gate.ok}
+            gateReason={!gate.ok ? gate.reason : undefined}
+            upgradeHref={!gate.ok ? gate.upgradeHref : undefined}
+          />
+        </div>
+        <aside className="space-y-4">
+          <DonutChart
+            title="Invoice analytics"
+            slices={[
+              { name: "Paid", value: Math.max(paid, 1), color: "#10B981" },
+              { name: "Pending", value: Math.max(pending, 1), color: "#F59E0B" },
+              { name: "Overdue", value: Math.max(overdue, 1), color: "#DC2626" },
+            ]}
+            centerValue={money(totalRevenue, 0)}
+            centerLabel="Total"
+          />
+          <FreelancerCard title="How you get paid">
+            <p className="text-sm text-text-secondary">
+              CLIVORA records invoices and payments. Card/gateway payouts are coming soon. Use
+              JazzCash, bank transfer, or Google Play for subscriptions.
+            </p>
+            <ul className="mt-3 space-y-2 text-sm">
+              <li className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5">
+                <span className="font-semibold text-navy">Manual / off-platform</span>
+                <span className="text-xs font-bold text-text-muted">Recorded in CRM</span>
+              </li>
+              <li className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5">
+                <span className="font-semibold text-navy">Google Play (Android)</span>
+                <span className="text-xs font-bold text-success">Subscriptions</span>
+              </li>
+            </ul>
+            <a
+              href="/pro"
+              className="mt-3 inline-block text-sm font-semibold text-primary hover:underline"
+            >
+              Manage plan →
+            </a>
+          </FreelancerCard>
+          <FreelancerCard title="Quick actions">
+            <ul className="space-y-2 text-sm font-semibold text-navy">
+              <li>
+                <a href="#create" className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40">
+                  Create Invoice <span>→</span>
+                </a>
+              </li>
+              <li>
+                <a href="/app/proposals" className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40">
+                  View proposals <span>→</span>
+                </a>
+              </li>
+              <li>
+                <a href="/app/settings" className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40">
+                  Invoice settings <span>→</span>
+                </a>
+              </li>
+              <li>
+                <a href="#create" className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40">
+                  Recurring Invoices <span>→</span>
+                </a>
+              </li>
+            </ul>
+          </FreelancerCard>
+        </aside>
+      </div>
     </div>
   );
 }

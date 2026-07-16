@@ -116,12 +116,14 @@ class MoreScreen extends ConsumerWidget {
 
     return ClivoraScaffold(
       title: 'Command Center',
+      subtitle: 'All tools and resources in one place',
       showMessagesButton: true,
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
         children: [
+          // Profile card kept compact — full settings live under Menu tab
           profileAsync.when(
-            loading: () => const SizedBox(height: 140),
+            loading: () => const SizedBox(height: 8),
             error: (_, _) => const SizedBox.shrink(),
             data: (profile) => _ProfileCard(
               profile: profile,
@@ -134,9 +136,9 @@ class MoreScreen extends ConsumerWidget {
               onEdit: () => openFormRoute(context, '/profile'),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           statsAsync.when(
-            loading: () => const SizedBox(height: 80),
+            loading: () => const SizedBox(height: 8),
             error: (_, _) => const SizedBox.shrink(),
             data: (stats) => _StatsBar(stats: stats),
           ),
@@ -287,7 +289,7 @@ class MoreScreen extends ConsumerWidget {
               opacity: t,
               child: Transform.translate(offset: Offset(0, 8 * (1 - t)), child: child),
             ),
-            child: const SectionHeader(title: 'Money command center'),
+            child: const SectionHeader(title: 'Insights & ops'),
           ),
           GridView.count(
             crossAxisCount: 2,
@@ -295,85 +297,36 @@ class MoreScreen extends ConsumerWidget {
             physics: const NeverScrollableScrollPhysics(),
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
-            childAspectRatio: 1.3,
+            childAspectRatio: 1.55,
             children: [
-              if (isPlus)
-                ToolGridTile(icon: Icons.view_kanban_outlined, label: 'Work', iconBackground: ClivoraColors.iconIndigo, iconColor: Colors.indigo, onTap: () => context.go('/projects')),
-              ToolGridTile(icon: Icons.request_quote_outlined, label: 'Quotes', iconBackground: ClivoraColors.iconTeal, iconColor: ClivoraColors.primary, onTap: () => context.push('/quotes')),
-              ToolGridTile(icon: Icons.inventory_2_outlined, label: 'Catalog', iconBackground: ClivoraColors.iconPurple, iconColor: ClivoraColors.primaryPurple, onTap: () => context.push('/products')),
-              ToolGridTile(icon: Icons.autorenew, label: 'Recurring', iconBackground: ClivoraColors.iconGreen, iconColor: ClivoraColors.successGreen, onTap: () => context.push('/recurring-invoices')),
-              ToolGridTile(icon: Icons.account_balance_wallet_outlined, label: 'Credits', iconBackground: ClivoraColors.iconYellow, iconColor: ClivoraColors.accent, onTap: () => context.push('/credits')),
-              ToolGridTile(icon: Icons.receipt_long_outlined, label: 'Invoices', iconBackground: ClivoraColors.iconPurple, iconColor: ClivoraColors.primaryPurple, onTap: () => context.go('/invoices')),
               ToolGridTile(
-                icon: Icons.playlist_add_check_outlined,
-                label: 'Bill work',
+                icon: Icons.bar_chart_outlined,
+                label: 'Reports',
+                description: 'View detailed reports and insights',
+                iconBackground: ClivoraColors.iconBlue,
+                iconColor: Colors.blue,
+                onTap: () => context.push('/reports'),
+              ),
+              ToolGridTile(
+                icon: Icons.insights_outlined,
+                label: 'Analytics',
+                description: 'Track performance and trends',
+                iconBackground: ClivoraColors.iconTeal,
+                iconColor: ClivoraColors.primary,
+                onTap: () => context.push('/analytics'),
+              ),
+              ToolGridTile(
+                icon: Icons.cloud_upload_outlined,
+                label: 'Backup',
+                description: 'Secure your data and restore anytime',
                 iconBackground: ClivoraColors.iconGreen,
                 iconColor: ClivoraColors.successGreen,
-                onTap: () => _billProjectToInvoice(context, ref),
+                onTap: () => context.push('/backup'),
               ),
-              ToolGridTile(
-                icon: Icons.payments_outlined,
-                label: 'Payment queue',
-                iconBackground: ClivoraColors.iconTeal,
-                iconColor: Colors.teal,
-                onTap: () => context.push('/payment-confirmations'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          const SectionHeader(title: 'Work command center'),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.3,
-            children: [
-              if (!isPlus)
-                ToolGridTile(icon: Icons.view_kanban_outlined, label: 'Work', iconBackground: ClivoraColors.iconIndigo, iconColor: Colors.indigo, onTap: () => context.go('/projects')),
-              ToolGridTile(icon: Icons.task_alt_outlined, label: 'Tasks', iconBackground: ClivoraColors.iconOrange, iconColor: ClivoraColors.warningOrange, onTap: () => context.push('/tasks')),
-              ToolGridTile(icon: Icons.calendar_today_outlined, label: 'Calendar', iconBackground: ClivoraColors.iconGreen, iconColor: ClivoraColors.successGreen, onTap: () async {
-                if (!PlanFeatures.calendarView(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'Calendar', isClient: false)) {
-                  return;
-                }
-                if (context.mounted) context.push('/calendar');
-              }),
-              ToolGridTile(icon: Icons.people_outline, label: 'Team', iconBackground: ClivoraColors.iconBlue, iconColor: Colors.blue, onTap: () async {
-                if (!PlanFeatures.teamCollaboration(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'Team')) {
-                  return;
-                }
-                if (context.mounted) context.push('/team');
-              }),
-              ToolGridTile(icon: Icons.forum_outlined, label: 'Messages', iconBackground: ClivoraColors.iconTeal, iconColor: ClivoraColors.primary, onTap: () => context.go('/freelancer-messages')),
-              ToolGridTile(icon: Icons.payment_outlined, label: 'Payments', iconBackground: ClivoraColors.iconTeal, iconColor: Colors.teal, onTap: () => context.push('/payments')),
-              ToolGridTile(icon: Icons.notifications_outlined, label: 'Follow-ups', iconBackground: ClivoraColors.iconRed, iconColor: ClivoraColors.errorRed, onTap: () => context.push('/notifications')),
-              ToolGridTile(icon: Icons.flag_outlined, label: 'Milestones', iconBackground: ClivoraColors.iconIndigo, iconColor: Colors.indigo, onTap: () => context.push('/projects')),
-              ToolGridTile(icon: Icons.star_outline, label: 'Reviews', iconBackground: ClivoraColors.iconYellow, iconColor: ClivoraColors.accent, onTap: () => context.push('/reviews')),
-            ],
-          ),
-          const SizedBox(height: 16),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.3,
-            children: [
-              ToolGridTile(icon: Icons.cloud_outlined, label: 'File Vault', iconBackground: ClivoraColors.iconBlue, iconColor: Colors.blue, onTap: () async {
-                if (!PlanFeatures.fileVault(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'File Vault')) {
-                  return;
-                }
-                if (context.mounted) context.push('/storage');
-              }),
-              ToolGridTile(icon: Icons.note_outlined, label: 'Notes', iconBackground: ClivoraColors.iconOrange, iconColor: ClivoraColors.warningOrange, onTap: () => context.push('/notes')),
-              ToolGridTile(icon: Icons.bar_chart_outlined, label: 'Reports', iconBackground: ClivoraColors.iconIndigo, iconColor: Colors.indigo, onTap: () => context.push('/reports')),
-              ToolGridTile(icon: Icons.insights_outlined, label: 'Analytics', iconBackground: ClivoraColors.iconPurple, iconColor: ClivoraColors.primaryPurple, onTap: () => context.push('/analytics')),
-              ToolGridTile(icon: Icons.backup_outlined, label: 'Backup', iconBackground: ClivoraColors.iconGreen, iconColor: ClivoraColors.successGreen, onTap: () => context.push('/backup')),
               ToolGridTile(
                 icon: Icons.ios_share_outlined,
                 label: 'Export',
+                description: 'Export your data in multiple formats',
                 iconBackground: ClivoraColors.iconGreen,
                 iconColor: ClivoraColors.successGreen,
                 onTap: () async {
@@ -389,21 +342,238 @@ class MoreScreen extends ConsumerWidget {
                   }
                 },
               ),
-              ToolGridTile(icon: Icons.receipt_outlined, label: 'Expenses', iconBackground: ClivoraColors.iconRed, iconColor: ClivoraColors.errorRed, onTap: () => context.push('/expenses')),
-              ToolGridTile(icon: Icons.forum_outlined, label: 'Templates', iconBackground: ClivoraColors.iconTeal, iconColor: Colors.teal, onTap: () => context.push('/templates')),
-              ToolGridTile(icon: Icons.auto_awesome_outlined, label: 'CLIVORA AI', iconBackground: ClivoraColors.iconPurple, iconColor: ClivoraColors.primaryPurple, onTap: () async {
-                if (!PlanFeatures.aiAssistant(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'CLIVORA AI')) {
-                  return;
-                }
-                if (context.mounted) context.push('/ai-assistant');
-              }),
-              ToolGridTile(icon: Icons.description_outlined, label: 'Contracts', iconBackground: ClivoraColors.iconPurple, iconColor: ClivoraColors.primaryPurple, onTap: () => context.push('/contracts')),
-              ToolGridTile(icon: Icons.bolt_outlined, label: 'Workflows', iconBackground: ClivoraColors.iconYellow, iconColor: Colors.amber, onTap: () async {
-                if (!PlanFeatures.automations(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'Workflows')) {
-                  return;
-                }
-                if (context.mounted) context.push('/automations');
-              }),
+              ToolGridTile(
+                icon: Icons.receipt_outlined,
+                label: 'Expenses',
+                description: 'Manage and track your expenses',
+                iconBackground: ClivoraColors.iconRed,
+                iconColor: ClivoraColors.errorRed,
+                onTap: () => context.push('/expenses'),
+              ),
+              ToolGridTile(
+                icon: Icons.forum_outlined,
+                label: 'Templates',
+                description: 'Use templates to save time and effort',
+                iconBackground: ClivoraColors.iconTeal,
+                iconColor: Colors.teal,
+                onTap: () => context.push('/templates'),
+              ),
+              ToolGridTile(
+                icon: Icons.auto_awesome_outlined,
+                label: 'CLIVORA AI',
+                description: 'AI tools to boost your productivity',
+                iconBackground: ClivoraColors.iconTeal,
+                iconColor: ClivoraColors.primary,
+                onTap: () async {
+                  if (!PlanFeatures.aiAssistant(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'CLIVORA AI')) {
+                    return;
+                  }
+                  if (context.mounted) context.push('/ai-assistant');
+                },
+              ),
+              ToolGridTile(
+                icon: Icons.description_outlined,
+                label: 'Contracts',
+                description: 'Create, manage and track contracts',
+                iconBackground: ClivoraColors.iconTeal,
+                iconColor: ClivoraColors.primary,
+                onTap: () => context.push('/contracts'),
+              ),
+              ToolGridTile(
+                icon: Icons.bolt_outlined,
+                label: 'Workflows',
+                description: 'Automate tasks and streamline work',
+                iconBackground: ClivoraColors.iconYellow,
+                iconColor: Colors.amber,
+                onTap: () async {
+                  if (!PlanFeatures.automations(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'Workflows')) {
+                    return;
+                  }
+                  if (context.mounted) context.push('/automations');
+                },
+              ),
+              ToolGridTile(
+                icon: Icons.request_quote_outlined,
+                label: 'Quotes',
+                description: 'Send quotes and convert to invoices',
+                iconBackground: ClivoraColors.iconTeal,
+                iconColor: ClivoraColors.primary,
+                onTap: () => context.push('/quotes'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          const SectionHeader(title: 'Work & collaboration'),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 1.55,
+            children: [
+              ToolGridTile(
+                icon: Icons.task_alt_outlined,
+                label: 'Tasks',
+                description: 'Manage and organize your tasks',
+                iconBackground: ClivoraColors.iconOrange,
+                iconColor: ClivoraColors.warningOrange,
+                onTap: () => context.push('/tasks'),
+              ),
+              ToolGridTile(
+                icon: Icons.calendar_today_outlined,
+                label: 'Calendar',
+                description: 'Schedule and manage your events',
+                iconBackground: ClivoraColors.iconGreen,
+                iconColor: ClivoraColors.successGreen,
+                onTap: () async {
+                  if (!PlanFeatures.calendarView(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'Calendar', isClient: false)) {
+                    return;
+                  }
+                  if (context.mounted) context.push('/calendar');
+                },
+              ),
+              ToolGridTile(
+                icon: Icons.people_outline,
+                label: 'Team',
+                description: 'Manage your team and members',
+                iconBackground: ClivoraColors.iconBlue,
+                iconColor: Colors.blue,
+                onTap: () async {
+                  if (!PlanFeatures.teamCollaboration(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'Team')) {
+                    return;
+                  }
+                  if (context.mounted) context.push('/team');
+                },
+              ),
+              ToolGridTile(
+                icon: Icons.forum_outlined,
+                label: 'Messages',
+                description: 'Communicate with your team',
+                iconBackground: ClivoraColors.iconTeal,
+                iconColor: ClivoraColors.primary,
+                onTap: () => context.go('/freelancer-messages'),
+              ),
+              ToolGridTile(
+                icon: Icons.payment_outlined,
+                label: 'Payments',
+                description: 'Track payments and transactions',
+                iconBackground: ClivoraColors.iconBlue,
+                iconColor: Colors.blue,
+                onTap: () => context.push('/payments'),
+              ),
+              ToolGridTile(
+                icon: Icons.notifications_outlined,
+                label: 'Follow-ups',
+                description: 'Stay on top of important follow-ups',
+                iconBackground: ClivoraColors.iconRed,
+                iconColor: ClivoraColors.errorRed,
+                onTap: () => context.push('/notifications'),
+              ),
+              ToolGridTile(
+                icon: Icons.flag_outlined,
+                label: 'Milestones',
+                description: 'Track and manage project milestones',
+                iconBackground: ClivoraColors.iconIndigo,
+                iconColor: Colors.indigo,
+                onTap: () => context.push('/projects'),
+              ),
+              ToolGridTile(
+                icon: Icons.star_outline,
+                label: 'Reviews',
+                description: 'See feedback and client reviews',
+                iconBackground: ClivoraColors.iconYellow,
+                iconColor: ClivoraColors.accent,
+                onTap: () => context.push('/reviews'),
+              ),
+              ToolGridTile(
+                icon: Icons.cloud_outlined,
+                label: 'File Vault',
+                description: 'Securely store and access your files',
+                iconBackground: ClivoraColors.iconBlue,
+                iconColor: Colors.blue,
+                onTap: () async {
+                  if (!PlanFeatures.fileVault(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'File Vault')) {
+                    return;
+                  }
+                  if (context.mounted) context.push('/storage');
+                },
+              ),
+              ToolGridTile(
+                icon: Icons.note_outlined,
+                label: 'Notes',
+                description: 'Keep all your notes organized',
+                iconBackground: ClivoraColors.iconOrange,
+                iconColor: ClivoraColors.warningOrange,
+                onTap: () => context.push('/notes'),
+              ),
+              ToolGridTile(
+                icon: Icons.view_kanban_outlined,
+                label: 'Projects',
+                description: 'Kanban board and active work',
+                iconBackground: ClivoraColors.iconIndigo,
+                iconColor: Colors.indigo,
+                onTap: () => context.go('/projects'),
+              ),
+              ToolGridTile(
+                icon: Icons.receipt_long_outlined,
+                label: 'Invoices',
+                description: 'Create and track invoices',
+                iconBackground: ClivoraColors.iconTeal,
+                iconColor: ClivoraColors.primary,
+                onTap: () => context.go('/invoices'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 1.55,
+            children: [
+              ToolGridTile(
+                icon: Icons.inventory_2_outlined,
+                label: 'Catalog',
+                description: 'Products and services',
+                iconBackground: ClivoraColors.iconTeal,
+                iconColor: ClivoraColors.primary,
+                onTap: () => context.push('/products'),
+              ),
+              ToolGridTile(
+                icon: Icons.autorenew,
+                label: 'Recurring',
+                description: 'Recurring invoices',
+                iconBackground: ClivoraColors.iconGreen,
+                iconColor: ClivoraColors.successGreen,
+                onTap: () => context.push('/recurring-invoices'),
+              ),
+              ToolGridTile(
+                icon: Icons.account_balance_wallet_outlined,
+                label: 'Credits',
+                description: 'Credit notes and adjustments',
+                iconBackground: ClivoraColors.iconYellow,
+                iconColor: ClivoraColors.accent,
+                onTap: () => context.push('/credits'),
+              ),
+              ToolGridTile(
+                icon: Icons.playlist_add_check_outlined,
+                label: 'Bill work',
+                description: 'Turn project time into invoices',
+                iconBackground: ClivoraColors.iconGreen,
+                iconColor: ClivoraColors.successGreen,
+                onTap: () => _billProjectToInvoice(context, ref),
+              ),
+              ToolGridTile(
+                icon: Icons.payments_outlined,
+                label: 'Payment queue',
+                description: 'Confirm client payments',
+                iconBackground: ClivoraColors.iconTeal,
+                iconColor: Colors.teal,
+                onTap: () => context.push('/payment-confirmations'),
+              ),
             ],
           ),
           const SizedBox(height: 24),

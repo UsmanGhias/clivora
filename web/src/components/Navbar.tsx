@@ -43,7 +43,7 @@ export function Navbar() {
             <Logo size="sm" />
           </Link>
 
-          <nav className="hidden items-center gap-8 md:flex">
+          <nav className="hidden items-center gap-8 lg:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -55,7 +55,7 @@ export function Navbar() {
             ))}
           </nav>
 
-          <div className="hidden items-center gap-4 md:flex">
+          <div className="hidden items-center gap-4 lg:flex">
             <Link
               href="/connect"
               className="text-sm font-medium text-white/70 transition-colors hover:text-white"
@@ -85,7 +85,7 @@ export function Navbar() {
           </div>
 
           <button
-            className="md:hidden text-white"
+            className="lg:hidden text-white"
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="Toggle menu"
           >
@@ -100,7 +100,7 @@ export function Navbar() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed inset-x-0 top-[72px] z-40 glass-strong border-t border-white/10 p-6 md:hidden"
+            className="fixed inset-x-0 top-[72px] z-40 glass-strong border-t border-white/10 p-6 lg:hidden"
           >
             <nav className="flex flex-col gap-4">
               {navLinks.map((link) => (
@@ -113,6 +113,20 @@ export function Navbar() {
                   {link.label}
                 </Link>
               ))}
+              <Link
+                href="/connect"
+                onClick={() => setMobileOpen(false)}
+                className="text-lg font-medium text-white/80 py-2"
+              >
+                Marketplace
+              </Link>
+              <Link
+                href="/pro"
+                onClick={() => setMobileOpen(false)}
+                className="text-lg font-medium text-white/80 py-2"
+              >
+                Get Pro
+              </Link>
               <Link
                 href="/login"
                 onClick={() => setMobileOpen(false)}

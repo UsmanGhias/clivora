@@ -94,6 +94,9 @@ export function ConnectBoard({
   isClient,
   isRestricted,
   myUserId,
+  portalMode = false,
+  accent = "teal",
+  defaultTab = "talent",
 }: {
   profiles: ConnectProfile[];
   needs: ConnectNeed[];
@@ -103,9 +106,17 @@ export function ConnectBoard({
   isClient: boolean;
   isRestricted: boolean;
   myUserId?: string;
+  portalMode?: boolean;
+  accent?: "teal" | "slate";
+  defaultTab?: Tab;
 }) {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("talent");
+  const slate = accent === "slate";
+  const chipActive = slate ? "bg-client-accent text-white" : "bg-primary text-white";
+  const chipIdle = slate ? "bg-client-surface text-client-accent" : "bg-teal-50 text-teal-900";
+  const chipNavActive = slate ? "bg-client-accent text-white" : "bg-navy text-white";
+  const actionBtn = slate ? "bg-client-accent hover:bg-client-header" : "bg-primary hover:bg-primary-dark";
+  const [tab, setTab] = useState<Tab>(defaultTab);
   const [query, setQuery] = useState("");
   const [skillFilter, setSkillFilter] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
@@ -303,7 +314,9 @@ export function ConnectBoard({
 
   return (
     <div className="space-y-6">
-      <ConnectActions signedIn={signedIn} isProPlus={isProPlus} isClient={isClient} />
+      {!portalMode && (
+        <ConnectActions signedIn={signedIn} isProPlus={isProPlus} isClient={isClient} />
+      )}
 
       <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm sm:p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -313,13 +326,51 @@ export function ConnectBoard({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={
-                tab === "jobs"
-                  ? "Search jobs, skills, budget…"
-                  : "Search talent, skills, location…"
+                portalMode && isClient
+                  ? "Search by skill, name, or keyword…"
+                  : tab === "jobs"
+                    ? "Search jobs, skills, budget…"
+                    : "Search talent, skills, location…"
               }
-              className="w-full rounded-xl border border-border bg-white py-2.5 pl-10 pr-3 text-sm outline-none ring-primary focus:ring-2"
+              className={cn(
+                "w-full rounded-xl border border-border bg-white py-2.5 pl-10 pr-3 text-sm outline-none focus:ring-2",
+                slate ? "ring-client-accent" : "ring-primary",
+              )}
             />
           </div>
+          {portalMode && isClient && (
+            <button
+              type="button"
+              className={cn("rounded-xl px-5 py-2.5 text-sm font-bold text-white", actionBtn)}
+            >
+              Search
+            </button>
+          )}
+          {portalMode && (
+            <div className="flex rounded-xl bg-background p-1">
+              {(
+                [
+                  { id: "talent" as const, label: "Talent", icon: Users },
+                  { id: "jobs" as const, label: "Jobs", icon: Briefcase },
+                  { id: "inbox" as const, label: "Inbox", icon: MessageSquare },
+                ] as const
+              ).map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setTab(t.id)}
+                  className={cn(
+                    "inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold sm:flex-none",
+                    tab === t.id ? chipNavActive : "text-text-secondary hover:text-navy",
+                  )}
+                >
+                  <t.icon className="h-3.5 w-3.5" />
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          )}
+          {!portalMode && (
           <div className="flex rounded-xl bg-background p-1">
             {(
               [
@@ -347,10 +398,21 @@ export function ConnectBoard({
               </button>
             ))}
           </div>
+          )}
         </div>
 
         {tab !== "inbox" && (
           <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setCategoryFilter(null)}
+              className={cn(
+                "rounded-lg px-2.5 py-1 text-xs font-semibold",
+                !categoryFilter ? chipNavActive : "bg-background text-text-secondary",
+              )}
+            >
+              All categories
+            </button>
             {CATEGORIES.map((c) => (
               <button
                 key={c}
@@ -358,9 +420,7 @@ export function ConnectBoard({
                 onClick={() => setCategoryFilter(categoryFilter === c ? null : c)}
                 className={cn(
                   "rounded-lg px-2.5 py-1 text-xs font-semibold",
-                  categoryFilter === c
-                    ? "bg-teal-700 text-white"
-                    : "bg-teal-50 text-teal-900",
+                  categoryFilter === c ? chipNavActive : chipIdle,
                 )}
               >
                 {c}
@@ -376,7 +436,7 @@ export function ConnectBoard({
               onClick={() => setSkillFilter(null)}
               className={cn(
                 "rounded-lg px-2.5 py-1 text-xs font-semibold",
-                !skillFilter ? "bg-navy text-white" : "bg-background text-text-secondary",
+                !skillFilter ? chipNavActive : "bg-background text-text-secondary",
               )}
             >
               All skills
@@ -388,7 +448,7 @@ export function ConnectBoard({
                 onClick={() => setSkillFilter(skillFilter === s ? null : s)}
                 className={cn(
                   "rounded-lg px-2.5 py-1 text-xs font-semibold",
-                  skillFilter === s ? "bg-primary text-white" : "bg-background text-text-secondary",
+                  skillFilter === s ? chipActive : "bg-background text-text-secondary",
                 )}
               >
                 {s}
@@ -568,6 +628,85 @@ export function ConnectBoard({
                   : `Buy Pro Plus · ${site.pricing.proPlusMonthlyLabel}/mo`
               }
             />
+          ) : portalMode && isClient ? (
+            <div className="space-y-4">
+              {filteredProfiles.map((p) => (
+                <article
+                  key={p.id}
+                  className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-client-accent/30 lg:flex-row lg:items-center"
+                >
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xl font-bold text-primary">
+                    {(p.display_title || "F").charAt(0)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-bold text-navy">{p.display_title || "Freelancer"}</h3>
+                      {p.is_verified && (
+                        <span className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase text-primary-dark">
+                          <ShieldCheck className="h-3 w-3" /> Verified
+                        </span>
+                      )}
+                    </div>
+                    {p.location_label && (
+                      <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-text-muted">
+                        <MapPin className="h-3 w-3" />
+                        {p.location_label}
+                      </p>
+                    )}
+                    <p className="mt-1 text-sm font-medium text-text-primary">
+                      {p.headline || p.display_title}
+                    </p>
+                    <p className="mt-1 line-clamp-2 text-sm text-text-secondary">{p.bio}</p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {skillsList(p.skills)
+                        .slice(0, 5)
+                        .map((s) => (
+                          <span
+                            key={s}
+                            className="rounded-lg bg-background px-2 py-0.5 text-[11px] text-text-secondary"
+                          >
+                            {s}
+                          </span>
+                        ))}
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-center lg:text-right">
+                    <TrustStars rating={p.avg_rating} count={p.review_count} />
+                    {Number(p.completion_rate ?? 0) > 0 && (
+                      <p className="mt-1 text-xs font-semibold text-success">
+                        {Number(p.completion_rate).toFixed(0)}% job success
+                      </p>
+                    )}
+                    <p className="mt-2 font-display text-lg font-extrabold text-navy">
+                      {p.rate_band || "$25 / hr"}
+                    </p>
+                    <div className="mt-3 flex flex-wrap justify-center gap-2 lg:justify-end">
+                      <button
+                        type="button"
+                        className={cn("rounded-xl px-4 py-2 text-sm font-semibold text-white", actionBtn)}
+                        onClick={() =>
+                          contactGate(() =>
+                            setCompose({
+                              toUserId: p.user_id,
+                              targetProfileId: p.id,
+                              label: p.display_title || "freelancer",
+                            }),
+                          )
+                        }
+                      >
+                        View profile
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-xl border border-border px-4 py-2 text-sm font-semibold text-navy"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filteredProfiles.map((p) => (

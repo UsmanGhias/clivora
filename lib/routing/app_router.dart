@@ -28,6 +28,7 @@ import '../features/expenses/expenses_screen.dart';
 import '../features/invoices/invoice_form_screen.dart';
 import '../features/invoices/invoices_screen.dart';
 import '../features/more/more_screen.dart';
+import '../features/more/menu_screen.dart';
 import '../features/notes/notes_screen.dart';
 import '../features/projects/project_time_tracker_screen.dart';
 import '../features/projects/project_milestones_screen.dart';
@@ -193,6 +194,11 @@ final appRouter = GoRouter(
           path: '/more',
           pageBuilder: (context, state) =>
               const NoTransitionPage(child: MoreScreen()),
+        ),
+        GoRoute(
+          path: '/menu',
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: MenuScreen()),
         ),
         GoRoute(
           path: '/connect',

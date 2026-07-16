@@ -22,35 +22,68 @@ class ContactActionChips extends StatelessWidget {
     }
   }
 
+  Widget _pill({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: ClivoraColors.chipBackground,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 15, color: ClivoraColors.primary),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: ClivoraColors.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final chips = <Widget>[];
     if (phone.isNotEmpty) {
-      chips.add(ActionChip(
-        avatar: const Icon(Icons.phone_outlined, size: 16),
-        label: const Text('Call'),
-        onPressed: () => _open(Uri(scheme: 'tel', path: phone)),
+      chips.add(_pill(
+        icon: Icons.phone_outlined,
+        label: 'Call',
+        onTap: () => _open(Uri(scheme: 'tel', path: phone)),
       ));
     }
     if (email.isNotEmpty) {
-      chips.add(ActionChip(
-        avatar: const Icon(Icons.email_outlined, size: 16),
-        label: const Text('Email'),
-        onPressed: () => _open(Uri(scheme: 'mailto', path: email)),
+      chips.add(_pill(
+        icon: Icons.email_outlined,
+        label: 'Email',
+        onTap: () => _open(Uri(scheme: 'mailto', path: email)),
       ));
     }
     final wa = (whatsapp ?? phone).replaceAll(RegExp(r'[^\d+]'), '');
     if (wa.isNotEmpty) {
-      chips.add(ActionChip(
-        avatar: const Icon(Icons.chat_outlined, size: 16, color: ClivoraColors.successGreen),
-        label: const Text('WhatsApp'),
-        onPressed: () => _open(Uri.parse('https://wa.me/$wa')),
+      chips.add(_pill(
+        icon: Icons.chat_outlined,
+        label: 'WhatsApp',
+        onTap: () => _open(Uri.parse('https://wa.me/$wa')),
       ));
     }
     if (chips.isEmpty) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Wrap(spacing: 8, runSpacing: 4, children: chips),
+      padding: const EdgeInsets.only(top: 12),
+      child: Wrap(spacing: 8, runSpacing: 6, children: chips),
     );
   }
 }

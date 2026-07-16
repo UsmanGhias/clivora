@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_service.dart';
 import '../../core/constants/countries.dart';
+import '../../core/theme/clivora_colors.dart';
 import '../../core/utils/crm_refresh.dart';
 import '../../core/services/automation_service.dart';
 import '../../core/services/client_invite_service.dart';
@@ -231,10 +232,18 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
                   IconButton(
                     onPressed: () => context.pop(),
                     icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                    style: IconButton.styleFrom(
+                      backgroundColor: ClivoraColors.chipBackground,
+                    ),
                   ),
-                  Text(
-                    widget.customerId != null ? 'Edit Client' : 'Add Client',
-                    style: Theme.of(context).textTheme.headlineMedium,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      widget.customerId != null ? 'Edit Client' : 'Add Client',
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
                   ),
                 ],
               ),
@@ -259,13 +268,19 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
                     ),
                     child: Column(
                       children: [
-                        ClivoraTextField(controller: _companyController, label: 'Business Name', hint: 'Optional'),
+                        ClivoraTextField(
+                          controller: _companyController,
+                          label: 'Business Name',
+                          hint: 'Optional',
+                          prefixIcon: Icons.business_outlined,
+                        ),
                         const SizedBox(height: 16),
                         ClivoraTextField(
                           controller: _contactController,
                           label: 'Contact Person',
                           hint: 'Required',
                           required: true,
+                          prefixIcon: Icons.person_outline,
                         ),
                         const SizedBox(height: 16),
                         ClivoraTextField(
@@ -274,6 +289,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
                           hint: 'Required. Client receives invite',
                           keyboardType: TextInputType.emailAddress,
                           required: true,
+                          prefixIcon: Icons.mail_outline,
                         ),
                         const SizedBox(height: 16),
                         ClivoraTextField(
@@ -281,6 +297,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
                           label: 'Phone',
                           hint: 'Optional',
                           keyboardType: TextInputType.phone,
+                          prefixIcon: Icons.phone_outlined,
                         ),
                         const SizedBox(height: 16),
                         ClivoraTextField(
@@ -288,6 +305,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
                           label: 'WhatsApp',
                           hint: 'Optional',
                           keyboardType: TextInputType.phone,
+                          prefixIcon: Icons.chat_outlined,
                         ),
                         const SizedBox(height: 16),
                         ClivoraTextField(
@@ -295,6 +313,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
                           label: 'Address',
                           hint: 'Optional',
                           maxLines: 2,
+                          prefixIcon: Icons.location_on_outlined,
                         ),
                         const SizedBox(height: 16),
                         Row(
