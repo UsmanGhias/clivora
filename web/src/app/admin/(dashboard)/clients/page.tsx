@@ -11,21 +11,20 @@ import {
   AdminTable,
   StatusPill,
   AvatarCell,
-  RowActions,
   PageLayout,
   SidePanel,
   SideCard,
-  fmtDate,
   relative,
   ErrorBanner,
 } from "@/components/admin/ui";
+import { AdminUserActions, joinedDate } from "@/components/admin/AdminUserActions";
 
 function nameOf(u: Record<string, unknown>) {
   return String(u.full_name || u.name || u.display_name || u.email || "—");
 }
 
 export default function AdminClientsPage() {
-  const { data, loading } = useAdminData();
+  const { data, loading, refresh } = useAdminData();
   const clients = useMemo(() => data?.clients ?? [], [data?.clients]);
 
   const kpis = useMemo(() => {
@@ -117,9 +116,9 @@ export default function AdminClientsPage() {
                         <td className="px-3 py-3">
                           <StatusPill status={status} />
                         </td>
-                        <td className="px-3 py-3 text-sm text-slate-600">{fmtDate(String(c.created_at ?? ""))}</td>
+                        <td className="px-3 py-3 text-sm text-slate-600">{joinedDate(c)}</td>
                         <td className="px-3 py-3">
-                          <RowActions />
+                          <AdminUserActions user={c} onRefresh={() => void refresh()} />
                         </td>
                       </tr>
                     );

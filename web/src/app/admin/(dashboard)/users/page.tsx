@@ -11,21 +11,20 @@ import {
   AdminTable,
   StatusPill,
   AvatarCell,
-  RowActions,
   PageLayout,
   SidePanel,
   SideCard,
-  fmtDate,
   relative,
   ErrorBanner,
 } from "@/components/admin/ui";
+import { AdminUserActions, joinedDate } from "@/components/admin/AdminUserActions";
 
 function nameOf(u: Record<string, unknown>) {
   return String(u.full_name || u.name || u.display_name || u.email || "—");
 }
 
 export default function AdminUsersPage() {
-  const { data, loading } = useAdminData();
+  const { data, loading, refresh } = useAdminData();
   const [activeTab, setActiveTab] = useState("all");
   const users = useMemo(() => data?.users ?? [], [data?.users]);
 
@@ -49,7 +48,7 @@ export default function AdminUsersPage() {
       const plan = String(u.subscription_plan || u.plan || "").toLowerCase();
       if (activeTab === "clients") return type === "client";
       if (activeTab === "freelancers") return type !== "client";
-      if (activeTab === "pro") return ["pro", "premium"].includes(plan);
+      if (activeTab === "pro") return ["pro", "premium", "pro_plus"].includes(plan);
       if (activeTab === "suspended") return Boolean(u.is_blocked || u.is_restricted);
       return true;
     });
@@ -137,7 +136,11 @@ export default function AdminUsersPage() {
             ) : (
               <AdminTable
                 headers={["User", "User Type", "Status", "Email Verified", "Joined", "Last Active", "Actions"]}
-                footer={<span>Showing {filtered.length} of {users.length} users</span>}
+                footer={
+                  <span>
+                    Showing {filtered.length} of {users.length} users
+                  </span>
+                }
               >
                 {filtered.length === 0 ? (
                   <tr>
@@ -165,17 +168,13 @@ export default function AdminUsersPage() {
                         <td className="px-3 py-3">
                           <StatusPill status={status} />
                         </td>
-                        <td className="px-3 py-3 text-sm text-slate-600">
-                          {verified ? "Yes" : "No"}
-                        </td>
-                        <td className="px-3 py-3 text-sm text-slate-600">
-                          {fmtDate(String(u.created_at ?? ""))}
-                        </td>
+                        <td className="px-3 py-3 text-sm text-slate-600">{verified ? "Yes" : "No"}</td>
+                        <td className="px-3 py-3 text-sm text-slate-600">{joinedDate(u)}</td>
                         <td className="px-3 py-3 text-sm text-slate-500">
                           {relative(String(u.updated_at ?? u.created_at ?? "")) || "—"}
                         </td>
                         <td className="px-3 py-3">
-                          <RowActions />
+                          <AdminUserActions user={u} onRefresh={() => void refresh()} />
                         </td>
                       </tr>
                     );
@@ -197,7 +196,8 @@ export default function AdminUsersPage() {
             </SideCard>
             <SideCard title="Tips">
               <p className="text-xs leading-relaxed text-slate-500">
-                Filter by account type using the tabs above. Suspended users are blocked or restricted.
+                Use View / Edit / Block on each row. Joined uses account activity date when signup
+                timestamp is unavailable.
               </p>
             </SideCard>
           </SidePanel>

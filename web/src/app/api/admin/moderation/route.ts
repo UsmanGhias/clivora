@@ -96,6 +96,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, action, userId });
     }
 
+    if (action === "update_user") {
+      const userId = String(body.userId ?? "");
+      if (!userId) return NextResponse.json({ error: "userId required" }, { status: 400 });
+      const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      if (typeof body.name === "string" && body.name.trim()) patch.name = body.name.trim();
+      if (typeof body.subscription_plan === "string" && body.subscription_plan.trim()) {
+        patch.subscription_plan = body.subscription_plan.trim();
+      }
+      if (Object.keys(patch).length <= 1) {
+        return NextResponse.json({ error: "No fields to update" }, { status: 400 });
+      }
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`,
+        { method: "PATCH", headers: headers(key), body: JSON.stringify(patch) },
+      );
+      if (!res.ok) return NextResponse.json({ error: await res.text() }, { status: 400 });
+      return NextResponse.json({ ok: true, action, userId });
+    }
+
     return NextResponse.json({ error: "Unknown action" }, { status: 400 });
   } catch (e) {
     return NextResponse.json(

@@ -10,7 +10,7 @@ import {
   Users,
   Check,
 } from "lucide-react";
-import { EarningsLineChart } from "@/components/dashboard/EarningsLineChart";
+import { EarningsLineChart, type EarningsPoint } from "@/components/dashboard/EarningsLineChart";
 import { ProjectListCard, type DashboardProject } from "@/components/dashboard/ProjectListCard";
 import { PeopleListCard, type PersonRow } from "@/components/dashboard/PeopleListCard";
 import { DonutChart } from "@/components/dashboard/DonutChart";
@@ -35,6 +35,7 @@ type Props = {
   home: HomeSummary;
   projectCount: number;
   totalSpent: number;
+  spendSeries?: EarningsPoint[];
   paidTotal: number;
   escrowHeld: number;
   refunds: number;
@@ -95,6 +96,7 @@ export function ClientDashboard({
   home,
   projectCount,
   totalSpent,
+  spendSeries,
   paidTotal,
   escrowHeld,
   refunds,
@@ -205,8 +207,9 @@ export function ClientDashboard({
             total={totalSpent}
             accent="slate"
             title="Spending overview"
-            trendLabel={totalSpent > 0 ? "↑ 18.2% vs last month" : undefined}
+            trendLabel={totalSpent > 0 ? "Live invoice total" : undefined}
             showPreviousLegend
+            series={spendSeries}
             summaryBoxes={[
               {
                 label: "Escrow Held",

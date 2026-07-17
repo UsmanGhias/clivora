@@ -12,7 +12,7 @@ import {
   Clock3,
   Users,
 } from "lucide-react";
-import { EarningsLineChart } from "@/components/dashboard/EarningsLineChart";
+import { EarningsLineChart, type EarningsPoint } from "@/components/dashboard/EarningsLineChart";
 import { ProfileCompleteness } from "@/components/dashboard/ProfileCompleteness";
 import { ProjectListCard, type DashboardProject } from "@/components/dashboard/ProjectListCard";
 import { PeopleListCard, type PersonRow } from "@/components/dashboard/PeopleListCard";
@@ -44,6 +44,7 @@ type Props = {
   home: HomeSummary;
   projectCount: number;
   invoiceTotal: number;
+  invoiceSeries?: EarningsPoint[];
   credits: ConnectCreditSummary | null;
   profileCompleteness: number;
   successScore: number;
@@ -161,6 +162,7 @@ export function FreelancerDashboard({
   home,
   projectCount,
   invoiceTotal,
+  invoiceSeries,
   credits,
   profileCompleteness,
   successScore,
@@ -266,6 +268,7 @@ export function FreelancerDashboard({
           title="Earnings overview"
           trendLabel={invoiceTotal > 0 ? "Live invoice total" : "No paid/invoiced amount yet"}
           showPreviousLegend
+          series={invoiceSeries}
           summaryBoxes={[
             {
               label: "Clients",

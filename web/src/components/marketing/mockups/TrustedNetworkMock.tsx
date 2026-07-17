@@ -88,7 +88,6 @@ function DottedGlobe() {
       {dots.map((d, i) => (
         <circle key={i} cx={d.x} cy={d.y} r="0.55" fill={`rgba(100,116,139,${d.o})`} />
       ))}
-      {/* Orbit nodes */}
       <circle cx="18" cy="32" r="3.2" fill="#ECFDF5" stroke="#10B981" strokeWidth="0.6" />
       <circle cx="82" cy="28" r="3.2" fill="#F5F3FF" stroke="#8B5CF6" strokeWidth="0.6" />
       <circle cx="78" cy="72" r="3.2" fill="#FFF7ED" stroke="#F97316" strokeWidth="0.6" />
@@ -144,6 +143,31 @@ function OrbitNode({
   );
 }
 
+function StatCard({
+  value,
+  label,
+  hint,
+  children,
+}: {
+  value: string;
+  label: string;
+  hint?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-md shadow-slate-200/50">
+      <div className="flex items-end justify-between gap-2">
+        <div className="min-w-0">
+          <p className="font-display text-xl font-extrabold tracking-tight text-navy sm:text-2xl">{value}</p>
+          <p className="mt-0.5 text-xs font-bold text-navy">{label}</p>
+          {hint && <p className="text-[10px] font-semibold text-primary">{hint}</p>}
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export function TrustedNetworkMock() {
   const freelancers = FLOATING.find((s) => s.label.toLowerCase().includes("freelancer")) ?? FLOATING[0];
   const projects = FLOATING.find((s) => s.label.toLowerCase().includes("project")) ?? FLOATING[1];
@@ -151,90 +175,126 @@ export function TrustedNetworkMock() {
   const countries = FLOATING.find((s) => s.label.toLowerCase().includes("countr")) ?? FLOATING[3];
 
   return (
-    <div className="relative mx-auto aspect-square w-full max-w-[520px] sm:aspect-[1/1.02]">
-      <div className="absolute inset-[8%] sm:inset-[6%]">
-        <DottedGlobe />
+    <>
+      {/* Mobile: stacked cards — no absolute overlap */}
+      <div className="grid gap-3 sm:hidden">
+        <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-md">
+          <div className="flex items-center gap-2">
+            <div className="flex -space-x-2">
+              {AVATARS.map((a) => (
+                <span
+                  key={a.initials}
+                  className={cn(
+                    "flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-[10px] font-bold text-white",
+                    a.bg,
+                  )}
+                >
+                  {a.initials}
+                </span>
+              ))}
+            </div>
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-[11px] font-extrabold text-white">
+              {freelancers.value}
+            </span>
+          </div>
+          <p className="mt-2 text-xs font-bold text-navy">{freelancers.label}</p>
+          <p className="text-[10px] text-slate-500">{freelancers.hint}</p>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <StatCard value={projects.value} label={projects.label} hint={projects.hint}>
+            <Sparkline tone="emerald" />
+          </StatCard>
+          <StatCard value={countries.value} label={countries.label} hint={countries.hint}>
+            <div className="flex -space-x-1">
+              {FLAGS.slice(0, 3).map((f) => (
+                <span key={f} className="text-sm">
+                  {f}
+                </span>
+              ))}
+            </div>
+          </StatCard>
+        </div>
+        <StatCard value={paid.value} label={paid.label} hint={paid.hint}>
+          <Sparkline tone="violet" />
+        </StatCard>
       </div>
 
-      <OrbitNode className="left-[6%] top-[28%] hidden sm:flex" tone="green">
-        <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
-      </OrbitNode>
-      <OrbitNode className="right-[8%] top-[22%] hidden sm:flex" tone="violet">
-        <UserRound className="h-3.5 w-3.5" />
-      </OrbitNode>
-      <OrbitNode className="bottom-[30%] right-[4%] hidden sm:flex" tone="orange">
-        <Briefcase className="h-3.5 w-3.5" />
-      </OrbitNode>
+      {/* Desktop: floating globe composition */}
+      <div className="relative mx-auto hidden aspect-square w-full max-w-[520px] sm:block sm:aspect-[1/1.02]">
+        <div className="absolute inset-[8%] sm:inset-[6%]">
+          <DottedGlobe />
+        </div>
 
-      {/* Active Freelancers — top */}
-      <div className="absolute left-1/2 top-0 z-20 w-[min(100%,240px)] -translate-x-1/2 rounded-2xl border border-slate-200/90 bg-white/95 p-3 shadow-lg shadow-slate-200/70 backdrop-blur-sm sm:left-[12%] sm:top-[4%] sm:w-[220px] sm:translate-x-0">
-        <div className="flex items-center gap-2">
-          <div className="flex -space-x-2">
-            {AVATARS.map((a) => (
+        <OrbitNode className="left-[6%] top-[28%] hidden sm:flex" tone="green">
+          <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+        </OrbitNode>
+        <OrbitNode className="right-[8%] top-[22%] hidden sm:flex" tone="violet">
+          <UserRound className="h-3.5 w-3.5" />
+        </OrbitNode>
+        <OrbitNode className="bottom-[30%] right-[4%] hidden sm:flex" tone="orange">
+          <Briefcase className="h-3.5 w-3.5" />
+        </OrbitNode>
+
+        <div className="absolute left-1/2 top-0 z-20 w-[min(100%,240px)] -translate-x-1/2 rounded-2xl border border-slate-200/90 bg-white/95 p-3 shadow-lg shadow-slate-200/70 backdrop-blur-sm sm:left-[12%] sm:top-[4%] sm:w-[220px] sm:translate-x-0">
+          <div className="flex items-center gap-2">
+            <div className="flex -space-x-2">
+              {AVATARS.map((a) => (
+                <span
+                  key={a.initials}
+                  className={cn(
+                    "flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-[10px] font-bold text-white",
+                    a.bg,
+                  )}
+                >
+                  {a.initials}
+                </span>
+              ))}
+            </div>
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-[11px] font-extrabold text-white shadow-md shadow-primary/30">
+              {freelancers.value}
+            </span>
+          </div>
+          <p className="mt-2 text-xs font-bold text-navy">{freelancers.label}</p>
+          <p className="text-[10px] text-slate-500">{freelancers.hint}</p>
+        </div>
+
+        <div className="absolute left-0 top-[38%] z-20 w-[168px] rounded-2xl border border-slate-200/90 bg-white/95 p-3 shadow-lg shadow-slate-200/70 backdrop-blur-sm">
+          <p className="font-display text-2xl font-extrabold tracking-tight text-navy">{projects.value}</p>
+          <Sparkline tone="emerald" />
+          <p className="mt-1 text-[10px] font-semibold text-emerald-600">{projects.hint}</p>
+          <p className="text-[10px] font-medium text-slate-500">{projects.label}</p>
+        </div>
+
+        <div className="absolute right-0 top-[36%] z-20 w-[168px] rounded-2xl border border-slate-200/90 bg-white/95 p-3 shadow-lg shadow-slate-200/70 backdrop-blur-sm">
+          <p className="font-display text-2xl font-extrabold tracking-tight text-navy">{countries.value}</p>
+          <div className="mt-1.5 flex items-center -space-x-1.5">
+            {FLAGS.map((f) => (
               <span
-                key={a.initials}
-                className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-[10px] font-bold text-white",
-                  a.bg,
-                )}
+                key={f}
+                className="flex h-6 w-6 items-center justify-center rounded-full border border-white bg-slate-50 text-[11px] shadow-sm"
               >
-                {a.initials}
+                {f}
               </span>
             ))}
-          </div>
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-[11px] font-extrabold text-white shadow-md shadow-primary/30">
-            {freelancers.value}
-          </span>
-        </div>
-        <p className="mt-2 text-xs font-bold text-navy">{freelancers.label}</p>
-        <p className="text-[10px] text-slate-500">{freelancers.hint}</p>
-      </div>
-
-      {/* Projects Completed — mid left */}
-      <div className="absolute left-0 top-[38%] z-20 w-[min(48%,170px)] rounded-2xl border border-slate-200/90 bg-white/95 p-3 shadow-lg shadow-slate-200/70 backdrop-blur-sm sm:left-0 sm:w-[168px]">
-        <p className="font-display text-xl font-extrabold tracking-tight text-navy sm:text-2xl">
-          {projects.value}
-        </p>
-        <Sparkline tone="emerald" />
-        <p className="mt-1 text-[10px] font-semibold text-emerald-600">{projects.hint}</p>
-        <p className="text-[10px] font-medium text-slate-500">{projects.label}</p>
-      </div>
-
-      {/* Countries — mid right */}
-      <div className="absolute right-0 top-[36%] z-20 w-[min(48%,170px)] rounded-2xl border border-slate-200/90 bg-white/95 p-3 shadow-lg shadow-slate-200/70 backdrop-blur-sm sm:right-0 sm:w-[168px]">
-        <p className="font-display text-xl font-extrabold tracking-tight text-navy sm:text-2xl">
-          {countries.value}
-        </p>
-        <div className="mt-1.5 flex items-center -space-x-1.5">
-          {FLAGS.map((f) => (
-            <span
-              key={f}
-              className="flex h-6 w-6 items-center justify-center rounded-full border border-white bg-slate-50 text-[11px] shadow-sm"
-            >
-              {f}
+            <span className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-[9px] font-bold text-slate-500">
+              +
             </span>
-          ))}
-          <span className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-[9px] font-bold text-slate-500">
-            +
-          </span>
-        </div>
-        <p className="mt-2 text-[10px] font-bold text-navy">{countries.label}</p>
-        <p className="text-[10px] text-slate-500">{countries.hint}</p>
-      </div>
-
-      {/* Total Paid — bottom */}
-      <div className="absolute bottom-0 left-1/2 z-20 w-[min(92%,260px)] -translate-x-1/2 rounded-2xl border border-slate-200/90 bg-white/95 p-3.5 shadow-xl shadow-slate-200/80 backdrop-blur-sm sm:bottom-[2%] sm:w-[240px]">
-        <div className="flex items-end justify-between gap-2">
-          <div>
-            <p className="font-display text-2xl font-extrabold tracking-tight text-navy">
-              {paid.value}
-            </p>
-            <p className="mt-0.5 text-[10px] font-bold text-navy">{paid.label}</p>
-            <p className="text-[10px] font-semibold text-primary">{paid.hint}</p>
           </div>
-          <Sparkline tone="violet" />
+          <p className="mt-2 text-[10px] font-bold text-navy">{countries.label}</p>
+          <p className="text-[10px] text-slate-500">{countries.hint}</p>
+        </div>
+
+        <div className="absolute bottom-[2%] left-1/2 z-20 w-[240px] -translate-x-1/2 rounded-2xl border border-slate-200/90 bg-white/95 p-3.5 shadow-xl shadow-slate-200/80 backdrop-blur-sm">
+          <div className="flex items-end justify-between gap-2">
+            <div>
+              <p className="font-display text-2xl font-extrabold tracking-tight text-navy">{paid.value}</p>
+              <p className="mt-0.5 text-[10px] font-bold text-navy">{paid.label}</p>
+              <p className="text-[10px] font-semibold text-primary">{paid.hint}</p>
+            </div>
+            <Sparkline tone="violet" />
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
