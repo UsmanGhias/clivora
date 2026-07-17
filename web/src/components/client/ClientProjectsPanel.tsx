@@ -6,6 +6,7 @@ import {
   FolderKanban,
   Plus,
   Search,
+  MoreHorizontal,
   Headphones,
   Pause,
   CheckCircle2,
@@ -130,7 +131,7 @@ export function ClientProjectsPanel({ rows }: { rows: ClientProjectRow[] }) {
         icon={FolderKanban}
         actions={
           <>
-            <ClientPrimaryButton href="/connect/manage">
+            <ClientPrimaryButton href="/app/connect/manage">
               <Plus className="h-4 w-4" />
               New project
             </ClientPrimaryButton>
@@ -289,13 +290,13 @@ export function ClientProjectsPanel({ rows }: { rows: ClientProjectRow[] }) {
                           Due {formatDate(r.due_date || r.updated_at)}
                         </p>
                       </div>
-                      <Link
-                        href="/app/messages"
+                      <button
+                        type="button"
                         className="rounded-lg p-2 text-text-muted hover:bg-client-surface"
-                        aria-label="Message"
+                        aria-label="More"
                       >
-                        <MessageSquare className="h-4 w-4" />
-                      </Link>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </button>
                     </div>
                   </li>
                 );

@@ -205,26 +205,4 @@
 /* Marketing site light surface helpers */
 .marketing-site {
   color: #0f172a;
-  overflow-x: hidden;
 }
-
-.marketing-site ::selection {
-  background-color: rgba(13, 148, 136, 0.22);
-  color: #0f172a;
-}
-
-.marketing-site::-webkit-scrollbar-track,
-.marketing-site *::-webkit-scrollbar-track {
-  background: #e2e8f0;
-}
-
-.marketing-site::-webkit-scrollbar-thumb,
-.marketing-site *::-webkit-scrollbar-thumb {
-  background: #94a3b8;
-}
-
-.marketing-site::-webkit-scrollbar-thumb:hover,
-.marketing-site *::-webkit-scrollbar-thumb:hover {
-  background: #0d9488;
-}
-

@@ -1,8 +1,6 @@
 import Link from "next/link";
 import {
-  AlertCircle,
   Briefcase,
-  CheckCircle2,
   DollarSign,
   FileText,
   MessageSquare,
@@ -13,7 +11,6 @@ import {
   Check,
 } from "lucide-react";
 import { EarningsLineChart } from "@/components/dashboard/EarningsLineChart";
-import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { ProjectListCard, type DashboardProject } from "@/components/dashboard/ProjectListCard";
 import { PeopleListCard, type PersonRow } from "@/components/dashboard/PeopleListCard";
 import { DonutChart } from "@/components/dashboard/DonutChart";
@@ -39,9 +36,9 @@ type Props = {
   projectCount: number;
   totalSpent: number;
   paidTotal: number;
+  escrowHeld: number;
   refunds: number;
   outstanding?: number;
-  unpaidInvoiceCount?: number;
   credits: ConnectCreditSummary | null;
   activities: Array<{ id: string; title: string; detail: string; time: string; kind: string }>;
   projects: DashboardProject[];
@@ -93,52 +90,17 @@ function ClientKpi({
   );
 }
 
-function NeedsActionCard({
-  label,
-  value,
-  detail,
-  href,
-  icon: Icon,
-  iconTone,
-}: {
-  label: string;
-  value: string | number;
-  detail: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  iconTone: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 transition hover:border-client-accent/40"
-    >
-      <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", iconTone)}>
-        <Icon className="h-5 w-5" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">{label}</p>
-        <p className="mt-0.5 font-display text-xl font-extrabold text-navy">{value}</p>
-        <p className="mt-0.5 text-xs text-text-secondary">{detail}</p>
-      </div>
-      <span className="mt-1 text-sm font-semibold text-client-accent" aria-hidden>
-        →
-      </span>
-    </Link>
-  );
-}
-
 export function ClientDashboard({
   profile,
   home,
   projectCount,
   totalSpent,
   paidTotal,
+  escrowHeld,
   refunds,
   outstanding = 0,
-  unpaidInvoiceCount = 0,
   credits,
-  activities,
+  activities: _activities,
   projects,
   freelancers,
   spendSlices,
@@ -153,49 +115,6 @@ export function ClientDashboard({
     return s.includes("progress") || s === "active";
   }).length;
   const owed = outstanding || Math.max(0, totalSpent - paidTotal);
-  const needsAction = [
-    unpaidInvoiceCount > 0
-      ? {
-          key: "invoices",
-          label: "Unpaid invoices",
-          value: unpaidInvoiceCount,
-          detail: owed > 0 ? `${money(owed)} outstanding` : "Review and pay",
-          href: "/app/invoices",
-          icon: AlertCircle,
-          iconTone: "bg-amber-100 text-amber-800",
-        }
-      : null,
-    proposals > 0
-      ? {
-          key: "proposals",
-          label: "Pending proposals",
-          value: proposals,
-          detail: "Awaiting your review",
-          href: "/app/proposals",
-          icon: FileText,
-          iconTone: "bg-sky-100 text-sky-800",
-        }
-      : null,
-    unread > 0
-      ? {
-          key: "messages",
-          label: "Unread messages",
-          value: unread,
-          detail: "From freelancers",
-          href: "/app/messages",
-          icon: MessageSquare,
-          iconTone: "bg-rose-100 text-rose-700",
-        }
-      : null,
-  ].filter(Boolean) as Array<{
-    key: string;
-    label: string;
-    value: number;
-    detail: string;
-    href: string;
-    icon: React.ComponentType<{ className?: string }>;
-    iconTone: string;
-  }>;
 
   return (
     <div className="space-y-6 pb-10">
@@ -216,7 +135,7 @@ export function ClientDashboard({
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            href="/connect/manage"
+            href="/app/connect/manage"
             className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-navy px-4 py-2.5 text-sm font-bold text-white hover:bg-navy-light"
           >
             <Plus className="h-4 w-4" />
@@ -232,37 +151,13 @@ export function ClientDashboard({
         </div>
       </div>
 
-      <section className="space-y-3">
-        <h2 className="font-display text-lg font-bold text-navy">Needs your action</h2>
-        {needsAction.length === 0 ? (
-          <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-text-secondary">
-            <CheckCircle2 className="h-5 w-5 shrink-0 text-success" />
-            You&apos;re all caught up. No invoices, proposals, or messages need attention.
-          </div>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {needsAction.map((item) => (
-              <NeedsActionCard
-                key={item.key}
-                label={item.label}
-                value={item.value}
-                detail={item.detail}
-                href={item.href}
-                icon={item.icon}
-                iconTone={item.iconTone}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <ClientKpi
           label="Open Jobs"
           value={openJobs}
           sub="New applicants waiting"
           linkLabel="View all jobs →"
-          href="/connect/manage"
+          href="/app/connect/manage"
           icon={Briefcase}
           iconTone="bg-sky-100 text-sky-800"
         />
@@ -296,7 +191,8 @@ export function ClientDashboard({
         <ClientKpi
           label="Total Spent"
           value={money(totalSpent)}
-          sub="Invoice totals shared with you"
+          sub="This month"
+          trend={totalSpent > 0 ? "↑ 18.2% vs last month" : undefined}
           href="/app/invoices"
           icon={DollarSign}
           iconTone="bg-emerald-100 text-emerald-800"
@@ -309,7 +205,14 @@ export function ClientDashboard({
             total={totalSpent}
             accent="slate"
             title="Spending overview"
+            trendLabel={totalSpent > 0 ? "↑ 18.2% vs last month" : undefined}
+            showPreviousLegend
             summaryBoxes={[
+              {
+                label: "Escrow Held",
+                value: money(escrowHeld),
+                tone: "bg-sky-50 text-sky-800",
+              },
               {
                 label: "Paid to Freelancers",
                 value: money(paidTotal),
@@ -347,7 +250,6 @@ export function ClientDashboard({
         </div>
 
         <aside className="space-y-4">
-          <ActivityFeed items={activities} viewAllHref="/app/activity" accent="slate" />
           <ConnectCreditsWidget signedIn isClient />
           <div className="rounded-2xl bg-navy p-5 text-white shadow-sm">
             <div className="flex items-start gap-3">

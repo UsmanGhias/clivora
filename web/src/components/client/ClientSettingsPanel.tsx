@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BadgeCheck,
   Bell,
@@ -27,6 +27,7 @@ import {
   money,
 } from "@/components/client/ui";
 import { ManageBillingButton } from "@/components/app/ManageBillingButton";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/profile-types";
 
@@ -103,21 +104,18 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
                       </p>
                       <p className="text-sm text-text-secondary">{profile.email}</p>
                       <div className="mt-2 flex flex-wrap items-center gap-2">
-                        {profile.email ? (
+                        {plus ? (
                           <ClientStatusPill tone="green">
                             <span className="inline-flex items-center gap-1">
-                              <BadgeCheck className="h-3 w-3" /> Account active
+                              <BadgeCheck className="h-3 w-3" /> Verified
                             </span>
                           </ClientStatusPill>
-                        ) : null}
-                        <span className="text-xs text-text-muted capitalize">
-                          {profile.account_type || "client"}
-                        </span>
+                        ) : (
+                          <ClientStatusPill tone="blue">{plan}</ClientStatusPill>
+                        )}
+                        <span className="text-xs text-text-muted">Remote</span>
                       </div>
-                      <p className="mt-2 text-xs text-text-muted">
-                        Plan: {plan}
-                        {plus ? " · Pro Plus" : ""}
-                      </p>
+                      <p className="mt-2 text-xs text-text-muted">Member since Aug 1, 2024</p>
                     </div>
                   </div>
                   <div className="rounded-xl border border-border bg-client-surface/50 p-4">
@@ -126,9 +124,7 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
                       <p className="font-bold text-navy">{plan}</p>
                       {plus && <ClientStatusPill tone="green">Active</ClientStatusPill>}
                     </div>
-                    <p className="mt-1 text-xs text-text-secondary">
-                      {plus ? "Pro Plus features unlocked" : "Upgrade anytime via /pro or Play"}
-                    </p>
+                    <p className="mt-1 text-xs text-text-secondary">Renews on Aug 1, 2026</p>
                     <div className="mt-3">
                       <ManageBillingButton />
                     </div>
@@ -141,7 +137,7 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
                   label="Jobs posted"
                   value={stats.jobsPosted}
                   sub="View all jobs →"
-                  href="/connect/manage"
+                  href="/app/connect/manage"
                   icon={User}
                   iconTone="bg-violet-100 text-violet-700"
                 />
@@ -174,10 +170,10 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
               <ClientCard title="Quick actions">
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   {[
-                    { label: "Change password", icon: KeyRound, href: "#security", danger: false },
-                    { label: "Payment methods", icon: CreditCard, href: "/pro", danger: false },
-                    { label: "Notification settings", icon: Bell, href: "#notifications", danger: false },
-                    { label: "Delete account", icon: Trash2, href: "/delete-account", danger: true },
+                    { label: "Change password", icon: KeyRound, href: "#", danger: false },
+                    { label: "Payment methods", icon: CreditCard, href: "/app/payments/payment-methods", danger: false },
+                    { label: "Notification settings", icon: Bell, href: "#", danger: false },
+                    { label: "Delete account", icon: Trash2, href: "#", danger: true },
                   ].map((a) => {
                     const Icon = a.icon;
                     return (
@@ -185,13 +181,10 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
                         key={a.label}
                         href={a.href}
                         onClick={(e) => {
-                          if (a.href === "#security") {
+                          if (a.href === "#") {
                             e.preventDefault();
-                            setTab("security");
-                          }
-                          if (a.href === "#notifications") {
-                            e.preventDefault();
-                            setTab("notifications");
+                            if (a.label === "Change password") setTab("security");
+                            if (a.label === "Notification settings") setTab("notifications");
                           }
                         }}
                         className={cn(
@@ -225,31 +218,36 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
 
           {tab === "notifications" && (
             <ClientCard title="Notification settings">
-              <NotificationPrefs />
+              <ul className="space-y-3">
+                {[
+                  "New proposals",
+                  "Invoice updates",
+                  "Project milestones",
+                  "Messages from freelancers",
+                  "Marketing emails",
+                ].map((label) => (
+                  <li
+                    key={label}
+                    className="flex items-center justify-between rounded-xl border border-border px-4 py-3"
+                  >
+                    <span className="text-sm font-semibold text-navy">{label}</span>
+                    <input type="checkbox" defaultChecked className="h-4 w-4 accent-client-accent" />
+                  </li>
+                ))}
+              </ul>
             </ClientCard>
           )}
 
           {tab === "security" && (
-            <ClientCard title="Security">
-              <p className="text-sm text-text-secondary">
-                Update your password from the reset-password flow, or enable MFA after upgrading to
-                Pro Plus in Account settings on the freelancer workspace / mobile app.
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <ClientPrimaryButton href="/auth/reset-password">
-                  Reset password email
-                </ClientPrimaryButton>
-                <ClientOutlineButton href="/pro?plan=pro_plus">Pro Plus for MFA</ClientOutlineButton>
-              </div>
-            </ClientCard>
+            <ClientSecurityTab />
           )}
 
           {(tab === "payment" || tab === "billing") && (
             <ClientCard title={tab === "payment" ? "Payment methods" : "Billing & plans"}>
               <p className="text-sm text-text-secondary">
                 {tab === "payment"
-                  ? "Card payouts are coming soon. Pay freelancers off-platform and keep invoices in CLIVORA."
-                  : `You are on ${plan}. Renew with JazzCash/manual on /pro or Google Play on Android.`}
+                  ? "Add or update cards used for hiring and invoices."
+                  : `You are on ${plan}. Manage renewal and invoices via Stripe.`}
               </p>
               <div className="mt-4">
                 <ManageBillingButton />
@@ -260,33 +258,12 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
           {(tab === "team" || tab === "preferences" || tab === "apps") && (
             <ClientCard title={NAV.find((n) => n.key === tab)?.label}>
               <p className="text-sm text-text-secondary">
-                {tab === "team"
-                  ? "Invite collaborators from Team when your org is set up."
-                  : tab === "preferences"
-                    ? "Notification preferences are above under Notifications."
-                    : "Connected apps and OAuth links will appear here as they ship."}
+                Configure {NAV.find((n) => n.key === tab)?.label.toLowerCase()} for your client
+                workspace. More controls are rolling out with Pro Plus.
               </p>
-              <div className="mt-4 flex flex-wrap gap-3">
-                {tab === "team" && (
-                  <Link href="/app/team" className="text-sm font-semibold text-client-accent">
-                    Open Team →
-                  </Link>
-                )}
-                {tab === "preferences" && (
-                  <button
-                    type="button"
-                    onClick={() => setTab("notifications")}
-                    className="text-sm font-semibold text-client-accent"
-                  >
-                    Notification settings →
-                  </button>
-                )}
-                {tab === "apps" && (
-                  <Link href="/connect" className="text-sm font-semibold text-client-accent">
-                    Open Connect →
-                  </Link>
-                )}
-              </div>
+              <Link href="/pro?plan=pro_plus" className="mt-4 inline-block text-sm font-semibold text-client-accent">
+                Learn more about Pro Plus →
+              </Link>
             </ClientCard>
           )}
 
@@ -315,59 +292,131 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
   );
 }
 
-const PREF_KEYS = [
-  "New proposals",
-  "Invoice updates",
-  "Project milestones",
-  "Messages from freelancers",
-  "Marketing emails",
-] as const;
+function ClientSecurityTab() {
+  const supabase = useMemo(() => createClient(), []);
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [hasPasswordProvider, setHasPasswordProvider] = useState<boolean | null>(null);
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [ok, setOk] = useState("");
 
-function NotificationPrefs() {
-  const storageKey = "clivora.client.notifPrefs";
-  const [prefs, setPrefs] = useState<Record<string, boolean>>(() => {
-    if (typeof window === "undefined") {
-      return Object.fromEntries(PREF_KEYS.map((k) => [k, true]));
+  useEffect(() => {
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      setEmail(user.email ?? "");
+      const identities = user.identities ?? [];
+      const emailIdentity = identities.some((i) => i.provider === "email");
+      const onlyOAuth =
+        !emailIdentity && identities.some((i) => i.provider === "google" || i.provider === "apple");
+      setHasPasswordProvider(!onlyOAuth);
+    })();
+  }, [supabase]);
+
+  async function save() {
+    setError("");
+    setOk("");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
     }
+    if (password !== confirm) {
+      setError("Passwords do not match.");
+      return;
+    }
+    setBusy(true);
     try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) return { ...Object.fromEntries(PREF_KEYS.map((k) => [k, true])), ...JSON.parse(raw) };
-    } catch {
-      /* ignore */
+      if (hasPasswordProvider) {
+        if (!currentPassword) {
+          setError("Enter your current password.");
+          return;
+        }
+        if (!email) {
+          setError("No email on this account.");
+          return;
+        }
+        const { error: reauthErr } = await supabase.auth.signInWithPassword({
+          email,
+          password: currentPassword,
+        });
+        if (reauthErr) {
+          setError("Current password is incorrect.");
+          return;
+        }
+      }
+      const { error: updErr } = await supabase.auth.updateUser({ password });
+      if (updErr) {
+        setError(updErr.message);
+        return;
+      }
+      setPassword("");
+      setConfirm("");
+      setCurrentPassword("");
+      setHasPasswordProvider(true);
+      setOk(hasPasswordProvider ? "Password updated." : "Password set successfully.");
+    } finally {
+      setBusy(false);
     }
-    return Object.fromEntries(PREF_KEYS.map((k) => [k, true]));
-  });
-  const [saved, setSaved] = useState(false);
-
-  function toggle(label: string) {
-    setPrefs((prev) => {
-      const next = { ...prev, [label]: !prev[label] };
-      localStorage.setItem(storageKey, JSON.stringify(next));
-      setSaved(true);
-      return next;
-    });
   }
 
   return (
-    <div className="space-y-3">
-      <ul className="space-y-3">
-        {PREF_KEYS.map((label) => (
-          <li
-            key={label}
-            className="flex items-center justify-between rounded-xl border border-border px-4 py-3"
-          >
-            <span className="text-sm font-semibold text-navy">{label}</span>
+    <ClientCard title={hasPasswordProvider === false ? "Set a password" : "Change password"}>
+      <p className="text-sm text-text-secondary">
+        {hasPasswordProvider === false
+          ? "You signed in with Google. Set a password so you can also use email login."
+          : "Confirm your current password before setting a new one."}
+      </p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        {hasPasswordProvider !== false && (
+          <label className="block text-sm font-semibold text-navy sm:col-span-2">
+            Current password
             <input
-              type="checkbox"
-              checked={Boolean(prefs[label])}
-              onChange={() => toggle(label)}
-              className="h-4 w-4 accent-client-accent"
+              type="password"
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-border px-3 py-2.5"
             />
-          </li>
-        ))}
-      </ul>
-      {saved && <p className="text-xs font-semibold text-emerald-700">Saved on this device.</p>}
-    </div>
+          </label>
+        )}
+        <label className="block text-sm font-semibold text-navy">
+          New password
+          <input
+            type="password"
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="mt-1 w-full rounded-xl border border-border px-3 py-2.5"
+          />
+        </label>
+        <label className="block text-sm font-semibold text-navy">
+          Confirm password
+          <input
+            type="password"
+            autoComplete="new-password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            className="mt-1 w-full rounded-xl border border-border px-3 py-2.5"
+          />
+        </label>
+      </div>
+      {error && <p className="mt-2 text-sm text-error">{error}</p>}
+      {ok && <p className="mt-2 text-sm font-semibold text-primary-dark">{ok}</p>}
+      <div className="mt-4">
+        <button
+          type="button"
+          onClick={() => void save()}
+          disabled={busy || hasPasswordProvider === null}
+          className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-client-accent px-4 py-2.5 text-sm font-bold text-white hover:bg-client-header disabled:opacity-60"
+        >
+          {busy ? "Saving…" : hasPasswordProvider === false ? "Set password" : "Update password"}
+        </button>
+      </div>
+    </ClientCard>
   );
 }
-

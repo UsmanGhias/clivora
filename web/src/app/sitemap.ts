@@ -5,6 +5,10 @@ import { DOC_CATALOG } from "@/lib/docs";
 export default function sitemap(): MetadataRoute.Sitemap {
   const pages = [
     "",
+    "/features",
+    "/pricing",
+    "/for-freelancers",
+    "/for-clients",
     "/connect",
     "/login",
     "/signup",

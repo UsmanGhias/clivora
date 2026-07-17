@@ -60,7 +60,7 @@ export default async function AppConnectPage() {
                 <ClientCard
                   title="Open jobs on CLIVORA"
                   action={
-                    <Link href="/connect/manage" className="text-xs font-semibold text-client-accent">
+                    <Link href="/app/connect/manage" className="text-xs font-semibold text-client-accent">
                       View all jobs →
                     </Link>
                   }
@@ -79,7 +79,7 @@ export default async function AppConnectPage() {
                     {needs.length === 0 && (
                       <li className="text-sm text-text-secondary">
                         No open jobs yet.{" "}
-                        <Link href="/connect/manage" className="font-semibold text-client-accent">
+                        <Link href="/app/connect/manage" className="font-semibold text-client-accent">
                           Post one →
                         </Link>
                       </li>

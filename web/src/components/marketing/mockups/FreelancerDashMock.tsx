@@ -78,7 +78,7 @@ export function FreelancerDashMock({ compact = false }: { compact?: boolean }) {
           <p className="text-[9px] text-[#475569]">Here&apos;s your freelance overview.</p>
 
           <div className="mt-2 grid grid-cols-4 gap-1.5">
-            <Stat label="Total Earnings" value="$24,560" trend={compact ? undefined : "Sample"} />
+            <Stat label="Total Earnings" value="$24,560" trend={compact ? undefined : "+12.4%"} />
             <Stat label="Active Projects" value="6" />
             <Stat label="Pending Proposals" value="5" />
             <Stat label="Unread Messages" value="4" />

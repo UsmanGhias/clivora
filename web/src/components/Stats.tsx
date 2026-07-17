@@ -47,7 +47,7 @@ const stats = [
 export function Stats() {
   return (
     <section className="relative py-16">
-      <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <AnimatedSection>
           <div className="grid grid-cols-2 gap-6 rounded-3xl glass-strong p-8 lg:grid-cols-4 lg:p-12">
             {stats.map((stat, i) => (

@@ -5,6 +5,11 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Check, Shield, Sparkles, HardDrive } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase-browser";
+import {
+  OFFICIAL_EMAIL,
+  PRO_PLUS_PRICE_USD,
+  PRO_PRICE_USD,
+} from "@/lib/pricing";
 import { site } from "@/lib/site";
 import { SubPageChrome } from "@/components/app/SubPageChrome";
 import { Logo } from "@/components/ui/Logo";
@@ -46,10 +51,11 @@ export default function ProCheckout() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
+  const [stripeBusy, setStripeBusy] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<string | null>(null);
   const [loadingPlan, setLoadingPlan] = useState(true);
 
-  const amount = plan === "pro_plus" ? site.pricing.proPlusMonthlyUsd : site.pricing.proMonthlyUsd;
+  const amount = plan === "pro_plus" ? PRO_PLUS_PRICE_USD : PRO_PRICE_USD;
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const isClient = accountType === "client";
 
@@ -203,9 +209,10 @@ export default function ProCheckout() {
         {!loadingPlan && alreadyProPlus && (
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
             <Logo size="sm" variant="onLight" />
-            <h2 className="mt-4 text-2xl font-extrabold text-navy">You&apos;re on Pro Plus</h2>
+            <h2 className="mt-4 text-2xl font-extrabold text-navy">You&apos;re on Pro Plus — enjoy</h2>
             <p className="mt-2 text-sm text-text-secondary">
-              Connect posting, MFA, and Plus perks are already unlocked. No extra payment required.
+              Connect posting, MFA, and Plus perks are already unlocked. No extra payment required —
+              get back to winning work.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link href="/connect" className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white">
@@ -231,7 +238,7 @@ export default function ProCheckout() {
                 onClick={() => setPlan("pro_plus")}
                 className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white"
               >
-                See Pro Plus · ${site.pricing.proPlusMonthlyUsd}/mo
+                See Pro Plus · ${PRO_PLUS_PRICE_USD}/mo
               </button>
               <Link href="/app" className="rounded-xl border border-navy/20 px-4 py-2 text-sm font-semibold text-navy">
                 Back to app
@@ -324,7 +331,7 @@ export default function ProCheckout() {
               <PlanOption
                 active={plan === "pro"}
                 title="Pro"
-                price={`$${site.pricing.proMonthlyUsd}/mo`}
+                price={`$${PRO_PRICE_USD}/mo`}
                 blurb={`${site.proLimits.fileVaultGb}GB vault · CRM unlimited`}
                 disabled={alreadyPro}
                 onClick={() => !alreadyPro && setPlan("pro")}
@@ -332,7 +339,7 @@ export default function ProCheckout() {
               <PlanOption
                 active={plan === "pro_plus"}
                 title="Pro Plus"
-                price={`$${site.pricing.proPlusMonthlyUsd}/mo`}
+                price={`$${PRO_PLUS_PRICE_USD}/mo`}
                 blurb={`All Pro + Connect + MFA · ${site.proPlusLimits.fileVaultGb}GB`}
                 badge="Best value"
                 onClick={() => setPlan("pro_plus")}
@@ -439,8 +446,8 @@ export default function ProCheckout() {
             </label>
             <div className="rounded-xl bg-teal-50 px-3 py-2 text-xs text-text-secondary">
               Amount due: <strong className="text-navy">${amount} USD</strong>
-              {plan === "pro_plus" && " · Pro Plus includes all Pro features"}. Email{" "}
-              {site.company.email} if approval is delayed.
+              {plan === "pro_plus" && " · Pro Plus includes all Pro features"}. Email {OFFICIAL_EMAIL}{" "}
+              if approval is delayed.
             </div>
             {error && <p className="rounded-lg bg-error/10 px-3 py-2 text-sm text-error">{error}</p>}
             <button
@@ -453,11 +460,40 @@ export default function ProCheckout() {
                 : `Submit ${plan === "pro_plus" ? "Pro Plus" : "Pro"} request`}
             </button>
 
-            {/* Stripe is dormant until STRIPE_ENABLED=true (master plan §4). Manual/Play only. */}
-            <p className="rounded-xl border border-dashed border-border bg-slate-50 px-3 py-3 text-center text-xs text-text-muted">
-              Card checkout via Stripe is <strong className="text-navy">coming soon</strong>. Use
-              JazzCash / bank transfer above, or subscribe inside the Android app with Google Play.
-            </p>
+            <div className="relative flex items-center gap-3">
+              <div className="flex-1 border-t border-border" />
+              <span className="text-xs text-text-muted">or</span>
+              <div className="flex-1 border-t border-border" />
+            </div>
+            <button
+              type="button"
+              disabled={stripeBusy || wantsSameOrLower}
+              onClick={async () => {
+                setStripeBusy(true);
+                setError("");
+                try {
+                  const res = await fetch("/api/stripe/checkout", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      plan,
+                      email: email.trim().toLowerCase(),
+                      promoCode: promoCode.trim() || undefined,
+                    }),
+                  });
+                  const json = await res.json();
+                  if (!res.ok) throw new Error(json.error || "Stripe checkout unavailable");
+                  if (json.url) window.location.href = json.url;
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : "Stripe checkout failed");
+                } finally {
+                  setStripeBusy(false);
+                }
+              }}
+              className="w-full rounded-xl border border-border bg-white py-3 text-sm font-bold text-navy shadow-sm hover:bg-slate-50 disabled:opacity-60"
+            >
+              {stripeBusy ? "Redirecting…" : "Pay with Stripe"}
+            </button>
           </form>
         )}
 

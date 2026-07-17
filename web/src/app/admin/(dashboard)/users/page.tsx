@@ -6,8 +6,6 @@ import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
   ExportImportAdd,
-  downloadCsv,
-  matchesAdminQuery,
   KpiGrid,
   FilterBar,
   AdminTable,
@@ -29,24 +27,24 @@ function nameOf(u: Record<string, unknown>) {
 export default function AdminUsersPage() {
   const { data, loading } = useAdminData();
   const [activeTab, setActiveTab] = useState("all");
-  const [q, setQ] = useState("");
-  const users = data?.users ?? [];
+  const users = useMemo(() => data?.users ?? [], [data?.users]);
 
   const kpis = useMemo(() => {
-    const total = users.length;
-    const clients = users.filter((u) => String(u.account_type) === "client").length;
-    const freelancers = users.filter((u) => String(u.account_type ?? "freelancer") !== "client").length;
+    const total = data?.overview?.totalUsers || users.length;
+    const clients = data?.overview?.clients || users.filter((u) => String(u.account_type) === "client").length;
+    const freelancers =
+      data?.overview?.freelancers ||
+      users.filter((u) => String(u.account_type ?? "freelancer") !== "client").length;
     const pro = users.filter((u) =>
-      ["pro", "premium"].includes(String(u.subscription_plan || u.plan || "").toLowerCase()),
+      ["pro", "pro_plus", "premium"].includes(String(u.subscription_plan || u.plan || "").toLowerCase()),
     ).length;
     const suspended = users.filter((u) => u.is_blocked || u.is_restricted).length;
     const unverified = users.filter((u) => u.email_verified === false || u.email_confirmed === false).length;
     return { total, clients, freelancers, pro, suspended, unverified };
-  }, [users]);
+  }, [users, data?.overview]);
 
   const filtered = useMemo(() => {
     return users.filter((u) => {
-      if (!matchesAdminQuery(u, q)) return false;
       const type = String(u.account_type ?? "freelancer").toLowerCase();
       const plan = String(u.subscription_plan || u.plan || "").toLowerCase();
       if (activeTab === "clients") return type === "client";
@@ -55,7 +53,7 @@ export default function AdminUsersPage() {
       if (activeTab === "suspended") return Boolean(u.is_blocked || u.is_restricted);
       return true;
     });
-  }, [users, activeTab, q]);
+  }, [users, activeTab]);
 
   return (
     <div>
@@ -71,24 +69,7 @@ export default function AdminUsersPage() {
       <AdminPageHeader
         title="Users"
         subtitle="Manage clients, freelancers, and platform accounts."
-        actions={
-          <ExportImportAdd
-            entity="Users"
-            onExport={() =>
-              downloadCsv(
-                "users.csv",
-                ["id", "email", "full_name", "account_type", "plan"],
-                filtered.map((u) => [
-                  String(u.id ?? ""),
-                  String(u.email ?? ""),
-                  String(u.full_name || u.name || ""),
-                  String(u.account_type ?? ""),
-                  String(u.subscription_plan || u.plan || ""),
-                ]),
-              )
-            }
-          />
-        }
+        actions={<ExportImportAdd entity="Users" addLabel="Add User" />}
       />
 
       <KpiGrid
@@ -137,8 +118,6 @@ export default function AdminUsersPage() {
           <div>
             <FilterBar
               searchPlaceholder="Search users by name or email…"
-              searchValue={q}
-              onSearchChange={setQ}
               tabs={[
                 { id: "all", label: "All", count: kpis.total },
                 { id: "clients", label: "Clients", count: kpis.clients },
@@ -148,7 +127,7 @@ export default function AdminUsersPage() {
               ]}
               activeTab={activeTab}
               onTabChange={setActiveTab}
-              onReset={() => { setActiveTab("all"); setQ(""); }}
+              onReset={() => setActiveTab("all")}
             />
 
             {!data && loading ? (

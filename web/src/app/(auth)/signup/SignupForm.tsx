@@ -8,15 +8,19 @@ import { site } from "@/lib/site";
 import { authErrorMessage, isRateLimitError } from "@/lib/auth-errors";
 import { ResendVerification } from "@/components/auth/ResendVerification";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
+import { earlyAccessPlanForSignup } from "@/lib/early-access";
 
 export default function SignupForm() {
   const router = useRouter();
   const search = useSearchParams();
   const next = search.get("next") || "/app";
+  const roleParam = search.get("role");
+  const initialRole =
+    roleParam === "client" || roleParam === "freelancer" ? roleParam : "freelancer";
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [accountType, setAccountType] = useState<"freelancer" | "client">("freelancer");
+  const [accountType, setAccountType] = useState<"freelancer" | "client">(initialRole);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [awaitingVerify, setAwaitingVerify] = useState(false);
@@ -56,7 +60,7 @@ export default function SignupForm() {
         email: trimmedEmail,
         name: name.trim(),
         account_type: accountType,
-        subscription_plan: "free",
+        subscription_plan: earlyAccessPlanForSignup(),
         updated_at: new Date().toISOString(),
       });
     }
@@ -74,95 +78,105 @@ export default function SignupForm() {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
-      <h1 className="text-2xl font-extrabold text-text-primary">Create account</h1>
-      <p className="mt-1 text-sm text-text-secondary">
-        Same Supabase account as the mobile app. Verify email before creating clients, invoices, or Connect posts.
+    <div className="rounded-3xl border border-slate-200 bg-white p-7 shadow-xl shadow-slate-200/60 sm:p-8">
+      <h1 className="font-display text-2xl font-extrabold text-navy">Create account</h1>
+      <p className="mt-1.5 text-sm text-slate-500">
+        Register before July 22, 2026 and your account gets Pro free, not Pro Plus.
       </p>
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
-        <div className="grid grid-cols-2 gap-2 rounded-xl bg-background p-1">
+        <div className="grid grid-cols-2 gap-1.5 rounded-xl border border-slate-200 bg-[#F8FAFC] p-1">
           {(["freelancer", "client"] as const).map((t) => (
             <button
               key={t}
               type="button"
               onClick={() => setAccountType(t)}
-              className={`rounded-lg py-2 text-sm font-semibold capitalize ${
-                accountType === t ? "bg-navy text-white" : "text-text-secondary"
+              className={`rounded-lg py-2.5 text-sm font-bold capitalize transition ${
+                accountType === t
+                  ? t === "freelancer"
+                    ? "bg-primary text-white shadow-sm"
+                    : "bg-navy text-white shadow-sm"
+                  : "text-slate-500 hover:text-navy"
               }`}
             >
               {t}
             </button>
           ))}
         </div>
-        <label className="block text-sm font-medium text-text-primary">
+        <label className="block text-sm font-semibold text-navy">
           Full name
           <input
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2.5 text-text-primary outline-none ring-primary focus:ring-2"
+            className="mt-1.5 w-full rounded-xl border border-slate-200 bg-[#F8FAFC] px-3.5 py-3 text-sm text-navy outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20"
           />
         </label>
-        <label className="block text-sm font-medium text-text-primary">
+        <label className="block text-sm font-semibold text-navy">
           Email
           <input
             type="email"
             required
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2.5 text-text-primary outline-none ring-primary focus:ring-2"
+            placeholder="you@company.com"
+            className="mt-1.5 w-full rounded-xl border border-slate-200 bg-[#F8FAFC] px-3.5 py-3 text-sm text-navy outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20"
           />
         </label>
-        <label className="block text-sm font-medium text-text-primary">
+        <label className="block text-sm font-semibold text-navy">
           Password
           <input
             type="password"
             required
             minLength={6}
+            autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2.5 text-text-primary outline-none ring-primary focus:ring-2"
+            className="mt-1.5 w-full rounded-xl border border-slate-200 bg-[#F8FAFC] px-3.5 py-3 text-sm text-navy outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20"
           />
         </label>
         {error && (
-          <p className="rounded-lg bg-error/10 px-3 py-2 text-sm text-error">{error}</p>
+          <p className="rounded-xl bg-red-50 px-3 py-2.5 text-sm text-red-600">{error}</p>
         )}
         {info && (
-          <p className="rounded-lg bg-primary/10 px-3 py-2 text-sm text-primary-dark">{info}</p>
+          <p className="rounded-xl bg-teal-50 px-3 py-2.5 text-sm text-primary-dark">{info}</p>
         )}
         {awaitingVerify && <ResendVerification email={email} />}
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-full bg-primary py-3 text-sm font-semibold text-white shadow-lg shadow-primary/25 disabled:opacity-60"
+          className="w-full rounded-xl bg-primary py-3.5 text-sm font-bold text-white shadow-lg shadow-primary/25 transition hover:bg-primary-dark disabled:opacity-60"
         >
-          {loading ? "Creating…" : "Sign up"}
+          {loading ? "Creating…" : "Create account and claim Pro"}
         </button>
       </form>
-      <div className="my-4 flex items-center gap-3 text-xs text-text-muted">
-        <div className="h-px flex-1 bg-border" />
+      <div className="my-5 flex items-center gap-3 text-xs font-medium text-slate-400">
+        <div className="h-px flex-1 bg-slate-200" />
         OR
-        <div className="h-px flex-1 bg-border" />
+        <div className="h-px flex-1 bg-slate-200" />
       </div>
       <GoogleAuthButton mode="signup" accountType={accountType} next={next} />
       {awaitingVerify && (
         <div className="mt-4 flex flex-wrap gap-2 text-sm">
           <Link
             href={`/login?next=${encodeURIComponent(next)}`}
-            className="rounded-full bg-navy px-4 py-2 font-semibold text-white"
+            className="rounded-xl bg-navy px-4 py-2.5 font-semibold text-white"
           >
             Go to sign in
           </Link>
-          <Link href="/connect" className="rounded-full border border-navy/20 px-4 py-2 font-semibold text-navy">
+          <Link
+            href="/connect"
+            className="rounded-xl border border-navy/20 px-4 py-2.5 font-semibold text-navy"
+          >
             Browse Connect
           </Link>
         </div>
       )}
-      <p className="mt-4 text-center text-sm text-text-secondary">
+      <p className="mt-5 text-center text-sm text-slate-500">
         Already have an account?{" "}
         <Link
           href={`/login?next=${encodeURIComponent(next)}`}
-          className="font-medium text-primary hover:underline"
+          className="font-semibold text-primary hover:underline"
         >
           Sign in
         </Link>

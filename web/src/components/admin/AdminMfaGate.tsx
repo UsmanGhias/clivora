@@ -60,7 +60,7 @@ export function AdminMfaGate({ children }: { children: React.ReactNode }) {
       const listed = await supabase.auth.mfa.listFactors();
       if (listed.error) throw listed.error;
       for (const factor of listed.data.totp.filter(
-        (candidate) => String(candidate.status) === "unverified",
+        (candidate) => (candidate.status as string) === "unverified",
       )) {
         const removed = await supabase.auth.mfa.unenroll({ factorId: factor.id });
         if (removed.error) throw removed.error;

@@ -42,56 +42,62 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
-      <h1 className="text-2xl font-extrabold text-text-primary">Sign in</h1>
-      <p className="mt-1 text-sm text-text-secondary">
-        Same account as the CLIVORA mobile app. You can browse after signup; verify email before creating work.
+    <div className="rounded-3xl border border-slate-200 bg-white p-7 shadow-xl shadow-slate-200/60 sm:p-8">
+      <h1 className="font-display text-2xl font-extrabold text-navy">Sign in</h1>
+      <p className="mt-1.5 text-sm text-slate-500">
+        Use the same email as your CLIVORA mobile app.
       </p>
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
-        <label className="block text-sm font-medium text-text-primary">
+        <label className="block text-sm font-semibold text-navy">
           Email
           <input
             type="email"
             required
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2.5 text-text-primary outline-none ring-primary focus:ring-2"
+            placeholder="you@company.com"
+            className="mt-1.5 w-full rounded-xl border border-slate-200 bg-[#F8FAFC] px-3.5 py-3 text-sm text-navy outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20"
           />
         </label>
-        <label className="block text-sm font-medium text-text-primary">
+        <label className="block text-sm font-semibold text-navy">
           Password
           <input
             type="password"
             required
             minLength={6}
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2.5 text-text-primary outline-none ring-primary focus:ring-2"
+            className="mt-1.5 w-full rounded-xl border border-slate-200 bg-[#F8FAFC] px-3.5 py-3 text-sm text-navy outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20"
           />
         </label>
         {error && (
-          <p className="rounded-lg bg-error/10 px-3 py-2 text-sm text-error">{error}</p>
+          <p className="rounded-xl bg-red-50 px-3 py-2.5 text-sm text-red-600">{error}</p>
         )}
         {needsVerify && <ResendVerification email={email} />}
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-full bg-primary py-3 text-sm font-semibold text-white shadow-lg shadow-primary/25 disabled:opacity-60"
+          className="w-full rounded-xl bg-primary py-3.5 text-sm font-bold text-white shadow-lg shadow-primary/25 transition hover:bg-primary-dark disabled:opacity-60"
         >
           {loading ? "Signing in…" : "Sign in"}
         </button>
       </form>
-      <div className="my-4 flex items-center gap-3 text-xs text-text-muted">
-        <div className="h-px flex-1 bg-border" />
+      <div className="my-5 flex items-center gap-3 text-xs font-medium text-slate-400">
+        <div className="h-px flex-1 bg-slate-200" />
         OR
-        <div className="h-px flex-1 bg-border" />
+        <div className="h-px flex-1 bg-slate-200" />
       </div>
       <GoogleAuthButton mode="signin" next={next} />
-      <div className="mt-4 flex items-center justify-between text-sm">
-        <Link href="/auth/reset-password" className="text-primary hover:underline">
+      <div className="mt-5 flex items-center justify-between text-sm">
+        <Link href="/auth/reset-password" className="font-medium text-slate-500 hover:text-primary">
           Forgot password?
         </Link>
-        <Link href="/signup" className="font-medium text-primary hover:underline">
+        <Link
+          href={`/signup?next=${encodeURIComponent(next)}`}
+          className="font-semibold text-primary hover:underline"
+        >
           Create account
         </Link>
       </div>

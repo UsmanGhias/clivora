@@ -8,7 +8,9 @@ import { SocialProofSection } from "@/components/marketing/SocialProofSection";
 import { ConnectSection } from "@/components/marketing/ConnectSection";
 import { WorkspaceSection } from "@/components/marketing/WorkspaceSection";
 import { FAQSection } from "@/components/marketing/FAQSection";
+import { PlayStorePromoSection } from "@/components/marketing/PlayStorePromoSection";
 import { CTASection } from "@/components/marketing/CTASection";
+import { EarlyAccessRewardPopup } from "@/components/marketing/EarlyAccessRewardPopup";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -19,6 +21,7 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <MarketingShell>
+      <EarlyAccessRewardPopup />
       <HomeHero />
       <TrustLogos />
       <DualPortalSection />
@@ -26,6 +29,7 @@ export default function Home() {
       <SocialProofSection />
       <ConnectSection />
       <WorkspaceSection />
+      <PlayStorePromoSection />
       <FAQSection />
       <CTASection />
     </MarketingShell>

@@ -150,9 +150,9 @@ export default async function ClientsPage() {
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {[
-          { label: "Total Clients", value: String(customers.length), sub: "+20% vs last month", tone: "bg-primary/10 text-primary" },
-          { label: "Active Clients", value: String(activeClients || customers.length), sub: `${customers.length ? Math.round((activeClients / Math.max(1, customers.length)) * 100) : 67}% of total`, tone: "bg-violet-100 text-violet-700" },
-          { label: "Total Revenue", value: `$${fin.totalRevenue.toLocaleString()}`, sub: "+18.2%", tone: "bg-emerald-100 text-emerald-700" },
+          { label: "Total Clients", value: String(customers.length), sub: "In your CRM", tone: "bg-primary/10 text-primary" },
+          { label: "Active Clients", value: String(activeClients || customers.length), sub: customers.length ? `${Math.round((activeClients / Math.max(1, customers.length)) * 100)}% of total` : "No clients yet", tone: "bg-violet-100 text-violet-700" },
+          { label: "Total Revenue", value: `$${fin.totalRevenue.toLocaleString()}`, sub: "From paid invoices", tone: "bg-emerald-100 text-emerald-700" },
           { label: "Projects", value: String(fin.projects.length), sub: "In Progress", tone: "bg-sky-100 text-sky-800" },
           { label: "Total Invoices", value: String(fin.invoices.length), sub: "This Year", tone: "bg-red-100 text-red-700" },
         ].map((s) => (

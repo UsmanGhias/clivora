@@ -5,9 +5,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    await requireAdmin({ requireAal2: true });
+    // Read snapshot at AAL1 so the console works before MFA; mutations stay AAL2.
+    await requireAdmin({ requireAal2: false });
     const snapshot = await loadPlatformSnapshot();
-    // Always 200 — soft-fail 503 appears as warning banner in UI (mockup parity)
     return adminJson(snapshot);
   } catch (error) {
     return adminErrorResponse(error, "Could not load admin platform data");

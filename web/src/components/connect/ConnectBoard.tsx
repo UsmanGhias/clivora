@@ -20,6 +20,7 @@ import {
   type ConnectProfile,
   type ConnectRequestRow,
 } from "@/lib/connect-types";
+import { stripPortfolioMeta } from "@/lib/connect-portfolio";
 import { ConnectTrust } from "@/components/connect/ConnectTrust";
 import { ConnectActions } from "@/components/connect/ConnectActions";
 import { site } from "@/lib/site";
@@ -132,6 +133,10 @@ export function ConnectBoard({
     label: string;
   } | null>(null);
   const [message, setMessage] = useState("Hi. I'd like to connect on CLIVORA.");
+  const [contactSubject, setContactSubject] = useState("Connect introduction");
+  const [contactAvailability, setContactAvailability] = useState("This week");
+  const [jobsPage, setJobsPage] = useState(1);
+  const JOBS_PER_PAGE = 12;
 
   const popularSkills = useMemo(() => {
     const counts = new Map<string, number>();
@@ -165,7 +170,7 @@ export function ConnectBoard({
       const hay = [
         p.display_title,
         p.headline,
-        p.bio,
+        p.bio ? stripPortfolioMeta(p.bio) : "",
         p.location_label,
         p.rate_band,
         ...skillsList(p.skills),
@@ -255,7 +260,16 @@ export function ConnectBoard({
         p_to_user_id: compose.toUserId,
         p_target_profile_id: compose.targetProfileId || null,
         p_target_need_id: compose.targetNeedId || null,
-        p_message: message.trim() || "I'd like to connect on CLIVORA.",
+        p_message: [
+          contactSubject.trim() ? `Subject: ${contactSubject.trim()}` : "",
+          message.trim() || "I'd like to connect on CLIVORA.",
+          contactAvailability.trim()
+            ? `\nAvailability to chat: ${contactAvailability.trim()}`
+            : "",
+          "\n— Sent via CLIVORA Contact (emails unlock after mutual accept)",
+        ]
+          .filter(Boolean)
+          .join("\n"),
       });
       if (err) throw err;
       setOk(`Request sent (−${CONNECT_CREDIT_COSTS.contact} credit). Contact unlocks after they accept.`);
@@ -277,20 +291,15 @@ export function ConnectBoard({
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Sign in required");
-      const { error: err } = await supabase
-        .from("connect_requests")
-        .update({
-          status: accept ? "accepted" : "declined",
-          ...(accept ? { revealed_at: new Date().toISOString() } : {}),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", requestId)
-        .eq("to_user_id", user.id);
+      const { error: err } = await supabase.rpc("connect_respond_request", {
+        p_request_id: requestId,
+        p_accept: accept,
+      });
       if (err) throw err;
-      setOk(accept ? "Accepted, emails are now visible." : "Request declined.");
+      setOk(accept ? "Accepted — you can message each other now." : "Request declined.");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Update failed");
+      setError(parseConnectCreditError(err).message);
     } finally {
       setBusyId(null);
     }
@@ -563,31 +572,88 @@ export function ConnectBoard({
       {compose && (
         <form
           onSubmit={sendRequest}
-          className="space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-4"
+          className="space-y-3 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-white to-teal-50 p-5 shadow-sm"
         >
-          <p className="text-sm font-bold text-navy">Contact {compose.label}</p>
-          <p className="text-xs text-text-secondary">
-            Emails stay private until both sides accept, safer than open marketplaces.
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm font-bold text-navy">Contact {compose.label}</p>
+              <p className="mt-1 text-xs text-text-secondary">
+                Private Connect request (−{CONNECT_CREDIT_COSTS.contact} credit). Emails stay hidden
+                until both sides accept — safer than open marketplaces.
+              </p>
+            </div>
+            <span className="rounded-full bg-primary/15 px-2.5 py-1 text-[10px] font-bold uppercase text-primary-dark">
+              Secure contact
+            </span>
+          </div>
+          <label className="block text-xs font-semibold text-text-secondary">
+            Subject
+            <input
+              value={contactSubject}
+              onChange={(e) => setContactSubject(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2 text-sm"
+              placeholder="Why you're reaching out"
+            />
+          </label>
+          <label className="block text-xs font-semibold text-text-secondary">
+            Message
+            <textarea
+              required
+              rows={4}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2 text-sm"
+              placeholder="Introduce yourself, relevant wins, and what you want to discuss…"
+            />
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                ["Fit", "Hi — I saw your listing and think we're a strong fit for this brief."],
+                ["Ready", "Quick intro: I deliver similar work and can start this week."],
+                ["Scope", "I'd love to clarify scope and propose a clear milestone plan."],
+              ] as const
+            ).map(([label, text]) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => setMessage(text)}
+                className="rounded-full border border-dashed border-primary/30 bg-white px-3 py-1 text-[11px] font-semibold text-primary-dark hover:bg-primary/5"
+              >
+                Template: {label}
+              </button>
+            ))}
+          </div>
+          <label className="block text-xs font-semibold text-text-secondary">
+            When can you chat?
+            <select
+              value={contactAvailability}
+              onChange={(e) => setContactAvailability(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2 text-sm"
+            >
+              {["Today", "This week", "Next week", "Flexible"].map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="text-[11px] text-text-muted">
+            After mutual accept you can message freely. Taking deals off-platform to avoid fees
+            violates CLIVORA policy.
           </p>
-          <textarea
-            required
-            rows={3}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            className="w-full rounded-xl border border-border px-3 py-2 text-sm"
-          />
           <div className="flex flex-wrap gap-2">
             <button
               type="submit"
               disabled={!!busyId}
-              className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
             >
               {busyId ? "Sending…" : "Send Connect request"}
             </button>
             <button
               type="button"
               onClick={() => setCompose(null)}
-              className="rounded-xl border border-border px-4 py-2 text-sm font-semibold"
+              className="rounded-xl border border-border px-4 py-2.5 text-sm font-semibold"
             >
               Cancel
             </button>
@@ -605,7 +671,7 @@ export function ConnectBoard({
               </p>
             </div>
             {signedIn && isProPlus && !isClient && (
-              <Link href="/connect/manage" className="text-sm font-semibold text-primary">
+              <Link href="/app/connect/manage" className="text-sm font-semibold text-primary">
                 Edit my profile →
               </Link>
             )}
@@ -616,7 +682,7 @@ export function ConnectBoard({
               ctaHref={
                 signedIn
                   ? isProPlus
-                    ? "/connect/manage"
+                    ? "/app/connect/manage"
                     : "/pro?plan=pro_plus"
                   : `/signup?next=${encodeURIComponent("/pro?plan=pro_plus")}`
               }
@@ -656,7 +722,9 @@ export function ConnectBoard({
                     <p className="mt-1 text-sm font-medium text-text-primary">
                       {p.headline || p.display_title}
                     </p>
-                    <p className="mt-1 line-clamp-2 text-sm text-text-secondary">{p.bio}</p>
+                    <p className="mt-1 line-clamp-2 text-sm text-text-secondary">
+                      {stripPortfolioMeta(p.bio)}
+                    </p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {skillsList(p.skills)
                         .slice(0, 5)
@@ -751,7 +819,9 @@ export function ConnectBoard({
                     </button>
                   )}
                   {expandedId === p.id && p.bio && p.headline && (
-                    <p className="mt-2 text-sm text-text-secondary">{p.bio}</p>
+                    <p className="mt-2 text-sm text-text-secondary">
+                      {stripPortfolioMeta(p.bio)}
+                    </p>
                   )}
                   <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
                     {memberSinceLabel(p.created_at) && (
@@ -814,31 +884,49 @@ export function ConnectBoard({
               <h2 className="font-display text-xl font-extrabold text-navy">Open jobs</h2>
               <p className="text-sm text-text-secondary">Client briefs looking for freelancers</p>
             </div>
-            {signedIn && isProPlus && isClient && (
-              <Link href="/connect/manage" className="text-sm font-semibold text-primary">
-                Post a job →
+            {signedIn && isProPlus && (
+              <Link href="/app/connect/manage" className="text-sm font-semibold text-primary">
+                {isClient ? "Post a job →" : "Post a need →"}
               </Link>
             )}
           </div>
           {filteredNeeds.length === 0 ? (
             <Empty
-              text="No open jobs match. Clients can post needs from Manage."
+              text={
+                isClient
+                  ? "No open jobs yet. Post a job to reach Pro Plus freelancers."
+                  : "No open jobs match. You can also post a need for peer help."
+              }
               ctaHref={
                 signedIn
                   ? isProPlus
-                    ? "/connect/manage"
+                    ? "/app/connect/manage"
                     : "/pro?plan=pro_plus"
                   : `/signup?next=${encodeURIComponent("/pro?plan=pro_plus")}`
               }
               ctaLabel={
-                signedIn && isProPlus && isClient
-                  ? "Post a job"
+                signedIn && isProPlus
+                  ? isClient
+                    ? "Post a job"
+                    : "Post a need"
                   : `Get Pro Plus · ${site.pricing.proPlusMonthlyLabel}/mo`
               }
             />
           ) : (
+            <>
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-text-muted">
+              <span>
+                Showing{" "}
+                {Math.min(filteredNeeds.length, (jobsPage - 1) * JOBS_PER_PAGE + 1)}–
+                {Math.min(filteredNeeds.length, jobsPage * JOBS_PER_PAGE)} of{" "}
+                {filteredNeeds.length} jobs
+              </span>
+              <span>Page {jobsPage}</span>
+            </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              {filteredNeeds.map((n) => (
+              {filteredNeeds
+                .slice((jobsPage - 1) * JOBS_PER_PAGE, jobsPage * JOBS_PER_PAGE)
+                .map((n) => (
                 <article
                   key={n.id}
                   className="rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-primary/40"
@@ -885,23 +973,49 @@ export function ConnectBoard({
                         </button>
                       ))}
                   </div>
-                  <button
-                    type="button"
-                    disabled={n.client_user_id === myUserId}
-                    onClick={() =>
-                      contactGate(() =>
-                        setCompose({
-                          toUserId: n.client_user_id,
-                          targetNeedId: n.id,
-                          label: n.title || "job poster",
-                        }),
-                      )
-                    }
-                    className="mt-4 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
-                  >
-                    Apply / Contact
-                  </button>
-                  {signedIn && isProPlus && myUserId && n.client_user_id !== myUserId && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Link
+                      href={
+                        signedIn && isProPlus
+                          ? `/app/connect/apply?needId=${encodeURIComponent(n.id)}&to=${encodeURIComponent(n.client_user_id)}&mode=contact`
+                          : "/pro?plan=pro_plus"
+                      }
+                      onClick={(e) => {
+                        if (n.client_user_id === myUserId) {
+                          e.preventDefault();
+                          return;
+                        }
+                        if (signedIn && isProPlus) return;
+                        e.preventDefault();
+                        contactGate(() => {
+                          window.location.href = `/app/connect/apply?needId=${encodeURIComponent(n.id)}&to=${encodeURIComponent(n.client_user_id)}&mode=contact`;
+                        });
+                      }}
+                      className={cn(
+                        "rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white",
+                        n.client_user_id === myUserId && "pointer-events-none opacity-40",
+                      )}
+                    >
+                      Contact
+                    </Link>
+                    {signedIn &&
+                      isProPlus &&
+                      !isClient &&
+                      myUserId &&
+                      n.client_user_id !== myUserId && (
+                      <Link
+                        href={`/app/connect/apply?needId=${encodeURIComponent(n.id)}&to=${encodeURIComponent(n.client_user_id)}&mode=proposal`}
+                        className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary-dark hover:bg-primary/20"
+                      >
+                        Submit proposal
+                      </Link>
+                    )}
+                  </div>
+                  {signedIn &&
+                    isProPlus &&
+                    isClient &&
+                    myUserId &&
+                    n.client_user_id === myUserId && (
                     <ConnectTrust
                       requestId={n.id}
                       myUserId={myUserId}
@@ -913,6 +1027,48 @@ export function ConnectBoard({
                 </article>
               ))}
             </div>
+            {filteredNeeds.length > JOBS_PER_PAGE && (
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <button
+                  type="button"
+                  disabled={jobsPage <= 1}
+                  onClick={() => setJobsPage((p) => Math.max(1, p - 1))}
+                  className="rounded-xl border border-border px-3 py-2 text-sm font-semibold disabled:opacity-40"
+                >
+                  Previous
+                </button>
+                {Array.from({
+                  length: Math.min(8, Math.ceil(filteredNeeds.length / JOBS_PER_PAGE)),
+                }).map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setJobsPage(i + 1)}
+                    className={cn(
+                      "h-9 w-9 rounded-xl text-sm font-bold",
+                      jobsPage === i + 1
+                        ? "bg-primary text-white"
+                        : "border border-border text-navy",
+                    )}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  disabled={jobsPage >= Math.ceil(filteredNeeds.length / JOBS_PER_PAGE)}
+                  onClick={() =>
+                    setJobsPage((p) =>
+                      Math.min(Math.ceil(filteredNeeds.length / JOBS_PER_PAGE), p + 1),
+                    )
+                  }
+                  className="rounded-xl border border-border px-3 py-2 text-sm font-semibold disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+            </>
           )}
         </section>
       )}
