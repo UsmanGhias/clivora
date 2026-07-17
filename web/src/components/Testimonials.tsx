@@ -12,29 +12,29 @@ const testimonials = [
   {
     name: "Ahmed K.",
     role: "Freelance Developer",
-    location: "Karachi, PK",
-    text: "I used to keep client emails in Gmail labels, hours in a Notes file, and invoices in a Word template. CLIVORA’s morning dashboard shows paid vs pending from real invoice rows - I stopped guessing what I’m owed.",
+    location: "Remote",
+    text: "I used to keep client emails in labels, hours in a notes file, and invoices in a Word template. CLIVORA’s morning dashboard shows paid vs pending from real invoice rows - I stopped guessing what I’m owed.",
     rating: 5,
   },
   {
     name: "Sarah M.",
     role: "Brand Designer",
-    location: "Lahore, PK",
-    text: "Pro invoice branding made my PDF look like my studio, not a generic template. Clients notice. JazzCash upgrade path meant I didn’t need a US card just to try Pro.",
+    location: "Europe",
+    text: "Pro invoice branding made my PDF look like my studio, not a generic template. Clients notice - and they pay me directly on the invoice, without a marketplace taking a cut.",
     rating: 5,
   },
   {
     name: "Omar R.",
     role: "Marketing consultant",
-    location: "Islamabad, PK",
+    location: "Middle East",
     text: "Connect’s mutual-accept rule is the feature I quote to clients: nobody gets my email until I say yes. After accept, the CRM project and invoice live in the same login as the Android app.",
     rating: 5,
   },
   {
     name: "Fatima Z.",
     role: "Small agency owner",
-    location: "Dubai, UAE",
-    text: "Fifteen shared projects used to live in WhatsApp threads. Shared project status + tasks on CLIVORA is boring in a good way - my freelancers know what’s in progress without another Slack.",
+    location: "Remote",
+    text: "Fifteen shared projects used to live in chat threads. Shared project status + tasks on CLIVORA is boring in a good way - freelancers know what’s in progress without another tool.",
     rating: 5,
   },
 ];
@@ -54,7 +54,7 @@ export function Testimonials() {
             <span className="text-gradient">who invoice for real</span>
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-white/60">
-            Early users in PK and the Gulf - concrete desks, not “thousands of happy customers.”
+            Early users worldwide - concrete desks, not empty “thousands of customers” claims.
           </p>
         </AnimatedSection>
 

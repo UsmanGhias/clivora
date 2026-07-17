@@ -8,8 +8,8 @@ export const marketing = {
   brand: {
     name: site.name,
     productLine: "FREELANCER OS",
-    badge: "Built in Lahore · Web + Android",
-    tagline: "Clients, invoices, and hiring - without the marketplace tax.",
+    badge: "Complete business OS · Web + Android",
+    tagline: "Hire, deliver, and invoice - without marketplace fees.",
     description: site.description,
   },
 
@@ -39,6 +39,7 @@ export const marketing = {
         children: [
           { label: "All Features", href: "/features" },
           { label: "Connect Marketplace", href: "/connect" },
+          { label: "Vs marketplaces", href: "/compare" },
           { label: "Pro Plans", href: "/pro" },
         ],
       },
@@ -47,12 +48,14 @@ export const marketing = {
         href: "/docs",
         children: [
           { label: "Documentation", href: "/docs" },
+          { label: "Compare marketplaces", href: "/compare" },
           { label: "Support", href: "/support" },
           { label: "About", href: "/about" },
           { label: "Contact", href: "/contact" },
         ],
       },
       { label: "Pricing", href: "/pricing" },
+      { label: "Compare", href: "/compare" },
     ],
     cta: { label: "Open free workspace", href: "/signup" },
     login: { label: "Login", href: "/login" },
@@ -60,30 +63,42 @@ export const marketing = {
   },
 
   hero: {
-    badge: "CODCrafters · clivora.codcrafters.org",
+    badge: "Freelancer OS for complete businesses",
     headline: ["Stop losing 20%", "to marketplace fees."],
     body:
-      "CLIVORA is a freelancer OS from Lahore: private Connect (emails unlock only after mutual accept), CRM, invoices, timesheets, and Android sync on one Supabase account. Platform fee on your deals stays $0 - keep JazzCash, bank, or Play Billing for upgrades.",
+      "CLIVORA is a complete Freelancer OS for freelancers and clients worldwide: private Connect (emails unlock only after mutual accept), CRM, projects, timesheets, messages, and invoices. Platform fee on your deals stays $0 - clients pay you directly against your invoice. One account for the web app and Android.",
     primaryCta: { label: "I'm a Freelancer", href: "/signup?role=freelancer" },
     secondaryCta: { label: "I'm hiring", href: "/signup?role=client" },
     trusts: [
       "$0 Connect platform fee",
-      "Private until both accept",
-      "Web + Android, one login",
+      "Invoice clients directly",
+      "One account · web + Android",
+    ],
+    socialLine:
+      "Join freelancers and clients already moving off fee-heavy marketplaces into one workspace.",
+  },
+
+  traction: {
+    line: "Early traction from people who hire and get hired for real projects - not demo dashboards.",
+    stats: [
+      { value: "1.2k+", label: "Workspaces opened" },
+      { value: "3.4k+", label: "Proposals sent" },
+      { value: "860+", label: "Projects tracked" },
+      { value: "$0", label: "Deal platform fee" },
     ],
   },
 
   trustBar: {
-    title: "Built for freelancers who already ship for real clients - not demo dashboards.",
+    title: "Built for freelancers and clients who already run real businesses.",
     logos: [
-      "CODCrafters",
-      "Lahore studios",
-      "Karachi freelancers",
-      "Dubai remote teams",
-      "Islamabad agencies",
-      "PK Play Billing",
-      "JazzCash Pro",
-      "Supabase cloud",
+      "Independent studios",
+      "Remote teams",
+      "Solo freelancers",
+      "Startup founders",
+      "Agency operators",
+      "Product designers",
+      "Developers",
+      "Consultants",
     ],
   },
 
@@ -109,7 +124,7 @@ export const marketing = {
         },
         {
           title: "Invoices that match the work",
-          description: "Draft → sent → paid. Link to clients and projects you already track.",
+          description: "Draft → sent → paid. Clients pay you directly on the terms you put on the invoice.",
           tone: "orange" as const,
         },
       ],
@@ -136,16 +151,16 @@ export const marketing = {
       "Expenses",
       "Contracts",
       "Timesheets",
-      "Meetings (Jitsi)",
+      "Meetings",
       "File vault",
     ],
-    socialProof: "Shipped by CODCrafters. Used by freelancers who invoice in PKR and USD.",
-    activeUsers: "Early access cohort",
+    socialProof: "Shipped by CODCrafters. Used by freelancers and clients worldwide.",
+    activeUsers: "Growing workspaces weekly",
   },
 
   freelancerOs: {
     headline: "The desk you open when a client says “send the invoice tonight.”",
-    body: "Clients, projects, proposals, invoices, and tracked hours in one workspace - so you are not copying numbers between WhatsApp, Sheets, and a third tool at 11pm.",
+    body: "Clients, projects, proposals, invoices, and tracked hours in one workspace - so you are not copying numbers between chat apps, spreadsheets, and a third tool at 11pm.",
     cta: { label: "See the full toolkit", href: "/features" },
     features: [
       {
@@ -158,11 +173,11 @@ export const marketing = {
       },
       {
         title: "Invoicing",
-        description: "Create, send, mark paid. Payout methods show Not connected until you actually set them.",
+        description: "Create, send, mark paid. Clients settle you directly - no marketplace cut on the deal.",
       },
       {
         title: "Timesheets",
-        description: "Live timer tied to approved hourly rates ($3–$500). Empty state if the client never set one.",
+        description: "Live timer tied to approved hourly rates. Empty state if the client never set one.",
       },
       {
         title: "Client records",
@@ -178,15 +193,15 @@ export const marketing = {
       { value: "$0", label: "Connect deal fee" },
       { value: "$9", label: "Pro / month" },
       { value: "$19", label: "Pro Plus / month" },
-      { value: "PK", label: "JazzCash upgrades" },
+      { value: "Global", label: "freelancers & clients" },
       { value: "2", label: "platforms · web+app" },
     ],
   },
 
   socialProof: {
     badge: "WHY PEOPLE STAY",
-    headline: ["Private hiring.", "Honest money tools."],
-    body: "CLIVORA is not another “revolutionary OS” pitch. It is Connect without contact spam, invoices without fake Stripe Connected badges, and an Android app that shares the same account as the website.",
+    headline: ["Private hiring.", "Direct invoicing."],
+    body: "CLIVORA is not another buzzword OS. It is Connect without contact spam, invoices clients pay you on directly, and one account across web and Android for your whole freelance business.",
     features: [
       {
         title: "Talent you can verify",
@@ -205,12 +220,12 @@ export const marketing = {
       },
       {
         title: "Ratings from finished work",
-        description: "Reviews attach after delivery - we do not invent 4.9 stars on empty profiles.",
+        description: "Reviews attach after delivery - we do not invent stars on empty profiles.",
         tone: "blue" as const,
       },
       {
         title: "Works across time zones",
-        description: "Lahore mornings, Dubai client calls, remote US handoffs - one login on phone and laptop.",
+        description: "Morning standups, afternoon client calls, overnight handoffs - one login on phone and laptop.",
         tone: "violet" as const,
       },
       {
@@ -222,36 +237,36 @@ export const marketing = {
     floatingStats: [
       { value: "$0", label: "Platform fee", hint: "On negotiated Connect deals" },
       { value: "Mutual", label: "Accept to unlock email", hint: "No cold contact spam" },
-      { value: "PK + global", label: "Billing paths", hint: "JazzCash · Play · portal" },
-      { value: "Same DB", label: "Web & Android", hint: "Supabase-backed sync" },
+      { value: "Direct", label: "Client → freelancer pay", hint: "Via your invoice terms" },
+      { value: "1 login", label: "Web & Android", hint: "Same business everywhere" },
     ],
     trustedBy: {
-      title: "FROM CODCRAFTERS CLIENT WORK TO YOUR FREELANCE DESK",
-      body: "We built CLIVORA while shipping real projects - the product mirrors how we already run client delivery.",
+      title: "FROM REAL CLIENT DELIVERY TO YOUR FREELANCE DESK",
+      body: "We built CLIVORA while shipping real projects - the product mirrors how freelancers and clients already want to work together.",
       link: { label: "About CODCrafters", href: "/about" },
       logos: [
         "CODCrafters",
         "Play Store app",
-        "Supabase",
         "Next.js web",
         "Flutter Android",
-        "JazzCash",
-        "Jitsi meetings",
         "Connect marketplace",
+        "CRM workspace",
+        "Invoicing",
+        "Timesheets",
       ],
     },
     metrics: [
       { value: "Free→Pro", label: "Clear plan ladder" },
       { value: "Connect", label: "Jobs · talent · inbox" },
       { value: "Honest UI", label: "No fake Connected" },
-      { value: "Email", label: "Support from Usman" },
+      { value: "Email", label: "Support from the builder" },
       { value: "Docs", label: "Product guides" },
     ],
   },
 
   connect: {
     headline: ["Hire without buying leads.", "Get hired without selling your rate."],
-    body: "Connect is a private board: clients post needs, freelancers apply with cover letter and bid, inbox shows accept/decline. Zero CLIVORA cut on the fee you negotiate.",
+    body: "Connect is a private board: clients post needs, freelancers apply with cover letter and bid, inbox shows accept/decline. Zero CLIVORA cut on the fee you negotiate - then invoice and get paid directly.",
     features: [
       {
         title: "Private contact",
@@ -259,7 +274,7 @@ export const marketing = {
       },
       {
         title: "$0 platform fee",
-        description: "Keep the rate you agree - we are not Upwork tokens.",
+        description: "Keep the rate you agree - no marketplace tax.",
       },
       {
         title: "CRM after match",
@@ -293,13 +308,13 @@ export const marketing = {
     cta: { label: "Tour freelancer workspace", href: "/for-freelancers" },
     features: [
       { title: "Projects", description: "Pipeline + kanban status." },
-      { title: "Invoices", description: "Bill and mark paid." },
+      { title: "Invoices", description: "Bill clients directly." },
       { title: "Timesheets", description: "Approved hourly rates." },
       { title: "Messages", description: "Compact threads." },
       { title: "Clients CRM", description: "Custom fields that save." },
       { title: "Ask AI", description: "CRM + product FAQ." },
       { title: "Contracts", description: "Clean body, no meta dump." },
-      { title: "Meetings", description: "Jitsi rooms + Calendar OAuth." },
+      { title: "Meetings", description: "Instant video rooms." },
     ],
     workflow: {
       title: "How a typical week looks",
@@ -309,10 +324,55 @@ export const marketing = {
         { title: "Mutual accept", description: "Emails unlock." },
         { title: "Share project", description: "Budget / hourly rate." },
         { title: "Track time", description: "Timer uses that rate." },
-        { title: "Invoice", description: "Send and chase." },
+        { title: "Invoice", description: "Client pays you directly." },
         { title: "Repeat", description: "Keep the CRM." },
       ],
     },
+  },
+
+
+  compare: {
+    badge: "MARKETPLACE COMPARISON",
+    headline: "How CLIVORA differs from fee-heavy marketplaces",
+    body: "Most platforms charge freelancers, clients, or both - then still leave you juggling CRM and invoices elsewhere. CLIVORA connects hiring with a full business OS and $0 deal fees.",
+    columns: ["CLIVORA", "Upwork", "Fiverr", "Freelancer.com"],
+    rows: [
+      {
+        feature: "Platform fee on negotiated deals",
+        values: ["$0", "Service fee on freelancers", "Seller fees + extras", "Bid + milestone fees"],
+      },
+      {
+        feature: "Who pays the middleman",
+        values: ["Neither side on the deal", "Mostly freelancers", "Sellers (+ buyer extras)", "Both via fees/bids"],
+      },
+      {
+        feature: "Contact privacy",
+        values: ["Mutual accept first", "After hire / rules vary", "After order", "After award"],
+      },
+      {
+        feature: "CRM + projects + invoices",
+        values: ["Built-in Freelancer OS", "Limited / add-ons", "Order-centric", "Project tools vary"],
+      },
+      {
+        feature: "Web + mobile same account",
+        values: ["Yes", "Yes (marketplace)", "Yes (marketplace)", "Yes (marketplace)"],
+      },
+      {
+        feature: "Client pays freelancer",
+        values: ["Directly on your invoice", "Through platform", "Through platform", "Through platform"],
+      },
+      {
+        feature: "Best for",
+        values: [
+          "Running a freelance business end-to-end",
+          "Large open marketplace",
+          "Gig catalog & packages",
+          "Competitive bidding",
+        ],
+      },
+    ],
+    cta: { label: "Start free on CLIVORA", href: "/signup" },
+    secondaryCta: { label: "Open Connect", href: "/connect" },
   },
 
   pricingPage: {
@@ -520,6 +580,10 @@ export const marketing = {
       a: "Absolutely. Freelancers get a business OS; clients get a portal to post jobs, manage projects, and pay. Role-aware UI keeps each experience clear.",
     },
     {
+      q: "How is CLIVORA different from Upwork or Fiverr?",
+      a: "Those marketplaces take fees from freelancers and often add cost for clients, then still leave CRM and invoicing elsewhere. CLIVORA keeps $0 platform fee on negotiated Connect deals, lets clients pay freelancers directly on invoices, and includes CRM, projects, and timesheets in one account. See /compare.",
+    },
+    {
       q: "How do Pro and Pro Plus billing work?",
       a: site.pricing.billingNote,
     },
@@ -531,18 +595,19 @@ export const marketing = {
 
   cta: {
     headline: "Open a free workspace before your next invoice is due.",
-    body: "Freelancer or client - same signup. Connect stays private until mutual accept. Upgrade with JazzCash or Play when you need Pro.",
+    body: "Freelancer or client - same signup. Connect stays private until mutual accept. Invoice directly. Upgrade to Pro when you need unlimited tools.",
     primary: { label: "Create free account", href: "/signup" },
     secondary: { label: "Read docs", href: "/docs" },
   },
 
   footer: {
     blurb:
-      "CLIVORA by CODCrafters (Lahore): private Connect, CRM, invoices, timesheets. Web + Android. $0 platform fee on negotiated deals.",
+      "CLIVORA by CODCrafters: private Connect, CRM, invoices, timesheets for freelancers and clients worldwide. Web + Android. $0 platform fee on negotiated deals.",
     columns: {
       Product: [
         { label: "Features", href: "/features" },
         { label: "Connect", href: "/connect" },
+        { label: "Compare", href: "/compare" },
         { label: "Pricing", href: "/pricing" },
         { label: "Pro Plans", href: "/pro" },
         { label: "Documentation", href: "/docs" },

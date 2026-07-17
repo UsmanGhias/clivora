@@ -1,10 +1,10 @@
 export const site = {
   name: "CLIVORA",
-  tagline: "Private Connect + Freelancer CRM",
+  tagline: "Complete Freelancer OS - Connect, CRM & Invoices",
   shortDescription:
-    "Private Connect hiring, CRM, invoices, and timesheets on web and Android - $0 platform fee on your deals.",
+    "Complete Freelancer OS: private Connect hiring, CRM, invoices, and timesheets on web and Android - $0 platform fee on your deals.",
   description:
-    "CLIVORA is a freelancer OS from CODCrafters (Lahore). Hire and get hired on Connect with private contact until mutual accept, then run clients, projects, invoices, and timesheets on web and Android with one account. Platform fee on negotiated deals stays $0.",
+    "CLIVORA is a complete Freelancer OS for freelancers and clients worldwide. Hire and get hired on Connect with private contact until mutual accept, then run clients, projects, invoices, and timesheets on web and Android with one account. Platform fee on negotiated deals stays $0 - clients pay freelancers directly.",
   url: "https://clivora.codcrafters.org",
   appPackage: "org.codcrafters.clivora",
   appVersion: "3.8.1",

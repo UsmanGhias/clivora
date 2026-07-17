@@ -659,7 +659,7 @@ export function ConnectManagePanel() {
                 className="w-full rounded-xl border border-border px-3 py-2.5"
               />
               <input
-                placeholder="Location (e.g. Lahore · Remote)"
+                placeholder="Location (e.g. Remote · City)"
                 value={listing.location_label}
                 onChange={(e) => setListing({ ...listing, location_label: e.target.value })}
                 className="w-full rounded-xl border border-border px-3 py-2.5"

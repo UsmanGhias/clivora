@@ -114,7 +114,7 @@ function buildProductFaq(query: string): string | null {
     return [
       "CLIVORA plans: Free, Pro, and Pro Plus.",
       "Free covers core CRM basics. Pro unlocks Ask AI and deeper freelancer tools. Pro Plus adds Connect marketplace credits, MFA, and larger vault.",
-      "Platform fee is $0 - you keep what clients pay. Billing uses JazzCash/manual or Play Billing on Android; Stripe customer portal exists for some subscriptions when configured.",
+      "Platform fee is $0 on negotiated Connect deals - clients pay freelancers directly on invoices. Optional Pro / Pro Plus subscriptions unlock unlimited tools and Connect credits.",
       "Upgrade at /pro or from Settings → Billing.",
     ].join("\n\n");
   }
@@ -127,15 +127,21 @@ function buildProductFaq(query: string): string | null {
   }
   if (q.includes("android") || q.includes("mobile") || q.includes("app store") || q.includes("play")) {
     return [
-      "CLIVORA ships as a Flutter Android app plus this Next.js web app on the same Supabase backend.",
-      "Android includes offline-friendly CRM, Ask AI on-device options, notifications, and Play Billing. Web covers Freelancer OS dashboards, Connect, invoices, timesheets, messages, and meetings.",
-      "Sign in with the same email on both. Features may arrive on Android first, then web.",
+      "CLIVORA ships as an Android app plus this web app with one account.",
+      "Android includes CRM, notifications, and mobile workflows. Web covers Freelancer OS dashboards, Connect, invoices, timesheets, messages, and meetings.",
+      "Sign in with the same email on both.",
     ].join("\n\n");
   }
   if (q.includes("invoice") && (q.includes("how") || q.includes("create") || q.includes("send"))) {
     return [
       "Create invoices under /app/invoices from CRM clients/projects. Mark paid when funds land.",
-      "Payout methods (bank / JazzCash) are managed in Account - do not expect fake Stripe/PayPal Connected badges unless you actually connected them.",
+      "Clients pay you directly against the invoice - CLIVORA does not take a cut of the deal.",
+    ].join("\n\n");
+  }
+  if (q.includes("upwork") || q.includes("fiverr") || q.includes("compare") || q.includes("marketplace fee")) {
+    return [
+      "Unlike fee-heavy marketplaces, CLIVORA keeps $0 platform fee on negotiated Connect deals and includes CRM + invoicing in one OS.",
+      "See the comparison page at /compare for Upwork, Fiverr, and Freelancer.com differences.",
     ].join("\n\n");
   }
   if (q.includes("timesheet") || q.includes("timer") || q.includes("hourly rate") || q.includes("track time")) {
@@ -146,7 +152,7 @@ function buildProductFaq(query: string): string | null {
   }
   if (q.includes("calendar") || q.includes("meeting") || q.includes("google")) {
     return [
-      "Meetings create Jitsi rooms at /app/meetings.",
+      "Meetings create video rooms at /app/meetings.",
       "Google Calendar sync needs GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET configured for the deployment. If those are missing, CLIVORA shows Configure Google OAuth instead of a fake Connected state.",
     ].join("\n\n");
   }
@@ -157,7 +163,7 @@ function buildProductFaq(query: string): string | null {
   }
   if (q.includes("message") || q.includes("inbox") || q.includes("chat")) {
     return [
-      "Messages are at /app/messages. Threads are per contact from client_messages, with live refresh when Realtime is available.",
+      "Messages are at /app/messages. Threads are per contact, with live refresh when Realtime is available.",
       "Connect inbox (hire requests/milestones) is separate under /app/connect?tab=inbox.",
     ].join("\n\n");
   }

@@ -36,7 +36,7 @@ export function CTASection() {
             <div className="relative max-w-xs space-y-3 text-sm leading-relaxed text-white/75">
               <p className="font-display text-lg font-bold text-white">What you get on day one</p>
               <p>Free CRM limits, Connect browse, invoices, and the Android app on the same email.</p>
-              <p className="text-teal-200">No “Connected” payment badges until you actually wire payouts.</p>
+              <p className="text-teal-200">Clients pay freelancers directly on your invoice - $0 deal fee.</p>
             </div>
           </div>
         </div>
