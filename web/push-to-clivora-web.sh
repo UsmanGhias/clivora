@@ -8,8 +8,8 @@ cp -a "$ROOT/." "$TMP/"
 cd "$TMP"
 rm -rf .git node_modules .next
 git init -b main
-git config user.name "UsmanGhias"
-git config user.email "usmanghias1@gmail.com"
+git config user.name "Usman Ghias"
+git config user.email "ranausmang1009@gmail.com"
 git add .
 git commit -m "CLIVORA web sync"
 REMOTE="${CLIVORA_WEB_REMOTE:-https://github.com/UsmanGhias/clivora-web.git}"
