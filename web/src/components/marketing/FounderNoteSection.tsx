@@ -1,61 +1,82 @@
 import Link from "next/link";
 
-/** Short founder note - concrete product story, not template marketing. */
+/** Why CLIVORA exists - global story for freelancers and clients. */
 export function FounderNoteSection() {
   return (
     <section
       aria-labelledby="founder-note-heading"
-      className="founder-note relative overflow-hidden border-y border-navy/10 bg-[#0B1F2A] py-12 text-white sm:py-16"
+      className="relative overflow-hidden border-y border-slate-200 bg-gradient-to-br from-[#0B1F2A] via-[#0F2A36] to-[#12353F] py-14 text-white sm:py-16 lg:py-20"
     >
-      <div className="pointer-events-none absolute -left-16 top-0 h-40 w-40 rounded-full bg-teal-400/15 blur-3xl" />
-      <div className="pointer-events-none absolute -right-10 bottom-0 h-48 w-48 rotate-12 bg-gradient-to-br from-amber-400/10 to-transparent" />
+      <div className="pointer-events-none absolute inset-0 opacity-40" aria-hidden>
+        <div className="absolute -left-20 top-10 h-56 w-56 rounded-full bg-teal-400/25 blur-3xl" />
+        <div className="absolute right-0 bottom-0 h-64 w-64 rounded-full bg-sky-400/15 blur-3xl" />
+      </div>
 
-      <div className="relative mx-auto grid max-w-7xl gap-8 px-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-end lg:gap-14 lg:px-8">
-        <div className="lg:-mb-2 lg:translate-y-2">
-          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-teal-300/90">
-            From the builder
-          </p>
-          <h2
-            id="founder-note-heading"
-            className="mt-3 font-display text-2xl font-extrabold leading-tight sm:text-3xl"
-          >
-            I built CLIVORA because Upwork cut my invoice, WhatsApp lost my project files, and Excel lied about what I was owed.
-          </h2>
-        </div>
+      <div className="relative mx-auto max-w-7xl px-5 lg:px-8">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-16 lg:items-start">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-teal-300">
+              Why CLIVORA exists
+            </p>
+            <h2
+              id="founder-note-heading"
+              className="mt-4 font-display text-3xl font-extrabold leading-[1.15] tracking-tight sm:text-4xl"
+            >
+              Marketplaces tax both sides. I built an OS where you hire, deliver, and invoice - without
+              losing a cut of the deal.
+            </h2>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link
+                href="/signup?role=freelancer"
+                className="inline-flex rounded-xl bg-teal-400 px-5 py-3 text-sm font-bold text-navy shadow-lg shadow-teal-900/20 transition hover:bg-teal-300"
+              >
+                Start free as freelancer
+              </Link>
+              <Link
+                href="/signup?role=client"
+                className="inline-flex rounded-xl border border-white/30 bg-white/5 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/10"
+              >
+                Start free as client
+              </Link>
+            </div>
+          </div>
 
-        <div className="space-y-4 text-[15px] leading-relaxed text-white/75 sm:text-base">
-          <p>
-            I&apos;m Usman at CODCrafters in Lahore. Between client work and shipping Android builds, I kept
-            switching tabs: CRM in one place, invoices in another, proposals in a Google Doc, and hiring
-            through a marketplace that took a chunk of every rupee.
-          </p>
-          <p>
-            CLIVORA is the opposite bet: <strong className="font-semibold text-white">$0 platform fee</strong> on
-            Connect deals, contact emails stay private until both sides accept, JazzCash/manual Pro upgrades
-            for PK freelancers, and the same Supabase account on web + Android so your CRM doesn&apos;t reset
-            when you leave the desk.
-          </p>
-          <p className="text-sm text-white/55">
-            Still early. If something feels broken, email{" "}
-            <a className="underline decoration-teal-400/60 underline-offset-2 hover:text-white" href="mailto:iusmanghias@gmail.com">
-              iusmanghias@gmail.com
-            </a>
-            {" "}
-            - I read those. Or open a free workspace and tell me what you actually need next.
-          </p>
-          <div className="flex flex-wrap gap-3 pt-2">
-            <Link
-              href="/signup?role=freelancer"
-              className="inline-flex rounded-lg bg-teal-400 px-4 py-2.5 text-sm font-bold text-navy transition hover:bg-teal-300"
-            >
-              Start free workspace
-            </Link>
-            <Link
-              href="/about"
-              className="inline-flex rounded-lg border border-white/25 px-4 py-2.5 text-sm font-semibold text-white/90 transition hover:bg-white/5"
-            >
-              Read the story
-            </Link>
+          <div className="space-y-5 rounded-3xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-sm sm:p-8">
+            <p className="text-[15px] leading-relaxed text-white/80 sm:text-base">
+              I&apos;m Usman, building CLIVORA at CODCrafters. Between client work and shipping the
+              Android app, I watched freelancers lose fees on every invoice and clients pay extra for
+              the same marketplace middleman - while CRM, proposals, and files lived in five different
+              tabs.
+            </p>
+            <p className="text-[15px] leading-relaxed text-white/80 sm:text-base">
+              CLIVORA is the opposite bet: a{" "}
+              <strong className="font-semibold text-white">complete Freelancer OS</strong> - private
+              Connect (emails unlock only after mutual accept), CRM, projects, timesheets, messages,
+              and invoices.{" "}
+              <strong className="font-semibold text-white">$0 platform fee</strong> on the rate you
+              negotiate. Clients pay freelancers directly against your invoice. One account for web and
+              the Android app so your business doesn&apos;t reset when you leave the desk.
+            </p>
+            <p className="text-sm leading-relaxed text-white/55">
+              Built for freelancers and clients worldwide. If something feels broken, email{" "}
+              <a
+                className="font-semibold text-teal-300 underline decoration-teal-400/50 underline-offset-2 hover:text-teal-200"
+                href="mailto:iusmanghias@gmail.com"
+              >
+                iusmanghias@gmail.com
+              </a>
+              {" "}
+              - I read those.
+            </p>
+            <div className="flex flex-wrap gap-4 border-t border-white/10 pt-5 text-xs font-semibold uppercase tracking-wide text-teal-200/90">
+              <span>For freelancers: keep your rate</span>
+              <span className="text-white/25">·</span>
+              <span>For clients: hire without fee stacking</span>
+              <span className="text-white/25">·</span>
+              <Link href="/compare" className="text-white hover:text-teal-200">
+                See vs marketplaces →
+              </Link>
+            </div>
           </div>
         </div>
       </div>

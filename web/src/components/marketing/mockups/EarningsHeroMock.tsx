@@ -42,8 +42,8 @@ export function EarningsHeroMock() {
         <main className="min-w-0 flex-1 overflow-hidden bg-[#F8FAFC] p-3">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="text-[11px] font-bold text-[#0F172A]">Earnings & payouts</p>
-              <p className="text-[9px] text-[#64748B]">Track income and withdraw to your bank</p>
+              <p className="text-[11px] font-bold text-[#0F172A]">Earnings & invoices</p>
+              <p className="text-[9px] text-[#64748B]">Track income clients pay you directly</p>
             </div>
             <span className="rounded-lg bg-teal-50 px-2 py-1 text-[8px] font-bold text-[#0D9488]">
               This month
@@ -67,14 +67,14 @@ export function EarningsHeroMock() {
             </div>
             <div className="col-span-2 rounded-xl bg-[#0F172A] p-2.5 text-white shadow-sm sm:col-span-1">
               <p className="text-[8px] font-semibold uppercase tracking-wide text-white/50">
-                Next payout
+                Due invoices
               </p>
-              <p className="mt-1 text-sm font-extrabold">Jul 18, 2026</p>
+              <p className="mt-1 text-sm font-extrabold">3 open</p>
               <button
                 type="button"
                 className="mt-2 w-full rounded-lg bg-[#0D9488] py-1.5 text-[9px] font-bold text-white"
               >
-                Withdraw funds
+                Send reminders
               </button>
             </div>
           </div>
@@ -126,11 +126,11 @@ export function EarningsHeroMock() {
 
           <div className="mt-2.5 grid grid-cols-2 gap-2">
             <div className="rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
-              <p className="text-[9px] font-bold text-[#0F172A]">Recent withdrawals</p>
+              <p className="text-[9px] font-bold text-[#0F172A]">Recent payments</p>
               <ul className="mt-1.5 space-y-1.5">
                 {[
                   ["Bank · ****4821", "$1,200", "Paid"],
-                  ["JazzCash", "$450", "Processing"],
+                  ["Invoice paid", "$450", "Received"],
                 ].map(([label, amt, status]) => (
                   <li key={label} className="flex items-center justify-between text-[8px]">
                     <span className="text-[#64748B]">{label}</span>

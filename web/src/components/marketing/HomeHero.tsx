@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Users } from "lucide-react";
 import { marketing } from "@/lib/marketing";
 import { ClientDashMock } from "./mockups/ClientDashMock";
 
@@ -20,13 +20,16 @@ export function HomeHero() {
       <div className="relative mx-auto max-w-7xl px-5 lg:px-8">
         <div className="grid items-end gap-10 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-6">
           <div className="lg:pb-8 lg:pr-4">
-            <motion.p
+            <motion.div
               initial={{ opacity: 0, x: -12 }}
               animate={{ opacity: 1, x: 0 }}
-              className="inline-flex max-w-full items-center border-l-2 border-teal-500 pl-3 text-[11px] font-bold uppercase tracking-[0.18em] text-teal-800"
+              className="inline-flex items-center gap-2 border-l-2 border-teal-500 pl-3"
             >
-              {h.badge}
-            </motion.p>
+              <Users className="h-3.5 w-3.5 text-teal-700" />
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-teal-800">
+                {h.badge}
+              </p>
+            </motion.div>
 
             <motion.h1
               initial={{ opacity: 0, y: 18 }}
@@ -42,7 +45,7 @@ export function HomeHero() {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="mt-5 max-w-[34rem] text-[15px] leading-relaxed text-slate-600 sm:text-lg"
+              className="mt-5 max-w-[36rem] text-[15px] leading-relaxed text-slate-600 sm:text-lg"
             >
               {h.body}
             </motion.p>
@@ -55,14 +58,14 @@ export function HomeHero() {
             >
               <Link
                 href={h.primaryCta.href}
-                className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-navy px-6 text-sm font-bold text-white transition hover:bg-navy/90"
+                className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-navy px-6 text-sm font-bold text-white shadow-lg shadow-navy/20 transition hover:bg-navy/90"
               >
                 {h.primaryCta.label}
                 <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
               </Link>
               <Link
                 href={h.secondaryCta.href}
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-navy/15 bg-white/80 px-6 text-sm font-bold text-navy backdrop-blur transition hover:border-teal-400 hover:text-teal-800"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-navy/15 bg-white/90 px-6 text-sm font-bold text-navy backdrop-blur transition hover:border-teal-400 hover:text-teal-800"
               >
                 {h.secondaryCta.label}
               </Link>
@@ -77,12 +80,21 @@ export function HomeHero() {
               {h.trusts.map((t) => (
                 <li
                   key={t}
-                  className="border-t border-navy/10 pt-2 text-[12px] font-semibold leading-snug text-slate-700"
+                  className="rounded-lg border border-navy/8 bg-white/60 px-3 py-2.5 text-[12px] font-semibold leading-snug text-slate-700 backdrop-blur-sm"
                 >
                   {t}
                 </li>
               ))}
             </motion.ul>
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.28 }}
+              className="mt-5 text-xs font-medium text-slate-500"
+            >
+              {h.socialLine}
+            </motion.p>
           </div>
 
           <motion.div
