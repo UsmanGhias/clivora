@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { HomeHero } from "@/components/marketing/HomeHero";
-import { TrustLogos } from "@/components/marketing/TrustLogos";
+import { FounderNoteSection } from "@/components/marketing/FounderNoteSection";
 import { DualPortalSection } from "@/components/marketing/DualPortalSection";
 import { FreelancerOSSection } from "@/components/marketing/FreelancerOSSection";
 import { SocialProofSection } from "@/components/marketing/SocialProofSection";
@@ -14,7 +14,7 @@ import { EarlyAccessRewardPopup } from "@/components/marketing/EarlyAccessReward
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: `${site.name} | Freelancer OS - Connect, CRM & Invoices`,
+  title: `${site.name} | Private Connect + Freelancer CRM`,
   description: site.description,
 };
 
@@ -22,15 +22,16 @@ export default function Home() {
   return (
     <MarketingShell>
       <EarlyAccessRewardPopup />
+      {/* Story-led order: problem → differentiator → founder → product → toolkit */}
       <HomeHero />
-      <TrustLogos />
+      <ConnectSection />
+      <FounderNoteSection />
+      <SocialProofSection />
       <DualPortalSection />
       <FreelancerOSSection />
-      <SocialProofSection />
-      <ConnectSection />
       <WorkspaceSection />
-      <PlayStorePromoSection />
       <FAQSection />
+      <PlayStorePromoSection />
       <CTASection />
     </MarketingShell>
   );

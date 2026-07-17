@@ -14,5 +14,6 @@ git add .
 git commit -m "CLIVORA web sync"
 REMOTE="${CLIVORA_WEB_REMOTE:-https://github.com/UsmanGhias/clivora-web.git}"
 git remote add origin "$REMOTE"
+# Never print the remote URL (may contain a PAT).
 git push -u origin main --force
-echo "Pushed to $REMOTE"
+echo "Pushed to UsmanGhias/clivora-web (main)"

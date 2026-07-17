@@ -135,6 +135,54 @@
   }
 }
 
+@keyframes ink-drift {
+  0% {
+    transform: translate3d(-2%, -1%, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(2%, 1.5%, 0) scale(1.04);
+  }
+  100% {
+    transform: translate3d(-2%, -1%, 0) scale(1);
+  }
+}
+
+@keyframes mark-draw {
+  0% {
+    background-size: 0% 42%;
+  }
+  100% {
+    background-size: 100% 42%;
+  }
+}
+
+.hero-ink {
+  background:
+    radial-gradient(ellipse 55% 45% at 8% 18%, rgba(13, 148, 136, 0.16), transparent 60%),
+    radial-gradient(ellipse 40% 35% at 92% 72%, rgba(251, 191, 36, 0.08), transparent 55%),
+    linear-gradient(115deg, rgba(248, 250, 252, 0.9) 0%, rgba(240, 253, 250, 0.55) 45%, rgba(255, 255, 255, 0.2) 100%);
+  animation: ink-drift 18s ease-in-out infinite;
+}
+
+.hero-mark {
+  background-image: linear-gradient(transparent 58%, rgba(45, 212, 191, 0.45) 58%);
+  background-repeat: no-repeat;
+  background-position: left bottom;
+  animation: mark-draw 0.9s 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.founder-note {
+  background-image:
+    linear-gradient(135deg, rgba(13, 148, 136, 0.08) 0%, transparent 40%),
+    repeating-linear-gradient(
+      -12deg,
+      transparent,
+      transparent 11px,
+      rgba(255, 255, 255, 0.02) 11px,
+      rgba(255, 255, 255, 0.02) 12px
+    );
+}
+
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
