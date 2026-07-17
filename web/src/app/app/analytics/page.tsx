@@ -324,6 +324,8 @@ export default async function AnalyticsPage() {
             total={fin.totalRevenue}
             title="Earnings overview"
             accent="teal"
+            series={fin.series}
+            showPreviousLegend
             summaryBoxes={[
               {
                 label: "Avg. daily earnings",
@@ -332,7 +334,7 @@ export default async function AnalyticsPage() {
               },
               {
                 label: "Highest day",
-                value: money(fin.totalRevenue > 0 ? fin.totalRevenue / 9 : 0),
+                value: money(fin.totalRevenue > 0 ? Math.max(...fin.series.map((p) => p.amount), 0) : 0),
                 tone: "bg-sky-50 text-sky-800",
               },
             ]}
@@ -343,7 +345,7 @@ export default async function AnalyticsPage() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <FreelancerCard title="Earnings by month" className="lg:col-span-1">
-          <MonthlyBarChart total={fin.totalRevenue} />
+          <MonthlyBarChart data={fin.monthlyBars} total={fin.totalRevenue} />
         </FreelancerCard>
         <DonutChart
           title="Projects summary"

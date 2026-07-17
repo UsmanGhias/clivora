@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { CrmCustomer, CrmInvoice, CrmProject } from "@/lib/crm/api";
+import type { EarningsPoint } from "@/components/dashboard/EarningsLineChart";
 
 export type FreelancerFinance = {
   totalRevenue: number;
@@ -16,7 +17,56 @@ export type FreelancerFinance = {
   timeHours: number;
   billableHours: number;
   activities: Array<{ id: string; title: string; detail: string; time: string; kind: string }>;
+  /** Last 6 calendar months of invoice totals for charts. */
+  series: EarningsPoint[];
+  monthlyBars: Array<{ month: string; amount: number }>;
 };
+
+/** Bucket invoice totals into the last `months` calendar months (oldest → newest). */
+export function buildInvoiceTimeSeries(
+  invoices: Array<{ total?: number | null; created_at?: string | null; updated_at?: string | null; issue_date?: string | null; status?: string | null }>,
+  months = 6,
+): { series: EarningsPoint[]; monthlyBars: Array<{ month: string; amount: number }> } {
+  const now = new Date();
+  const buckets: { key: string; label: string; amount: number; previous: number }[] = [];
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    buckets.push({
+      key,
+      label: d.toLocaleString("en-US", { month: "short" }),
+      amount: 0,
+      previous: 0,
+    });
+  }
+  const index = new Map(buckets.map((b, i) => [b.key, i]));
+
+  for (const inv of invoices) {
+    const st = String(inv.status ?? "").toLowerCase();
+    if (st === "cancelled" || st === "draft") continue;
+    const iso = inv.issue_date || inv.created_at || inv.updated_at;
+    if (!iso) continue;
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) continue;
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const idx = index.get(key);
+    if (idx == null) continue;
+    buckets[idx].amount += Number(inv.total) || 0;
+  }
+
+  // Previous-month overlay for legend charts
+  for (let i = 1; i < buckets.length; i++) {
+    buckets[i].previous = buckets[i - 1].amount;
+  }
+
+  const series: EarningsPoint[] = buckets.map((b) => ({
+    day: b.label,
+    amount: Math.round(b.amount * 100) / 100,
+    previous: Math.round(b.previous * 100) / 100,
+  }));
+  const monthlyBars = buckets.map((b) => ({ month: b.label, amount: Math.round(b.amount * 100) / 100 }));
+  return { series, monthlyBars };
+}
 
 function relTime(iso: string) {
   const d = new Date(iso);
@@ -44,6 +94,8 @@ export async function loadFreelancerFinance(uid: string): Promise<FreelancerFina
     timeHours: 0,
     billableHours: 0,
     activities: [],
+    series: [],
+    monthlyBars: [],
   };
   if (!uid) return empty;
 
@@ -110,6 +162,7 @@ export async function loadFreelancerFinance(uid: string): Promise<FreelancerFina
     const billableHours = (time.data ?? [])
       .filter((r) => (r.status || "").toLowerCase() !== "rejected")
       .reduce((s, r) => s + (Number(r.hours) || 0), 0);
+    const { series, monthlyBars } = buildInvoiceTimeSeries(invoices);
 
     return {
       totalRevenue,
@@ -132,6 +185,8 @@ export async function loadFreelancerFinance(uid: string): Promise<FreelancerFina
         time: n.created_at ? relTime(n.created_at) : "",
         kind: (n.kind || "default").toLowerCase(),
       })),
+      series,
+      monthlyBars,
     };
   } catch {
     return empty;

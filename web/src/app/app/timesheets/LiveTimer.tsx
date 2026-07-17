@@ -1,8 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import {
+  HOURLY_RATE_MAX,
+  HOURLY_RATE_MIN,
+  clampHourlyRate,
+  resolveProjectHourlyRate,
+} from "@/lib/hourly-rate";
 
 function formatElapsed(ms: number) {
   const total = Math.floor(ms / 1000);
@@ -12,7 +18,13 @@ function formatElapsed(ms: number) {
   return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
 }
 
-type ProjectOption = { id: string; name: string; pricing_type?: string | null; budget?: number | null };
+type ProjectOption = {
+  id: string;
+  name: string;
+  pricing_type?: string | null;
+  budget?: number | null;
+  hourly_rate?: number | null;
+};
 
 export function LiveTimer({
   ownerUid,
@@ -39,8 +51,31 @@ export function LiveTimer({
   const selected =
     projects.find((p) => p.id === selectedProjectId) ||
     (projectId
-      ? { id: projectId, name: projectName || "Project", pricing_type: "hourly", budget: defaultHourlyRate }
+      ? {
+          id: projectId,
+          name: projectName || "Project",
+          pricing_type: "hourly",
+          budget: defaultHourlyRate,
+          hourly_rate: defaultHourlyRate,
+        }
       : null);
+
+  const projectRate = useMemo(
+    () =>
+      resolveProjectHourlyRate({
+        pricingType: selected?.pricing_type,
+        budget: selected?.budget,
+        hourlyRate: selected?.hourly_rate,
+        defaultHourlyRate,
+      }),
+    [selected, defaultHourlyRate],
+  );
+
+  const [rateInput, setRateInput] = useState(String(projectRate || HOURLY_RATE_MIN));
+
+  useEffect(() => {
+    setRateInput(String(projectRate || HOURLY_RATE_MIN));
+  }, [projectRate, selectedProjectId]);
 
   useEffect(() => {
     if (!running) return;
@@ -68,17 +103,16 @@ export function LiveTimer({
       setMsg("Timer needs at least 1 second.");
       return;
     }
+    const rate = clampHourlyRate(rateInput);
+    if (rate == null) {
+      setMsg(`Hourly rate must be between $${HOURLY_RATE_MIN} and $${HOURLY_RATE_MAX}.`);
+      return;
+    }
     setBusy(true);
     setMsg(null);
     try {
       const hours = Math.round((elapsed / 3600000) * 100) / 100;
       const minutes = Math.max(1, Math.round(elapsed / 60000));
-      const rate =
-        selected?.pricing_type === "hourly" && Number(selected.budget) > 0
-          ? Number(selected.budget)
-          : defaultHourlyRate > 0
-            ? defaultHourlyRate
-            : 0;
       const supabase = createClient();
       const { error } = await supabase.from("crm_time_entries").insert({
         owner_uid: ownerUid,
@@ -98,7 +132,7 @@ export function LiveTimer({
       startedAt.current = null;
       startedAtIso.current = null;
       setRunning(false);
-      setMsg(`Saved ${hours.toFixed(2)}h${rate > 0 ? ` @ ${rate}/hr` : ""}`);
+      setMsg(`Saved ${hours.toFixed(2)}h @ $${rate}/hr`);
       router.refresh();
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Could not save timer");
@@ -122,17 +156,39 @@ export function LiveTimer({
             disabled={running}
             className="mt-1 w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white"
           >
-            {projects.map((p) => (
-              <option key={p.id} value={p.id} className="text-navy">
-                {p.name}
-                {p.pricing_type === "hourly" ? " · Hourly" : " · Fixed"}
-              </option>
-            ))}
+            {projects.map((p) => {
+              const rate = resolveProjectHourlyRate({
+                pricingType: p.pricing_type,
+                budget: p.budget,
+                hourlyRate: p.hourly_rate,
+                defaultHourlyRate,
+              });
+              return (
+                <option key={p.id} value={p.id} className="text-navy">
+                  {p.name}
+                  {p.pricing_type === "hourly" ? " · Hourly" : " · Fixed"}
+                  {rate > 0 ? ` · $${rate}/hr` : ""}
+                </option>
+              );
+            })}
           </select>
         </label>
       ) : (
         <p className="mt-2 text-sm text-white/70">{projectName || "General work"}</p>
       )}
+      <label className="mt-3 block text-xs text-white/70">
+        Hourly rate (${HOURLY_RATE_MIN}–${HOURLY_RATE_MAX})
+        <input
+          type="number"
+          min={HOURLY_RATE_MIN}
+          max={HOURLY_RATE_MAX}
+          step="0.01"
+          value={rateInput}
+          onChange={(e) => setRateInput(e.target.value)}
+          disabled={running}
+          className="mt-1 w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white"
+        />
+      </label>
       {startedAtIso.current && (
         <p className="mt-1 text-[11px] text-white/50">
           Started {new Date(startedAtIso.current).toLocaleTimeString()}

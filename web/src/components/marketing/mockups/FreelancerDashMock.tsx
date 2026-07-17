@@ -17,7 +17,7 @@ function LineChart({ stroke = "#0D9488" }: { stroke?: string }) {
 function Stat({ label, value, trend }: { label: string; value: string; trend?: string }) {
   return (
     <div className="rounded-[10px] border border-slate-200 bg-white p-2 shadow-sm">
-      <p className="text-[9px] font-medium text-[#475569]">{label}</p>
+      <p className="truncate text-[9px] font-medium text-[#475569]">{label}</p>
       <p className="mt-0.5 text-xs font-bold text-[#0F172A]">{value}</p>
       {trend && <p className="mt-0.5 text-[9px] font-semibold text-emerald-600">{trend}</p>}
     </div>
@@ -52,15 +52,23 @@ export function FreelancerDashMock({ compact = false }: { compact?: boolean }) {
   ];
 
   return (
-    <div className={`w-full max-w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60 ${compact ? "text-[95%]" : ""}`}>
-      <div className={compact ? "flex h-[380px]" : "flex h-[480px]"}>
-        <aside className={`flex shrink-0 flex-col bg-[#0F172A] p-2.5 text-white ${compact ? "w-[108px]" : "w-[132px]"}`}>
+    <div
+      className={`w-full max-w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-200/60 ${compact ? "text-[95%]" : ""}`}
+    >
+      <div className={compact ? "flex min-h-[320px] sm:h-[380px]" : "flex min-h-[360px] sm:h-[480px]"}>
+        <aside
+          className={`hidden shrink-0 flex-col bg-[#0F172A] p-2.5 text-white sm:flex ${compact ? "w-[108px]" : "w-[132px]"}`}
+        >
           <p className="text-[10px] font-black tracking-wide">CLIVORA</p>
           <div className="mt-3 flex items-center gap-1.5">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#0D9488] text-[8px] font-bold">UG</span>
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#0D9488] text-[8px] font-bold">
+              UG
+            </span>
             <div className="min-w-0">
               <p className="truncate text-[9px] font-semibold">Usman Ghias</p>
-              <span className="rounded bg-amber-400/90 px-1 py-px text-[7px] font-bold text-[#0F172A]">Pro Plus</span>
+              <span className="rounded bg-amber-400/90 px-1 py-px text-[7px] font-bold text-[#0F172A]">
+                Pro Plus
+              </span>
             </div>
           </div>
           <nav className="mt-3 space-y-0.5">
@@ -77,30 +85,38 @@ export function FreelancerDashMock({ compact = false }: { compact?: boolean }) {
           <p className="text-[10px] font-bold text-[#0F172A]">Good morning, Usman!</p>
           <p className="text-[9px] text-[#475569]">Here&apos;s your freelance overview.</p>
 
-          <div className="mt-2 grid grid-cols-4 gap-1.5">
+          <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
             <Stat label="Total Earnings" value="$24,560" trend={compact ? undefined : "+12.4%"} />
             <Stat label="Active Projects" value="6" />
             <Stat label="Pending Proposals" value="5" />
             <Stat label="Unread Messages" value="4" />
           </div>
 
-          <div className="mt-2 grid grid-cols-5 gap-1.5">
-            <div className="col-span-3 rounded-[12px] border border-slate-200 bg-white p-2 shadow-sm">
-              <div className="flex items-center justify-between">
+          <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-5">
+            <div className="rounded-[12px] border border-slate-200 bg-white p-2 shadow-sm sm:col-span-3">
+              <div className="flex items-center justify-between gap-2">
                 <p className="text-[9px] font-semibold text-[#0F172A]">Earnings</p>
-                <span className="text-[8px] text-[#475569]">Last 6 months</span>
+                <span className="shrink-0 text-[8px] text-[#475569]">Last 6 months</span>
               </div>
-              <div className="mt-1 h-14"><LineChart /></div>
+              <div className="mt-1 h-14">
+                <LineChart />
+              </div>
+              <div className="mt-1 flex justify-between px-0.5 text-[7px] font-semibold text-[#0F172A]">
+                <span>$2.1k</span>
+                <span>$3.4k</span>
+                <span>$4.8k</span>
+                <span>$6.2k</span>
+              </div>
             </div>
 
-            <div className="col-span-2 rounded-[12px] border border-slate-200 bg-white p-2 shadow-sm">
+            <div className="rounded-[12px] border border-slate-200 bg-white p-2 shadow-sm sm:col-span-2">
               <p className="text-[9px] font-semibold text-[#0F172A]">Active Projects</p>
               <ul className="mt-1.5 space-y-1.5">
                 {projects.map((p) => (
                   <li key={p.name}>
-                    <div className="flex justify-between text-[8px]">
+                    <div className="flex justify-between gap-2 text-[8px]">
                       <span className="truncate text-[#475569]">{p.name}</span>
-                      <span className="font-semibold text-[#0F172A]">{p.pct}%</span>
+                      <span className="shrink-0 font-semibold text-[#0F172A]">{p.pct}%</span>
                     </div>
                     <div className="mt-0.5 h-1 rounded-full bg-slate-100">
                       <div className="h-1 rounded-full bg-[#0D9488]" style={{ width: `${p.pct}%` }} />
@@ -114,15 +130,15 @@ export function FreelancerDashMock({ compact = false }: { compact?: boolean }) {
           <div className="mt-2 rounded-[12px] border border-slate-200 bg-white p-2 shadow-sm">
             <p className="text-[9px] font-semibold text-[#0F172A]">Top Clients</p>
             <ul className="mt-1.5 space-y-1">
-              {clients.map((c, i) => (
-                <li key={c.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-[7px] font-bold text-[#475569]">
+              {clients.map((c) => (
+                <li key={c.name} className="flex items-center justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[7px] font-bold text-[#475569]">
                       {c.name[0]}
                     </span>
-                    <span className="text-[8px] text-[#475569]">{c.name}</span>
+                    <span className="truncate text-[8px] text-[#475569]">{c.name}</span>
                   </div>
-                  <span className="text-[8px] font-semibold text-[#0F172A]">{c.spend}</span>
+                  <span className="shrink-0 text-[8px] font-semibold text-[#0F172A]">{c.spend}</span>
                 </li>
               ))}
             </ul>

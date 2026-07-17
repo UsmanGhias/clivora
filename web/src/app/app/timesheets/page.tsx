@@ -24,6 +24,12 @@ import {
 } from "@/components/client/ui";
 import { Clock, Download, Settings2 } from "lucide-react";
 import { listProjectsServer } from "@/lib/crm/server";
+import {
+  clampHourlyRate,
+  parseHourlyFromRateBand,
+  resolveProjectHourlyRate,
+} from "@/lib/hourly-rate";
+import { buildInvoiceTimeSeries } from "@/lib/freelancer-finance";
 
 export type TimeEntry = {
   id: string;
@@ -221,12 +227,12 @@ export default async function TimesheetsPage() {
     ]);
     entries = (data ?? []).map((r) => normalizeEntry(r as Record<string, unknown>));
     projects = proj;
-    const fromBand = Number(String(cp?.rate_band ?? "").replace(/[^0-9.]/g, ""));
+    const fromBand = parseHourlyFromRateBand(cp?.rate_band) ?? 0;
     const metaMatch = String(cp?.bio ?? "").match(/<!--clivora-meta:([\s\S]*?)-->/);
     let fromMeta = 0;
     if (metaMatch?.[1]) {
       try {
-        fromMeta = Number((JSON.parse(metaMatch[1]) as { hourlyRate?: number }).hourlyRate) || 0;
+        fromMeta = clampHourlyRate((JSON.parse(metaMatch[1]) as { hourlyRate?: number }).hourlyRate) || 0;
       } catch {
         fromMeta = 0;
       }
@@ -243,10 +249,20 @@ export default async function TimesheetsPage() {
   const earnings = entries
     .filter((e) => (e.status || "").toLowerCase() !== "rejected")
     .reduce((s, e) => {
-      const rate = Number(e.hourly_rate) > 0 ? Number(e.hourly_rate) : profileHourly || 0;
+      const rate =
+        clampHourlyRate(e.hourly_rate) ??
+        (profileHourly > 0 ? profileHourly : 0);
       return s + (Number(e.hours) || 0) * rate;
     }, 0);
   const trackedDays = new Set(entries.map((e) => e.date).filter(Boolean)).size;
+  const hoursSeries = buildInvoiceTimeSeries(
+    entries.map((e) => ({
+      total: Number(e.hours) || 0,
+      created_at: e.created_at || e.date,
+      updated_at: e.created_at || e.date,
+      status: e.status,
+    })),
+  ).monthlyBars;
 
   const hoursLabel = `${Math.floor(totalHours)}h ${Math.round((totalHours % 1) * 60)
     .toString()
@@ -318,7 +334,7 @@ export default async function TimesheetsPage() {
       <div className="grid gap-4 xl:grid-cols-[1fr_300px]">
         <div className="space-y-4">
           <FreelancerCard title="Weekly time overview">
-            <MonthlyBarChart total={totalHours * 100} />
+            <MonthlyBarChart data={hoursSeries} total={totalHours} unit="hours" />
           </FreelancerCard>
           <div id="log-time">
             <TimesheetsClient initial={entries} ownerUid={uid} />
@@ -330,12 +346,20 @@ export default async function TimesheetsPage() {
             projectName={projects[0]?.name}
             projectId={projects[0]?.id}
             defaultHourlyRate={profileHourly}
-            projects={projects.map((p) => ({
-              id: p.id,
-              name: p.name || "Project",
-              pricing_type: p.pricing_type ?? "fixed",
-              budget: Number(p.budget ?? 0) || null,
-            }))}
+            projects={projects.map((p) => {
+              const hourly = resolveProjectHourlyRate({
+                pricingType: p.pricing_type,
+                budget: Number(p.budget ?? 0),
+                defaultHourlyRate: profileHourly,
+              });
+              return {
+                id: p.id,
+                name: p.name || "Project",
+                pricing_type: p.pricing_type ?? "fixed",
+                budget: Number(p.budget ?? 0) || null,
+                hourly_rate: hourly > 0 ? hourly : null,
+              };
+            })}
           />
           <DonutChart
             title="Today’s summary"

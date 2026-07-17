@@ -71,7 +71,7 @@ export function ConnectMarketingHero({
           </div>
         </div>
 
-        <div className="relative mx-auto h-[280px] w-full max-w-md sm:h-[320px]">
+        <div className="relative mx-auto hidden h-[280px] w-full max-w-md sm:block sm:h-[320px]">
           <div className="absolute right-2 top-2 z-10 w-[200px] rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
             <p className="text-[10px] font-semibold text-slate-400">Billed this month</p>
             <p className="text-lg font-extrabold text-navy">$4,180</p>
@@ -107,6 +107,25 @@ export function ConnectMarketingHero({
           <div className="absolute bottom-0 left-6 z-10 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
             <p className="text-[10px] text-slate-400">Completed projects</p>
             <p className="text-xl font-extrabold text-navy">36</p>
+          </div>
+        </div>
+        {/* Mobile preview cards — stacked, no overlap */}
+        <div className="grid gap-3 sm:hidden">
+          <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+            <p className="text-[10px] font-semibold text-slate-400">Billed this month</p>
+            <p className="text-lg font-extrabold text-navy">$4,180</p>
+            <p className="text-[10px] font-semibold text-emerald-600">+12.4%</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+            <div className="flex items-center gap-2">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-teal-100 text-xs font-bold text-primary">
+                SA
+              </span>
+              <div>
+                <p className="text-sm font-bold text-navy">Sara Ahmed</p>
+                <p className="text-[10px] text-slate-500">UI/UX Designer · 4.9 ★</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

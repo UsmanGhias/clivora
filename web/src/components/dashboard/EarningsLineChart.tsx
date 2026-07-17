@@ -85,10 +85,16 @@ export function EarningsLineChart({
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
               <XAxis dataKey="day" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} width={40} />
+              <YAxis
+                tick={{ fontSize: 11 }}
+                axisLine={false}
+                tickLine={false}
+                width={44}
+                tickFormatter={(v) => `$${Number(v).toLocaleString()}`}
+              />
               <Tooltip
                 formatter={(v, name) => [
-                  `$${Number(v ?? 0).toLocaleString()}`,
+                  `$${Number(v ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
                   name === "previous" ? "Previous" : title.includes("Spend") ? "Spend" : "Earnings",
                 ]}
                 contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F0" }}
@@ -111,6 +117,15 @@ export function EarningsLineChart({
                 fill={`url(#${gradId})`}
                 dot={{ r: 3, fill: stroke }}
                 activeDot={{ r: 5 }}
+                label={{
+                  position: "top",
+                  fontSize: 10,
+                  fill: "#0F172A",
+                  formatter: (v: unknown) => {
+                    const n = Number(v);
+                    return Number.isFinite(n) && n > 0 ? `$${Math.round(n)}` : "";
+                  },
+                }}
               />
             </AreaChart>
           </ResponsiveContainer>

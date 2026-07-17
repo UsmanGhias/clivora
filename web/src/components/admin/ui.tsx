@@ -287,28 +287,88 @@ export function RowActions({
   onApprove,
   onHide,
   onVerify,
+  onView,
+  onEdit,
+  onBlock,
+  onUnblock,
+  blocked,
   busy,
 }: {
   onApprove?: () => void;
   onHide?: () => void;
   onVerify?: () => void;
+  onView?: () => void;
+  onEdit?: () => void;
+  onBlock?: () => void;
+  onUnblock?: () => void;
+  blocked?: boolean;
   busy?: boolean;
 } = {}) {
-  if (!onApprove && !onHide && !onVerify) {
+  const hasModeration = onApprove || onHide || onVerify;
+  const hasUserActions = onView || onEdit || onBlock || onUnblock;
+
+  if (!hasModeration && !hasUserActions) {
     return (
       <div className="flex items-center gap-1 text-slate-400">
-        <button type="button" className="rounded-lg p-1.5 hover:bg-slate-100 hover:text-slate-700" title="View">
-          <Eye className="h-3.5 w-3.5" />
-        </button>
-        <button type="button" className="rounded-lg p-1.5 hover:bg-slate-100 hover:text-slate-700" title="Edit">
-          <Pencil className="h-3.5 w-3.5" />
-        </button>
-        <button type="button" className="rounded-lg p-1.5 hover:bg-slate-100 hover:text-slate-700" title="More">
+        <button type="button" disabled className="rounded-lg p-1.5 opacity-40" title="No actions">
           <MoreHorizontal className="h-3.5 w-3.5" />
         </button>
       </div>
     );
   }
+
+  if (hasUserActions && !hasModeration) {
+    return (
+      <div className="flex items-center gap-1 text-slate-500">
+        {onView && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onView}
+            className="rounded-lg p-1.5 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50"
+            title="View"
+          >
+            <Eye className="h-3.5 w-3.5" />
+          </button>
+        )}
+        {onEdit && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onEdit}
+            className="rounded-lg p-1.5 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50"
+            title="Edit"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+        )}
+        {blocked
+          ? onUnblock && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onUnblock}
+                className="rounded-lg bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
+                title="Unblock"
+              >
+                Unblock
+              </button>
+            )
+          : onBlock && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onBlock}
+                className="rounded-lg bg-rose-50 px-2 py-1 text-[11px] font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+                title="Block"
+              >
+                Block
+              </button>
+            )}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-wrap items-center gap-1">
       {onApprove && (

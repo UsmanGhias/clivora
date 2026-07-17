@@ -131,6 +131,8 @@ export default async function EarningsPage() {
             accent="teal"
             title="Earnings overview"
             trendLabel={fin.totalRevenue > 0 ? "Last 6 months" : undefined}
+            series={fin.series}
+            showPreviousLegend
             summaryBoxes={[
               {
                 label: "Available",

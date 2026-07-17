@@ -79,7 +79,9 @@ export function encodeBioWithMeta(visibleBio: string, meta: ConnectPortfolioMeta
   return `${clean}\n\n<!--clivora-meta:${JSON.stringify(payload)}-->`;
 }
 
-export function parseHourlyFromRateBand(rateBand: string | null | undefined): number | null {
-  const n = Number(String(rateBand ?? "").replace(/[^0-9.]/g, ""));
-  return Number.isFinite(n) && n > 0 ? n : null;
-}
+export {
+  parseHourlyFromRateBand,
+  clampHourlyRate,
+  HOURLY_RATE_MIN,
+  HOURLY_RATE_MAX,
+} from "@/lib/hourly-rate";

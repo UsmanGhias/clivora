@@ -5,6 +5,8 @@ import { ClientDashboard } from "@/components/dashboard/ClientDashboard";
 import type { ConnectCreditSummary } from "@/lib/connect-credits";
 import type { DashboardProject } from "@/components/dashboard/ProjectListCard";
 import type { PersonRow } from "@/components/dashboard/PeopleListCard";
+import { buildInvoiceTimeSeries } from "@/lib/freelancer-finance";
+import type { EarningsPoint } from "@/components/dashboard/EarningsLineChart";
 
 type HomeSummary = {
   open_jobs?: number;
@@ -42,6 +44,7 @@ export default async function AppHomePage() {
   let invoiceTotal = 0;
   let paidTotal = 0;
   let outstandingTotal = 0;
+  let invoiceSeries: EarningsPoint[] = [];
   let profileCompleteness = 0;
   let successScore = 0;
   let projectCount = 0;
@@ -89,12 +92,12 @@ export default async function AppHomePage() {
       client
         ? supabase
             .from("invoice_shares")
-            .select("share_id, total, status, currency")
+            .select("share_id, total, status, currency, created_at, updated_at")
             .eq("client_uid", uid)
             .limit(200)
         : supabase
             .from("crm_invoices")
-            .select("id, total, status, customer_id")
+            .select("id, total, status, customer_id, created_at, updated_at, issue_date")
             .eq("owner_uid", uid)
             .limit(500),
       client
@@ -184,7 +187,14 @@ export default async function AppHomePage() {
     }
 
     if (!client && crmInvoices.data) {
-      const rows = crmInvoices.data as Array<{ total?: number; status?: string; customer_id?: string }>;
+      const rows = crmInvoices.data as Array<{
+        total?: number;
+        status?: string;
+        customer_id?: string;
+        created_at?: string;
+        updated_at?: string;
+        issue_date?: string;
+      }>;
       invoiceTotal = rows.reduce((s, i) => s + (Number(i.total) || 0), 0);
       paidTotal = rows
         .filter((i) => (i.status || "").toLowerCase() === "paid")
@@ -195,6 +205,7 @@ export default async function AppHomePage() {
           return st !== "paid" && st !== "cancelled";
         })
         .reduce((s, i) => s + (Number(i.total) || 0), 0);
+      invoiceSeries = buildInvoiceTimeSeries(rows).series;
 
       const paidByCustomer = new Map<string, number>();
       for (const i of rows) {
@@ -214,7 +225,13 @@ export default async function AppHomePage() {
     }
 
     if (client && crmInvoices.data) {
-      const rows = crmInvoices.data as Array<{ total?: number; status?: string }>;
+      const rows = crmInvoices.data as Array<{
+        total?: number;
+        status?: string;
+        created_at?: string;
+        updated_at?: string;
+        issue_date?: string;
+      }>;
       invoiceTotal = rows.reduce((s, i) => s + (Number(i.total) || 0), 0);
       paidTotal = rows
         .filter((i) => (i.status || "").toLowerCase() === "paid")
@@ -225,6 +242,7 @@ export default async function AppHomePage() {
           return st !== "paid" && st !== "cancelled";
         })
         .reduce((s, i) => s + (Number(i.total) || 0), 0);
+      invoiceSeries = buildInvoiceTimeSeries(rows).series;
     }
 
     if (!client && crmProjects.data?.length) {
@@ -352,6 +370,7 @@ export default async function AppHomePage() {
         home={home}
         projectCount={projectCount}
         totalSpent={invoiceTotal}
+        spendSeries={invoiceSeries}
         paidTotal={paidTotal}
         escrowHeld={Math.round(outstandingTotal * 0.6)}
         refunds={0}
@@ -371,6 +390,7 @@ export default async function AppHomePage() {
       home={home}
       projectCount={projectCount}
       invoiceTotal={invoiceTotal}
+      invoiceSeries={invoiceSeries}
       credits={credits}
       profileCompleteness={profileCompleteness}
       successScore={successScore}
