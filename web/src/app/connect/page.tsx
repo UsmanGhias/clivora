@@ -20,7 +20,7 @@ import { ConnectBoard } from "@/components/connect/ConnectBoard";
 import { Lock, ShieldCheck, Building2 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "CLIVORA Connect — Private marketplace",
+  title: "CLIVORA Connect - Private marketplace",
   description:
     "Hire freelancers and find clients on CLIVORA Connect. Private contact until mutual accept, then continue in the same CRM. Browse free.",
 };
@@ -46,7 +46,7 @@ export default async function ConnectPage() {
 
         {restricted && (
           <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            Your account is restricted — browsing works, posting/contact is paused. Contact support
+            Your account is restricted - browsing works, posting/contact is paused. Contact support
             if this is unexpected.
           </p>
         )}

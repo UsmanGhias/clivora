@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Lock, ShieldCheck, Sparkles, UserRound, Users } from "lucide-react";
 import { marketing } from "@/lib/marketing";
 
-/** Light Connect hero matching marketing mockup — free-first CTAs. */
+/** Light Connect hero matching marketing mockup - free-first CTAs. */
 export function ConnectMarketingHero({
   signedIn,
   isClient,
@@ -109,7 +109,7 @@ export function ConnectMarketingHero({
             <p className="text-xl font-extrabold text-navy">36</p>
           </div>
         </div>
-        {/* Mobile preview cards — stacked, no overlap */}
+        {/* Mobile preview cards - stacked, no overlap */}
         <div className="grid gap-3 sm:hidden">
           <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
             <p className="text-[10px] font-semibold text-slate-400">Billed this month</p>

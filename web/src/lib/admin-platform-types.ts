@@ -31,7 +31,7 @@ export type PlatformSnapshot = {
     needs: Array<Record<string, unknown>>;
     requests: Array<Record<string, unknown>>;
   };
-  /** CRM customers across all owners — for migration / Odoo push overview. */
+  /** CRM customers across all owners - for migration / Odoo push overview. */
   customers: Array<Record<string, unknown>>;
   events: Array<Record<string, unknown>>;
   tickets: number;

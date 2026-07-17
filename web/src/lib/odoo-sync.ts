@@ -151,7 +151,7 @@ export async function authenticateOdoo(cfg: OdooCfg): Promise<number> {
   ])) as number | false;
   if (!uid || typeof uid !== "number") {
     throw new Error(
-      "Odoo authentication failed — regenerate an API key in Odoo (Preferences → Account Security → New API Key) and save it here or on Vercel as ODOO_API_KEY.",
+      "Odoo authentication failed - regenerate an API key in Odoo (Preferences → Account Security → New API Key) and save it here or on Vercel as ODOO_API_KEY.",
     );
   }
   return uid;
@@ -264,7 +264,7 @@ function buildTrackingBlock(parts: {
         .slice(0, 20)
         .map(
           (p) =>
-            `  • ${p.name ?? "Project"} [${p.status ?? "—"}]${p.budget != null ? ` · ${p.budget}` : ""}`,
+            `  • ${p.name ?? "Project"} [${p.status ?? "-"}]${p.budget != null ? ` · ${p.budget}` : ""}`,
         )
         .join("\n")
     : "  (none)";
@@ -273,7 +273,7 @@ function buildTrackingBlock(parts: {
         .slice(0, 20)
         .map(
           (i) =>
-            `  • ${i.invoice_number ?? "Invoice"} [${i.status ?? "—"}] · ${i.total ?? 0} ${i.currency ?? ""}`,
+            `  • ${i.invoice_number ?? "Invoice"} [${i.status ?? "-"}] · ${i.total ?? 0} ${i.currency ?? ""}`,
         )
         .join("\n")
     : "  (none)";
@@ -499,7 +499,7 @@ export async function pullContactsFromOdoo(options: {
     "write_date",
   ];
 
-  // Active contacts — simple domain (complex email!=false domains break on some Odoo 19 builds).
+  // Active contacts - simple domain (complex email!=false domains break on some Odoo 19 builds).
   const partners = (await odooJsonRpc(cfg.url, "object", "execute_kw", [
     cfg.db,
     uid,
@@ -618,7 +618,7 @@ export async function runBidirectionalSync(options: {
     direction,
     warnings: [],
     apps: ["Contacts"],
-    note: "Two-way Contacts sync via existing Odoo Contacts app only — no new modules. Projects/invoices are mirrored into partner Internal Notes for tracking.",
+    note: "Two-way Contacts sync via existing Odoo Contacts app only - no new modules. Projects/invoices are mirrored into partner Internal Notes for tracking.",
   };
 
   // Pull first on "both" so Odoo-only contacts exist before we push back with tracking.

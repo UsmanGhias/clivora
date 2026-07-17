@@ -22,7 +22,7 @@ import {
 } from "@/components/admin/ui";
 
 function nameOf(u: Record<string, unknown>) {
-  return String(u.full_name || u.name || u.display_name || u.email || "—");
+  return String(u.full_name || u.name || u.display_name || u.email || "-");
 }
 
 export default function AdminSubscriptionsPage() {

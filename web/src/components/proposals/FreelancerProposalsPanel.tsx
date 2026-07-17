@@ -97,11 +97,19 @@ export function FreelancerProposalsPanel({ proposals }: { proposals: ProposalRow
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-extrabold text-navy">My proposals</h1>
-        <p className="mt-1 text-sm text-text-secondary">
-          Track and manage all proposals you&apos;ve submitted. Message a client after they hire you.
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-extrabold text-navy">My proposals</h1>
+          <p className="mt-1 text-sm text-text-secondary">
+            Track every pitch. Free applies on Connect. Message a client after they hire you.
+          </p>
+        </div>
+        <Link
+          href="/app/connect?tab=jobs"
+          className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white"
+        >
+          Browse jobs and apply
+        </Link>
       </div>
 
       {actionError && (
@@ -174,12 +182,15 @@ export function FreelancerProposalsPanel({ proposals }: { proposals: ProposalRow
                         ${Number(p.amount ?? 0).toLocaleString()}{" "}
                         <span className="text-sm font-semibold text-text-secondary">your bid</span>
                       </p>
+                      <p className="mt-2 line-clamp-2 text-sm text-text-secondary">
+                        {p.message || "No cover letter saved."}
+                      </p>
                       <p className="mt-1 inline-flex items-center gap-1 text-xs text-text-secondary">
                         Client: {hired ? p.to_name || "Client" : "Hidden until hire"}
                         {hired && (
                           <>
                             <CheckCircle2 className="h-3.5 w-3.5 text-success" />
-                            <span className="text-success">Connected</span>
+                            <span className="text-success">Hired</span>
                           </>
                         )}
                       </p>

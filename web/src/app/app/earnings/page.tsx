@@ -54,7 +54,7 @@ export default async function EarningsPage() {
             day: "numeric",
             year: "numeric",
           })
-        : "—",
+        : "-",
       description: inv.invoice_number || "Invoice",
       detail: "Project payment",
       type: paid ? "Project" : "Invoice",
@@ -219,26 +219,26 @@ export default async function EarningsPage() {
           />
 
           <FreelancerCard title="Payment methods">
+            <p className="mb-3 text-sm text-text-secondary">
+              Payout destinations are managed on your account. Card processors are not connected on
+              web yet.
+            </p>
             <ul className="space-y-3">
               {[
-                { name: "Payoneer", primary: true },
-                { name: "Wise", primary: false },
-                { name: "Bank Transfer", primary: false },
+                { name: "Bank / JazzCash payout", status: "Set in account", href: "/app/account" },
+                { name: "Payoneer", status: "Not connected" },
+                { name: "Wise", status: "Not connected" },
               ].map((m) => (
                 <li
                   key={m.name}
                   className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5"
                 >
                   <span className="text-sm font-semibold text-navy">{m.name}</span>
-                  {m.primary ? (
-                    <StatusPill tone="teal">Primary</StatusPill>
-                  ) : (
-                    <span className="text-xs text-text-muted">Connected</span>
-                  )}
+                  <span className="text-xs font-semibold text-slate-500">{m.status}</span>
                 </li>
               ))}
             </ul>
-            <OutlineButton href="/app/settings">Manage Payment Methods</OutlineButton>
+            <OutlineButton href="/app/account">Bank and payout details</OutlineButton>
           </FreelancerCard>
 
           <FreelancerCard title="Earnings summary">

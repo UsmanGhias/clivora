@@ -1,7 +1,7 @@
 import { MarketingFooter } from "./MarketingFooter";
 import { MarketingNav } from "./MarketingNav";
 
-/** Light marketing chrome — wraps public pages without changing app/admin dark shells. */
+/** Light marketing chrome - wraps public pages without changing app/admin dark shells. */
 export function MarketingShell({
   children,
   navVariant = "light",

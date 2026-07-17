@@ -131,7 +131,7 @@ function WorkQueueCard({
               ? `${unread} client message${unread === 1 ? "" : "s"} need${unread === 1 ? "s" : ""} a response.`
               : pending > 0
                 ? `${pending} proposal${pending === 1 ? "" : "s"} awaiting review.`
-                : "You're caught up — keep building pipeline on Connect."}
+                : "You're caught up - keep building pipeline on Connect."}
           </p>
         </div>
         <Link
@@ -318,7 +318,7 @@ export function FreelancerDashboard({
           Post a need
         </Link>
         <Link
-          href="/app/time"
+          href="/app/timesheets"
           className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface px-4 py-3 text-sm font-semibold text-navy"
         >
           <Clock3 className="h-4 w-4" />

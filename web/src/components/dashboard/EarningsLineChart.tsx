@@ -72,7 +72,7 @@ export function EarningsLineChart({
       <div className="relative h-[220px] w-full min-h-[220px]">
         {isEmpty ? (
           <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-border bg-slate-50/80 px-4 text-center text-sm font-semibold text-text-secondary">
-            No invoice time-series yet — total above is from live database records.
+            No invoice time-series yet - total above is from live database records.
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={220} debounce={50}>

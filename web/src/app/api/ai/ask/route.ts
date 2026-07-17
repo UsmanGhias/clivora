@@ -101,8 +101,80 @@ function formatMoney(n: number) {
   return `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 }
 
+function buildProductFaq(query: string): string | null {
+  const q = query.toLowerCase();
+  if (
+    q.includes("plan") ||
+    q.includes("pricing") ||
+    q.includes("pro plus") ||
+    q.includes("pro+") ||
+    q.includes("upgrade") ||
+    q.includes("subscription")
+  ) {
+    return [
+      "CLIVORA plans: Free, Pro, and Pro Plus.",
+      "Free covers core CRM basics. Pro unlocks Ask AI and deeper freelancer tools. Pro Plus adds Connect marketplace credits, MFA, and larger vault.",
+      "Platform fee is $0 - you keep what clients pay. Billing uses JazzCash/manual or Play Billing on Android; Stripe customer portal exists for some subscriptions when configured.",
+      "Upgrade at /pro or from Settings → Billing.",
+    ].join("\n\n");
+  }
+  if (q.includes("connect") || q.includes("job") || q.includes("proposal") || q.includes("talent")) {
+    return [
+      "CLIVORA Connect is the marketplace for jobs, talent, proposals, and inbox.",
+      "Freelancers browse Jobs, apply with cover letter + bid, and track proposals. Clients post needs and review talent.",
+      "Open /app/connect (tabs: jobs, talent, inbox) or Manage Connect for your listing. Pro Plus is recommended for credits and listing reach.",
+    ].join("\n\n");
+  }
+  if (q.includes("android") || q.includes("mobile") || q.includes("app store") || q.includes("play")) {
+    return [
+      "CLIVORA ships as a Flutter Android app plus this Next.js web app on the same Supabase backend.",
+      "Android includes offline-friendly CRM, Ask AI on-device options, notifications, and Play Billing. Web covers Freelancer OS dashboards, Connect, invoices, timesheets, messages, and meetings.",
+      "Sign in with the same email on both. Features may arrive on Android first, then web.",
+    ].join("\n\n");
+  }
+  if (q.includes("invoice") && (q.includes("how") || q.includes("create") || q.includes("send"))) {
+    return [
+      "Create invoices under /app/invoices from CRM clients/projects. Mark paid when funds land.",
+      "Payout methods (bank / JazzCash) are managed in Account - do not expect fake Stripe/PayPal Connected badges unless you actually connected them.",
+    ].join("\n\n");
+  }
+  if (q.includes("timesheet") || q.includes("timer") || q.includes("hourly rate") || q.includes("track time")) {
+    return [
+      "Track time at /app/timesheets. For hourly projects, the timer uses the client-approved project rate (not a free-typed number).",
+      "If no rate is set, ask the client to set budget/hourly_rate on the shared project, then start the timer.",
+    ].join("\n\n");
+  }
+  if (q.includes("calendar") || q.includes("meeting") || q.includes("google")) {
+    return [
+      "Meetings create Jitsi rooms at /app/meetings.",
+      "Google Calendar sync needs GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET configured for the deployment. If those are missing, CLIVORA shows Configure Google OAuth instead of a fake Connected state.",
+    ].join("\n\n");
+  }
+  if (q.includes("contract")) {
+    return [
+      "Contracts live under /app/contracts. Attachment and signature metadata is stored separately from the visible body - you should see clean title and content, not raw ---CLIVORA-CONTRACT-META--- blocks.",
+    ].join("\n\n");
+  }
+  if (q.includes("message") || q.includes("inbox") || q.includes("chat")) {
+    return [
+      "Messages are at /app/messages. Threads are per contact from client_messages, with live refresh when Realtime is available.",
+      "Connect inbox (hire requests/milestones) is separate under /app/connect?tab=inbox.",
+    ].join("\n\n");
+  }
+  return null;
+}
+
 function buildCrmTip(query: string, agg: CrmAggregates): string {
   const q = query.toLowerCase();
+  const faq = buildProductFaq(query);
+  if (faq) {
+    return [
+      faq,
+      `Your CRM right now: ${agg.customers} clients · ${agg.projects} projects (${agg.activeProjects} active) · ${agg.invoices} invoices (${agg.paidInvoices} paid, ${formatMoney(agg.paidTotal)} collected).`,
+      "Cloud AI is offline (no LLM key). Product answers above are built into CLIVORA; CRM numbers come from Supabase.",
+    ].join("\n\n");
+  }
+
   const lines: string[] = [];
 
   if (q.includes("overdue") || q.includes("late") || q.includes("collect")) {
@@ -123,6 +195,10 @@ function buildCrmTip(query: string, agg: CrmAggregates): string {
     lines.push(
       `${agg.activeProjects} active project(s) out of ${agg.projects}. Keep statuses updated so reports stay accurate.`,
     );
+  } else if (q.includes("task") || q.includes("todo")) {
+    lines.push(
+      `You have ${agg.activeProjects} active project(s). Open /app/tasks for shared client tasks and update status as you deliver.`,
+    );
   } else {
     lines.push(
       `Quick CRM tip from your data: ${agg.customers} clients · ${agg.projects} projects (${agg.activeProjects} active) · ${agg.invoices} invoices (${agg.paidInvoices} paid, ${formatMoney(agg.paidTotal)} collected).`,
@@ -132,7 +208,9 @@ function buildCrmTip(query: string, agg: CrmAggregates): string {
     } else if (agg.draftInvoices > 0) {
       lines.push(`Focus next: finish and send ${agg.draftInvoices} draft invoice(s).`);
     } else {
-      lines.push("Focus next: log time or add a project milestone so your next invoice is ready.");
+      lines.push(
+        "Focus next: log time, update a project milestone, or ask about Connect, plans, invoices, or Google Calendar.",
+      );
     }
   }
 
@@ -178,7 +256,7 @@ async function callOpenAi(query: string, context: string): Promise<string | null
         {
           role: "system",
           content:
-            "You are CLIVORA Ask AI for freelancers. Answer briefly from the user's CRM context. If context is thin, say what is missing. Never invent invoice amounts.",
+            "You are CLIVORA Ask AI for freelancers. Answer briefly from CRM context and product knowledge: Free/Pro/Pro Plus plans, $0 platform fee, Connect jobs/talent/proposals, web + Android apps, timesheets using client-approved hourly rates, invoices/payout honesty, Meetings/Jitsi, Google Calendar only when OAuth env is configured. If context is thin, say what is missing. Never invent invoice amounts or fake Connected integrations.",
         },
         {
           role: "user",

@@ -40,7 +40,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
           code?: string;
         };
         if (res.status === 403 && body.code === "MFA_REQUIRED") {
-          setError("MFA required — complete Google Authenticator verification.");
+          setError("MFA required - complete Google Authenticator verification.");
         } else if (body.code === "AUTH_UNAVAILABLE") {
           setError(
             body.error ||

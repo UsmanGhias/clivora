@@ -63,7 +63,7 @@ export const marketing = {
     badge: "All-in-One Freelance Management Platform",
     headline: ["Work Smarter. Manage Everything.", "Grow Faster."],
     body:
-      "CLIVORA is your Freelance Business OS — manage clients and money, hire through a private marketplace, and work on web or Android without losing control. One account. Built for freelancers and teams who want more than just gigs.",
+      "CLIVORA is your Freelance Business OS - manage clients and money, hire through a private marketplace, and work on web or Android without losing control. One account. Built for freelancers and teams who want more than just gigs.",
     primaryCta: { label: "I'm a Freelancer", href: "/signup?role=freelancer" },
     secondaryCta: { label: "I'm a Client", href: "/signup?role=client" },
     trusts: [
@@ -145,7 +145,7 @@ export const marketing = {
 
   freelancerOs: {
     headline: "Everything Freelancers Need to Succeed. All in One Workspace.",
-    body: "Manage clients, projects, proposals, invoices, and payments from a beautiful, powerful dashboard — without juggling five different apps.",
+    body: "Manage clients, projects, proposals, invoices, and payments from a beautiful, powerful dashboard - without juggling five different apps.",
     cta: { label: "Explore All Features", href: "/features" },
     features: [
       {
@@ -210,7 +210,7 @@ export const marketing = {
       },
       {
         title: "Global Reach",
-        description: "Work with clients and talent from 22+ countries — anytime, across time zones.",
+        description: "Work with clients and talent from 22+ countries - anytime, across time zones.",
         tone: "violet" as const,
       },
       {
@@ -289,7 +289,7 @@ export const marketing = {
 
   workspace: {
     headline: ["Your Freelance", "Business Operating System."],
-    body: "CLIVORA gives freelancers everything they need to manage clients, projects, payments, and growth — all in one place.",
+    body: "CLIVORA gives freelancers everything they need to manage clients, projects, payments, and growth - all in one place.",
     cta: { label: "Explore Freelancer Workspace", href: "/for-freelancers" },
     features: [
       { title: "Project Management", description: "Plan and deliver projects." },
@@ -391,7 +391,7 @@ export const marketing = {
   featuresPage: {
     badge: "Product capabilities",
     headline: "Every tool. One Freelancer OS.",
-    body: "From first lead to final payment — CLIVORA replaces the patchwork of apps freelancers and clients juggle every day.",
+    body: "From first lead to final payment - CLIVORA replaces the patchwork of apps freelancers and clients juggle every day.",
     groups: [
       {
         title: "Core business OS",
@@ -399,7 +399,7 @@ export const marketing = {
           {
             title: "Business Command Center",
             description:
-              "Paid revenue, outstanding amounts, active projects, and onboarding checklist — your morning snapshot in seconds.",
+              "Paid revenue, outstanding amounts, active projects, and onboarding checklist - your morning snapshot in seconds.",
           },
           {
             title: "Client CRM",
@@ -475,7 +475,7 @@ export const marketing = {
           },
           {
             title: "Web + Android",
-            description: "One account across clivora.codcrafters.org and the Android app — cloud-first sync.",
+            description: "One account across clivora.codcrafters.org and the Android app - cloud-first sync.",
           },
           {
             title: "Team collaboration",
@@ -489,7 +489,7 @@ export const marketing = {
   forFreelancers: {
     badge: "FREELANCER PORTAL",
     headline: "Run your freelance business like a pro.",
-    body: "Dashboard, CRM, projects, invoices, Connect jobs, time tracking, and AI — purpose-built for freelancers who want one OS, not ten tabs.",
+    body: "Dashboard, CRM, projects, invoices, Connect jobs, time tracking, and AI - purpose-built for freelancers who want one OS, not ten tabs.",
     cta: { label: "Start as Freelancer", href: "/signup?role=freelancer" },
     secondaryCta: { label: "See pricing", href: "/pricing" },
   },
@@ -497,7 +497,7 @@ export const marketing = {
   forClients: {
     badge: "CLIENT PORTAL",
     headline: "Hire talent. Manage projects. Pay with confidence.",
-    body: "Post jobs, review proposals, track active work, hold escrow, and collaborate with freelancers — all inside CLIVORA.",
+    body: "Post jobs, review proposals, track active work, hold escrow, and collaborate with freelancers - all inside CLIVORA.",
     cta: { label: "Start as Client", href: "/signup?role=client" },
     secondaryCta: { label: "Browse Connect", href: "/connect" },
   },
@@ -538,7 +538,7 @@ export const marketing = {
 
   footer: {
     blurb:
-      "The all-in-one Freelancer OS — Connect marketplace, CRM, projects, invoices, and payments. Web and Android.",
+      "The all-in-one Freelancer OS - Connect marketplace, CRM, projects, invoices, and payments. Web and Android.",
     columns: {
       Product: [
         { label: "Features", href: "/features" },

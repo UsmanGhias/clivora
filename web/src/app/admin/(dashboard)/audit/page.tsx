@@ -62,7 +62,7 @@ export default function AdminAuditPage() {
             iconBg: "bg-teal-50 text-teal-600",
           },
           { label: "All events", value: events.length },
-          { label: "Source", value: data?.source ?? "—" },
+          { label: "Source", value: data?.source ?? "-" },
         ]}
       />
 

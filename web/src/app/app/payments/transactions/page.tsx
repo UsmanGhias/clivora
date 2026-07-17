@@ -53,7 +53,7 @@ export default async function TransactionsPage() {
                 <div className="text-right">
                   <p className="font-bold text-navy">{money(Number(r.total) || 0)}</p>
                   <p className="text-xs text-text-muted">
-                    {r.updated_at ? new Date(r.updated_at).toLocaleDateString() : "—"}
+                    {r.updated_at ? new Date(r.updated_at).toLocaleDateString() : "-"}
                   </p>
                 </div>
               </li>

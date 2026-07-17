@@ -49,7 +49,7 @@ export default function AdminEventsPage() {
             icon: <Flag className="h-4 w-4" />,
             iconBg: "bg-teal-50 text-teal-600",
           },
-          { label: "Source", value: data?.source ?? "—" },
+          { label: "Source", value: data?.source ?? "-" },
           { label: "Revenue tagged", value: money(data?.overview.totalRevenue ?? 0) },
         ]}
       />
@@ -90,7 +90,7 @@ export default function AdminEventsPage() {
                         />
                       </td>
                       <td className="px-3 py-3 text-sm font-semibold text-slate-700">
-                        {e.amount != null ? money(Number(e.amount)) : "—"}
+                        {e.amount != null ? money(Number(e.amount)) : "-"}
                       </td>
                       <td className="px-3 py-3 text-sm text-slate-600">
                         {fmtDate(String(e.created_at ?? ""))}

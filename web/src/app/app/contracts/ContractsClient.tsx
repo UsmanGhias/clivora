@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { FileCheck2, FileText } from "lucide-react";
+import { FileCheck2, FileText, Paperclip } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { contractPreviewBody, decodeContractContent } from "@/lib/contract-content";
 
 export type ContractRow = {
   id: string;
@@ -43,11 +44,15 @@ export function ContractsClient({
     );
   }
 
+  const selectedDecoded = selected ? decodeContractContent(selected.body) : null;
+
   return (
-    <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,320px)_1fr]">
       <ul className="space-y-2">
         {initial.map((c) => {
           const active = c.id === selectedId;
+          const preview = contractPreviewBody(c.body);
+          const decoded = decodeContractContent(c.body);
           return (
             <li key={c.id}>
               <button
@@ -63,7 +68,7 @@ export function ContractsClient({
                 )}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <p className="font-semibold text-navy">{c.title}</p>
+                  <p className="min-w-0 font-semibold text-navy">{c.title}</p>
                   <span
                     className={cn(
                       "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
@@ -73,21 +78,24 @@ export function ContractsClient({
                     {c.status}
                   </span>
                 </div>
-                <p className="mt-1 line-clamp-2 text-xs text-text-secondary">
-                  {c.body || "No terms provided."}
-                </p>
+                <p className="mt-1 line-clamp-2 text-xs text-text-secondary">{preview}</p>
+                {decoded.attachmentPath && (
+                  <p className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold text-slate-500">
+                    <Paperclip className="h-3 w-3" /> Attachment
+                  </p>
+                )}
               </button>
             </li>
           );
         })}
       </ul>
 
-      {selected && (
+      {selected && selectedDecoded && (
         <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
+            <div className="min-w-0">
               <h2 className="font-display text-lg font-bold text-navy">{selected.title}</h2>
-              <p className="mt-1 text-xs text-text-muted">
+              <p className="mt-1 break-all text-xs text-text-muted">
                 {selected.from_email && selected.to_email
                   ? `${selected.from_email} → ${selected.to_email}`
                   : selected.created_at
@@ -116,8 +124,25 @@ export function ContractsClient({
             </p>
           )}
 
+          {selectedDecoded.clientSignature && (
+            <p className="mt-2 text-sm text-text-secondary">
+              Client signature:{" "}
+              <span className="font-semibold text-navy">{selectedDecoded.clientSignature}</span>
+              {selectedDecoded.signedAt
+                ? ` (${new Date(selectedDecoded.signedAt).toLocaleString()})`
+                : ""}
+            </p>
+          )}
+
+          {selectedDecoded.attachmentPath && (
+            <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600">
+              <Paperclip className="h-4 w-4" />
+              Attachment on record (synced from mobile)
+            </p>
+          )}
+
           <div className="mt-4 whitespace-pre-wrap rounded-xl border border-border bg-background px-4 py-3 text-sm text-text-primary">
-            {selected.body || "No terms provided."}
+            {selectedDecoded.body || "Agreement terms to be defined."}
           </div>
         </div>
       )}

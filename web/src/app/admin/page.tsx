@@ -6,7 +6,7 @@ import { Logo } from "@/components/ui/Logo";
 import { createBrowserSupabaseClient } from "@/lib/supabase-browser";
 import Link from "next/link";
 
-/** Admin login gate — authenticated admins are sent to the panel overview. */
+/** Admin login gate - authenticated admins are sent to the panel overview. */
 export default function AdminLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");

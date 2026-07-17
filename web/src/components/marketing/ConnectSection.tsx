@@ -74,7 +74,7 @@ export function ConnectSection() {
                 <span className="text-primary">Grow Together.</span>
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                Access verified freelancers and serious projects — without platform fees on negotiated rates.
+                Access verified freelancers and serious projects - without platform fees on negotiated rates.
               </p>
               <ul className="mt-5 space-y-3">
                 {[

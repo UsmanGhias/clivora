@@ -17,7 +17,7 @@ export function parseHourlyFromRateBand(rateBand: string | null | undefined): nu
   const s = String(rateBand ?? "").trim();
   if (!s) return null;
 
-  const range = s.match(/(\d+(?:\.\d+)?)\s*[-–—to]+\s*(\d+(?:\.\d+)?)/i);
+  const range = s.match(/(\d+(?:\.\d+)?)\s*(?:[-–—]|to)\s*(\d+(?:\.\d+)?)/i);
   if (range) {
     const a = Number(range[1]);
     const b = Number(range[2]);

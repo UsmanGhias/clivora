@@ -31,7 +31,7 @@ export default function AboutPage() {
 
       <h2>{site.name} - Our Flagship Product</h2>
       <p>
-        {site.name} is our all-in-one Freelancer OS — available on the web at{" "}
+        {site.name} is our all-in-one Freelancer OS - available on the web at{" "}
         <a href={site.url}>{site.url.replace("https://", "")}</a> and on Android.
         It combines a private Connect marketplace, CRM, project management,
         professional invoicing, expense tracking, tasks, calendar, and financial

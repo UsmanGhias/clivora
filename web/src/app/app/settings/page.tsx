@@ -73,6 +73,17 @@ export default async function SettingsPage({
     /* ignore */
   }
 
+  const googleConfigured = Boolean(
+    process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
+  );
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const googleCalendarConnected = Boolean(
+    (user?.user_metadata as { google_calendar_connected?: boolean } | undefined)
+      ?.google_calendar_connected,
+  );
+
   return (
     <FreelancerSettingsPanel
       profile={profile}
@@ -80,6 +91,8 @@ export default async function SettingsPage({
       plus={isProPlus(profile)}
       hasStripeBilling={hasStripeBilling}
       initialTab={tab}
+      googleConfigured={googleConfigured}
+      googleCalendarConnected={googleCalendarConnected}
     />
   );
 }

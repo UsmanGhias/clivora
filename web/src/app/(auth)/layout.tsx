@@ -35,7 +35,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </h1>
           <p className="mt-4 max-w-md text-base leading-relaxed text-slate-600">
             Manage clients, projects, invoices, and marketplace opportunities from the same CLIVORA
-            workspace — free to start.
+            workspace - free to start.
           </p>
           <ul className="mt-8 space-y-3 text-sm text-slate-600">
             {[

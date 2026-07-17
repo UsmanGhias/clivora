@@ -14,7 +14,7 @@ export async function listPublicConnectProfiles(search?: string) {
     .eq("is_listed", true)
     .eq("moderation_status", "approved")
     .order("reputation_score", { ascending: false })
-    .limit(60);
+    .limit(200);
   if (search?.trim()) {
     const s = `%${search.trim()}%`;
     q = q.or(`display_title.ilike.${s},headline.ilike.${s},bio.ilike.${s},location_label.ilike.${s}`);
@@ -33,7 +33,7 @@ export async function listPublicConnectNeeds(search?: string) {
     .eq("is_open", true)
     .eq("moderation_status", "approved")
     .order("created_at", { ascending: false })
-    .limit(200);
+    .limit(500);
   if (search?.trim()) {
     const s = `%${search.trim()}%`;
     q = q.or(`title.ilike.${s},summary.ilike.${s}`);
@@ -53,7 +53,7 @@ export async function listMyConnectRequests() {
     .select("*")
     .or(`from_user_id.eq.${user.id},to_user_id.eq.${user.id}`)
     .order("created_at", { ascending: false })
-    .limit(50);
+    .limit(200);
   return (data ?? []) as ConnectRequestRow[];
 }
 

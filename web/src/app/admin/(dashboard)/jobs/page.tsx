@@ -131,7 +131,7 @@ export default function AdminJobsPage() {
                           <StatusPill status={status.replace(/_/g, " ")} />
                         </td>
                         <td className="px-3 py-3 text-sm font-semibold text-slate-700">
-                          {String(j.budget_band || "—")}
+                          {String(j.budget_band || "-")}
                         </td>
                         <td className="px-3 py-3 text-sm text-slate-600">{fmtDate(String(j.created_at ?? ""))}</td>
                         <td className="px-3 py-3">

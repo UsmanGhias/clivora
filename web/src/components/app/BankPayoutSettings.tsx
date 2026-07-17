@@ -96,12 +96,12 @@ export function BankPayoutSettings({ compact }: { compact?: boolean }) {
         .from("freelancer_payout_accounts")
         .upsert(payload, { onConflict: "user_id" });
       if (error) {
-        // Table may not exist yet — local save still works
+        // Table may not exist yet - local save still works
         setMsg(
           "Saved on this device. Cloud sync will activate once payout accounts are enabled.",
         );
       } else {
-        setMsg("Bank details saved. Clients pay you directly via invoice — CLIVORA only charges the $20/mo plan fee.");
+        setMsg("Bank details saved. Clients pay you directly via invoice - CLIVORA only charges the $20/mo plan fee.");
       }
     } catch (cause) {
       setErr(cause instanceof Error ? cause.message : "Could not save bank details");
@@ -115,12 +115,12 @@ export function BankPayoutSettings({ compact }: { compact?: boolean }) {
       <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
         <p className="inline-flex items-center gap-2 font-bold">
           <AlertTriangle className="h-4 w-4 shrink-0" />
-          Stay on platform — policy
+          Stay on platform - policy
         </p>
         <p className="mt-1 text-amber-900/90">
           Asking clients to pay or continue work off CLIVORA to avoid fees is against policy and can
           lead to restriction. Invoice and get paid here; CLIVORA charges only your{" "}
-          <strong>$20/mo</strong> subscription — deal amounts go client → you directly.
+          <strong>$20/mo</strong> subscription - deal amounts go client → you directly.
         </p>
       </div>
 

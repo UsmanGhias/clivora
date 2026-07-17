@@ -20,7 +20,7 @@ import {
 import { AdminUserActions, joinedDate } from "@/components/admin/AdminUserActions";
 
 function nameOf(u: Record<string, unknown>) {
-  return String(u.full_name || u.name || u.display_name || u.email || "—");
+  return String(u.full_name || u.name || u.display_name || u.email || "-");
 }
 
 export default function AdminUsersPage() {
@@ -171,7 +171,7 @@ export default function AdminUsersPage() {
                         <td className="px-3 py-3 text-sm text-slate-600">{verified ? "Yes" : "No"}</td>
                         <td className="px-3 py-3 text-sm text-slate-600">{joinedDate(u)}</td>
                         <td className="px-3 py-3 text-sm text-slate-500">
-                          {relative(String(u.updated_at ?? u.created_at ?? "")) || "—"}
+                          {relative(String(u.updated_at ?? u.created_at ?? "")) || "-"}
                         </td>
                         <td className="px-3 py-3">
                           <AdminUserActions user={u} onRefresh={() => void refresh()} />

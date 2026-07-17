@@ -20,7 +20,7 @@ import {
 import { AdminUserActions, joinedDate } from "@/components/admin/AdminUserActions";
 
 function nameOf(u: Record<string, unknown>) {
-  return String(u.full_name || u.name || u.display_name || u.email || "—");
+  return String(u.full_name || u.name || u.display_name || u.email || "-");
 }
 
 export default function AdminFreelancersPage() {
@@ -105,7 +105,7 @@ export default function AdminFreelancersPage() {
                   freelancers.map((f) => {
                     const skills = Array.isArray(f.skills)
                       ? (f.skills as string[]).slice(0, 3).join(", ")
-                      : String(f.headline || f.skills || "—");
+                      : String(f.headline || f.skills || "-");
                     const status = f.is_blocked || f.is_restricted ? "suspended" : f.verified ? "verified" : "active";
                     return (
                       <tr key={String(f.id)} className="hover:bg-slate-50/80">
@@ -134,12 +134,12 @@ export default function AdminFreelancersPage() {
         side={
           <SidePanel>
             <SideCard title="Top skills">
-              <p className="text-xs text-slate-500">Top skills placeholder — skill analytics coming soon.</p>
+              <p className="text-xs text-slate-500">Top skills placeholder - skill analytics coming soon.</p>
               <ul className="mt-3 space-y-2 text-sm">
                 {["UI/UX Design", "React", "Copywriting", "Video Editing"].map((s) => (
                   <li key={s} className="flex items-center justify-between">
                     <span className="text-slate-600">{s}</span>
-                    <span className="rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-bold text-teal-700">—</span>
+                    <span className="rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-bold text-teal-700">-</span>
                   </li>
                 ))}
               </ul>
