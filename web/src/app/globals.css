@@ -148,22 +148,22 @@
   animation: shimmer 3s linear infinite;
 }
 
-/* Legal page typography */
+/* Legal page typography (light marketing chrome) */
 .legal-prose h2 {
-  @apply mt-10 mb-4 text-2xl font-bold text-white;
+  @apply mt-10 mb-4 font-display text-2xl font-bold text-navy;
 }
 
 .legal-prose h3 {
-  @apply mt-8 mb-3 text-xl font-semibold text-white;
+  @apply mt-8 mb-3 text-xl font-semibold text-navy;
 }
 
 .legal-prose p {
-  @apply mb-4 text-white/70 leading-relaxed;
+  @apply mb-4 leading-relaxed text-slate-600;
 }
 
 .legal-prose ul,
 .legal-prose ol {
-  @apply mb-4 ml-6 space-y-2 text-white/70;
+  @apply mb-4 ml-6 space-y-2 text-slate-600;
 }
 
 .legal-prose ul {
@@ -179,21 +179,52 @@
 }
 
 .legal-prose a {
-  @apply text-primary underline underline-offset-2 hover:text-primary-light;
+  @apply text-primary underline underline-offset-2 hover:text-primary-dark;
 }
 
 .legal-prose strong {
-  @apply font-semibold text-white;
+  @apply font-semibold text-navy;
+}
+
+.legal-prose code {
+  @apply rounded bg-slate-100 px-1.5 py-0.5 text-sm text-navy;
 }
 
 .legal-prose table {
-  @apply mb-6 w-full overflow-hidden rounded-xl border border-white/10;
+  @apply mb-6 w-full overflow-hidden rounded-xl border border-slate-200;
 }
 
 .legal-prose th {
-  @apply bg-white/5 px-4 py-3 text-left text-sm font-semibold text-white;
+  @apply bg-slate-50 px-4 py-3 text-left text-sm font-semibold text-navy;
 }
 
 .legal-prose td {
-  @apply border-t border-white/10 px-4 py-3 text-sm text-white/70;
+  @apply border-t border-slate-200 px-4 py-3 text-sm text-slate-600;
 }
+
+/* Marketing site light surface helpers */
+.marketing-site {
+  color: #0f172a;
+  overflow-x: hidden;
+}
+
+.marketing-site ::selection {
+  background-color: rgba(13, 148, 136, 0.22);
+  color: #0f172a;
+}
+
+.marketing-site::-webkit-scrollbar-track,
+.marketing-site *::-webkit-scrollbar-track {
+  background: #e2e8f0;
+}
+
+.marketing-site::-webkit-scrollbar-thumb,
+.marketing-site *::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+}
+
+.marketing-site::-webkit-scrollbar-thumb:hover,
+.marketing-site *::-webkit-scrollbar-thumb:hover {
+  background: #0d9488;
+}
+
