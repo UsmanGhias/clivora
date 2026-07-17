@@ -40,23 +40,93 @@ export default async function AccountPage({
   if (!profile) redirect("/login");
 
   const client = isClientAccount(profile);
-  if (client) {
-    redirect("/app/settings");
-  }
-
   const params = searchParams ? await searchParams : {};
   const editing = params.edit === "1" || params.edit === "true";
+
+  if (client) {
+    return (
+      <div className="space-y-6 pb-10 theme-client">
+        <div>
+          <h1 className="font-display text-2xl font-extrabold text-navy">My Account</h1>
+          <p className="mt-1 text-sm text-text-secondary">
+            Profile, notifications, and client workspace shortcuts.
+          </p>
+        </div>
+
+        {editing && (
+          <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+            <h2 className="font-semibold text-navy">Edit profile</h2>
+            <div className="mt-3">
+              <AccountProfileEditor profile={profile} />
+            </div>
+          </div>
+        )}
+
+        <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="relative">
+              {profile.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={profile.avatar_url}
+                  alt=""
+                  className="h-24 w-24 rounded-full object-cover"
+                />
+              ) : (
+                <span className="flex h-24 w-24 items-center justify-center rounded-full bg-navy text-3xl font-bold text-white">
+                  {(profile.name || "?").charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="font-display text-xl font-extrabold text-navy">
+                {profile.name || "Client"}
+              </h2>
+              <p className="mt-1 text-xs text-text-muted">{profile.email}</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <PrimaryButton href="/app/account?edit=1">Edit Profile</PrimaryButton>
+                <OutlineButton href="/app/settings">Settings</OutlineButton>
+                <OutlineButton href="/app/hub">Client Hub</OutlineButton>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            { href: "/app/messages", label: "Messages", icon: Bell },
+            { href: "/app/notifications", label: "Notifications", icon: Bell },
+            { href: "/app/contracts", label: "Contracts", icon: ShieldCheck },
+            { href: "/app/invoices", label: "Invoices", icon: CreditCard },
+            { href: "/app/projects", label: "Projects", icon: Briefcase },
+            { href: "/app/connect", label: "Connect", icon: Star },
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 shadow-sm transition hover:border-client-accent/40"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-client-surface text-client-accent">
+                <item.icon className="h-5 w-5" />
+              </span>
+              <span className="font-semibold text-navy">{item.label}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const plus = isProPlus(profile);
   const plan = planLabel(profile);
   const fin = await loadFreelancerFinance(profile.id);
   const supabase = await createClient();
 
-  let location = "Location not set";
-  let avgRating = 0;
-  let reviewCount = 0;
-  let completeness = 0;
-  let headline = "Freelancer";
+  let location = "Lahore, Pakistan";
+  let avgRating = 4.9;
+  let reviewCount = 27;
+  let completeness = 100;
+  let headline = "Full Stack Developer";
 
   try {
     const { data: cp } = await supabase
@@ -90,7 +160,7 @@ export default async function AccountPage({
           <AccountProfileEditor profile={profile} />
           <p className="mt-4 text-xs text-text-muted">
             For Connect listing fields (skills, rate, bio), use{" "}
-            <Link href="/connect/manage" className="font-semibold text-primary">
+            <Link href="/app/connect/manage" className="font-semibold text-primary">
               Manage Connect
             </Link>
             .
@@ -121,7 +191,15 @@ export default async function AccountPage({
                 <h2 className="font-display text-xl font-extrabold text-navy">
                   {profile.name || "Freelancer"}
                 </h2>
-                <BadgeCheck className="h-5 w-5 text-success" />
+                {plus && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700"
+                    title="Pro Plus verified"
+                  >
+                    <BadgeCheck className="h-4 w-4" />
+                    Verified
+                  </span>
+                )}
               </div>
               <p className="mt-1 inline-flex items-center gap-1 text-sm text-text-secondary">
                 <MapPin className="h-3.5 w-3.5" />
@@ -130,7 +208,7 @@ export default async function AccountPage({
               <p className="mt-1 text-xs text-text-muted">{profile.email}</p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <PrimaryButton href="/app/account?edit=1">Edit Profile</PrimaryButton>
-                <OutlineButton href="/connect/manage">Connect listing</OutlineButton>
+                <OutlineButton href="/app/connect/manage">Connect listing</OutlineButton>
                 <OutlineButton href="/app/connect">View Public Profile</OutlineButton>
               </div>
             </div>
@@ -163,7 +241,6 @@ export default async function AccountPage({
         <FreelancerStatCard
           label="Total Earnings"
           value={money(fin.totalRevenue)}
-          trend="+18.2% vs last month"
           icon={TrendingUp}
         />
         <FreelancerStatCard

@@ -29,6 +29,8 @@ import {
   CreditCard,
   ArrowLeftRight,
   Banknote,
+  ScrollText,
+  ListTodo,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -37,6 +39,8 @@ import { isProPlus, planLabel } from "@/lib/plan";
 import { Logo } from "@/components/ui/Logo";
 import type { PortalNavCounts } from "@/lib/portal-nav";
 import { CommandPalette, type CommandItem } from "@/components/app/CommandPalette";
+import { UserAvatar } from "@/components/app/UserAvatar";
+import { EarlyAccessProPopup } from "@/components/app/EarlyAccessProPopup";
 
 type NavItem = {
   href: string;
@@ -120,11 +124,14 @@ export function AppShell({
   const freelancerNav: NavItem[] = [
     { href: "/app", label: "Dashboard", icon: LayoutDashboard },
     { href: "/app/connect", label: "Find jobs (Connect)", icon: Network },
+    { href: "/app/connect/manage", label: "Post a need", icon: Plus },
     { href: "/app/proposals", label: "Proposals", icon: FileText, badge: counts?.proposals },
     { href: "/app/projects", label: "Projects", icon: FolderKanban, badge: counts?.projects },
+    { href: "/app/contracts", label: "Contracts", icon: ScrollText },
+    { href: "/app/invoices", label: "Invoices", icon: Receipt },
+    { href: "/app/tasks", label: "Tasks", icon: ListTodo },
     { href: "/app/messages", label: "Messages", icon: MessageSquare, badge: counts?.messages },
     { href: "/app/earnings", label: "Earnings", icon: Wallet },
-    { href: "/app/invoices", label: "Invoices", icon: Receipt },
     { href: "/app/timesheets", label: "Time tracking", icon: Clock },
     { href: "/app/clients", label: "Clients", icon: Users },
     { href: "/app/reviews", label: "Reviews", icon: Star },
@@ -137,10 +144,11 @@ export function AppShell({
 
   const clientTop: NavItem[] = [
     { href: "/app", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/connect/manage", label: "Post a job", icon: Plus },
+    { href: "/app/connect/manage", label: "Post a job", icon: Plus },
     { href: "/app/connect", label: "Marketplace / Connect", icon: Network },
     { href: "/app/proposals", label: "Proposals", icon: FileText, badge: counts?.proposals },
     { href: "/app/projects", label: "Projects", icon: FolderKanban, badge: counts?.projects },
+    { href: "/app/contracts", label: "Contracts", icon: ScrollText },
     { href: "/app/messages", label: "Messages", icon: MessageSquare, badge: counts?.messages },
   ];
 
@@ -159,6 +167,7 @@ export function AppShell({
 
   const clientBottom: NavItem[] = [
     { href: "/app/team", label: "My team", icon: Users },
+    { href: "/app/tasks", label: "Tasks", icon: ListTodo },
     { href: "/app/bookmarks", label: "Bookmarks", icon: Bookmark },
     { href: "/app/reviews", label: "Reviews", icon: Star },
     { href: "/app/timesheets", label: "Time tracking", icon: Clock },
@@ -179,8 +188,8 @@ export function AppShell({
     ? [
         { href: "/app", label: "Home", icon: LayoutDashboard },
         { href: "/app/connect", label: "Connect", icon: Network },
-        { href: "/app/proposals", label: "Proposals", icon: FileText },
         { href: "/app/messages", label: "Messages", icon: MessageSquare },
+        { href: "/app/notifications", label: "Alerts", icon: Bell },
         { href: "/app/settings", label: "Settings", icon: Settings },
       ]
     : [
@@ -207,7 +216,7 @@ export function AppShell({
       { href: "/app/settings", label: "Settings", group: "Account" },
       { href: "/app/notifications", label: "Notifications", group: "Account" },
       { href: "/pro", label: "Billing / Plans", group: "Account" },
-      { href: "/connect/manage", label: "Post a job", group: "Actions" },
+      { href: "/app/connect/manage", label: isClient ? "Post a job" : "Post a need", group: "Actions" },
     ];
     if (isClient) {
       common.push(
@@ -283,7 +292,7 @@ export function AppShell({
                 isActive(n.href),
               )?.label ?? "App";
 
-  const profileHref = isClient ? "/app/settings" : "/app/account";
+  const profileHref = "/app/account";
 
   return (
     <div
@@ -292,7 +301,7 @@ export function AppShell({
         isClient && "theme-client",
       )}
     >
-      <aside className="hidden w-64 shrink-0 flex-col bg-navy text-white lg:flex">
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-navy text-white lg:flex">
         <div className="border-b border-white/10 px-4 py-5">
           <Link href="/app" className="block">
             <Logo size="sm" variant="onDark" />
@@ -315,8 +324,14 @@ export function AppShell({
             aria-expanded={profileMenuOpen}
             aria-haspopup="menu"
           >
-            <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-bold">
-              {(profile.name || profile.email || "?").charAt(0).toUpperCase()}
+            <span className="relative shrink-0">
+              <UserAvatar
+                name={profile.name}
+                email={profile.email}
+                avatarUrl={profile.avatar_url}
+                size="lg"
+                className="bg-white/10"
+              />
               <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-navy bg-success" />
             </span>
             <div className="min-w-0 flex-1">
@@ -451,7 +466,7 @@ export function AppShell({
         <div className="border-t border-white/10 p-4">
           {isClient ? (
             <Link
-              href="/connect/manage"
+              href="/app/connect/manage"
               className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-transparent px-3 py-2.5 text-sm font-bold text-white hover:bg-white/5"
             >
               <Plus className="h-4 w-4" />
@@ -459,11 +474,11 @@ export function AppShell({
             </Link>
           ) : (
             <Link
-              href="/connect/manage"
+              href="/app/connect/manage"
               className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-sm font-bold text-white hover:bg-primary-dark"
             >
               <Plus className="h-4 w-4" />
-              Post a Job (Connect)
+              Post a need
             </Link>
           )}
           <div className="rounded-xl border border-white/10 bg-white/5 p-3">
@@ -472,13 +487,13 @@ export function AppShell({
               {plus ? "Renews on Oct 10, 2026" : "Upgrade for Connect credits"}
             </p>
             <Link
-              href="/pro?plan=pro_plus"
+              href={plus ? "/app/settings?tab=billing" : "/pro?plan=pro_plus"}
               className={cn(
                 "mt-2 block rounded-lg px-3 py-1.5 text-center text-xs font-semibold text-white",
                 isClient ? "bg-white/15 hover:bg-white/25" : "bg-primary",
               )}
             >
-              Manage plan
+              {plus ? "You're on Plus, enjoy" : "Manage plan"}
             </Link>
           </div>
         </div>
@@ -535,20 +550,23 @@ export function AppShell({
                 )}
               </Link>
               <Link
-                href={plus ? "/pro" : "/pro?plan=pro_plus"}
+                href={plus ? "/app/settings?tab=billing" : "/pro?plan=pro_plus"}
                 className={cn(
                   "hidden items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-white sm:inline-flex",
                   isClient ? "bg-navy" : "bg-primary",
                 )}
+                title={plus ? `You're on ${plan}` : "Upgrade to Pro Plus"}
               >
                 <Sparkles className="h-3.5 w-3.5" />
-                {plus ? plan : "Pro Plus"}
+                {plus ? `${plan} Enjoy` : "Pro Plus"}
               </Link>
-              <Link
-                href={profileHref}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-navy text-xs font-bold text-white"
-              >
-                {(profile.name || profile.email || "?").charAt(0).toUpperCase()}
+              <Link href={profileHref} className="block shrink-0">
+                <UserAvatar
+                  name={profile.name}
+                  email={profile.email}
+                  avatarUrl={profile.avatar_url}
+                  size="md"
+                />
               </Link>
               <button
                 type="button"
@@ -590,6 +608,8 @@ export function AppShell({
           })}
         </div>
       </nav>
+
+      <EarlyAccessProPopup isClient={isClient} />
 
       <CommandPalette
         open={commandOpen}

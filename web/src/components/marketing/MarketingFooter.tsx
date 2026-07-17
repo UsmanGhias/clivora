@@ -6,9 +6,9 @@ import { site } from "@/lib/site";
 export function MarketingFooter() {
   return (
     <footer className="border-t border-slate-200 bg-white">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-5 sm:py-16 lg:px-8">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-6 lg:gap-12">
-          <div className="sm:col-span-2 lg:col-span-2">
+      <div className="mx-auto max-w-7xl px-5 py-16 lg:px-8">
+        <div className="grid gap-12 lg:grid-cols-6">
+          <div className="lg:col-span-2">
             <Link href="/" className="inline-flex flex-col">
               <span className="font-display text-xl font-extrabold tracking-wide text-navy">
                 {marketing.brand.name}

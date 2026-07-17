@@ -16,7 +16,7 @@ export function AnalyticsPreviewMock() {
 
       <div className="grid gap-3 p-4 sm:grid-cols-3">
         {[
-          { label: "Revenue", value: "$4,180", trend: "MTD", tone: "text-emerald-600" },
+          { label: "Revenue", value: "$4,180", trend: "+12.4%", tone: "text-emerald-600" },
           { label: "Billable hours", value: "68h", trend: "+6.1%", tone: "text-emerald-600" },
           { label: "Open invoices", value: "$1,100", trend: "2 pending", tone: "text-amber-600" },
         ].map((s) => (

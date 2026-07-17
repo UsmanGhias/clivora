@@ -8,9 +8,11 @@ import {
   TrendingUp,
   Bot,
   MapPin,
+  Zap,
+  Clock3,
+  Users,
 } from "lucide-react";
 import { EarningsLineChart } from "@/components/dashboard/EarningsLineChart";
-import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { ProfileCompleteness } from "@/components/dashboard/ProfileCompleteness";
 import { ProjectListCard, type DashboardProject } from "@/components/dashboard/ProjectListCard";
 import { PeopleListCard, type PersonRow } from "@/components/dashboard/PeopleListCard";
@@ -96,6 +98,64 @@ function KpiCard({
   );
 }
 
+function WorkQueueCard({
+  pending,
+  accepted,
+  unread,
+  milestones,
+}: {
+  pending: number;
+  accepted: number;
+  unread: number;
+  milestones: number;
+}) {
+  const needsReply = unread > 0;
+  const metrics = [
+    { label: "Proposals", value: pending, href: "/app/proposals" },
+    { label: "Accepted", value: accepted, href: "/app/proposals" },
+    { label: "Unread", value: unread, href: "/app/messages" },
+    { label: "Milestones", value: milestones, href: "/app/projects" },
+  ];
+
+  return (
+    <div className="overflow-hidden rounded-2xl bg-navy p-5 text-white shadow-sm sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="inline-flex items-center gap-2 text-sm font-bold text-primary-light">
+            <Zap className="h-4 w-4" />
+            Work queue
+          </p>
+          <p className="mt-2 text-sm text-white/70">
+            {needsReply
+              ? `${unread} client message${unread === 1 ? "" : "s"} need${unread === 1 ? "s" : ""} a response.`
+              : pending > 0
+                ? `${pending} proposal${pending === 1 ? "" : "s"} awaiting review.`
+                : "You're caught up — keep building pipeline on Connect."}
+          </p>
+        </div>
+        <Link
+          href={needsReply ? "/app/messages" : "/app/connect"}
+          className="inline-flex min-h-10 items-center justify-center rounded-xl bg-white px-4 py-2 text-sm font-bold text-navy hover:bg-primary/10"
+        >
+          {needsReply ? "Reply to messages" : "Find jobs"}
+        </Link>
+      </div>
+      <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {metrics.map((m) => (
+          <Link
+            key={m.label}
+            href={m.href}
+            className="rounded-xl bg-white/10 px-3 py-3 transition hover:bg-white/15"
+          >
+            <p className="font-display text-xl font-extrabold">{m.value}</p>
+            <p className="mt-0.5 text-[11px] font-semibold text-white/65">{m.label}</p>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function FreelancerDashboard({
   profile,
   home,
@@ -104,7 +164,7 @@ export function FreelancerDashboard({
   credits,
   profileCompleteness,
   successScore,
-  activities,
+  activities: _activities,
   projects,
   clients,
   proposalSlices,
@@ -114,7 +174,9 @@ export function FreelancerDashboard({
   const plus = isProPlus(profile);
   const firstName = (profile.name || "there").split(" ")[0];
   const pending = home.pending_proposals ?? 0;
+  const accepted = home.accepted_proposals ?? 0;
   const unread = home.unread_messages ?? 0;
+  const milestones = home.active_milestones ?? 0;
   const inProgress = projects.filter((p) => {
     const s = (p.status || "").toLowerCase();
     return s.includes("progress") || s === "active" || s === "ongoing";
@@ -122,12 +184,12 @@ export function FreelancerDashboard({
   const proposalTotal = proposalSlices.reduce((s, x) => s + x.value, 0);
 
   return (
-    <div className="space-y-6 pb-10">
+    <div className="space-y-5 pb-10">
       {/* Hero greeting + profile completeness */}
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div>
           <h1 className="font-display text-2xl font-extrabold text-navy sm:text-3xl">
-            {portalGreeting()}, {firstName}! 👋
+            {portalGreeting()}, {firstName}!
           </h1>
           <p className="mt-1 text-sm text-text-secondary">Let&apos;s crush your goals today.</p>
           {credits && (
@@ -138,16 +200,24 @@ export function FreelancerDashboard({
           )}
         </div>
         <div className="w-full max-w-sm shrink-0">
-          <ProfileCompleteness percent={profileCompleteness} />
+          <ProfileCompleteness percent={profileCompleteness} successScore={successScore} />
         </div>
       </div>
 
-      {/* 5 KPI cards matching mockup */}
+      {/* Work queue fills the former empty center */}
+      <WorkQueueCard
+        pending={pending}
+        accepted={accepted}
+        unread={unread}
+        milestones={milestones}
+      />
+
+      {/* KPI strip */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <KpiCard
           label="Total Earnings"
           value={`$${invoiceTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-          sub="From invoices"
+          sub="Invoiced total"
           icon={TrendingUp}
           href="/app/earnings"
           iconTone="bg-emerald-100 text-emerald-700"
@@ -155,7 +225,7 @@ export function FreelancerDashboard({
         <KpiCard
           label="Active Projects"
           value={projectCount}
-          sub={`${inProgress || home.active_milestones || 0} in progress`}
+          sub={`${inProgress || milestones} in progress`}
           icon={Briefcase}
           href="/app/projects"
           iconTone="bg-sky-100 text-sky-800"
@@ -186,16 +256,34 @@ export function FreelancerDashboard({
         />
       </div>
 
-      {/* Earnings chart + Recent activity */}
-      <div className="grid gap-4 xl:grid-cols-3">
-        <div className="xl:col-span-2">
-          <EarningsLineChart
-            total={invoiceTotal}
-            accent="teal"
-            title="Earnings overview"
-          />
-        </div>
-        <ActivityFeed items={activities} viewAllHref="/app/activity" />
+      <WeekOverview {...week} />
+
+      {/* Earnings chart full width */}
+      <div className="grid gap-4 lg:grid-cols-1">
+        <EarningsLineChart
+          total={invoiceTotal}
+          accent="teal"
+          title="Earnings overview"
+          trendLabel={invoiceTotal > 0 ? "Live invoice total" : "No paid/invoiced amount yet"}
+          showPreviousLegend
+          summaryBoxes={[
+            {
+              label: "Clients",
+              value: String(clients.length),
+              tone: "bg-sky-50 text-sky-800",
+            },
+            {
+              label: "Projects",
+              value: String(projectCount),
+              tone: "bg-primary/10 text-primary-dark",
+            },
+            {
+              label: "Time",
+              value: week.timeTracked,
+              tone: "bg-violet-50 text-violet-800",
+            },
+          ]}
+        />
       </div>
 
       {/* Active projects | Top clients | Proposals donut */}
@@ -210,8 +298,37 @@ export function FreelancerDashboard({
         />
       </div>
 
-      {/* This week overview */}
-      <WeekOverview {...week} />
+      {/* Quick actions */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Link
+          href="/app/connect"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white"
+        >
+          <Briefcase className="h-4 w-4" />
+          Find jobs
+        </Link>
+        <Link
+          href="/app/connect/manage"
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm font-bold text-primary-dark"
+        >
+          <Sparkles className="h-4 w-4" />
+          Post a need
+        </Link>
+        <Link
+          href="/app/time"
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface px-4 py-3 text-sm font-semibold text-navy"
+        >
+          <Clock3 className="h-4 w-4" />
+          Track time
+        </Link>
+        <Link
+          href="/app/clients"
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface px-4 py-3 text-sm font-semibold text-navy"
+        >
+          <Users className="h-4 w-4" />
+          Clients
+        </Link>
+      </div>
 
       {/* AI Assistant banner */}
       <div className="relative overflow-hidden rounded-2xl bg-navy p-6 text-white shadow-sm sm:p-7">

@@ -1,43 +1,28 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import { FileText } from "lucide-react";
 import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
   ExportImportAdd,
-  downloadCsv,
   KpiGrid,
   FilterBar,
   AdminTable,
   StatusPill,
   AvatarCell,
+  RowActions,
   PageLayout,
   SidePanel,
   SideCard,
   money,
   fmtDate,
+  relative,
   ErrorBanner,
 } from "@/components/admin/ui";
 
-const TEMPLATES = [
-  { id: "rev", name: "Revenue summary", period: "Last 30 days", key: "totalRevenue" as const },
-  { id: "users", name: "User growth", period: "Last 30 days", key: "totalUsers" as const },
-  { id: "escrow", name: "Escrow balance", period: "Current", key: "escrowHeld" as const },
-];
-
 export default function AdminReportsPage() {
   const { data, loading } = useAdminData();
-  const [q, setQ] = useState("");
   const o = data?.overview;
-
-  const filtered = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    if (!needle) return TEMPLATES;
-    return TEMPLATES.filter(
-      (r) => r.name.toLowerCase().includes(needle) || r.period.toLowerCase().includes(needle),
-    );
-  }, [q]);
 
   return (
     <div>
@@ -53,24 +38,7 @@ export default function AdminReportsPage() {
       <AdminPageHeader
         title="Reports"
         subtitle="Exportable platform summaries and KPIs."
-        actions={
-          <ExportImportAdd
-            entity="Reports"
-            onExport={() =>
-              downloadCsv(
-                "platform-kpis.csv",
-                ["metric", "value"],
-                [
-                  ["totalRevenue", o?.totalRevenue ?? 0],
-                  ["totalUsers", o?.totalUsers ?? 0],
-                  ["activeProjects", o?.activeProjects ?? 0],
-                  ["totalPayments", o?.totalPayments ?? 0],
-                  ["escrowHeld", o?.escrowHeld ?? 0],
-                ],
-              )
-            }
-          />
-        }
+        actions={<ExportImportAdd entity="Reports" addLabel="Generate Report" />}
       />
 
       <KpiGrid
@@ -90,48 +58,41 @@ export default function AdminReportsPage() {
       <PageLayout
         main={
           <div>
-            <FilterBar
-              searchPlaceholder="Search reports…"
-              searchValue={q}
-              onSearchChange={setQ}
-              onReset={() => setQ("")}
-            />
+            <FilterBar searchPlaceholder="Search reports…" onReset={() => undefined} />
             {!data && loading ? (
               <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
                 Loading reports…
               </div>
             ) : (
               <AdminTable
-                headers={["Report", "Period", "Value", "Generated"]}
+                headers={["Report", "Period", "Status", "Generated", "Actions"]}
                 footer={<span>Built-in report templates</span>}
               >
-                {filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-3 py-10 text-center text-sm text-slate-500">
-                      No matching reports.
+                {[
+                  { id: "rev", name: "Revenue summary", period: "Last 30 days" },
+                  { id: "users", name: "User growth", period: "Last 30 days" },
+                  { id: "escrow", name: "Escrow balance", period: "Current" },
+                ].map((r) => (
+                  <tr key={r.id} className="hover:bg-slate-50/80">
+                    <td className="px-3 py-3">
+                      <input type="checkbox" className="rounded border-slate-300" aria-label="Select row" />
+                    </td>
+                    <td className="px-3 py-3">
+                      <AvatarCell name={r.name} subtitle={r.period} />
+                    </td>
+                    <td className="px-3 py-3 text-sm text-slate-600">{r.period}</td>
+                    <td className="px-3 py-3">
+                      <StatusPill status="active" />
+                    </td>
+                    <td className="px-3 py-3 text-sm text-slate-600">
+                      {fmtDate(new Date().toISOString())}
+                      <span className="ml-1 text-xs text-slate-400">{relative(new Date().toISOString())}</span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <RowActions />
                     </td>
                   </tr>
-                ) : (
-                  filtered.map((r) => (
-                    <tr key={r.id} className="hover:bg-slate-50/80">
-                      <td className="px-3 py-3">
-                        <AvatarCell name={r.name} subtitle={r.period} />
-                      </td>
-                      <td className="px-3 py-3 text-sm text-slate-600">{r.period}</td>
-                      <td className="px-3 py-3 font-semibold text-slate-800">
-                        {r.key === "totalUsers"
-                          ? String(o?.[r.key] ?? 0)
-                          : money(Number(o?.[r.key] ?? 0))}
-                      </td>
-                      <td className="px-3 py-3">
-                        <StatusPill status="active" />
-                      </td>
-                      <td className="px-3 py-3 text-sm text-slate-600">
-                        {fmtDate(new Date().toISOString())}
-                      </td>
-                    </tr>
-                  ))
-                )}
+                ))}
               </AdminTable>
             )}
           </div>
@@ -139,7 +100,7 @@ export default function AdminReportsPage() {
         side={
           <SidePanel>
             <SideCard title="Report tips">
-              <p className="text-xs text-slate-500">Use Export to download a CSV snapshot of live KPIs.</p>
+              <p className="text-xs text-slate-500">Use Export to download CSV snapshots of live KPIs.</p>
             </SideCard>
           </SidePanel>
         }

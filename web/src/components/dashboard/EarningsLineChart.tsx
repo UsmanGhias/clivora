@@ -11,35 +11,31 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 
-export type EarningsSeriesPoint = {
-  day: string;
-  amount: number;
-  previous?: number;
-};
+export type EarningsPoint = { day: string; amount: number; previous?: number };
 
 export function EarningsLineChart({
   total,
-  series,
   accent = "teal",
   title = "Earnings overview",
   trendLabel,
   summaryBoxes,
   showPreviousLegend,
+  series,
 }: {
   total: number;
-  /** Real time-series points only. When omitted or empty, an empty state is shown. */
-  series?: EarningsSeriesPoint[];
   accent?: "teal" | "slate";
   title?: string;
   trendLabel?: string;
   summaryBoxes?: Array<{ label: string; value: string; tone: string }>;
   showPreviousLegend?: boolean;
+  /** Real time-series from DB. When omitted/empty, chart shows honest empty state (no demo curve). */
+  series?: EarningsPoint[];
 }) {
   const stroke = accent === "slate" ? "#475569" : "#0D9488";
   const fill = stroke;
   const gradId = accent === "slate" ? "spendGrad" : "earnGrad";
-  const data = series && series.length > 0 ? series : [];
-  const isEmpty = data.length === 0;
+  const points = (series ?? []).filter((p) => Number.isFinite(p.amount));
+  const isEmpty = points.length === 0 || points.every((p) => p.amount === 0);
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
@@ -73,16 +69,14 @@ export function EarningsLineChart({
           )}
         </div>
       </div>
-      <div className="relative h-52 w-full">
+      <div className="relative h-[220px] w-full min-h-[220px]">
         {isEmpty ? (
-          <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-border bg-background/50">
-            <p className="px-4 py-2 text-center text-sm font-semibold text-text-secondary">
-              No time-series data yet
-            </p>
+          <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-border bg-slate-50/80 px-4 text-center text-sm font-semibold text-text-secondary">
+            No invoice time-series yet — total above is from live database records.
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data}>
+          <ResponsiveContainer width="100%" height={220} debounce={50}>
+            <AreaChart data={points}>
               <defs>
                 <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={fill} stopOpacity={0.35} />

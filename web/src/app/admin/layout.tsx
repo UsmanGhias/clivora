@@ -29,9 +29,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <div className="max-w-md rounded-2xl border border-white/10 bg-slate-900 p-8 text-center">
             <h1 className="text-xl font-bold">Admin access required</h1>
             <p className="mt-3 text-sm text-slate-300">
-              Your account is signed in but does not have the admin role on its profile.
-              Ask a bootstrap super-admin to grant the admin role in the database (not via
-              email allowlist).
+              Your account is signed in but does not have the admin role. Ask a workspace owner to
+              grant admin access, or sign in with an authorized operator account.
             </p>
             <div className="mt-6 flex flex-col gap-2">
               <Link

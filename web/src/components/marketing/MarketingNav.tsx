@@ -3,31 +3,77 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, Globe, Menu, X } from "lucide-react";
+import { ChevronDown, Globe, LayoutDashboard, LogOut, Menu, X } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { marketing } from "@/lib/marketing";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+
+type SessionUser = {
+  email: string | null;
+  name: string | null;
+};
 
 export function MarketingNav({ variant = "light" }: { variant?: "light" | "overlay" }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [user, setUser] = useState<SessionUser | null>(null);
+  const [authReady, setAuthReady] = useState(false);
   const light = variant === "light";
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
-    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   useEffect(() => {
-    if (!mobileOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const supabase = createClient();
+    let mounted = true;
+
+    async function load() {
+      const {
+        data: { user: u },
+      } = await supabase.auth.getUser();
+      if (!mounted) return;
+      if (!u) {
+        setUser(null);
+        setAuthReady(true);
+        return;
+      }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("name")
+        .eq("id", u.id)
+        .maybeSingle();
+      if (!mounted) return;
+      setUser({
+        email: u.email ?? null,
+        name: (profile?.name as string | null) ?? null,
+      });
+      setAuthReady(true);
+    }
+
+    void load();
+    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+      void load();
+    });
     return () => {
-      document.body.style.overflow = prev;
+      mounted = false;
+      sub.subscription.unsubscribe();
     };
-  }, [mobileOpen]);
+  }, []);
+
+  async function signOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    setUser(null);
+    window.location.href = "/";
+  }
+
+  const loggedIn = authReady && !!user;
+  const displayName = (user?.name || user?.email || "Account").split(" ")[0];
 
   return (
     <>
@@ -36,17 +82,17 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
           "sticky top-0 z-50 transition-all duration-300",
           light
             ? scrolled
-              ? "border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-xl"
-              : "border-b border-transparent bg-[#F8FAFC]/92 backdrop-blur-md"
+              ? "border-b border-slate-200/80 bg-white/90 shadow-sm backdrop-blur-xl"
+              : "border-b border-transparent bg-[#F8FAFC]/90 backdrop-blur-md"
             : scrolled
               ? "border-b border-white/10 bg-navy/90 backdrop-blur-xl"
               : "bg-transparent",
         )}
       >
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-3 px-4 sm:h-[68px] sm:gap-4 sm:px-5 lg:px-8">
-          <Link href="/" className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-2.5" aria-label="CLIVORA Home">
+        <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between gap-4 px-5 lg:px-8">
+          <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="CLIVORA Home">
             <Logo size="sm" showText={false} variant={light ? "onLight" : "onDark"} />
-            <span className="flex min-w-0 flex-col leading-none">
+            <span className="hidden flex-col leading-none sm:flex">
               <span
                 className={cn(
                   "font-display text-sm font-extrabold tracking-wide",
@@ -55,13 +101,13 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
               >
                 {marketing.brand.name}
               </span>
-              <span className="hidden text-[9px] font-semibold uppercase tracking-[0.18em] text-primary xs:inline sm:inline">
+              <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-primary">
                 {marketing.brand.productLine}
               </span>
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary">
+          <nav className="hidden items-center gap-1 lg:flex">
             {marketing.nav.links.map((link) => {
               const hasChildren = "children" in link && link.children?.length;
               return (
@@ -104,50 +150,96 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
           </nav>
 
           <div className="hidden items-center gap-3 lg:flex">
-            <span
+            <button
+              type="button"
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium",
-                light ? "text-slate-500" : "text-white/70",
+                light ? "text-slate-500 hover:bg-slate-100" : "text-white/70 hover:bg-white/10",
               )}
-              aria-hidden="true"
+              aria-label="Language"
             >
               <Globe className="h-4 w-4" />
               {marketing.nav.locale}
-            </span>
-            <Link
-              href={marketing.nav.login.href}
-              className={cn(
-                "text-sm font-semibold",
-                light ? "text-navy hover:text-primary" : "text-white/80 hover:text-white",
-              )}
-            >
-              {marketing.nav.login.label}
-            </Link>
-            <Link
-              href={marketing.nav.cta.href}
-              className={cn(
-                "rounded-xl px-4 py-2.5 text-sm font-bold transition",
-                light
-                  ? "bg-navy text-white hover:bg-navy/90"
-                  : "bg-white text-navy hover:bg-white/90",
-              )}
-            >
-              {marketing.nav.cta.label}
-            </Link>
+            </button>
+
+            {!authReady ? (
+              <span className="h-9 w-28 animate-pulse rounded-xl bg-slate-200/70" />
+            ) : loggedIn ? (
+              <>
+                <span
+                  className={cn(
+                    "hidden text-sm font-medium xl:inline",
+                    light ? "text-slate-500" : "text-white/70",
+                  )}
+                >
+                  Hi, {displayName}
+                </span>
+                <Link
+                  href="/app"
+                  className={cn(
+                    "inline-flex items-center gap-1.5 text-sm font-semibold",
+                    light ? "text-navy hover:text-primary" : "text-white/90 hover:text-white",
+                  )}
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  Dashboard
+                </Link>
+                <Link
+                  href="/app"
+                  className={cn(
+                    "rounded-xl px-4 py-2.5 text-sm font-bold transition",
+                    light
+                      ? "bg-navy text-white hover:bg-navy/90"
+                      : "bg-white text-navy hover:bg-white/90",
+                  )}
+                >
+                  Open portal
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => void signOut()}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-lg px-2 py-2 text-sm font-medium",
+                    light ? "text-slate-500 hover:bg-slate-100" : "text-white/70 hover:bg-white/10",
+                  )}
+                  aria-label="Sign out"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href={marketing.nav.login.href}
+                  className={cn(
+                    "text-sm font-semibold",
+                    light ? "text-navy hover:text-primary" : "text-white/80 hover:text-white",
+                  )}
+                >
+                  {marketing.nav.login.label}
+                </Link>
+                <Link
+                  href={marketing.nav.cta.href}
+                  className={cn(
+                    "rounded-xl px-4 py-2.5 text-sm font-bold transition",
+                    light
+                      ? "bg-navy text-white hover:bg-navy/90"
+                      : "bg-white text-navy hover:bg-white/90",
+                  )}
+                >
+                  {marketing.nav.cta.label}
+                </Link>
+              </>
+            )}
           </div>
 
           <button
             type="button"
-            className={cn(
-              "inline-flex h-11 w-11 items-center justify-center rounded-xl lg:hidden",
-              light ? "text-navy hover:bg-slate-100" : "text-white hover:bg-white/10",
-            )}
+            className={cn("lg:hidden", light ? "text-navy" : "text-white")}
             onClick={() => setMobileOpen((v) => !v)}
-            aria-expanded={mobileOpen}
-            aria-controls="marketing-mobile-nav"
-            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+            aria-label="Toggle menu"
           >
-            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+            {mobileOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
       </header>
@@ -155,19 +247,18 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
       <AnimatePresence>
         {mobileOpen ? (
           <motion.div
-            id="marketing-mobile-nav"
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="fixed inset-x-0 top-14 z-40 max-h-[calc(100svh-3.5rem)] overflow-y-auto border-b border-slate-200 bg-white p-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-xl sm:top-[68px] sm:max-h-[calc(100svh-68px)] sm:p-5 lg:hidden"
+            className="fixed inset-x-0 top-[68px] z-40 max-h-[calc(100svh-68px)] overflow-y-auto border-b border-slate-200 bg-white p-5 shadow-xl lg:hidden"
           >
-            <nav className="flex flex-col gap-1" aria-label="Mobile">
+            <nav className="flex flex-col gap-1">
               {marketing.nav.links.map((link) => (
                 <div key={link.label} className="border-b border-slate-100 py-2">
                   <Link
                     href={link.href}
                     onClick={() => setMobileOpen(false)}
-                    className="block py-2.5 text-base font-semibold text-navy"
+                    className="block py-2 text-base font-semibold text-navy"
                   >
                     {link.label}
                   </Link>
@@ -177,7 +268,7 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
                           key={child.href + child.label}
                           href={child.href}
                           onClick={() => setMobileOpen(false)}
-                          className="block py-2 pl-3 text-sm text-slate-500"
+                          className="block py-1.5 pl-3 text-sm text-slate-500"
                         >
                           {child.label}
                         </Link>
@@ -185,20 +276,44 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
                     : null}
                 </div>
               ))}
-              <Link
-                href={marketing.nav.login.href}
-                onClick={() => setMobileOpen(false)}
-                className="mt-3 py-3 text-base font-semibold text-navy"
-              >
-                {marketing.nav.login.label}
-              </Link>
-              <Link
-                href={marketing.nav.cta.href}
-                onClick={() => setMobileOpen(false)}
-                className="mt-1 inline-flex min-h-12 items-center justify-center rounded-xl bg-navy px-4 py-3 text-center text-sm font-bold text-white"
-              >
-                {marketing.nav.cta.label}
-              </Link>
+              {loggedIn ? (
+                <>
+                  <Link
+                    href="/app"
+                    onClick={() => setMobileOpen(false)}
+                    className="mt-3 rounded-xl bg-navy px-4 py-3 text-center text-sm font-bold text-white"
+                  >
+                    Open portal
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileOpen(false);
+                      void signOut();
+                    }}
+                    className="mt-2 py-2 text-base font-semibold text-slate-600"
+                  >
+                    Sign out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href={marketing.nav.login.href}
+                    onClick={() => setMobileOpen(false)}
+                    className="mt-3 py-2 text-base font-semibold text-navy"
+                  >
+                    {marketing.nav.login.label}
+                  </Link>
+                  <Link
+                    href={marketing.nav.cta.href}
+                    onClick={() => setMobileOpen(false)}
+                    className="mt-2 rounded-xl bg-navy px-4 py-3 text-center text-sm font-bold text-white"
+                  >
+                    {marketing.nav.cta.label}
+                  </Link>
+                </>
+              )}
             </nav>
           </motion.div>
         ) : null}

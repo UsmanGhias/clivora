@@ -86,7 +86,7 @@ export default async function HubPage() {
           tone="teal"
         />
         <HubLink
-          href="/connect/manage"
+          href="/app/connect/manage"
           title="Trust profile"
           body={
             kpis.profileCompleteness != null

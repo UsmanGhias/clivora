@@ -1,13 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Landmark, Lock, Unlock } from "lucide-react";
 import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
   ExportImportAdd,
-  downloadCsv,
-  matchesAdminQuery,
   KpiGrid,
   FilterBar,
   AdminTable,
@@ -23,8 +21,7 @@ import {
 
 export default function AdminEscrowPage() {
   const { data, loading } = useAdminData();
-  const [q, setQ] = useState("");
-  const escrow = data?.escrow ?? [];
+  const escrow = useMemo(() => data?.escrow ?? [], [data?.escrow]);
 
   const kpis = useMemo(() => {
     const total = escrow.reduce((s, e) => s + Number(e.amount ?? 0), 0);
@@ -38,11 +35,6 @@ export default function AdminEscrowPage() {
       .reduce((s, e) => s + Number(e.amount ?? 0), 0);
     return { total, inEscrow, released };
   }, [escrow]);
-
-  const filtered = useMemo(
-    () => escrow.filter((row) => matchesAdminQuery(row, q)),
-    [escrow, q],
-  );
 
   const byStatus = useMemo(() => {
     const map = new Map<string, number>();
@@ -67,18 +59,7 @@ export default function AdminEscrowPage() {
       <AdminPageHeader
         title="Escrow"
         subtitle="Milestone funds held and released on Connect."
-        actions={
-          <ExportImportAdd
-            entity="Escrow"
-            onExport={() =>
-              downloadCsv(
-                "escrow.csv",
-                Object.keys(filtered[0] ?? { id: "" }),
-                filtered.map((row) => Object.keys(filtered[0] ?? { id: "" }).map((k) => String(row[k] ?? ""))),
-              )
-            }
-          />
-        }
+        actions={<ExportImportAdd entity="Escrow" addLabel="Add Escrow" />}
       />
 
       <KpiGrid
@@ -107,12 +88,7 @@ export default function AdminEscrowPage() {
       <PageLayout
         main={
           <div>
-            <FilterBar
-              searchPlaceholder="Search escrow…"
-              searchValue={q}
-              onSearchChange={setQ}
-              onReset={() => setQ("")}
-            />
+            <FilterBar searchPlaceholder="Search escrow…" onReset={() => undefined} />
 
             {!data && loading ? (
               <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
@@ -121,16 +97,16 @@ export default function AdminEscrowPage() {
             ) : (
               <AdminTable
                 headers={["Escrow ID", "Title", "Amount", "Status", "Created", "Actions"]}
-                footer={<span>Showing {filtered.length} escrow records</span>}
+                footer={<span>Showing {escrow.length} escrow records</span>}
               >
-                {filtered.length === 0 ? (
+                {escrow.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-3 py-10 text-center text-sm text-slate-500">
                       No escrow records found.
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((e) => (
+                  escrow.map((e) => (
                     <tr key={String(e.id)} className="hover:bg-slate-50/80">
                       <td className="px-3 py-3">
                         <input type="checkbox" className="rounded border-slate-300" aria-label="Select row" />

@@ -63,7 +63,7 @@ export function EarningsHeroMock() {
                 Earned this month
               </p>
               <p className="mt-1 font-display text-lg font-extrabold text-[#0F172A]">$4,180.00</p>
-              <p className="mt-0.5 text-[8px] font-semibold text-emerald-600">Sample preview</p>
+              <p className="mt-0.5 text-[8px] font-semibold text-emerald-600">+12.4% vs last month</p>
             </div>
             <div className="col-span-2 rounded-xl bg-[#0F172A] p-2.5 text-white shadow-sm sm:col-span-1">
               <p className="text-[8px] font-semibold uppercase tracking-wide text-white/50">

@@ -37,21 +37,21 @@ export function ConnectSection() {
   const c = marketing.connect;
 
   return (
-    <section id="connect" className="border-b border-slate-200/80 bg-white py-14 sm:py-20 lg:py-24">
-      <div className="mx-auto max-w-7xl px-4 sm:px-5 lg:px-8">
+    <section id="connect" className="border-b border-slate-200/80 bg-white py-16 sm:py-24">
+      <div className="mx-auto max-w-7xl px-5 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Connect marketplace</p>
-          <h2 className="mt-3 font-display text-[1.75rem] font-extrabold tracking-tight text-navy sm:text-5xl">
+          <h2 className="mt-3 font-display text-3xl font-extrabold tracking-tight text-navy sm:text-5xl">
             {c.headline[0]}{" "}
             <span className="bg-gradient-to-r from-primary to-emerald-400 bg-clip-text text-transparent">
               {c.headline[1]}
             </span>
           </h2>
-          <p className="mt-4 text-[15px] leading-relaxed text-slate-600 sm:text-lg">{c.body}</p>
+          <p className="mt-4 text-base leading-relaxed text-slate-600 sm:text-lg">{c.body}</p>
         </div>
 
-        <div className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-[#F8FAFC] p-3 shadow-lg shadow-slate-200/50 sm:mt-10 sm:p-6">
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="mt-10 overflow-hidden rounded-2xl border border-slate-200 bg-[#F8FAFC] p-4 shadow-lg shadow-slate-200/50 sm:p-6">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
             {c.ribbon.map((item, i) => {
               const Icon = ribbonIcons[i] ?? Briefcase;
               return (
@@ -107,21 +107,17 @@ export function ConnectSection() {
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-              <div className="max-h-[min(42vh,340px)] overflow-hidden sm:max-h-none">
-                <ConnectJobsMock />
-              </div>
-            </div>
+            <ConnectJobsMock />
           </div>
 
           <div className="mt-6 border-t border-slate-200 pt-5">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div className="mb-4 flex items-center justify-between">
               <p className="text-sm font-bold text-navy">Explore Top Categories</p>
               <Link href="/connect" className="text-xs font-semibold text-primary hover:underline">
                 View all categories
               </Link>
             </div>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {c.categories.map((cat) => (
                 <div
                   key={cat.title}
