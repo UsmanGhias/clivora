@@ -16,12 +16,12 @@ export const metadata = { title: "Marketplace / Connect" };
 export default async function AppConnectPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ tab?: string }> | { tab?: string };
+  searchParams?: Promise<{ tab?: string }>;
 }) {
   const profile = await getProfile();
   if (!profile) redirect("/login");
   const client = isClientAccount(profile);
-  const sp = searchParams instanceof Promise ? await searchParams : searchParams;
+  const sp = searchParams ? await searchParams : undefined;
   const tabParam = String(sp?.tab ?? "").toLowerCase();
   const defaultTab =
     tabParam === "jobs" || tabParam === "talent" || tabParam === "inbox"
