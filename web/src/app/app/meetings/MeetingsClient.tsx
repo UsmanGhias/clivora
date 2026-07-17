@@ -31,9 +31,13 @@ function formatDate(iso?: string | null) {
 export function MeetingsClient({
   initial,
   ownerUid,
+  googleConfigured = false,
+  googleConnected = false,
 }: {
   initial: MeetingLink[];
   ownerUid: string;
+  googleConfigured?: boolean;
+  googleConnected?: boolean;
 }) {
   const router = useRouter();
   const params = useSearchParams();
@@ -43,29 +47,35 @@ export function MeetingsClient({
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [calendarMsg, setCalendarMsg] = useState<string | null>(null);
-  const [calendarBusy, setCalendarBusy] = useState(false);
+  const [connected, setConnected] = useState(googleConnected);
 
   useEffect(() => {
-    if (params.get("calendar") === "google") {
-      setCalendarMsg(
-        "Google Calendar OAuth is being wired. For now, create a Jitsi room and add the link to your Google Calendar manually.",
-      );
-    }
-  }, [params]);
+    setConnected(googleConnected);
+  }, [googleConnected]);
 
-  async function connectGoogleCalendar() {
-    setCalendarBusy(true);
-    setCalendarMsg(null);
-    try {
-      const supabase = createClient();
-      await supabase.auth.getUser();
-      setCalendarMsg(
-        "Google Calendar sync is not fully live yet. Create a meeting below, then add the room URL to Google Calendar. Full two-way sync ships next.",
-      );
-    } finally {
-      setCalendarBusy(false);
+  useEffect(() => {
+    if (params.get("connected") === "1") {
+      setConnected(true);
+      setCalendarMsg("Google Calendar connected. New meeting rooms can be added to your calendar manually; event auto-create uses your OAuth token when sync runs.");
+      return;
     }
-  }
+    const err = params.get("error");
+    if (err === "not_configured") {
+      setCalendarMsg(
+        "Google OAuth is not configured on this deployment. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET, then try again.",
+      );
+      return;
+    }
+    if (err) {
+      setCalendarMsg(`Google Calendar connect failed: ${err}`);
+      return;
+    }
+    if (params.get("calendar") === "google" && !googleConfigured) {
+      setCalendarMsg(
+        "Configure Google OAuth (GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET) to enable calendar connect. Until then, create a Jitsi room and paste the link into Google Calendar.",
+      );
+    }
+  }, [params, googleConfigured]);
 
   async function createRoom(e: FormEvent) {
     e.preventDefault();
@@ -111,17 +121,37 @@ export function MeetingsClient({
               Google Calendar
             </p>
             <p className="mt-1 text-sm text-text-secondary">
-              Sync CLIVORA meetings into Google Calendar when OAuth is enabled for your workspace.
+              {googleConfigured
+                ? connected
+                  ? "Connected for this account. Create rooms below and keep invites in sync."
+                  : "OAuth is configured. Connect your Google account to authorize calendar access."
+                : "Google OAuth is not configured for this workspace yet."}
+            </p>
+            <p className="mt-2 text-xs font-semibold text-text-muted">
+              Status: {connected ? "Connected" : googleConfigured ? "Not connected" : "Not configured"}
             </p>
           </div>
-          <button
-            type="button"
-            disabled={calendarBusy}
-            onClick={() => void connectGoogleCalendar()}
-            className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-          >
-            {calendarBusy ? "Connecting…" : "Connect Google Calendar"}
-          </button>
+          {googleConfigured ? (
+            connected ? (
+              <a
+                href="/api/integrations/google/calendar/start"
+                className="rounded-xl border border-border px-4 py-2 text-sm font-semibold text-navy"
+              >
+                Reconnect
+              </a>
+            ) : (
+              <a
+                href="/api/integrations/google/calendar/start"
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white"
+              >
+                Connect Google Calendar
+              </a>
+            )
+          ) : (
+            <span className="rounded-xl border border-dashed border-border px-4 py-2 text-sm font-semibold text-text-muted">
+              Configure Google OAuth
+            </span>
+          )}
         </div>
         {calendarMsg && (
           <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-950">
@@ -154,29 +184,27 @@ export function MeetingsClient({
       </form>
       {error && <p className="text-sm text-error">{error}</p>}
 
-      <ul className="space-y-3">
+      <ul className="space-y-2">
         {links.length === 0 ? (
           <li className="rounded-2xl border border-dashed border-border px-4 py-8 text-center text-sm text-text-secondary">
-            No meetings yet. Create a room to share with clients.
+            No meeting rooms yet.
           </li>
         ) : (
           links.map((link) => (
             <li
               key={link.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm"
+              className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0">
-                <p className="font-semibold text-navy">{link.title || "CLIVORA meeting"}</p>
-                <p className="mt-0.5 truncate text-xs text-text-muted">
-                  {link.room_url}
-                  {link.created_at ? ` · ${formatDate(link.created_at)}` : ""}
-                </p>
+                <p className="font-semibold text-navy">{link.title || "Untitled meeting"}</p>
+                <p className="mt-1 truncate text-xs text-text-muted">{link.room_url}</p>
+                <p className="mt-1 text-[11px] text-text-muted">{formatDate(link.created_at)}</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => void copyUrl(link.room_url)}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-semibold"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-semibold text-navy"
                 >
                   <Copy className="h-3.5 w-3.5" />
                   {copied === link.room_url ? "Copied" : "Copy"}
@@ -185,7 +213,7 @@ export function MeetingsClient({
                   href={link.room_url}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-navy px-3 py-2 text-xs font-semibold text-white"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-white"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
                   Join

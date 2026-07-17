@@ -62,6 +62,8 @@ type Props = {
   plus: boolean;
   hasStripeBilling: boolean;
   initialTab?: string;
+  googleConfigured?: boolean;
+  googleCalendarConnected?: boolean;
 };
 
 function Toast({ message, onDone }: { message: string; onDone: () => void }) {
@@ -82,6 +84,8 @@ export function FreelancerSettingsPanel({
   plus,
   hasStripeBilling,
   initialTab,
+  googleConfigured = false,
+  googleCalendarConnected = false,
 }: Props) {
   const validTab = NAV.some((n) => n.key === initialTab) ? (initialTab as TabKey) : "account";
   const [tab, setTab] = useState<TabKey>(validTab);
@@ -177,7 +181,14 @@ export function FreelancerSettingsPanel({
               </div>
             </FreelancerCard>
           )}
-          {tab === "apps" && <AppsTab hasStripeBilling={hasStripeBilling} plus={plus} />}
+          {tab === "apps" && (
+            <AppsTab
+              hasStripeBilling={hasStripeBilling}
+              plus={plus}
+              googleConfigured={googleConfigured}
+              googleCalendarConnected={googleCalendarConnected}
+            />
+          )}
 
           <div className="flex flex-col gap-3 rounded-2xl border border-teal-100 bg-teal-50/80 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
@@ -273,7 +284,7 @@ function AccountTab({
             </div>
             <p className="mt-3 text-xs text-text-secondary">
               CLIVORA charges <strong>$20/mo</strong> for Pro Plus. Invoice amounts go client → you
-              directly — keep work on platform.
+              directly - keep work on platform.
             </p>
           </div>
         </div>
@@ -497,7 +508,7 @@ function SecurityTab({ plus, onToast }: { plus: boolean; onToast: (m: string) =>
       setConfirm("");
       setCurrentPassword("");
       setHasPasswordProvider(true);
-      onToast(hasPasswordProvider ? "Password updated" : "Password set — you can sign in with email too");
+      onToast(hasPasswordProvider ? "Password updated" : "Password set - you can sign in with email too");
     } finally {
       setPwBusy(false);
     }
@@ -701,9 +712,13 @@ function SecurityTab({ plus, onToast }: { plus: boolean; onToast: (m: string) =>
 function AppsTab({
   hasStripeBilling,
   plus,
+  googleConfigured,
+  googleCalendarConnected,
 }: {
   hasStripeBilling: boolean;
   plus: boolean;
+  googleConfigured: boolean;
+  googleCalendarConnected: boolean;
 }) {
   const apps = [
     {
@@ -744,14 +759,29 @@ function AppsTab({
     },
     {
       name: "Google Calendar",
-      desc: plus
-        ? "Sync meetings (connect Google, then open Meetings)"
-        : "Pro Plus recommended for calendar sync",
+      desc: googleConfigured
+        ? googleCalendarConnected
+          ? "Connected - manage meetings and sync"
+          : "OAuth ready - connect your Google account"
+        : "Configure GOOGLE_CLIENT_ID / SECRET on the server",
       icon: Calendar,
-      connected: false,
-      href: "/app/meetings?calendar=google",
+      connected: googleCalendarConnected,
+      href: googleConfigured
+        ? googleCalendarConnected
+          ? "/app/meetings?calendar=google"
+          : "/api/integrations/google/calendar/start"
+        : "/app/meetings?calendar=google",
       manage: false,
-      cta: "Connect Google",
+      cta: googleConfigured
+        ? googleCalendarConnected
+          ? "Open Meetings"
+          : "Connect Google"
+        : "Configure Google OAuth",
+      statusLabel: googleCalendarConnected
+        ? "Connected"
+        : googleConfigured
+          ? "Not connected"
+          : "Not configured",
     },
     {
       name: "Meetings (Jitsi)",
@@ -761,6 +791,7 @@ function AppsTab({
       href: "/app/meetings",
       manage: false,
       cta: "Open",
+      statusLabel: "Available",
     },
   ];
 
@@ -769,6 +800,17 @@ function AppsTab({
       <div className="grid gap-3 sm:grid-cols-2">
         {apps.map((app) => {
           const Icon = app.icon;
+          const status = "statusLabel" in app && app.statusLabel
+            ? app.statusLabel
+            : app.connected
+              ? "Connected"
+              : "Not connected";
+          const tone =
+            status === "Connected" || status === "Available"
+              ? "green"
+              : status === "Not configured"
+                ? "gray"
+                : "gray";
           return (
             <div
               key={app.name}
@@ -778,11 +820,7 @@ function AppsTab({
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <Icon className="h-5 w-5" />
                 </span>
-                {app.connected ? (
-                  <StatusPill tone="green">Connected</StatusPill>
-                ) : (
-                  <StatusPill tone="gray">Not connected</StatusPill>
-                )}
+                <StatusPill tone={tone}>{status}</StatusPill>
               </div>
               <div>
                 <p className="font-bold text-navy">{app.name}</p>

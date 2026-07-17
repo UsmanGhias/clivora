@@ -136,7 +136,10 @@ export function ConnectBoard({
   const [contactSubject, setContactSubject] = useState("Connect introduction");
   const [contactAvailability, setContactAvailability] = useState("This week");
   const [jobsPage, setJobsPage] = useState(1);
+  const [talentVisible, setTalentVisible] = useState(12);
+  const [inboxVisible, setInboxVisible] = useState(12);
   const JOBS_PER_PAGE = 12;
+  const PAGE_SIZE = 12;
 
   const popularSkills = useMemo(() => {
     const counts = new Map<string, number>();
@@ -266,7 +269,7 @@ export function ConnectBoard({
           contactAvailability.trim()
             ? `\nAvailability to chat: ${contactAvailability.trim()}`
             : "",
-          "\n— Sent via CLIVORA Contact (emails unlock after mutual accept)",
+          "\n- Sent via CLIVORA Contact (emails unlock after mutual accept)",
         ]
           .filter(Boolean)
           .join("\n"),
@@ -296,7 +299,7 @@ export function ConnectBoard({
         p_accept: accept,
       });
       if (err) throw err;
-      setOk(accept ? "Accepted — you can message each other now." : "Request declined.");
+      setOk(accept ? "Accepted - you can message each other now." : "Request declined.");
       router.refresh();
     } catch (err) {
       setError(parseConnectCreditError(err).message);
@@ -579,7 +582,7 @@ export function ConnectBoard({
               <p className="text-sm font-bold text-navy">Contact {compose.label}</p>
               <p className="mt-1 text-xs text-text-secondary">
                 Private Connect request (−{CONNECT_CREDIT_COSTS.contact} credit). Emails stay hidden
-                until both sides accept — safer than open marketplaces.
+                until both sides accept - safer than open marketplaces.
               </p>
             </div>
             <span className="rounded-full bg-primary/15 px-2.5 py-1 text-[10px] font-bold uppercase text-primary-dark">
@@ -609,7 +612,7 @@ export function ConnectBoard({
           <div className="flex flex-wrap gap-2">
             {(
               [
-                ["Fit", "Hi — I saw your listing and think we're a strong fit for this brief."],
+                ["Fit", "Hi - I saw your listing and think we're a strong fit for this brief."],
                 ["Ready", "Quick intro: I deliver similar work and can start this week."],
                 ["Scope", "I'd love to clarify scope and propose a clear milestone plan."],
               ] as const
@@ -696,7 +699,7 @@ export function ConnectBoard({
             />
           ) : portalMode && isClient ? (
             <div className="space-y-4">
-              {filteredProfiles.map((p) => (
+              {filteredProfiles.slice(0, talentVisible).map((p) => (
                 <article
                   key={p.id}
                   className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-client-accent/30 lg:flex-row lg:items-center"
@@ -777,7 +780,7 @@ export function ConnectBoard({
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredProfiles.map((p) => (
+              {filteredProfiles.slice(0, talentVisible).map((p) => (
                 <article
                   key={p.id}
                   className="flex flex-col rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-primary/40"
@@ -872,6 +875,17 @@ export function ConnectBoard({
                   </button>
                 </article>
               ))}
+            </div>
+          )}
+          {filteredProfiles.length > talentVisible && (
+            <div className="flex justify-center pt-2">
+              <button
+                type="button"
+                onClick={() => setTalentVisible((n) => n + PAGE_SIZE)}
+                className="rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-bold text-navy hover:border-primary/40"
+              >
+                Load more talent ({filteredProfiles.length - talentVisible} left)
+              </button>
             </div>
           )}
         </section>
@@ -1086,8 +1100,9 @@ export function ConnectBoard({
           ) : requests.length === 0 ? (
             <Empty text="No requests yet. Contact talent or apply to jobs to start." />
           ) : (
+            <>
             <ul className="space-y-3">
-              {requests.map((r) => {
+              {requests.slice(0, inboxVisible).map((r) => {
                 const incoming = r.to_user_id === myUserId;
                 const peerName = incoming ? r.from_name || r.from_email : r.to_name || r.to_email;
                 const peerEmail = incoming ? r.from_email : r.to_email;
@@ -1095,17 +1110,32 @@ export function ConnectBoard({
                 return (
                   <li key={r.id} className="rounded-2xl border border-border bg-surface p-4">
                     <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <p className="font-bold text-navy">
                           {incoming ? "From" : "To"}: {peerName || "CLIVORA user"}
                         </p>
                         <p className="mt-1 text-sm text-text-secondary">{r.message}</p>
-                        <p className="mt-1 text-xs uppercase tracking-wide text-text-muted">
-                          {r.status}
-                          {r.created_at ? ` · ${new Date(r.created_at).toLocaleString()}` : ""}
-                        </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                          <span
+                            className={cn(
+                              "rounded-full px-2 py-0.5 font-bold uppercase tracking-wide",
+                              r.status === "accepted"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : r.status === "pending"
+                                  ? "bg-amber-100 text-amber-800"
+                                  : "bg-slate-100 text-slate-600",
+                            )}
+                          >
+                            {r.status}
+                          </span>
+                          {r.created_at && (
+                            <span className="text-text-muted">
+                              {new Date(r.created_at).toLocaleString()}
+                            </span>
+                          )}
+                        </div>
                         {revealed && peerEmail && (
-                          <p className="mt-2 text-sm font-semibold text-primary-dark">
+                          <p className="mt-2 break-all text-sm font-semibold text-primary-dark">
                             Contact: {peerEmail}
                           </p>
                         )}
@@ -1160,6 +1190,18 @@ export function ConnectBoard({
                 );
               })}
             </ul>
+            {requests.length > inboxVisible && (
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setInboxVisible((n) => n + PAGE_SIZE)}
+                  className="rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-bold text-navy"
+                >
+                  Load more ({requests.length - inboxVisible} left)
+                </button>
+              </div>
+            )}
+            </>
           )}
         </section>
       )}

@@ -7,7 +7,7 @@ import { RowActions, fmtDate, relative } from "@/components/admin/ui";
 export type AdminUserRow = Record<string, unknown>;
 
 function nameOf(u: AdminUserRow) {
-  return String(u.full_name || u.name || u.display_name || u.email || "—");
+  return String(u.full_name || u.name || u.display_name || u.email || "-");
 }
 
 async function adminApi(body: Record<string, unknown>) {
@@ -129,7 +129,7 @@ export function AdminUserActions({
                 </div>
                 <div className="flex justify-between gap-3">
                   <dt className="text-slate-500">Email</dt>
-                  <dd className="font-semibold text-slate-900">{String(user.email || "—")}</dd>
+                  <dd className="font-semibold text-slate-900">{String(user.email || "-")}</dd>
                 </div>
                 <div className="flex justify-between gap-3">
                   <dt className="text-slate-500">Type</dt>
@@ -156,7 +156,7 @@ export function AdminUserActions({
                 <div className="flex justify-between gap-3">
                   <dt className="text-slate-500">Last active</dt>
                   <dd className="font-semibold text-slate-900">
-                    {relative(String(user.updated_at || "")) || "—"}
+                    {relative(String(user.updated_at || "")) || "-"}
                   </dd>
                 </div>
                 {user.block_reason ? (

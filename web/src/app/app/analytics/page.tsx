@@ -168,7 +168,7 @@ export default async function AnalyticsPage() {
                 <p className="font-bold text-navy">Cashflow pulse</p>
                 <p className="mt-1 text-text-secondary">
                   {paid > 0
-                    ? `You've cleared ${clientMoney(paid)} — keep approvals moving.`
+                    ? `You've cleared ${clientMoney(paid)} - keep approvals moving.`
                     : "Approve shared invoices to keep freelancers paid on time."}
                 </p>
               </li>
@@ -177,7 +177,7 @@ export default async function AnalyticsPage() {
                 <p className="mt-1 text-text-secondary">
                   {pending + overdue > 0
                     ? `${clientMoney(pending + overdue)} still outstanding across your team.`
-                    : "No open balances — nice and clean."}
+                    : "No open balances - nice and clean."}
                 </p>
               </li>
               <li>

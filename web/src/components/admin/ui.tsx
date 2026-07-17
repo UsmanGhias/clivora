@@ -421,7 +421,7 @@ export function AvatarCell({
         {initial}
       </div>
       <div className="min-w-0">
-        <div className="truncate font-bold text-slate-900">{name || "—"}</div>
+        <div className="truncate font-bold text-slate-900">{name || "-"}</div>
         {(email || subtitle) && (
           <div className="truncate text-xs text-slate-500">{email || subtitle}</div>
         )}
@@ -451,7 +451,7 @@ export function ErrorBanner({
   message: string;
   onViewLogs?: () => void;
 }) {
-  // Never show broken auth / config banners — they are not actionable in-app.
+  // Never show broken auth / config banners - they are not actionable in-app.
   const lower = (message || "").toLowerCase();
   if (
     !message?.trim() ||
@@ -506,9 +506,9 @@ export function money(n: number, currency = "USD") {
 }
 
 export function fmtDate(iso?: string | null) {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "-";
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 

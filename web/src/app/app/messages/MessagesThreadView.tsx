@@ -411,6 +411,7 @@ export function MessagesThreadView({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [liveError, setLiveError] = useState<string | null>(null);
+  const [showContacts, setShowContacts] = useState(false);
 
   // Live inbox: refresh when postgres_changes arrive for this user
   useEffect(() => {
@@ -440,7 +441,7 @@ export function MessagesThreadView({
       )
       .subscribe((status) => {
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          setLiveError("Live updates unavailable — pull to refresh messages.");
+          setLiveError("Live updates unavailable - pull to refresh messages.");
         } else if (status === "SUBSCRIBED") {
           setLiveError(null);
         }
@@ -608,9 +609,19 @@ export function MessagesThreadView({
           {liveError}
         </div>
       )}
-    <div className="grid h-full min-h-[32rem] gap-0 overflow-hidden rounded-2xl border border-border bg-surface shadow-sm xl:grid-cols-[300px_minmax(0,1fr)_240px]">
-      <aside className="flex max-h-[70vh] flex-col border-b border-border xl:max-h-none xl:border-b-0 xl:border-r">
-        <div className="shrink-0 space-y-3 border-b border-border p-3">
+      <div className="flex items-center justify-between gap-2 xl:hidden">
+        <p className="text-sm font-semibold text-navy">Messages</p>
+        <button
+          type="button"
+          onClick={() => setShowContacts((v) => !v)}
+          className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-navy"
+        >
+          {showContacts ? "Hide contacts" : "Contacts"}
+        </button>
+      </div>
+    <div className="grid h-full min-h-[28rem] gap-0 overflow-hidden rounded-2xl border border-border bg-surface shadow-sm xl:grid-cols-[280px_minmax(0,1fr)_220px]">
+      <aside className="flex max-h-[50vh] flex-col border-b border-border xl:max-h-none xl:border-b-0 xl:border-r">
+        <div className="shrink-0 space-y-2 border-b border-border p-2.5">
           <div className="flex items-center justify-between px-1">
             <p className="text-xs font-bold uppercase tracking-wide text-text-muted">Inbox</p>
             <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
@@ -666,7 +677,7 @@ export function MessagesThreadView({
                   : "No matching messages."}
             </p>
           ) : (
-            <ul className="space-y-1.5">
+            <ul className="space-y-1">
               {peerThreads.map((t) => {
                 const r = t.latest;
                 const active = selectedThread?.key === t.key;
@@ -676,13 +687,13 @@ export function MessagesThreadView({
                     <button
                       type="button"
                       onClick={() => setSelectedId(t.key)}
-                      className={`w-full rounded-xl border px-3 py-2.5 text-left transition ${
+                      className={`w-full rounded-xl border px-2.5 py-2 text-left transition ${
                         active ? activeThreadCls : "border-transparent bg-transparent hover:bg-slate-50"
                       }`}
                     >
                       <span className="flex items-center gap-2">
                         <span
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${
+                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${
                             isClient ? "bg-navy" : "bg-primary"
                           }`}
                         >
@@ -699,11 +710,8 @@ export function MessagesThreadView({
                               </span>
                             )}
                           </span>
-                          <span className="mt-0.5 block truncate text-xs text-text-muted">
-                            {r.subject || "Conversation"}
-                          </span>
                           <span className="mt-0.5 block truncate text-[11px] text-text-muted">
-                            {(r.body || "").slice(0, 48)}
+                            {(r.body || r.subject || "").slice(0, 42)}
                             {r.created_at ? ` · ${formatTime(r.created_at)}` : ""}
                           </span>
                         </span>
@@ -717,7 +725,7 @@ export function MessagesThreadView({
         </div>
       </aside>
 
-      <section className="flex min-h-[28rem] flex-col xl:min-h-0">
+      <section className="flex min-h-[24rem] flex-col xl:min-h-0">
         {selectedThread ? (
           (() => {
             const threadMessages = selectedThread.messages;
@@ -727,14 +735,14 @@ export function MessagesThreadView({
               .find((m) => isUnread(m, myUid));
             let lastDate = "";
             return (
-              <div className="flex h-full min-h-[28rem] flex-col">
-                <div className="border-b border-border px-4 py-3">
+              <div className="flex h-full min-h-[24rem] flex-col">
+                <div className="border-b border-border px-3 py-2.5">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <h2 className="font-bold text-navy">
+                      <h2 className="text-sm font-bold text-navy">
                         {(replyTo || "CLIVORA").split("@")[0]}
                       </h2>
-                      <p className="text-xs text-text-muted">
+                      <p className="text-[11px] text-text-muted">
                         {selectedThread.latest.subject || "Conversation"}
                         {selectedThread.latest.created_at
                           ? ` · ${formatTime(selectedThread.latest.created_at)}`
@@ -760,7 +768,7 @@ export function MessagesThreadView({
                     </div>
                   </div>
                 </div>
-                <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+                <div className="flex-1 space-y-1.5 overflow-y-auto px-3 py-3">
                   {threadMessages.map((msg) => {
                     const incoming = msg.from_uid !== myUid;
                     const dateLabel = formatDateLabel(msg.created_at);
@@ -769,7 +777,7 @@ export function MessagesThreadView({
                     return (
                       <div key={msg.id}>
                         {showDate && (
-                          <p className="mb-2 text-center text-[10px] font-semibold uppercase tracking-wide text-text-muted">
+                          <p className="mb-1.5 text-center text-[10px] font-semibold uppercase tracking-wide text-text-muted">
                             {dateLabel}
                           </p>
                         )}
@@ -777,21 +785,23 @@ export function MessagesThreadView({
                           className={`flex ${incoming ? "justify-start" : "justify-end"}`}
                         >
                         <div
-                          className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                          className={`max-w-[min(92%,28rem)] rounded-2xl px-3 py-1.5 ${
                             incoming ? "bg-slate-100 text-navy" : outBubbleCls
                           }`}
                         >
                           {msg.subject && (
                             <p
-                              className={`mb-1 text-[11px] font-semibold ${
+                              className={`mb-0.5 text-[10px] font-semibold ${
                                 incoming ? "text-text-muted" : "text-white/70"
                               }`}
                             >
                               {msg.subject}
                             </p>
                           )}
-                          <p className="text-sm whitespace-pre-wrap">{msg.body || "(empty)"}</p>
-                          <div className="mt-1 flex flex-wrap items-center gap-2">
+                          <p className="text-[13px] leading-snug whitespace-pre-wrap">
+                            {msg.body || "(empty)"}
+                          </p>
+                          <div className="mt-0.5 flex flex-wrap items-center gap-2">
                             <p
                               className={`text-[10px] ${
                                 incoming ? "text-text-muted" : "text-white/60"
@@ -809,7 +819,7 @@ export function MessagesThreadView({
                     );
                   })}
                 </div>
-                <div className="border-t border-border p-3">
+                <div className="border-t border-border p-2.5">
                   <ComposeForm
                     fromEmail={fromEmail}
                     parentId={selectedThread.messages[0]?.id}
@@ -834,23 +844,27 @@ export function MessagesThreadView({
         )}
       </section>
 
-      <aside className="hidden space-y-4 xl:block">
-        <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <aside
+        className={`${
+          showContacts ? "block" : "hidden"
+        } space-y-3 border-t border-border p-3 xl:block xl:border-t-0 xl:border-l`}
+      >
+        <div className="rounded-xl border border-border bg-background p-3">
           <p className="text-sm font-bold text-navy">
-            {isClient ? "Freelancer overview" : "Client overview"}
+            {isClient ? "Freelancer" : "Client"}
           </p>
           {selectedThread ? (
-            <div className="mt-3 flex items-center gap-3">
+            <div className="mt-2 flex items-center gap-2">
               <span
-                className={`flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold text-white ${
+                className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white ${
                   isClient ? "bg-navy" : "bg-primary"
                 }`}
               >
                 {overviewName.charAt(0).toUpperCase()}
               </span>
               <div className="min-w-0">
-                <p className="truncate font-semibold text-navy">{overviewName}</p>
-                <p className="truncate text-xs text-text-muted">
+                <p className="truncate text-sm font-semibold text-navy">{overviewName}</p>
+                <p className="truncate text-[11px] text-text-muted">
                   {overviewEmail || "No email on file"}
                 </p>
               </div>
@@ -858,21 +872,18 @@ export function MessagesThreadView({
           ) : (
             <p className="mt-2 text-sm text-text-secondary">Select a conversation.</p>
           )}
-          <p className="mt-3 text-xs text-text-secondary">
-            {selectedThread?.latest.subject || "Project conversation"}
-          </p>
         </div>
 
-        <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
-          <p className="mb-3 text-sm font-bold text-navy">Quick actions</p>
-          <ul className="space-y-2 text-sm">
+        <div className="rounded-xl border border-border bg-background p-3">
+          <p className="mb-2 text-sm font-bold text-navy">Quick actions</p>
+          <ul className="space-y-1.5 text-sm">
             <li>
               <Link
                 href={isClient ? "/app/connect" : "/app/team"}
                 className={`inline-flex items-center gap-1.5 font-semibold ${linkAccent}`}
               >
                 <UserPlus className="h-3.5 w-3.5" />
-                Invite →
+                Invite
               </Link>
             </li>
             <li>
@@ -881,7 +892,7 @@ export function MessagesThreadView({
                 className={`inline-flex items-center gap-1.5 font-semibold ${linkAccent}`}
               >
                 <Share2 className="h-3.5 w-3.5" />
-                Share project →
+                Share project
               </Link>
             </li>
             <li>
@@ -890,54 +901,52 @@ export function MessagesThreadView({
                 className={`inline-flex items-center gap-1.5 font-semibold ${linkAccent}`}
               >
                 <Settings className="h-3.5 w-3.5" />
-                Settings →
+                Settings
               </Link>
             </li>
           </ul>
         </div>
 
-        <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
-          <p className="mb-3 text-sm font-bold text-navy">New message</p>
-          <ComposeForm
-            fromEmail={fromEmail}
-            isClient={isClient}
-            compact
-            defaultToUid={prefillToUid}
-          />
-        </div>
+        <details className="rounded-xl border border-border bg-background p-3">
+          <summary className="cursor-pointer text-sm font-bold text-navy">New message</summary>
+          <div className="mt-2">
+            <ComposeForm
+              fromEmail={fromEmail}
+              isClient={isClient}
+              compact
+              defaultToUid={prefillToUid}
+            />
+          </div>
+        </details>
 
-        <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
-          <p className="mb-3 text-sm font-bold text-navy">Recent contacts</p>
-          <ul className="space-y-3">
+        <div className="rounded-xl border border-border bg-background p-3">
+          <p className="mb-2 text-sm font-bold text-navy">Recent contacts</p>
+          <ul className="space-y-2">
             {peerThreads.slice(0, 4).map((t) => {
                 const email = t.peerEmail || t.latest.from_email || "?";
                 return (
                   <li key={t.key} className="flex items-center gap-2">
                     <span
-                      className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white ${
+                      className={`flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold text-white ${
                         isClient ? "bg-navy" : "bg-primary"
                       }`}
                     >
                       {email.charAt(0).toUpperCase()}
                     </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-navy">
-                        {email.split("@")[0]}
-                      </p>
-                      <p className="truncate text-[11px] text-text-muted">
-                        {t.latest.subject || (isClient ? "Freelancer" : "Client")}
-                      </p>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedId(t.key);
+                        setShowContacts(false);
+                      }}
+                      className="truncate text-left text-xs font-semibold text-navy hover:underline"
+                    >
+                      {email.split("@")[0]}
+                    </button>
                   </li>
                 );
               })}
           </ul>
-          <Link
-            href={isClient ? "/app/team" : "/app/clients"}
-            className={`mt-3 inline-block text-xs font-semibold ${linkAccent}`}
-          >
-            View all contacts →
-          </Link>
         </div>
       </aside>
     </div>

@@ -398,7 +398,7 @@ function ProposalsInbox({
       });
       if (err) throw err;
 
-      // Auto-create first milestone for the engagement (free — tracking only)
+      // Auto-create first milestone for the engagement (free - tracking only)
       if (requestId) {
         await supabase.from("connect_milestones").insert({
           engagement_request_id: requestId,

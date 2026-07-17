@@ -122,11 +122,12 @@ export default async function AccountPage({
   const fin = await loadFreelancerFinance(profile.id);
   const supabase = await createClient();
 
-  let location = "Lahore, Pakistan";
-  let avgRating = 4.9;
-  let reviewCount = 27;
-  let completeness = 100;
-  let headline = "Full Stack Developer";
+  let location: string | null = null;
+  let avgRating: number | null = null;
+  let reviewCount = 0;
+  let completeness = 0;
+  let headline = profile.name ? `${profile.name}` : "Freelancer profile";
+  let hasConnectProfile = false;
 
   try {
     const { data: cp } = await supabase
@@ -137,10 +138,11 @@ export default async function AccountPage({
       .eq("user_id", profile.id)
       .maybeSingle();
     if (cp) {
-      location = cp.location_label || location;
-      avgRating = Number(cp.avg_rating || avgRating);
-      reviewCount = Number(cp.review_count || reviewCount);
-      completeness = Math.round(Number(cp.profile_completeness ?? 100));
+      hasConnectProfile = true;
+      location = cp.location_label || null;
+      avgRating = cp.avg_rating != null ? Number(cp.avg_rating) : null;
+      reviewCount = Number(cp.review_count || 0);
+      completeness = Math.round(Number(cp.profile_completeness ?? 0));
       headline = cp.headline || cp.display_title || headline;
     }
   } catch {
@@ -170,25 +172,25 @@ export default async function AccountPage({
 
       <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
         <FreelancerCard>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="relative">
               {profile.avatar_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={profile.avatar_url}
                   alt=""
-                  className="h-24 w-24 rounded-full object-cover"
+                  className="h-20 w-20 rounded-full object-cover"
                 />
               ) : (
-                <span className="flex h-24 w-24 items-center justify-center rounded-full bg-navy text-3xl font-bold text-white">
+                <span className="flex h-20 w-20 items-center justify-center rounded-full bg-navy text-2xl font-bold text-white">
                   {(profile.name || "?").charAt(0).toUpperCase()}
                 </span>
               )}
-              <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-white bg-success" />
+              <span className="absolute bottom-1 right-1 h-3.5 w-3.5 rounded-full border-2 border-white bg-success" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-display text-xl font-extrabold text-navy">
+                <h2 className="font-display text-lg font-extrabold text-navy sm:text-xl">
                   {profile.name || "Freelancer"}
                 </h2>
                 {plus && (
@@ -203,7 +205,7 @@ export default async function AccountPage({
               </div>
               <p className="mt-1 inline-flex items-center gap-1 text-sm text-text-secondary">
                 <MapPin className="h-3.5 w-3.5" />
-                {location}
+                {location || (hasConnectProfile ? "Location not set" : "Add location in Connect")}
               </p>
               <p className="mt-1 text-xs text-text-muted">{profile.email}</p>
               <div className="mt-4 flex flex-wrap gap-2">
@@ -252,23 +254,23 @@ export default async function AccountPage({
         />
         <FreelancerStatCard
           label="Average Rating"
-          value={avgRating.toFixed(1)}
-          sub={"★".repeat(5)}
+          value={avgRating != null ? avgRating.toFixed(1) : "-"}
+          sub={avgRating != null ? "★".repeat(Math.max(1, Math.round(avgRating))) : "No ratings yet"}
           icon={Star}
           iconTone="bg-amber-100 text-amber-700"
         />
         <FreelancerStatCard
           label="Total Reviews"
           value={reviewCount}
-          trend="+12% vs last 30 days"
+          sub={hasConnectProfile ? "From Connect" : "Complete Connect listing"}
           icon={Star}
           iconTone="bg-violet-100 text-violet-800"
           href="/app/reviews"
         />
         <FreelancerStatCard
           label="Response Time"
-          value="2h 15m"
-          sub="Very responsive"
+          value={hasConnectProfile ? "Based on activity" : "-"}
+          sub={hasConnectProfile ? "From recent messages" : "Unavailable until Connect is set up"}
           icon={Clock}
           iconTone="bg-orange-100 text-orange-700"
         />
@@ -278,8 +280,8 @@ export default async function AccountPage({
         <FreelancerCard title="Account information" className="lg:col-span-1">
           <ul className="space-y-3 text-sm">
             {[
-              ["Name", profile.name || "—", "/app/account?edit=1"],
-              ["Email", profile.email || "—", "/app/settings"],
+              ["Name", profile.name || "-", "/app/account?edit=1"],
+              ["Email", profile.email || "-", "/app/settings"],
               ["Role", "Freelancer", "/app/settings"],
               ["Plan", plan, "/pro?plan=pro_plus"],
             ].map(([k, v, href]) => (

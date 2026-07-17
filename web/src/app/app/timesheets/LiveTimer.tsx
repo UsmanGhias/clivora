@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -26,6 +27,7 @@ type ProjectOption = {
   hourly_rate?: number | null;
 };
 
+/** Client-approved project rate only - freelancers do not free-edit $/hr here. */
 export function LiveTimer({
   ownerUid,
   projectName,
@@ -55,27 +57,20 @@ export function LiveTimer({
           id: projectId,
           name: projectName || "Project",
           pricing_type: "hourly",
-          budget: defaultHourlyRate,
-          hourly_rate: defaultHourlyRate,
+          budget: null,
+          hourly_rate: null,
         }
       : null);
 
-  const projectRate = useMemo(
-    () =>
-      resolveProjectHourlyRate({
-        pricingType: selected?.pricing_type,
-        budget: selected?.budget,
-        hourlyRate: selected?.hourly_rate,
-        defaultHourlyRate,
-      }),
-    [selected, defaultHourlyRate],
-  );
-
-  const [rateInput, setRateInput] = useState(String(projectRate || HOURLY_RATE_MIN));
-
-  useEffect(() => {
-    setRateInput(String(projectRate || HOURLY_RATE_MIN));
-  }, [projectRate, selectedProjectId]);
+  const approvedRate = useMemo(() => {
+    // Prefer explicit hourly_rate, then hourly budget - never fall back to Connect profile band.
+    const explicit = clampHourlyRate(selected?.hourly_rate);
+    if (explicit != null) return explicit;
+    if (String(selected?.pricing_type ?? "").toLowerCase() === "hourly") {
+      return clampHourlyRate(selected?.budget);
+    }
+    return null;
+  }, [selected]);
 
   useEffect(() => {
     if (!running) return;
@@ -89,6 +84,10 @@ export function LiveTimer({
 
   function toggle() {
     setMsg(null);
+    if (!approvedRate) {
+      setMsg("This project has no client-approved hourly rate yet ($3–$500).");
+      return;
+    }
     if (!running) {
       startedAt.current = Date.now() - elapsed;
       if (!startedAtIso.current) startedAtIso.current = new Date().toISOString();
@@ -103,9 +102,9 @@ export function LiveTimer({
       setMsg("Timer needs at least 1 second.");
       return;
     }
-    const rate = clampHourlyRate(rateInput);
+    const rate = approvedRate;
     if (rate == null) {
-      setMsg(`Hourly rate must be between $${HOURLY_RATE_MIN} and $${HOURLY_RATE_MAX}.`);
+      setMsg(`Set a project hourly rate between $${HOURLY_RATE_MIN} and $${HOURLY_RATE_MAX} (client-approved).`);
       return;
     }
     setBusy(true);
@@ -161,13 +160,16 @@ export function LiveTimer({
                 pricingType: p.pricing_type,
                 budget: p.budget,
                 hourlyRate: p.hourly_rate,
-                defaultHourlyRate,
+                defaultHourlyRate: 0,
               });
+              const showRate =
+                String(p.pricing_type ?? "").toLowerCase() === "hourly" ||
+                clampHourlyRate(p.hourly_rate) != null;
               return (
                 <option key={p.id} value={p.id} className="text-navy">
                   {p.name}
                   {p.pricing_type === "hourly" ? " · Hourly" : " · Fixed"}
-                  {rate > 0 ? ` · $${rate}/hr` : ""}
+                  {showRate && rate > 0 ? ` · $${rate}/hr` : ""}
                 </option>
               );
             })}
@@ -176,19 +178,23 @@ export function LiveTimer({
       ) : (
         <p className="mt-2 text-sm text-white/70">{projectName || "General work"}</p>
       )}
-      <label className="mt-3 block text-xs text-white/70">
-        Hourly rate (${HOURLY_RATE_MIN}–${HOURLY_RATE_MAX})
-        <input
-          type="number"
-          min={HOURLY_RATE_MIN}
-          max={HOURLY_RATE_MAX}
-          step="0.01"
-          value={rateInput}
-          onChange={(e) => setRateInput(e.target.value)}
-          disabled={running}
-          className="mt-1 w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white"
-        />
-      </label>
+      <div className="mt-3 rounded-xl border border-white/15 bg-white/5 px-3 py-2.5">
+        <p className="text-[10px] font-bold uppercase tracking-wide text-white/50">
+          Client-approved rate (${HOURLY_RATE_MIN}-${HOURLY_RATE_MAX})
+        </p>
+        {approvedRate != null ? (
+          <p className="mt-1 text-lg font-extrabold text-white">${approvedRate}/hr</p>
+        ) : (
+          <p className="mt-1 text-sm text-white/70">
+            No rate on this project yet. Ask the client to set an hourly rate after approval, or
+            mark the project as hourly with budget in{" "}
+            <Link href="/app/projects" className="font-semibold text-primary underline">
+              Projects
+            </Link>
+            .
+          </p>
+        )}
+      </div>
       {startedAtIso.current && (
         <p className="mt-1 text-[11px] text-white/50">
           Started {new Date(startedAtIso.current).toLocaleTimeString()}
@@ -198,13 +204,14 @@ export function LiveTimer({
         <button
           type="button"
           onClick={toggle}
-          className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-primary bg-primary text-sm font-bold text-white hover:bg-primary-dark"
+          disabled={!approvedRate && !running}
+          className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-primary bg-primary text-sm font-bold text-white hover:bg-primary-dark disabled:opacity-40"
         >
           {running ? "Pause" : "Start"}
         </button>
         <button
           type="button"
-          disabled={busy || elapsed < 1000}
+          disabled={busy || elapsed < 1000 || !approvedRate}
           onClick={saveEntry}
           className="rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/15 disabled:opacity-50"
         >

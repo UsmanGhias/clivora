@@ -406,7 +406,7 @@ export default async function TimesheetsPage() {
             <p className="font-display text-4xl font-extrabold text-primary">
               {totalHours > 0
                 ? `${Math.min(99, Math.round((billable / Math.max(0.01, totalHours)) * 100))}%`
-                : "—"}
+                : "-"}
             </p>
             <p className="mt-2 text-sm text-text-secondary">
               {totalHours > 0

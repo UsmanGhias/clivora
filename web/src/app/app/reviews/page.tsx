@@ -102,7 +102,7 @@ export default async function ReviewsPage() {
         <div className="grid gap-3 sm:grid-cols-3">
           <ClientStatCard label="Reviews left" value={left.length} icon={Star} />
           <ClientStatCard label="Reviews received" value={received.length} icon={MessageSquare} />
-          <ClientStatCard label="Average rating" value={avg ? avg.toFixed(1) : "—"} icon={CheckCircle2} />
+          <ClientStatCard label="Average rating" value={avg ? avg.toFixed(1) : "-"} icon={CheckCircle2} />
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
           <ClientCard title="Reviews you left">
@@ -231,7 +231,7 @@ export default async function ReviewsPage() {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <FreelancerStatCard
           label="Average Rating"
-          value={total ? avgRating.toFixed(1) : "—"}
+          value={total ? avgRating.toFixed(1) : "-"}
           sub={total ? "★".repeat(Math.max(1, Math.round(avgRating))) : "No ratings yet"}
           trend={total > 0 ? "↑ 0.2 vs last 30 days" : undefined}
           icon={Star}

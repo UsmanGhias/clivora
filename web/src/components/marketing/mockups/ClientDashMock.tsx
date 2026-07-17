@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 function SpendChart() {
   const bars = [
     { h: 42, v: "$1.2k" },
@@ -40,10 +42,21 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function NavItem({ label, active, badge }: { label: string; active?: boolean; badge?: number }) {
+function NavItem({
+  label,
+  href,
+  active,
+  badge,
+}: {
+  label: string;
+  href: string;
+  active?: boolean;
+  badge?: number;
+}) {
   return (
-    <div
-      className={`flex items-center justify-between rounded-lg px-2 py-1.5 text-[9px] font-medium ${
+    <Link
+      href={href}
+      className={`flex items-center justify-between rounded-lg px-2 py-1.5 text-[9px] font-medium transition hover:bg-white/10 ${
         active ? "border-l-2 border-[#475569] bg-white/10 text-white" : "text-white/65"
       }`}
     >
@@ -51,7 +64,7 @@ function NavItem({ label, active, badge }: { label: string; active?: boolean; ba
       {badge != null && (
         <span className="rounded-full bg-[#475569] px-1.5 py-px text-[8px] font-bold text-white">{badge}</span>
       )}
-    </div>
+    </Link>
   );
 }
 
@@ -84,12 +97,14 @@ export function ClientDashMock({ compact = false }: { compact?: boolean }) {
             <p className="truncate text-[9px] font-semibold">Muhammad A.</p>
           </div>
           <nav className="mt-3 space-y-0.5">
-            <NavItem label="Dashboard" active />
-            <NavItem label="Jobs" badge={3} />
-            <NavItem label="Projects" badge={6} />
-            <NavItem label="Proposals" badge={5} />
-            <NavItem label="Messages" badge={4} />
-            <NavItem label="Payments" />
+            <NavItem label="Dashboard" href="/login?next=/app" active />
+            <NavItem label="Jobs" href="/login?next=/app/connect" badge={3} />
+            <NavItem label="Projects" href="/login?next=/app/projects" badge={6} />
+            <NavItem label="Proposals" href="/login?next=/app/proposals" badge={5} />
+            <NavItem label="Messages" href="/login?next=/app/messages" badge={4} />
+            <NavItem label="Payments" href="/login?next=/app/payments" />
+            <NavItem label="Settings" href="/login?next=/app/settings" />
+            <NavItem label="Profile" href="/login?next=/app/account" />
           </nav>
         </aside>
 

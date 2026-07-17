@@ -20,7 +20,7 @@ import {
 import { AdminUserActions, joinedDate } from "@/components/admin/AdminUserActions";
 
 function nameOf(u: Record<string, unknown>) {
-  return String(u.full_name || u.name || u.display_name || u.email || "—");
+  return String(u.full_name || u.name || u.display_name || u.email || "-");
 }
 
 export default function AdminClientsPage() {
@@ -111,7 +111,7 @@ export default function AdminClientsPage() {
                           <AvatarCell name={nameOf(c)} email={String(c.email ?? "")} />
                         </td>
                         <td className="px-3 py-3 text-sm text-slate-600">
-                          {String(c.company || c.email || "—")}
+                          {String(c.company || c.email || "-")}
                         </td>
                         <td className="px-3 py-3">
                           <StatusPill status={status} />

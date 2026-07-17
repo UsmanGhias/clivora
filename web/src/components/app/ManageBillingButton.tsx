@@ -65,7 +65,7 @@ export function ManageBillingButton({ showBankForm }: { showBankForm?: boolean }
       </div>
       <p className="text-xs text-text-secondary">
         CLIVORA charges <strong>$20/mo</strong> for Pro Plus. Invoice amounts go from client to you
-        directly — keep all work on platform.
+        directly - keep all work on platform.
       </p>
       {msg && <p className="text-xs text-text-secondary">{msg}</p>}
       {openBank && <BankPayoutSettings compact />}

@@ -41,7 +41,7 @@ export default function AdminOverviewPage() {
 
       <AdminPageHeader
         title="Overview"
-        subtitle="Platform health from live Supabase counts — no demo metrics."
+        subtitle="Platform health from live Supabase counts - no demo metrics."
         actions={
           <>
             <AdminBtn variant="primary" onClick={() => void refresh()}>
@@ -151,7 +151,7 @@ export default function AdminOverviewPage() {
                 </div>
                 <p className="mt-4 text-xs text-slate-500">
                   Figures are live database aggregates. Charts stay off until a daily time-series
-                  table exists — no fabricated curves.
+                  table exists - no fabricated curves.
                 </p>
               </div>
 
@@ -182,7 +182,7 @@ export default function AdminOverviewPage() {
                           {String(ev.eventType ?? "event")}
                         </p>
                         <p className="truncate text-xs text-slate-500">
-                          {String(ev.userName || ev.userEmail || "—")}
+                          {String(ev.userName || ev.userEmail || "-")}
                         </p>
                       </div>
                       <span className="shrink-0 text-[11px] text-slate-400">

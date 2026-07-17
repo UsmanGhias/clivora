@@ -19,7 +19,7 @@ export function PlayStorePromoSection() {
                 Run CLIVORA on Google Play
               </h2>
               <p className="mt-3 max-w-xl text-base text-text-secondary">
-                Same Freelancer OS on your phone — CRM, invoices, Connect, and offline sync. Subscribe
+                Same Freelancer OS on your phone - CRM, invoices, Connect, and offline sync. Subscribe
                 to Pro / Pro Plus securely via Google Play.
               </p>
               <div className="mt-6 flex flex-wrap items-center gap-3">

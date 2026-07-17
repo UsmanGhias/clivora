@@ -176,7 +176,7 @@ export function TrustedNetworkMock() {
 
   return (
     <>
-      {/* Mobile: stacked cards — no absolute overlap */}
+      {/* Mobile: stacked cards - no absolute overlap */}
       <div className="grid gap-3 sm:hidden">
         <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-md">
           <div className="flex items-center gap-2">

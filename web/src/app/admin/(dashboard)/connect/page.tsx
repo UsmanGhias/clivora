@@ -21,7 +21,7 @@ import {
 
 function nameOf(u: Record<string, unknown>) {
   return String(
-    u.display_title || u.full_name || u.name || u.display_name || u.headline || u.email || "—",
+    u.display_title || u.full_name || u.name || u.display_name || u.headline || u.email || "-",
   );
 }
 
@@ -174,7 +174,7 @@ export default function AdminConnectPage() {
                                 />
                               </td>
                               <td className="max-w-[200px] truncate px-3 py-3 text-sm text-slate-600">
-                                {String(p.headline || "—")}
+                                {String(p.headline || "-")}
                               </td>
                               <td className="px-3 py-3">
                                 <StatusPill status={mod.replace(/_/g, " ")} />
@@ -234,7 +234,7 @@ export default function AdminConnectPage() {
                                 {String(n.title || "Need")}
                               </td>
                               <td className="px-3 py-3 text-sm font-semibold text-slate-700">
-                                {String(n.budget_band || "—")}
+                                {String(n.budget_band || "-")}
                               </td>
                               <td className="px-3 py-3">
                                 <StatusPill status={String(status).replace(/_/g, " ")} />
@@ -286,8 +286,8 @@ export default function AdminConnectPage() {
                               {String(r.id).slice(0, 10)}
                             </td>
                             <td className="px-3 py-3 text-xs text-slate-600">
-                              {String(r.from_user_id ?? "—").slice(0, 8)} →{" "}
-                              {String(r.to_user_id ?? "—").slice(0, 8)}
+                              {String(r.from_user_id ?? "-").slice(0, 8)} →{" "}
+                              {String(r.to_user_id ?? "-").slice(0, 8)}
                             </td>
                             <td className="px-3 py-3">
                               <StatusPill status={String(r.status || "pending").replace(/_/g, " ")} />

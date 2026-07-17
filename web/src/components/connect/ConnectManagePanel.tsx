@@ -546,7 +546,7 @@ export function ConnectManagePanel() {
           <p className="mt-2 max-w-2xl text-sm text-text-secondary">
             {isClient
               ? "Post jobs, review freelancers, and keep your hiring pipeline moving."
-              : "Keep your listing sharp — and post a need when you want peer help. Title, rate, skills, and availability show on the marketplace."}
+              : "Keep your listing sharp - and post a need when you want peer help. Title, rate, skills, and availability show on the marketplace."}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -564,7 +564,7 @@ export function ConnectManagePanel() {
 
       <div className="space-y-8">
         <p className="text-sm text-text-secondary">
-          Keep your listing sharp — title, rate, skills, location, and availability show on the
+          Keep your listing sharp - title, rate, skills, location, and availability show on the
           public marketplace.
         </p>
 
@@ -617,7 +617,7 @@ export function ConnectManagePanel() {
               className="w-full rounded-xl border border-border px-3 py-2.5"
             />
             <textarea
-              placeholder="Bio — what you deliver, industries, tools"
+              placeholder="Bio - what you deliver, industries, tools"
               value={listing.bio}
               onChange={(e) => setListing({ ...listing, bio: e.target.value })}
               className="w-full rounded-xl border border-border px-3 py-2.5"
@@ -631,7 +631,7 @@ export function ConnectManagePanel() {
                 value={listing.skills}
                 onChange={(skills) => setListing({ ...listing, skills })}
                 maxSkills={5}
-                hint="These are your top marketplace skills — pick carefully."
+                hint="These are your top marketplace skills - pick carefully."
               />
             </div>
             <div>
@@ -685,7 +685,7 @@ export function ConnectManagePanel() {
               />
             </div>
             <input
-              placeholder="Education (e.g. BS CS — NUST)"
+              placeholder="Education (e.g. BS CS - NUST)"
               value={listing.education}
               onChange={(e) => setListing({ ...listing, education: e.target.value })}
               className="w-full rounded-xl border border-border px-3 py-2.5"

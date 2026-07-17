@@ -50,7 +50,7 @@ export function DonutChart({
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
             {isEmpty ? (
               <>
-                <p className="font-display text-xl font-extrabold text-text-muted">—</p>
+                <p className="font-display text-xl font-extrabold text-text-muted">-</p>
                 <p className="text-[10px] font-semibold uppercase text-text-muted">No data</p>
               </>
             ) : (

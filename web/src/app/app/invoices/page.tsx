@@ -198,39 +198,72 @@ export default async function InvoicesPage() {
             centerLabel="Total"
           />
           <FreelancerCard title="Payment methods">
-            <ul className="space-y-2 text-sm">
-              {["Stripe", "PayPal", "Wise"].map((m) => (
+            <p className="text-sm text-text-secondary">
+              Card gateways (Stripe / PayPal / Wise) are not live yet. Use bank or JazzCash payout
+              details for client invoices.
+            </p>
+            <ul className="mt-3 space-y-2 text-sm">
+              {[
+                { name: "Stripe", status: "Not connected" },
+                { name: "PayPal", status: "Not connected" },
+                { name: "Wise", status: "Not connected" },
+              ].map((m) => (
                 <li
-                  key={m}
+                  key={m.name}
                   className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5"
                 >
-                  <span className="font-semibold text-navy">{m}</span>
-                  <span className="text-xs font-bold text-success">Connected</span>
+                  <span className="font-semibold text-navy">{m.name}</span>
+                  <span className="text-xs font-bold text-slate-500">{m.status}</span>
                 </li>
               ))}
             </ul>
-            <p className="mt-3 text-sm font-semibold text-primary">+ Add Payment Method</p>
+            <a
+              href="/app/account"
+              className="mt-3 inline-block text-sm font-semibold text-primary hover:underline"
+            >
+              Set bank and payout details
+            </a>
           </FreelancerCard>
           <FreelancerCard title="Quick actions">
             <ul className="space-y-2 text-sm font-semibold text-navy">
               <li>
-                <a href="#create" className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40">
+                <a
+                  href="#create"
+                  className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40"
+                >
                   Create Invoice <span>→</span>
                 </a>
               </li>
               <li>
-                <a href="#create" className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40">
-                  Create Quote <span>→</span>
+                <a
+                  href="/app/clients"
+                  className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40"
+                >
+                  Manage clients <span>→</span>
                 </a>
               </li>
               <li>
-                <a href="/app/settings" className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40">
-                  Invoice Templates <span>→</span>
+                <a
+                  href="/app/projects"
+                  className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40"
+                >
+                  Link to projects <span>→</span>
                 </a>
               </li>
               <li>
-                <a href="#create" className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40">
-                  Recurring Invoices <span>→</span>
+                <a
+                  href="/app/earnings"
+                  className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40"
+                >
+                  View earnings <span>→</span>
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/app/account"
+                  className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40"
+                >
+                  Payout settings <span>→</span>
                 </a>
               </li>
             </ul>

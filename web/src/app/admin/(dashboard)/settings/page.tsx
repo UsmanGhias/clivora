@@ -159,7 +159,7 @@ export default function AdminSettingsPage() {
                       <div>
                         <h3 className="text-sm font-bold text-slate-900">Odoo (existing apps only)</h3>
                         <p className="mt-1 text-xs text-slate-500">
-                          Two-way sync with Odoo Contacts at clivora.odoo.com — pull partners into
+                          Two-way sync with Odoo Contacts at clivora.odoo.com - pull partners into
                           CLIVORA CRM and push customers (plus project/invoice tracking notes) back.
                           No new Odoo modules. Admin-only.
                         </p>
@@ -176,7 +176,7 @@ export default function AdminSettingsPage() {
                   {flags.length === 0 ? (
                     <p className="text-sm text-slate-500">
                       No rows in <code>app_feature_flags</code> (or table missing). This is live DB
-                      state — not demo content.
+                      state - not demo content.
                     </p>
                   ) : (
                     <ul className="divide-y divide-slate-100">
@@ -206,13 +206,13 @@ export default function AdminSettingsPage() {
                 </div>
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
                   <p>
-                    Users: <strong>{data?.overview.totalUsers ?? "—"}</strong>
+                    Users: <strong>{data?.overview.totalUsers ?? "-"}</strong>
                   </p>
                   <p className="mt-1">
                     Source: <strong>{data?.source ?? "unavailable"}</strong>
                   </p>
                   <p className="mt-1 text-slate-500">
-                    Storage % is not measured in-app — check Supabase dashboard for DB size.
+                    Storage % is not measured in-app - check Supabase dashboard for DB size.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 pt-1">

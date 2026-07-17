@@ -57,9 +57,9 @@ function bucket(status?: string | null) {
 }
 
 function formatDate(value?: string | null) {
-  if (!value) return "—";
+  if (!value) return "-";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
+  if (Number.isNaN(date.getTime())) return "-";
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
@@ -322,7 +322,7 @@ export function ClientInvoicesPanel({ rows }: { rows: ClientInvoiceRow[] }) {
                                   </a>
                                 </>
                               ) : (
-                                <span className="text-xs text-text-muted">—</span>
+                                <span className="text-xs text-text-muted">-</span>
                               )}
                             </div>
                           </td>

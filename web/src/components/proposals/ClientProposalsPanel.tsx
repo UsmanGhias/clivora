@@ -215,7 +215,7 @@ export function ClientProposalsPanel({ proposals }: { proposals: ProposalRow[] }
                         </p>
                         <p className="text-xs text-text-muted">Bid amount</p>
                         <p className="text-xs font-semibold text-text-secondary">
-                          Delivery · {p.timeline_days ?? "—"} days
+                          Delivery · {p.timeline_days ?? "-"} days
                         </p>
                       </div>
                     </div>

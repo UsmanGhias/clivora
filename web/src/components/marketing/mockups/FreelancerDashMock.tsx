@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 function LineChart({ stroke = "#0D9488" }: { stroke?: string }) {
   const pts = "4,52 28,44 52,38 76,28 100,22 124,18 148,12 172,8";
   return (
@@ -24,10 +26,21 @@ function Stat({ label, value, trend }: { label: string; value: string; trend?: s
   );
 }
 
-function NavItem({ label, active, badge }: { label: string; active?: boolean; badge?: number }) {
+function NavItem({
+  label,
+  href,
+  active,
+  badge,
+}: {
+  label: string;
+  href: string;
+  active?: boolean;
+  badge?: number;
+}) {
   return (
-    <div
-      className={`flex items-center justify-between rounded-lg px-2 py-1.5 text-[9px] font-medium ${
+    <Link
+      href={href}
+      className={`flex items-center justify-between rounded-lg px-2 py-1.5 text-[9px] font-medium transition hover:bg-white/10 ${
         active ? "border-l-2 border-[#0D9488] bg-[#0D9488]/20 text-white" : "text-white/65"
       }`}
     >
@@ -35,7 +48,7 @@ function NavItem({ label, active, badge }: { label: string; active?: boolean; ba
       {badge != null && (
         <span className="rounded-full bg-[#0D9488] px-1.5 py-px text-[8px] font-bold text-white">{badge}</span>
       )}
-    </div>
+    </Link>
   );
 }
 
@@ -72,12 +85,14 @@ export function FreelancerDashMock({ compact = false }: { compact?: boolean }) {
             </div>
           </div>
           <nav className="mt-3 space-y-0.5">
-            <NavItem label="Dashboard" active />
-            <NavItem label="Projects" badge={6} />
-            <NavItem label="Proposals" badge={5} />
-            <NavItem label="Messages" badge={4} />
-            <NavItem label="Earnings" />
-            <NavItem label="Connect" />
+            <NavItem label="Dashboard" href="/login?next=/app" active />
+            <NavItem label="Projects" href="/login?next=/app/projects" badge={6} />
+            <NavItem label="Proposals" href="/login?next=/app/proposals" badge={5} />
+            <NavItem label="Messages" href="/login?next=/app/messages" badge={4} />
+            <NavItem label="Earnings" href="/login?next=/app/earnings" />
+            <NavItem label="Connect" href="/login?next=/app/connect" />
+            <NavItem label="Settings" href="/login?next=/app/settings" />
+            <NavItem label="Profile" href="/login?next=/app/account" />
           </nav>
         </aside>
 

@@ -26,10 +26,10 @@ const FEATURES = [
     plus: `${site.proPlusLimits.fileVaultGb} GB`,
   },
   { label: "CRM (clients, projects, invoices)", free: "Limited", pro: "Unlimited", plus: "Unlimited" },
-  { label: "Ask AI assistant", free: "—", pro: "Included", plus: "Included" },
-  { label: "CLIVORA Connect marketplace", free: "Browse only", pro: "—", plus: "Post & contact" },
-  { label: "Two-factor auth (MFA)", free: "—", pro: "—", plus: "Included" },
-  { label: "Everything in Pro", free: "—", pro: "—", plus: "Yes" },
+  { label: "Ask AI assistant", free: "-", pro: "Included", plus: "Included" },
+  { label: "CLIVORA Connect marketplace", free: "Browse only", pro: "-", plus: "Post & contact" },
+  { label: "Two-factor auth (MFA)", free: "-", pro: "-", plus: "Included" },
+  { label: "Everything in Pro", free: "-", pro: "-", plus: "Yes" },
 ] as const;
 
 export default function ProCheckout() {
@@ -209,9 +209,9 @@ export default function ProCheckout() {
         {!loadingPlan && alreadyProPlus && (
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
             <Logo size="sm" variant="onLight" />
-            <h2 className="mt-4 text-2xl font-extrabold text-navy">You&apos;re on Pro Plus — enjoy</h2>
+            <h2 className="mt-4 text-2xl font-extrabold text-navy">You&apos;re on Pro Plus - enjoy</h2>
             <p className="mt-2 text-sm text-text-secondary">
-              Connect posting, MFA, and Plus perks are already unlocked. No extra payment required —
+              Connect posting, MFA, and Plus perks are already unlocked. No extra payment required -
               get back to winning work.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
@@ -230,7 +230,7 @@ export default function ProCheckout() {
             <Logo size="sm" variant="onLight" />
             <h2 className="mt-4 text-2xl font-extrabold text-navy">You&apos;re already on Pro</h2>
             <p className="mt-2 text-sm text-text-secondary">
-              No need to pay for Pro again. Choose Pro Plus for Connect marketplace, MFA, and 50GB vault — it includes everything in Pro.
+              No need to pay for Pro again. Choose Pro Plus for Connect marketplace, MFA, and 50GB vault - it includes everything in Pro.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <button

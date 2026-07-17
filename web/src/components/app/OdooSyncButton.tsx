@@ -62,7 +62,7 @@ export function OdooSyncButton() {
           json.hint ||
             (json.missing?.length
               ? `Missing: ${json.missing.join(", ")}`
-              : "Odoo not configured — save API key below or set Vercel ODOO_* env."),
+              : "Odoo not configured - save API key below or set Vercel ODOO_* env."),
         );
         setShowForm(true);
       } else {

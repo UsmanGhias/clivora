@@ -83,7 +83,7 @@ export function ConnectApplyPanel() {
         return;
       }
       if ((profile?.account_type ?? "").toLowerCase() === "client" && mode === "proposal") {
-        setError("Clients review proposals — freelancers submit them.");
+        setError("Clients review proposals - freelancers submit them.");
       }
       setPlanOk(true);
 
@@ -145,7 +145,7 @@ export function ConnectApplyPanel() {
         approach.trim() ? `\n\nWhy this job:\n${approach.trim()}` : "",
         timelineDays ? `\n\nAvailable to start in: ${timelineDays} day(s)` : "",
         portfolioLinks.trim() ? `\n\nProof / links:\n${portfolioLinks.trim()}` : "",
-        "\n\n— CLIVORA Contact request (emails unlock after mutual accept)",
+        "\n\n- CLIVORA Contact request (emails unlock after mutual accept)",
       ]
         .filter(Boolean)
         .join("");
@@ -169,7 +169,7 @@ export function ConnectApplyPanel() {
       milestones.trim() ? `\n\nMilestones:\n${milestones.trim()}` : "",
       portfolioLinks.trim() ? `\n\nLinks:\n${portfolioLinks.trim()}` : "",
       foundUrls.length
-        ? `\n\n[Note: URLs included — CLIVORA may analyze links and remove listings that violate trust & safety.]`
+        ? `\n\n[Note: URLs included - CLIVORA may analyze links and remove listings that violate trust & safety.]`
         : "",
     ]
       .filter(Boolean)
@@ -251,7 +251,7 @@ export function ConnectApplyPanel() {
         <p className="mt-2 max-w-2xl text-sm text-text-secondary">
           {mode === "contact"
             ? "Send a private Connect request. Emails unlock only after both sides accept. Use Submit proposal when you have a priced offer."
-            : "Share a complete pitch with scope, timeline, milestones, and proof of fit — not just a one-line hello."}
+            : "Share a complete pitch with scope, timeline, milestones, and proof of fit - not just a one-line hello."}
         </p>
       </div>
 
@@ -378,7 +378,7 @@ export function ConnectApplyPanel() {
               rows={3}
               value={portfolioLinks}
               onChange={(e) => setPortfolioLinks(e.target.value)}
-              placeholder="https://… (optional — one per line)"
+              placeholder="https://… (optional - one per line)"
               className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
             />
           </label>
@@ -429,7 +429,7 @@ export function ConnectApplyPanel() {
               <li>• Relevant past work (links welcome)</li>
               <li>• Realistic timeline & budget</li>
               <li>• Milestone plan the client can approve</li>
-              <li>• No spam — quality over speed</li>
+              <li>• No spam - quality over speed</li>
             </ul>
           </div>
           <div className="rounded-2xl border border-amber-100 bg-amber-50/80 p-5">

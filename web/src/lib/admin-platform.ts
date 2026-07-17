@@ -101,7 +101,7 @@ export async function loadPlatformSnapshot(): Promise<PlatformSnapshot> {
   } catch (e) {
     if (e instanceof AdminServiceConfigurationError) {
       return emptySnapshot(
-        "SUPABASE_SERVICE_ROLE_KEY missing on this deployment — counts cannot load.",
+        "SUPABASE_SERVICE_ROLE_KEY missing on this deployment - counts cannot load.",
       );
     }
     throw e;
@@ -148,7 +148,7 @@ export async function loadPlatformSnapshot(): Promise<PlatformSnapshot> {
       restCount(cfg, "connect_milestones"),
       restCount(cfg, "support_tickets"),
       restCount(cfg, "crm_customers"),
-      // profiles has no created_at — approximate "new" via updated_at
+      // profiles has no created_at - approximate "new" via updated_at
       restCount(cfg, "profiles", `updated_at=gte.${since}`),
       restCount(cfg, "profiles", `account_type=eq.freelancer&updated_at=gte.${since}`),
       restList(

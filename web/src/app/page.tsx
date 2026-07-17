@@ -14,7 +14,7 @@ import { EarlyAccessRewardPopup } from "@/components/marketing/EarlyAccessReward
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: `${site.name} | Freelancer OS — Connect, CRM & Invoices`,
+  title: `${site.name} | Freelancer OS - Connect, CRM & Invoices`,
   description: site.description,
 };
 

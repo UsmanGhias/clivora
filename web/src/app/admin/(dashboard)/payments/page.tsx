@@ -21,7 +21,7 @@ import {
 } from "@/components/admin/ui";
 
 function nameOf(u: Record<string, unknown>) {
-  return String(u.full_name || u.name || u.display_name || u.email || "—");
+  return String(u.full_name || u.name || u.display_name || u.email || "-");
 }
 
 export default function AdminPaymentsPage() {
@@ -122,7 +122,7 @@ export default function AdminPaymentsPage() {
 
       <AdminPageHeader
         title="Payments"
-        subtitle="Pro payment requests and platform transactions — Approve grants live plans."
+        subtitle="Pro payment requests and platform transactions - Approve grants live plans."
         actions={<ExportImportAdd entity="Payments" addLabel="Add Payment" />}
       />
 
@@ -203,7 +203,7 @@ export default function AdminPaymentsPage() {
                           <AvatarCell name={nameOf(p)} email={String(p.email ?? "")} />
                         </td>
                         <td className="px-3 py-3 text-sm text-slate-600">
-                          {String(p.payment_method || "—")}
+                          {String(p.payment_method || "-")}
                         </td>
                         <td className="px-3 py-3 font-semibold text-slate-800">
                           {money(Number(p.amount_usd ?? p.amount ?? 0))}
@@ -233,7 +233,7 @@ export default function AdminPaymentsPage() {
                               </AdminBtn>
                             </div>
                           ) : (
-                            <span className="text-xs font-semibold text-slate-400">—</span>
+                            <span className="text-xs font-semibold text-slate-400">-</span>
                           )}
                         </td>
                       </tr>

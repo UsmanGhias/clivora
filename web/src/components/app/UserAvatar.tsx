@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-/** Shared avatar — shows photo when available, otherwise initials. */
+/** Shared avatar - shows photo when available, otherwise initials. */
 export function UserAvatar({
   name,
   email,

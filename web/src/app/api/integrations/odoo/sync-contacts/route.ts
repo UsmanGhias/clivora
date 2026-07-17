@@ -148,7 +148,7 @@ export async function GET() {
     allowedApps: ["Contacts"],
     modes: ["push", "pull", "both"],
     surface: "admin-only",
-    note: "Two-way Contacts sync. Projects/invoices are written into Odoo partner Internal Notes for tracking — no new Odoo modules.",
+    note: "Two-way Contacts sync. Projects/invoices are written into Odoo partner Internal Notes for tracking - no new Odoo modules.",
   });
 }
 
