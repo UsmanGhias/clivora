@@ -8,7 +8,6 @@ import '../../core/constants/plan_features.dart';
 import '../../core/services/account_deletion_service.dart';
 import '../../core/services/biometric_service.dart';
 import '../../core/services/coach_marks_service.dart';
-import '../../core/services/locale_service.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';

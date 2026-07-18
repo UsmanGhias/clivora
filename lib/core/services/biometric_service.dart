@@ -26,6 +26,7 @@ class BiometricService {
   static const _lastUnlockKey = 'clivora_bio_last_unlock_ms';
   static const _backgroundAtKey = 'clivora_bio_background_at_ms';
 
+  // ignore: unused_field
   bool _sessionUnlocked = false;
   bool _promptInFlight = false;
 

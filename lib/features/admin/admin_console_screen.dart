@@ -10,7 +10,6 @@ import '../../core/cloud/admin_cloud_repository.dart';
 import '../../core/cloud/supabase_auth_helper.dart';
 import '../../core/constants/admin_config.dart';
 import '../../core/constants/plan_limits.dart';
-import '../../core/constants/plan_features.dart';
 import '../../core/constants/pro_pricing.dart';
 import '../../core/services/clivora_email_service.dart';
 import '../../core/services/admin_management_service.dart';
@@ -19,7 +18,6 @@ import '../../core/services/analytics_service.dart';
 import '../../core/services/audit_log_service.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../data/database/database.dart';
-import '../../data/providers/app_providers.dart';
 
 /// Super-admin command center, full platform control.
 class AdminConsoleScreen extends ConsumerStatefulWidget {

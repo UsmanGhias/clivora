@@ -68,7 +68,7 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            stats.code ?? 'N/A',
+                            stats.code.isEmpty ? 'N/A' : stats.code,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 18,
@@ -80,10 +80,10 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> {
                       ),
                       const SizedBox(width: 8),
                       IconButton(
-                        onPressed: stats.code == null
+                        onPressed: stats.code.isEmpty
                             ? null
                             : () {
-                                Clipboard.setData(ClipboardData(text: stats.code!));
+                                Clipboard.setData(ClipboardData(text: stats.code));
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Code copied')),
                                 );

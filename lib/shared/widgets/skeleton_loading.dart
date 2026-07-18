@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
-import '../../core/theme/clivora_colors.dart';
 
 /// Placeholder shimmer blocks while async data loads.
 class SkeletonBox extends StatelessWidget {
