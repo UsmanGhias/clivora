@@ -6,7 +6,7 @@ export PATH="${FLUTTER_HOME:-$HOME/flutter}/bin:${PATH}"
 export ANDROID_HOME="${ANDROID_HOME:-$HOME/android-sdk}"
 cd "$(dirname "$0")"
 
-VER_WITH_CODE=$(rg '^version:' pubspec.yaml | awk '{print $2}')
+VER_WITH_CODE=$(grep -E '^version:' pubspec.yaml | awk '{print $2}')
 VER="${VER_WITH_CODE%%+*}"
 CODE="${VER_WITH_CODE##*+}"
 EXPECTED_SHA1="96:93:81:80:EE:59:27:D2:46:B2:BD:FC:6C:96:C6:93:2E:1A:1D:36"
