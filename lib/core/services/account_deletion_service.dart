@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../auth/auth_service.dart';
@@ -11,7 +10,7 @@ final accountDeletionServiceProvider = Provider<AccountDeletionService>((ref) {
   return AccountDeletionService(ref);
 });
 
-/// GDPR-style local wipe + sign out. Cloud profile deletion uses optional RPC.
+/// GDPR-style local wipe + cloud deletion request + sign out.
 class AccountDeletionService {
   AccountDeletionService(this.ref);
 
@@ -30,14 +29,15 @@ class AccountDeletionService {
           detail: 'User requested account deletion',
         );
 
-    await ref.read(secureStorageServiceProvider).clearAll();
-
+    // Cloud request first so the server marks deletion + restricts the account
+    // even if local wipe fails afterward.
     try {
       await SupabaseAuthHelper.client.rpc('request_account_deletion');
     } catch (e) {
-      debugPrint('Cloud deletion RPC optional: $e');
+      throw StateError('Cloud account deletion failed. Please try again or email support. ($e)');
     }
 
+    await ref.read(secureStorageServiceProvider).clearAll();
     await ref.read(authStateProvider.notifier).signOut();
     ref.read(adminSyncServiceProvider).syncPendingEvents();
   }

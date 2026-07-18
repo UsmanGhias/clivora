@@ -10,8 +10,8 @@ const pillars = [
   },
   {
     icon: Shield,
-    title: "Hire with confidence",
-    body: "Verified badges, star ratings, completion rate, and milestone escrow status, trust signals before you pay. Contact stays private until mutual accept.",
+    title: "Hire with clear delivery signals",
+    body: "Professional profiles, completion history, and invoice status you both can see. Contact stays private until mutual accept.",
   },
   {
     icon: Network,
@@ -23,7 +23,7 @@ const pillars = [
 const rows = [
   { feature: "Private contact until accept", clivora: true, others: false },
   { feature: "Star ratings & reputation on cards", clivora: true, others: true },
-  { feature: "Milestone escrow status", clivora: true, others: true },
+  { feature: "Direct invoice + payment-status tracking", clivora: true, others: false },
   { feature: "Same CRM after you hire", clivora: true, others: false },
   { feature: "Web + Android one account", clivora: true, others: false },
   { feature: "High marketplace fees / take rates", clivora: false, others: true },
@@ -43,12 +43,12 @@ export function ConnectMarketplace() {
           The marketplace that becomes your operating system
         </h2>
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/70 sm:text-lg">
-          Upwork and Fiverr stop at the hire. CLIVORA Connect starts there, private
-          matching with ratings and escrow status, then the CRM, projects, and invoices you
+          Upwork and Fiverr stop at the hire. CLIVORA Connect starts there — private
+          matching with clear delivery signals, then the CRM, projects, and invoices you
           already run your business on.
         </p>
 
-        <div className="mt-10 grid gap-5 md:grid-cols-3">
+        <div className="mt-10 grid gap-5 sm:grid-cols-3">
           {pillars.map((item) => (
             <div
               key={item.title}
@@ -61,57 +61,34 @@ export function ConnectMarketplace() {
           ))}
         </div>
 
-        {/* Mobile: stacked cards · Desktop: comparison table */}
-        <div className="mt-12 space-y-3 sm:hidden">
+        <div className="mt-12 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
+          <div className="grid grid-cols-[1.4fr_1fr_1fr] gap-2 border-b border-white/10 px-4 py-3 text-xs font-bold uppercase tracking-wide text-white/50 sm:px-6 sm:text-sm">
+            <span>Why teams switch</span>
+            <span className="text-center text-teal-300">CLIVORA</span>
+            <span className="text-center">Open marketplaces</span>
+          </div>
           {rows.map((row) => (
             <div
               key={row.feature}
-              className="rounded-2xl border border-white/10 bg-white/[0.04] p-4"
+              className="grid grid-cols-[1.4fr_1fr_1fr] items-center gap-2 border-b border-white/5 px-4 py-3 text-sm last:border-0 sm:px-6"
             >
-              <p className="text-sm font-medium text-white/90">{row.feature}</p>
-              <div className="mt-3 flex gap-4 text-xs">
-                <span className="inline-flex items-center gap-1.5 text-teal-300">
-                  {row.clivora ? <Check className="h-4 w-4" /> : <X className="h-4 w-4 text-white/25" />}
-                  CLIVORA
-                </span>
-                <span className="inline-flex items-center gap-1.5 text-white/50">
-                  {row.others ? <Check className="h-4 w-4" /> : <X className="h-4 w-4 text-white/25" />}
-                  Others
-                </span>
-              </div>
+              <span className="text-white/80">{row.feature}</span>
+              <span className="flex justify-center">
+                {row.clivora ? (
+                  <Check className="h-5 w-5 text-teal-300" />
+                ) : (
+                  <X className="h-5 w-5 text-white/25" />
+                )}
+              </span>
+              <span className="flex justify-center">
+                {row.others ? (
+                  <Check className="h-5 w-5 text-white/35" />
+                ) : (
+                  <X className="h-5 w-5 text-white/25" />
+                )}
+              </span>
             </div>
           ))}
-        </div>
-        <div className="mt-12 hidden overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.03] sm:block">
-          <div className="min-w-[520px]">
-            <div className="grid grid-cols-[1.4fr_1fr_1fr] gap-2 border-b border-white/10 px-4 py-3 text-xs font-bold uppercase tracking-wide text-white/50 sm:px-6 sm:text-sm">
-              <span>Why teams switch</span>
-              <span className="text-center text-teal-300">CLIVORA</span>
-              <span className="text-center">Open marketplaces</span>
-            </div>
-            {rows.map((row) => (
-              <div
-                key={row.feature}
-                className="grid grid-cols-[1.4fr_1fr_1fr] items-center gap-2 border-b border-white/5 px-4 py-3 text-sm last:border-0 sm:px-6"
-              >
-                <span className="text-white/80">{row.feature}</span>
-                <span className="flex justify-center">
-                  {row.clivora ? (
-                    <Check className="h-5 w-5 text-teal-300" />
-                  ) : (
-                    <X className="h-5 w-5 text-white/25" />
-                  )}
-                </span>
-                <span className="flex justify-center">
-                  {row.others ? (
-                    <Check className="h-5 w-5 text-white/35" />
-                  ) : (
-                    <X className="h-5 w-5 text-white/25" />
-                  )}
-                </span>
-              </div>
-            ))}
-          </div>
         </div>
 
         <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">

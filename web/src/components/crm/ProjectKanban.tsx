@@ -62,26 +62,33 @@ export function ProjectKanban({ initial }: { initial: CrmProject[] }) {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-display text-lg font-bold text-navy">Project pipeline</h2>
-        <p className="text-xs text-text-muted">Drag cards between columns</p>
+        <p className="text-xs text-text-muted">Drag on desktop · tap status on mobile</p>
       </div>
       {error && <p className="rounded-lg bg-error/10 px-3 py-2 text-sm text-error">{error}</p>}
-      <div className="grid gap-3 overflow-x-auto pb-2 md:grid-cols-4">
+      <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-3 snap-x snap-mandatory md:mx-0 md:grid md:grid-cols-4 md:overflow-visible md:px-0 md:pb-2 md:snap-none">
         {COLUMNS.map((col) => (
           <div
             key={col.id}
-            className="min-w-[200px] rounded-2xl border border-border bg-background p-3"
+            className="w-[78vw] max-w-[280px] shrink-0 snap-start rounded-2xl border border-border bg-background p-3 sm:w-[240px] md:w-auto md:max-w-none"
             onDragOver={(e) => e.preventDefault()}
             onDrop={() => {
               if (dragId) void moveTo(dragId, col.id);
             }}
           >
-            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-text-secondary">
-              {col.label}{" "}
-              <span className="text-text-muted">({byCol[col.id]?.length ?? 0})</span>
+            <p className="mb-2 flex items-center justify-between gap-2 text-xs font-bold uppercase tracking-wide text-text-secondary">
+              <span>{col.label}</span>
+              <span className="rounded-full bg-surface px-2 py-0.5 text-[10px] text-text-muted">
+                {byCol[col.id]?.length ?? 0}
+              </span>
             </p>
-            <div className="space-y-2">
+            <div className="max-h-[22rem] space-y-2 overflow-y-auto md:max-h-[28rem]">
+              {(byCol[col.id] ?? []).length === 0 && (
+                <p className="rounded-xl border border-dashed border-border px-3 py-6 text-center text-[11px] text-text-muted">
+                  Empty
+                </p>
+              )}
               {(byCol[col.id] ?? []).map((p) => (
                 <article
                   key={p.id}
@@ -94,7 +101,9 @@ export function ProjectKanban({ initial }: { initial: CrmProject[] }) {
                 >
                   <p className="text-sm font-bold text-navy">{p.name || "Untitled"}</p>
                   <p className="mt-1 text-xs text-text-secondary">
-                    {p.currency} {Number(p.budget || 0).toLocaleString()} · {p.priority}
+                    {p.currency} {Number(p.budget || 0).toLocaleString()}
+                    {p.priority ? ` · ${p.priority}` : ""}
+                    {p.pricing_type === "hourly" ? " · hourly" : ""}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-1">
                     {COLUMNS.filter((c) => c.id !== normalizeStatus(p.status)).map((c) => (

@@ -12,29 +12,29 @@ const testimonials = [
   {
     name: "Ahmed K.",
     role: "Freelance Developer",
-    location: "Karachi, PK",
-    text: "I used to juggle Excel, a notes app, and a separate invoicing tool. CLIVORA replaced all three. My morning dashboard alone saves me 30 minutes every day.",
+    location: "Remote",
+    text: "I used to keep client emails in labels, hours in a notes file, and invoices in a Word template. CLIVORA’s morning dashboard shows paid vs pending from real invoice rows - I stopped guessing what I’m owed.",
     rating: 5,
   },
   {
     name: "Sarah M.",
     role: "Brand Designer",
-    location: "Lahore, PK",
-    text: "The invoice branding feature is a game-changer. Clients actually comment on how professional my invoices look. Worth every rupee of the Pro plan.",
+    location: "Europe",
+    text: "Pro invoice branding made my PDF look like my studio, not a generic template. Clients notice - and they pay me directly on the invoice, without a marketplace taking a cut.",
     rating: 5,
   },
   {
     name: "Omar R.",
-    role: "Digital Marketing Consultant",
-    location: "Islamabad, PK",
-    text: "Finally an app built for freelancers, not enterprises. Clean UI, fast, and my data stays on my phone. The follow-up notifications alone have helped me collect overdue payments.",
+    role: "Marketing consultant",
+    location: "Middle East",
+    text: "Connect’s mutual-accept rule is the feature I quote to clients: nobody gets my email until I say yes. After accept, the CRM project and invoice live in the same login as the Android app.",
     rating: 5,
   },
   {
     name: "Fatima Z.",
-    role: "Agency Owner",
-    location: "Dubai, UAE",
-    text: "Managing 15+ client projects used to be chaos. CLIVORA's project tracking and calendar view keep my small team aligned without the complexity of enterprise tools.",
+    role: "Small agency owner",
+    location: "Remote",
+    text: "Fifteen shared projects used to live in chat threads. Shared project status + tasks on CLIVORA is boring in a good way - freelancers know what’s in progress without another tool.",
     rating: 5,
   },
 ];
@@ -50,12 +50,11 @@ export function Testimonials() {
             Testimonials
           </span>
           <h2 className="mt-4 text-3xl font-bold sm:text-4xl lg:text-5xl">
-            Loved by{" "}
-            <span className="text-gradient">Freelancers Worldwide</span>
+            Notes from freelancers{" "}
+            <span className="text-gradient">who invoice for real</span>
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-white/60">
-            Join thousands of independent professionals who run their business
-            smarter with CLIVORA.
+            Early users worldwide - concrete desks, not empty “thousands of customers” claims.
           </p>
         </AnimatedSection>
 

@@ -31,10 +31,12 @@ export default function AboutPage() {
 
       <h2>{site.name} - Our Flagship Product</h2>
       <p>
-        {site.name} is our all-in-one mobile Business Operating System. It
-        combines CRM, project management, professional invoicing, expense
-        tracking, task management, calendar, and financial reports into one
-        polished app designed for how freelancers actually work.
+        {site.name} is our all-in-one Freelancer OS - available on the web at{" "}
+        <a href={site.url}>{site.url.replace("https://", "")}</a> and on Android.
+        It combines a private Connect marketplace, CRM, project management,
+        professional invoicing, expense tracking, tasks, calendar, and financial
+        reports into one polished platform designed for how freelancers and
+        clients actually work.
       </p>
 
       <div className="not-prose my-8 grid gap-4 sm:grid-cols-2">

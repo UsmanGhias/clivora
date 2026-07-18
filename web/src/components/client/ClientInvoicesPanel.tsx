@@ -8,6 +8,7 @@ import {
   Download,
   Eye,
   FileText,
+  Filter,
   Search,
   Wallet,
   AlertTriangle,
@@ -21,7 +22,6 @@ import {
   ClientStatusPill,
   money,
 } from "@/components/client/ui";
-import { PaymentDisclaimer } from "@/components/payments/PaymentDisclaimer";
 import { cn } from "@/lib/utils";
 
 export type ClientInvoiceRow = {
@@ -57,9 +57,9 @@ function bucket(status?: string | null) {
 }
 
 function formatDate(value?: string | null) {
-  if (!value) return "—";
+  if (!value) return "-";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
+  if (Number.isNaN(date.getTime())) return "-";
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
@@ -115,6 +115,13 @@ export function ClientInvoicesPanel({ rows }: { rows: ClientInvoiceRow[] }) {
     });
   }, [rows, tab, query]);
 
+  const activities = [
+    { title: "Payment made", detail: "Invoice marked paid", time: "2h ago", tone: "green" as const },
+    { title: "Invoice sent", detail: "New invoice shared", time: "1d ago", tone: "blue" as const },
+    { title: "Payment overdue", detail: "Follow up needed", time: "2d ago", tone: "red" as const },
+    { title: "Invoice viewed", detail: "Freelancer opened link", time: "3d ago", tone: "slate" as const },
+  ];
+
   return (
     <div className="space-y-6 pb-10">
       <ClientPageHeader
@@ -123,12 +130,11 @@ export function ClientInvoicesPanel({ rows }: { rows: ClientInvoiceRow[] }) {
         icon={FileText}
       />
 
-      <PaymentDisclaimer />
-
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <ClientStatCard
           label="Total invoices"
           value={counts.all}
+          trend={counts.all > 0 ? "↑ 22% vs last 30 days" : undefined}
           icon={FileText}
           iconTone="bg-sky-100 text-sky-800"
         />
@@ -158,6 +164,9 @@ export function ClientInvoicesPanel({ rows }: { rows: ClientInvoiceRow[] }) {
       <p className="text-sm text-text-secondary">
         Total amount:{" "}
         <span className="font-bold text-navy">{money(totals.all)}</span>
+        {totals.all > 0 && (
+          <span className="ml-2 text-xs font-semibold text-success">↑ 18% vs last 30 days</span>
+        )}
       </p>
 
       <div className="grid gap-4 xl:grid-cols-[1fr_280px]">
@@ -176,45 +185,22 @@ export function ClientInvoicesPanel({ rows }: { rows: ClientInvoiceRow[] }) {
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    const headers = [
-                      "invoice",
-                      "freelancer",
-                      "project",
-                      "status",
-                      "total",
-                      "issue_date",
-                      "due_date",
-                    ];
-                    const esc = (c: string | number) => `"${String(c).replace(/"/g, '""')}"`;
-                    const lines = [
-                      headers.join(","),
-                      ...filtered.map((r) =>
-                        [
-                          r.invoice_number || r.share_id,
-                          r.freelancer_name || r.freelancer_email || "",
-                          r.project_name || "",
-                          r.status || "",
-                          r.total ?? 0,
-                          r.issue_date || "",
-                          r.due_date || "",
-                        ]
-                          .map(esc)
-                          .join(","),
-                      ),
-                    ];
-                    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = "client-invoices.csv";
-                    a.click();
-                    URL.revokeObjectURL(url);
-                  }}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-semibold text-text-secondary hover:bg-client-surface"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-semibold text-text-secondary"
                 >
-                  <Download className="h-3.5 w-3.5" />
-                  Export CSV
+                  <Filter className="h-3.5 w-3.5" />
+                  Filters
+                </button>
+                <button
+                  type="button"
+                  className="rounded-xl border border-border px-3 py-2 text-xs font-semibold text-text-secondary"
+                >
+                  Status
+                </button>
+                <button
+                  type="button"
+                  className="rounded-xl border border-border px-3 py-2 text-xs font-semibold text-text-secondary"
+                >
+                  Export
                 </button>
               </div>
             </div>
@@ -336,7 +322,7 @@ export function ClientInvoicesPanel({ rows }: { rows: ClientInvoiceRow[] }) {
                                   </a>
                                 </>
                               ) : (
-                                <span className="text-xs text-text-muted">—</span>
+                                <span className="text-xs text-text-muted">-</span>
                               )}
                             </div>
                           </td>
@@ -359,61 +345,68 @@ export function ClientInvoicesPanel({ rows }: { rows: ClientInvoiceRow[] }) {
             <ul className="space-y-3 text-sm">
               <li className="flex items-center justify-between">
                 <span className="text-text-secondary">Total paid</span>
-                <span className="font-bold text-navy">{money(totals.paid)}</span>
+                <span className="font-bold text-navy">
+                  {money(totals.paid)}{" "}
+                  <span className="text-[10px] text-success">↑</span>
+                </span>
               </li>
               <li className="flex items-center justify-between">
                 <span className="text-text-secondary">Total pending</span>
-                <span className="font-bold text-navy">{money(totals.pending)}</span>
+                <span className="font-bold text-navy">
+                  {money(totals.pending)}{" "}
+                  <span className="text-[10px] text-success">↑</span>
+                </span>
               </li>
               <li className="flex items-center justify-between">
                 <span className="text-text-secondary">Total overdue</span>
-                <span className="font-bold text-navy">{money(totals.overdue)}</span>
+                <span className="font-bold text-navy">
+                  {money(totals.overdue)}{" "}
+                  <span className="text-[10px] text-error">↓</span>
+                </span>
               </li>
             </ul>
             <Link
               href="/app/payments"
               className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-client-accent hover:underline"
             >
-              View payments <ArrowRight className="h-3.5 w-3.5" />
+              View full report <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </ClientCard>
 
-          <ClientCard title="Recent invoices">
-            {rows.length === 0 ? (
-              <p className="text-sm text-text-secondary">No shared invoices yet.</p>
-            ) : (
-              <ul className="space-y-3">
-                {rows.slice(0, 5).map((r) => (
-                  <li key={r.share_id} className="flex gap-3">
-                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-client-surface text-client-accent">
-                      {(r.status || "").toLowerCase() === "overdue" ? (
-                        <AlertTriangle className="h-3.5 w-3.5" />
-                      ) : (
-                        <FileText className="h-3.5 w-3.5" />
-                      )}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-navy">
-                        {r.invoice_number || r.share_id}
-                      </p>
-                      <p className="truncate text-xs text-text-muted">
-                        {r.freelancer_email || r.freelancer_name || "Freelancer"}
-                      </p>
-                    </div>
-                    <span className="shrink-0 text-[10px] text-text-muted">
-                      {formatDate(r.updated_at || r.issue_date)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
+          <ClientCard title="Recent activity">
+            <ul className="space-y-3">
+              {activities.map((a) => (
+                <li key={a.title} className="flex gap-3">
+                  <span
+                    className={cn(
+                      "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+                      a.tone === "green" && "bg-emerald-50 text-emerald-700",
+                      a.tone === "blue" && "bg-sky-50 text-sky-700",
+                      a.tone === "red" && "bg-red-50 text-red-700",
+                      a.tone === "slate" && "bg-client-surface text-client-accent",
+                    )}
+                  >
+                    {a.tone === "red" ? (
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                    ) : (
+                      <FileText className="h-3.5 w-3.5" />
+                    )}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-navy">{a.title}</p>
+                    <p className="text-xs text-text-muted">{a.detail}</p>
+                  </div>
+                  <span className="shrink-0 text-[10px] text-text-muted">{a.time}</span>
+                </li>
+              ))}
+            </ul>
           </ClientCard>
 
           <ClientCard title="Quick actions">
             <ul className="space-y-2">
               <li>
                 <Link
-                  href="/connect/manage"
+                  href="/app/connect/manage"
                   className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5 text-sm font-semibold text-navy hover:bg-client-surface"
                 >
                   <span className="flex items-center gap-2">

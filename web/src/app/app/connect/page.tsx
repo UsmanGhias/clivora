@@ -13,10 +13,22 @@ import { CheckCircle2, Headphones, Shield, Sparkles, Zap } from "lucide-react";
 
 export const metadata = { title: "Marketplace / Connect" };
 
-export default async function AppConnectPage() {
+export default async function AppConnectPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ tab?: string }>;
+}) {
   const profile = await getProfile();
   if (!profile) redirect("/login");
   const client = isClientAccount(profile);
+  const sp = searchParams ? await searchParams : undefined;
+  const tabParam = String(sp?.tab ?? "").toLowerCase();
+  const defaultTab =
+    tabParam === "jobs" || tabParam === "talent" || tabParam === "inbox"
+      ? (tabParam as "jobs" | "talent" | "inbox")
+      : client
+        ? "talent"
+        : "jobs";
   const [profiles, needs, requests] = await Promise.all([
     listPublicConnectProfiles(),
     listPublicConnectNeeds(),
@@ -32,7 +44,7 @@ export default async function AppConnectPage() {
           </h1>
           <p className="mt-1 text-sm text-text-secondary">
             {client
-              ? "Find and connect with top freelance talent to get your work done. ✨"
+              ? "Find and connect with top freelance talent to get your work done."
               : "Browse open jobs and submit proposals with Connect credits."}
           </p>
         </div>
@@ -50,7 +62,7 @@ export default async function AppConnectPage() {
           myUserId={profile.id}
           portalMode
           accent={client ? "slate" : "teal"}
-          defaultTab={client ? "talent" : "jobs"}
+          defaultTab={defaultTab}
         />
         <div className="hidden xl:block">
           <div className="sticky top-24 space-y-4">
@@ -60,7 +72,7 @@ export default async function AppConnectPage() {
                 <ClientCard
                   title="Open jobs on CLIVORA"
                   action={
-                    <Link href="/connect/manage" className="text-xs font-semibold text-client-accent">
+                    <Link href="/app/connect/manage" className="text-xs font-semibold text-client-accent">
                       View all jobs →
                     </Link>
                   }
@@ -79,7 +91,7 @@ export default async function AppConnectPage() {
                     {needs.length === 0 && (
                       <li className="text-sm text-text-secondary">
                         No open jobs yet.{" "}
-                        <Link href="/connect/manage" className="font-semibold text-client-accent">
+                        <Link href="/app/connect/manage" className="font-semibold text-client-accent">
                           Post one →
                         </Link>
                       </li>

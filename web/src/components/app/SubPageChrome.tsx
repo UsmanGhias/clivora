@@ -8,7 +8,7 @@ import { SmartAppCtaButton } from "@/components/app/SmartAppCta";
 import { cn } from "@/lib/utils";
 
 /**
- * Compact shared chrome for Connect / Pro — AppShell-like feel.
+ * Compact shared chrome for Connect / Pro - AppShell-like feel.
  * Clients: slate header. Freelancers: teal/navy header.
  */
 export function SubPageChrome({

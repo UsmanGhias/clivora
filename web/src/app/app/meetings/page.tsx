@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/profile";
+import { Suspense } from "react";
 import { MeetingsClient } from "./MeetingsClient";
 
 type MeetingLink = {
@@ -28,15 +29,33 @@ export default async function MeetingsPage() {
     links = [];
   }
 
+  const googleConfigured = Boolean(
+    process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
+  );
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const meta = (user?.user_metadata || {}) as {
+    google_calendar_connected?: boolean;
+  };
+  const googleConnected = Boolean(meta.google_calendar_connected);
+
   return (
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-extrabold">Meetings</h1>
         <p className="text-sm text-text-secondary">
-          Create instant Jitsi video rooms and share links with clients.
+          Create instant Jitsi video rooms and connect Google Calendar when OAuth is configured.
         </p>
       </div>
-      <MeetingsClient initial={links} ownerUid={uid} />
+      <Suspense fallback={<p className="text-sm text-text-secondary">Loading meetings…</p>}>
+        <MeetingsClient
+          initial={links}
+          ownerUid={uid}
+          googleConfigured={googleConfigured}
+          googleConnected={googleConnected}
+        />
+      </Suspense>
     </div>
   );
 }

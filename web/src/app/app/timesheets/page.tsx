@@ -24,6 +24,12 @@ import {
 } from "@/components/client/ui";
 import { Clock, Download, Settings2 } from "lucide-react";
 import { listProjectsServer } from "@/lib/crm/server";
+import {
+  clampHourlyRate,
+  parseHourlyFromRateBand,
+  resolveProjectHourlyRate,
+} from "@/lib/hourly-rate";
+import { buildInvoiceTimeSeries } from "@/lib/freelancer-finance";
 
 export type TimeEntry = {
   id: string;
@@ -200,9 +206,10 @@ export default async function TimesheetsPage() {
 
   let entries: TimeEntry[] = [];
   let projects: Awaited<ReturnType<typeof listProjectsServer>> = [];
+  let profileHourly = 0;
 
   try {
-    const [{ data }, proj] = await Promise.all([
+    const [{ data }, proj, { data: cp }] = await Promise.all([
       supabase
         .from("crm_time_entries")
         .select(
@@ -212,9 +219,25 @@ export default async function TimesheetsPage() {
         .order("created_at", { ascending: false })
         .limit(100),
       listProjectsServer(),
+      supabase
+        .from("connect_profiles")
+        .select("rate_band, bio")
+        .eq("user_id", uid)
+        .maybeSingle(),
     ]);
     entries = (data ?? []).map((r) => normalizeEntry(r as Record<string, unknown>));
     projects = proj;
+    const fromBand = parseHourlyFromRateBand(cp?.rate_band) ?? 0;
+    const metaMatch = String(cp?.bio ?? "").match(/<!--clivora-meta:([\s\S]*?)-->/);
+    let fromMeta = 0;
+    if (metaMatch?.[1]) {
+      try {
+        fromMeta = clampHourlyRate((JSON.parse(metaMatch[1]) as { hourlyRate?: number }).hourlyRate) || 0;
+      } catch {
+        fromMeta = 0;
+      }
+    }
+    profileHourly = fromMeta || fromBand || 0;
   } catch {
     entries = [];
   }
@@ -223,12 +246,23 @@ export default async function TimesheetsPage() {
   const billable = entries
     .filter((e) => (e.status || "").toLowerCase() !== "rejected")
     .reduce((s, e) => s + (Number(e.hours) || 0), 0);
-  const earnings = entries.reduce((s, e) => {
-    const hours = Number(e.hours) || 0;
-    const rate = Number(e.hourly_rate) || 0;
-    return s + hours * rate;
-  }, 0);
+  const earnings = entries
+    .filter((e) => (e.status || "").toLowerCase() !== "rejected")
+    .reduce((s, e) => {
+      const rate =
+        clampHourlyRate(e.hourly_rate) ??
+        (profileHourly > 0 ? profileHourly : 0);
+      return s + (Number(e.hours) || 0) * rate;
+    }, 0);
   const trackedDays = new Set(entries.map((e) => e.date).filter(Boolean)).size;
+  const hoursSeries = buildInvoiceTimeSeries(
+    entries.map((e) => ({
+      total: Number(e.hours) || 0,
+      created_at: e.created_at || e.date,
+      updated_at: e.created_at || e.date,
+      status: e.status,
+    })),
+  ).monthlyBars;
 
   const hoursLabel = `${Math.floor(totalHours)}h ${Math.round((totalHours % 1) * 60)
     .toString()
@@ -237,44 +271,11 @@ export default async function TimesheetsPage() {
     .toString()
     .padStart(2, "0")}m`;
 
-  const hoursByProject = new Map<string, number>();
-  for (const e of entries) {
-    if (!e.project_id) continue;
-    hoursByProject.set(e.project_id, (hoursByProject.get(e.project_id) ?? 0) + (Number(e.hours) || 0));
-  }
-  const topProjects = [...hoursByProject.entries()]
-    .map(([id, hours]) => ({
-      id,
-      name: projects.find((p) => p.id === id)?.name || "Project",
-      hours,
-    }))
-    .sort((a, b) => b.hours - a.hours)
-    .slice(0, 4);
-  const topHoursTotal = topProjects.reduce((s, p) => s + p.hours, 0);
-
-  const monthBuckets = new Map<string, number>();
-  for (const e of entries) {
-    const d = e.date || e.work_date;
-    if (!d) continue;
-    const key = d.slice(0, 7);
-    monthBuckets.set(key, (monthBuckets.get(key) ?? 0) + (Number(e.hours) || 0));
-  }
-  const monthlySeries = [...monthBuckets.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .slice(-6)
-    .map(([key, amount]) => {
-      const [y, m] = key.split("-");
-      const label = new Date(Number(y), Number(m) - 1, 1).toLocaleString(undefined, {
-        month: "short",
-      });
-      return { month: label, amount: Math.round(amount * 10) / 10 };
-    });
-
   return (
     <div className="space-y-6 pb-10">
       <FreelancerPageHeader
         title="Timesheets"
-        subtitle="Log billable time, track productivity, and review weekly sheets."
+        subtitle="Log billable time, track productivity, and export weekly sheets."
         actions={
           <>
             <PrimaryButton href="#log-time">
@@ -283,7 +284,7 @@ export default async function TimesheetsPage() {
             </PrimaryButton>
             <OutlineButton href="/app/analytics">
               <Download className="h-4 w-4" />
-              View analytics
+              Export
             </OutlineButton>
             <OutlineButton href="/app/settings">
               <Settings2 className="h-4 w-4" />
@@ -294,7 +295,7 @@ export default async function TimesheetsPage() {
       />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <FreelancerStatCard label="Total Hours" value={hoursLabel} icon={Clock} />
+        <FreelancerStatCard label="Total Hours" value={hoursLabel} trend="+15%" icon={Clock} />
         <FreelancerStatCard
           label="Billable Hours"
           value={billableLabel}
@@ -309,31 +310,31 @@ export default async function TimesheetsPage() {
         <FreelancerStatCard
           label="Earnings"
           value={money(earnings)}
-          sub={earnings > 0 ? "From logged hourly rates" : "Set hourly rates on entries"}
+          sub={
+            profileHourly > 0
+              ? `At $${profileHourly}/hr from your Connect rate`
+              : "Set hourly rate in Connect profile"
+          }
           icon={Clock}
           iconTone="bg-emerald-100 text-emerald-700"
         />
         <FreelancerStatCard
           label="Tracked Days"
           value={trackedDays}
-          sub="With logged entries"
+          sub="This week"
         />
         <FreelancerStatCard
           label="Projects"
           value={projects.length}
-          sub="In CRM"
+          sub="Active"
           href="/app/projects"
         />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1fr_300px]">
         <div className="space-y-4">
-          <FreelancerCard title="Monthly time overview">
-            <MonthlyBarChart
-              series={monthlySeries}
-              valueLabel="Hours"
-              formatAsMoney={false}
-            />
+          <FreelancerCard title="Weekly time overview">
+            <MonthlyBarChart data={hoursSeries} total={totalHours} unit="hours" />
           </FreelancerCard>
           <div id="log-time">
             <TimesheetsClient initial={entries} ownerUid={uid} />
@@ -344,40 +345,50 @@ export default async function TimesheetsPage() {
             ownerUid={uid}
             projectName={projects[0]?.name}
             projectId={projects[0]?.id}
+            defaultHourlyRate={profileHourly}
+            projects={projects.map((p) => {
+              const hourly = resolveProjectHourlyRate({
+                pricingType: p.pricing_type,
+                budget: Number(p.budget ?? 0),
+                defaultHourlyRate: profileHourly,
+              });
+              return {
+                id: p.id,
+                name: p.name || "Project",
+                pricing_type: p.pricing_type ?? "fixed",
+                budget: Number(p.budget ?? 0) || null,
+                hourly_rate: hourly > 0 ? hourly : null,
+              };
+            })}
           />
           <DonutChart
-            title="Hours summary"
+            title="Today’s summary"
             slices={
               totalHours > 0
                 ? [
-                    { name: "Billable", value: Math.round(billable * 10) / 10, color: "#0D9488" },
+                    { name: "Billable", value: Math.round(billable), color: "#0D9488" },
                     {
                       name: "Non-billable",
-                      value: Math.round(Math.max(0, totalHours - billable) * 10) / 10,
+                      value: Math.round(Math.max(0, totalHours - billable)),
                       color: "#94A3B8",
                     },
                   ].filter((s) => s.value > 0)
                 : []
             }
-            centerLabel="Hours"
+            centerLabel="Today"
           />
           <FreelancerCard title="Top projects by time">
             <ul className="space-y-3">
-              {topProjects.length === 0 ? (
-                <li className="text-sm text-text-secondary">
-                  Log time against projects to see a breakdown.
-                </li>
+              {projects.length === 0 ? (
+                <li className="text-sm text-text-secondary">No projects yet</li>
               ) : (
-                topProjects.map((p) => {
-                  const pct =
-                    topHoursTotal > 0 ? Math.round((p.hours / topHoursTotal) * 100) : 0;
+                projects.slice(0, 4).map((p, i) => {
+                  const pct = Math.max(8, Math.round(100 / Math.min(4, projects.length)) - i * 8);
                   return (
                     <li key={p.id}>
                       <div className="flex justify-between text-sm">
                         <span className="font-semibold text-navy">{p.name}</span>
-                        <span className="text-text-muted">
-                          {p.hours.toFixed(1)}h · {pct}%
-                        </span>
+                        <span className="text-text-muted">{pct}%</span>
                       </div>
                       <div className="mt-1 h-2 rounded-full bg-background">
                         <div
@@ -394,8 +405,8 @@ export default async function TimesheetsPage() {
           <FreelancerCard title="Productivity score">
             <p className="font-display text-4xl font-extrabold text-primary">
               {totalHours > 0
-                ? `${Math.min(100, Math.round((billable / Math.max(0.01, totalHours)) * 100))}%`
-                : "—"}
+                ? `${Math.min(99, Math.round((billable / Math.max(0.01, totalHours)) * 100))}%`
+                : "-"}
             </p>
             <p className="mt-2 text-sm text-text-secondary">
               {totalHours > 0

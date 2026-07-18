@@ -40,7 +40,7 @@ export function Pricing() {
     <section id="pricing" className="relative py-24 lg:py-32">
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-primary/5" />
 
-      <div className="relative mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+      <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
         <AnimatedSection className="text-center">
           <span className="text-sm font-semibold uppercase tracking-widest text-primary">
             Pricing
@@ -57,16 +57,16 @@ export function Pricing() {
         {/* Early access banner */}
         <AnimatedSection className="mt-10" delay={0.1}>
           <div className="mx-auto max-w-3xl overflow-hidden rounded-2xl bg-brand-gradient p-px">
-            <div className="flex flex-col gap-4 rounded-[0.9rem] bg-dark-bg/90 px-5 py-5 sm:flex-row sm:items-center sm:px-8">
+            <div className="flex items-center gap-4 rounded-[0.9rem] bg-dark-bg/90 px-6 py-5 sm:px-8">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/20">
                 <Gift className="h-6 w-6 text-primary" />
               </div>
-              <div className="min-w-0 text-left">
+              <div className="text-left">
                 <p className="font-bold text-white">Upgrade when you are ready</p>
-                <p className="mt-1 text-sm leading-relaxed text-white/60">
+                <p className="mt-1 text-sm text-white/60">
                   Free to start. Pro ({site.pricing.proMonthlyLabel}/mo) and Pro Plus (
                   {site.pricing.proPlusMonthlyLabel}/mo) unlock unlimited tools via website
-                  checkout or Google Play on Android.
+                  checkout.
                 </p>
               </div>
             </div>

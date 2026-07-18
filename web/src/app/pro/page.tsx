@@ -3,7 +3,7 @@ import ProCheckout from "./pro-checkout";
 
 export const metadata = {
   title: "CLIVORA Pro Plus - Subscribe",
-  description: "Upgrade to CLIVORA Pro or Pro Plus. Pay from Pakistan or worldwide.",
+  description: "Upgrade to CLIVORA Pro or Pro Plus. Available worldwide.",
 };
 
 export default function ProPage() {

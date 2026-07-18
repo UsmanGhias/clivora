@@ -26,8 +26,8 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
   const [data, setData] = useState<PlatformSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [adminName, setAdminName] = useState("Super Admin");
-  const [adminEmail, setAdminEmail] = useState("super@clivora.com");
+  const [adminName, setAdminName] = useState("Admin");
+  const [adminEmail, setAdminEmail] = useState("");
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -35,9 +35,17 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch("/api/admin/platform", { cache: "no-store" });
       if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
+        const body = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          code?: string;
+        };
         if (res.status === 403 && body.code === "MFA_REQUIRED") {
-          setError("MFA required — complete Google Authenticator verification.");
+          setError("MFA required - complete Google Authenticator verification.");
+        } else if (body.code === "AUTH_UNAVAILABLE") {
+          setError(
+            body.error ||
+              "Admin authentication is temporarily unavailable. Check Supabase env vars and session cookies.",
+          );
         } else {
           setError(body.error || `Platform request failed (${res.status})`);
         }
@@ -46,8 +54,10 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
       }
       const json = (await res.json()) as PlatformSnapshot;
       setData(json);
+      if (json.warning) setError(json.warning);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load platform data");
+      setData(null);
     } finally {
       setLoading(false);
     }
@@ -59,11 +69,11 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
     void supabase.auth.getUser().then(({ data: session }) => {
       const u = session.user;
       if (!u) return;
-      setAdminEmail(u.email ?? "super@clivora.com");
+      setAdminEmail(u.email ?? "");
       setAdminName(
         (u.user_metadata?.full_name as string | undefined) ||
           (u.user_metadata?.name as string | undefined) ||
-          "Super Admin",
+          (u.email?.split("@")[0] ?? "Admin"),
       );
     });
   }, [refresh]);

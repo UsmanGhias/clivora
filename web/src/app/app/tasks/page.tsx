@@ -1,28 +1,58 @@
 import { createClient } from "@/lib/supabase/server";
 import { getProfile, isClientAccount } from "@/lib/profile";
+import { TasksClient, type TaskRow } from "./TasksClient";
+
+export const metadata = { title: "Tasks" };
 
 export default async function TasksPage() {
   const profile = await getProfile();
   const client = isClientAccount(profile);
   const supabase = await createClient();
-  let rows: Array<{
-    id: string;
-    title?: string | null;
-    status?: string | null;
-    description?: string | null;
-  }> = [];
+  let rows: TaskRow[] = [];
+  let peerUid: string | null = null;
 
   try {
     const col = client ? "client_uid" : "freelancer_uid";
+    const peerCol = client ? "freelancer_uid" : "client_uid";
     const { data, error } = await supabase
       .from("client_tasks")
-      .select("id, title, status, description, created_at")
+      .select("id, title, status, description, created_at, is_read, project_share_id, client_uid, freelancer_uid")
       .eq(col, profile?.id ?? "")
       .order("created_at", { ascending: false })
       .limit(40);
-    if (!error && data) rows = data;
+    if (!error && data) {
+      rows = data;
+      peerUid = (data.find((r) => r[peerCol])?.[peerCol] as string | undefined) ?? null;
+    } else if (error?.message?.includes("is_read") || error?.message?.includes("project_share")) {
+      const { data: fallback } = await supabase
+        .from("client_tasks")
+        .select("id, title, status, description, created_at, client_uid, freelancer_uid")
+        .eq(col, profile?.id ?? "")
+        .order("created_at", { ascending: false })
+        .limit(40);
+      if (fallback) {
+        rows = fallback;
+        peerUid = (fallback.find((r) => r[peerCol])?.[peerCol] as string | undefined) ?? null;
+      }
+    }
   } catch {
     rows = [];
+  }
+
+  if (!peerUid && profile?.id) {
+    try {
+      const { data: share } = await supabase
+        .from("project_shares")
+        .select(client ? "freelancer_uid" : "client_uid")
+        .eq(client ? "client_uid" : "freelancer_uid", profile.id)
+        .limit(1)
+        .maybeSingle();
+      peerUid = client
+        ? ((share as { freelancer_uid?: string } | null)?.freelancer_uid ?? null)
+        : ((share as { client_uid?: string } | null)?.client_uid ?? null);
+    } catch {
+      peerUid = null;
+    }
   }
 
   return (
@@ -33,23 +63,12 @@ export default async function TasksPage() {
           Shared client tasks from your freelancer/client workspace.
         </p>
       </div>
-      {rows.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center">
-          <p className="font-semibold">No shared tasks yet</p>
-        </div>
-      ) : (
-        <ul className="space-y-2">
-          {rows.map((r) => (
-            <li key={r.id} className="rounded-xl border border-border bg-surface px-4 py-3">
-              <p className="font-semibold">{r.title || "Task"}</p>
-              <p className="text-sm text-text-secondary">{r.status || "open"}</p>
-              {r.description && (
-                <p className="mt-1 text-sm text-text-secondary line-clamp-2">{r.description}</p>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+      <TasksClient
+        initial={rows}
+        isClient={!!client}
+        canCreate={!!peerUid}
+        peerUid={peerUid}
+      />
     </div>
   );
 }

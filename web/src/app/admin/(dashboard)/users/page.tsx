@@ -6,56 +6,53 @@ import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
   ExportImportAdd,
-  downloadCsv,
-  matchesAdminQuery,
   KpiGrid,
   FilterBar,
   AdminTable,
   StatusPill,
   AvatarCell,
-  RowActions,
   PageLayout,
   SidePanel,
   SideCard,
-  fmtDate,
   relative,
   ErrorBanner,
 } from "@/components/admin/ui";
+import { AdminUserActions, joinedDate } from "@/components/admin/AdminUserActions";
 
 function nameOf(u: Record<string, unknown>) {
-  return String(u.full_name || u.name || u.display_name || u.email || "—");
+  return String(u.full_name || u.name || u.display_name || u.email || "-");
 }
 
 export default function AdminUsersPage() {
-  const { data, loading } = useAdminData();
+  const { data, loading, refresh } = useAdminData();
   const [activeTab, setActiveTab] = useState("all");
-  const [q, setQ] = useState("");
-  const users = data?.users ?? [];
+  const users = useMemo(() => data?.users ?? [], [data?.users]);
 
   const kpis = useMemo(() => {
-    const total = users.length;
-    const clients = users.filter((u) => String(u.account_type) === "client").length;
-    const freelancers = users.filter((u) => String(u.account_type ?? "freelancer") !== "client").length;
+    const total = data?.overview?.totalUsers || users.length;
+    const clients = data?.overview?.clients || users.filter((u) => String(u.account_type) === "client").length;
+    const freelancers =
+      data?.overview?.freelancers ||
+      users.filter((u) => String(u.account_type ?? "freelancer") !== "client").length;
     const pro = users.filter((u) =>
-      ["pro", "premium"].includes(String(u.subscription_plan || u.plan || "").toLowerCase()),
+      ["pro", "pro_plus", "premium"].includes(String(u.subscription_plan || u.plan || "").toLowerCase()),
     ).length;
     const suspended = users.filter((u) => u.is_blocked || u.is_restricted).length;
     const unverified = users.filter((u) => u.email_verified === false || u.email_confirmed === false).length;
     return { total, clients, freelancers, pro, suspended, unverified };
-  }, [users]);
+  }, [users, data?.overview]);
 
   const filtered = useMemo(() => {
     return users.filter((u) => {
-      if (!matchesAdminQuery(u, q)) return false;
       const type = String(u.account_type ?? "freelancer").toLowerCase();
       const plan = String(u.subscription_plan || u.plan || "").toLowerCase();
       if (activeTab === "clients") return type === "client";
       if (activeTab === "freelancers") return type !== "client";
-      if (activeTab === "pro") return ["pro", "premium"].includes(plan);
+      if (activeTab === "pro") return ["pro", "premium", "pro_plus"].includes(plan);
       if (activeTab === "suspended") return Boolean(u.is_blocked || u.is_restricted);
       return true;
     });
-  }, [users, activeTab, q]);
+  }, [users, activeTab]);
 
   return (
     <div>
@@ -71,24 +68,7 @@ export default function AdminUsersPage() {
       <AdminPageHeader
         title="Users"
         subtitle="Manage clients, freelancers, and platform accounts."
-        actions={
-          <ExportImportAdd
-            entity="Users"
-            onExport={() =>
-              downloadCsv(
-                "users.csv",
-                ["id", "email", "full_name", "account_type", "plan"],
-                filtered.map((u) => [
-                  String(u.id ?? ""),
-                  String(u.email ?? ""),
-                  String(u.full_name || u.name || ""),
-                  String(u.account_type ?? ""),
-                  String(u.subscription_plan || u.plan || ""),
-                ]),
-              )
-            }
-          />
-        }
+        actions={<ExportImportAdd entity="Users" addLabel="Add User" />}
       />
 
       <KpiGrid
@@ -137,8 +117,6 @@ export default function AdminUsersPage() {
           <div>
             <FilterBar
               searchPlaceholder="Search users by name or email…"
-              searchValue={q}
-              onSearchChange={setQ}
               tabs={[
                 { id: "all", label: "All", count: kpis.total },
                 { id: "clients", label: "Clients", count: kpis.clients },
@@ -148,7 +126,7 @@ export default function AdminUsersPage() {
               ]}
               activeTab={activeTab}
               onTabChange={setActiveTab}
-              onReset={() => { setActiveTab("all"); setQ(""); }}
+              onReset={() => setActiveTab("all")}
             />
 
             {!data && loading ? (
@@ -158,7 +136,11 @@ export default function AdminUsersPage() {
             ) : (
               <AdminTable
                 headers={["User", "User Type", "Status", "Email Verified", "Joined", "Last Active", "Actions"]}
-                footer={<span>Showing {filtered.length} of {users.length} users</span>}
+                footer={
+                  <span>
+                    Showing {filtered.length} of {users.length} users
+                  </span>
+                }
               >
                 {filtered.length === 0 ? (
                   <tr>
@@ -186,17 +168,13 @@ export default function AdminUsersPage() {
                         <td className="px-3 py-3">
                           <StatusPill status={status} />
                         </td>
-                        <td className="px-3 py-3 text-sm text-slate-600">
-                          {verified ? "Yes" : "No"}
-                        </td>
-                        <td className="px-3 py-3 text-sm text-slate-600">
-                          {fmtDate(String(u.created_at ?? ""))}
-                        </td>
+                        <td className="px-3 py-3 text-sm text-slate-600">{verified ? "Yes" : "No"}</td>
+                        <td className="px-3 py-3 text-sm text-slate-600">{joinedDate(u)}</td>
                         <td className="px-3 py-3 text-sm text-slate-500">
-                          {relative(String(u.updated_at ?? u.created_at ?? "")) || "—"}
+                          {relative(String(u.updated_at ?? u.created_at ?? "")) || "-"}
                         </td>
                         <td className="px-3 py-3">
-                          <RowActions />
+                          <AdminUserActions user={u} onRefresh={() => void refresh()} />
                         </td>
                       </tr>
                     );
@@ -218,7 +196,8 @@ export default function AdminUsersPage() {
             </SideCard>
             <SideCard title="Tips">
               <p className="text-xs leading-relaxed text-slate-500">
-                Filter by account type using the tabs above. Suspended users are blocked or restricted.
+                Use View / Edit / Block on each row. Joined uses account activity date when signup
+                timestamp is unavailable.
               </p>
             </SideCard>
           </SidePanel>

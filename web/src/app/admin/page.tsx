@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/ui/Logo";
 import { createBrowserSupabaseClient } from "@/lib/supabase-browser";
+import Link from "next/link";
 
-/** Admin login gate — authenticated admins are sent to the new panel overview. */
+/** Admin login gate - authenticated admins are sent to the panel overview. */
 export default function AdminLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -47,7 +48,7 @@ export default function AdminLoginPage() {
   if (checking) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-300">
-        Loading admin…
+        Loading…
       </div>
     );
   }
@@ -60,8 +61,10 @@ export default function AdminLoginPage() {
       >
         <div className="mb-6 flex flex-col items-center text-center">
           <Logo size="lg" showText={false} variant="onLight" />
-          <h1 className="mt-4 text-2xl font-black text-slate-900">CLIVORA Admin</h1>
-          <p className="mt-1 text-sm text-slate-500">Sign in with your admin account + MFA</p>
+          <h1 className="mt-4 font-display text-2xl font-black text-slate-900">CLIVORA Admin</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Authorized operators only. MFA required after sign-in.
+          </p>
         </div>
         {error && (
           <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -73,10 +76,11 @@ export default function AdminLoginPage() {
           <input
             type="email"
             required
+            autoComplete="username"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium text-slate-900 outline-none focus:border-teal-500"
-            placeholder="usmanghias1@gmail.com"
+            placeholder="admin@yourcompany.com"
           />
         </label>
         <label className="mb-5 block text-xs font-bold uppercase tracking-wide text-slate-500">
@@ -84,6 +88,7 @@ export default function AdminLoginPage() {
           <input
             type="password"
             required
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium text-slate-900 outline-none focus:border-teal-500"
@@ -97,7 +102,12 @@ export default function AdminLoginPage() {
           {busy ? "Signing in…" : "Continue to Admin Panel"}
         </button>
         <p className="mt-4 text-center text-xs text-slate-400">
-          Admins: usmanghias1@gmail.com · iusmanghias@gmail.com
+          Access is role-based. Contact your workspace owner if you need admin privileges.
+        </p>
+        <p className="mt-3 text-center text-xs">
+          <Link href="/" className="font-medium text-teal-700 hover:underline">
+            ← Back to website
+          </Link>
         </p>
       </form>
     </div>

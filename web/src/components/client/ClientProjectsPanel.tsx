@@ -6,6 +6,7 @@ import {
   FolderKanban,
   Plus,
   Search,
+  MoreHorizontal,
   Headphones,
   Pause,
   CheckCircle2,
@@ -66,9 +67,9 @@ const PROGRESS: Record<string, number> = {
 };
 
 function formatDate(value?: string | null) {
-  if (!value) return "—";
+  if (!value) return "-";
   const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "-";
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
@@ -130,7 +131,7 @@ export function ClientProjectsPanel({ rows }: { rows: ClientProjectRow[] }) {
         icon={FolderKanban}
         actions={
           <>
-            <ClientPrimaryButton href="/connect/manage">
+            <ClientPrimaryButton href="/app/connect/manage">
               <Plus className="h-4 w-4" />
               New project
             </ClientPrimaryButton>
@@ -283,19 +284,19 @@ export function ClientProjectsPanel({ rows }: { rows: ClientProjectRow[] }) {
                     <div className="flex shrink-0 items-center gap-4 sm:flex-col sm:items-end">
                       <div className="text-right">
                         <p className="font-bold text-navy">
-                          {r.budget != null ? money(Number(r.budget), 0) : "—"}
+                          {r.budget != null ? money(Number(r.budget), 0) : "-"}
                         </p>
                         <p className="text-xs text-text-muted">
                           Due {formatDate(r.due_date || r.updated_at)}
                         </p>
                       </div>
-                      <Link
-                        href="/app/messages"
+                      <button
+                        type="button"
                         className="rounded-lg p-2 text-text-muted hover:bg-client-surface"
-                        aria-label="Message"
+                        aria-label="More"
                       >
-                        <MessageSquare className="h-4 w-4" />
-                      </Link>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </button>
                     </div>
                   </li>
                 );

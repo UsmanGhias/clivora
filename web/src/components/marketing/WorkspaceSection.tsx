@@ -46,8 +46,8 @@ export function WorkspaceSection() {
   const w = marketing.workspace;
 
   return (
-    <section id="workspace" className="border-b border-slate-200/80 bg-[#F8FAFC] py-14 sm:py-20 lg:py-24">
-      <div className="mx-auto max-w-7xl px-4 sm:px-5 lg:px-8">
+    <section id="workspace" className="border-b border-slate-200/80 bg-[#F8FAFC] py-16 sm:py-24">
+      <div className="mx-auto max-w-7xl px-5 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Freelancer workspace</p>
           <h2 className="mt-3 font-display text-3xl font-extrabold tracking-tight text-navy sm:text-5xl">

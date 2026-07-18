@@ -10,7 +10,6 @@ import { InvoicesCrmPanel } from "@/components/crm/CrmPanels";
 import { createClient } from "@/lib/supabase/server";
 import { AlertTriangle, Clock, FileText, Plus, Settings, TrendingUp } from "lucide-react";
 import { DonutChart } from "@/components/dashboard/DonutChart";
-import { PaymentDisclaimer } from "@/components/payments/PaymentDisclaimer";
 import {
   FreelancerCard,
   FreelancerPageHeader,
@@ -140,12 +139,11 @@ export default async function InvoicesPage() {
         }
       />
 
-      <PaymentDisclaimer />
-
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <FreelancerStatCard
           label="Total Revenue"
           value={money(totalRevenue)}
+          trend={undefined}
           icon={TrendingUp}
         />
         <FreelancerStatCard
@@ -192,55 +190,80 @@ export default async function InvoicesPage() {
           <DonutChart
             title="Invoice analytics"
             slices={[
-              ...(paid > 0 ? [{ name: "Paid", value: paid, color: "#10B981" }] : []),
-              ...(pending > 0 ? [{ name: "Pending", value: pending, color: "#F59E0B" }] : []),
-              ...(overdue > 0 ? [{ name: "Overdue", value: overdue, color: "#DC2626" }] : []),
+              { name: "Paid", value: Math.max(paid, 1), color: "#10B981" },
+              { name: "Pending", value: Math.max(pending, 1), color: "#F59E0B" },
+              { name: "Overdue", value: Math.max(overdue, 1), color: "#DC2626" },
             ]}
             centerValue={money(totalRevenue, 0)}
             centerLabel="Total"
           />
-          <FreelancerCard title="How you get paid">
+          <FreelancerCard title="Payment methods">
             <p className="text-sm text-text-secondary">
-              CLIVORA does not currently process client-to-freelancer payments. Record invoices here
-              and settle funds directly with your clients for now.
+              Card gateways (Stripe / PayPal / Wise) are not live yet. Use bank or JazzCash payout
+              details for client invoices.
             </p>
             <ul className="mt-3 space-y-2 text-sm">
-              <li className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5">
-                <span className="font-semibold text-navy">Manual / off-platform</span>
-                <span className="text-xs font-bold text-text-muted">Recorded in CRM</span>
-              </li>
-              <li className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5">
-                <span className="font-semibold text-navy">Google Play (Android)</span>
-                <span className="text-xs font-bold text-success">Subscriptions</span>
-              </li>
+              {[
+                { name: "Stripe", status: "Not connected" },
+                { name: "PayPal", status: "Not connected" },
+                { name: "Wise", status: "Not connected" },
+              ].map((m) => (
+                <li
+                  key={m.name}
+                  className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5"
+                >
+                  <span className="font-semibold text-navy">{m.name}</span>
+                  <span className="text-xs font-bold text-slate-500">{m.status}</span>
+                </li>
+              ))}
             </ul>
             <a
-              href="/pro"
+              href="/app/account"
               className="mt-3 inline-block text-sm font-semibold text-primary hover:underline"
             >
-              Manage plan →
+              Set bank and payout details
             </a>
           </FreelancerCard>
           <FreelancerCard title="Quick actions">
             <ul className="space-y-2 text-sm font-semibold text-navy">
               <li>
-                <a href="#create" className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40">
+                <a
+                  href="#create"
+                  className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40"
+                >
                   Create Invoice <span>→</span>
                 </a>
               </li>
               <li>
-                <a href="/app/proposals" className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40">
-                  View proposals <span>→</span>
+                <a
+                  href="/app/clients"
+                  className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40"
+                >
+                  Manage clients <span>→</span>
                 </a>
               </li>
               <li>
-                <a href="/app/settings" className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40">
-                  Invoice settings <span>→</span>
+                <a
+                  href="/app/projects"
+                  className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40"
+                >
+                  Link to projects <span>→</span>
                 </a>
               </li>
               <li>
-                <a href="#create" className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40">
-                  Recurring Invoices <span>→</span>
+                <a
+                  href="/app/earnings"
+                  className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40"
+                >
+                  View earnings <span>→</span>
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/app/account"
+                  className="flex justify-between rounded-xl border border-border px-3 py-2.5 hover:border-primary/40"
+                >
+                  Payout settings <span>→</span>
                 </a>
               </li>
             </ul>
