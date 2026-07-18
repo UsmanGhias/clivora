@@ -1,10 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/database/database.dart';
 import '../../data/database/user_scoped_queries.dart';
 import '../../data/providers/database_provider.dart';
 import '../cloud/cloud_project_repository.dart';
-import '../cloud/supabase_auth_helper.dart';
 import '../cloud/supabase_sync_service.dart';
 
 /// Resolves freelancer Supabase UID for a client project view.

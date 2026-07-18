@@ -7,7 +7,6 @@ import '../../core/auth/auth_service.dart';
 import '../../core/auth/user_roles.dart';
 import '../../core/constants/pro_pricing.dart';
 import '../../core/services/marketplace/connect_marketplace_service.dart';
-import '../../core/theme/clivora_colors.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 

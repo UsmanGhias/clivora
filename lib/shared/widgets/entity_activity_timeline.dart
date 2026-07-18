@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 import '../../core/services/audit_log_service.dart';
 import '../../core/services/tracking_service.dart';
 import '../../core/theme/clivora_colors.dart';
-import '../../data/database/database.dart';
 
 /// Unified activity timeline combining status tracking and audit events.
 class EntityActivityTimeline extends ConsumerWidget {

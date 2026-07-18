@@ -7,7 +7,6 @@ import '../../core/cloud/cloud_project_repository.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
-import 'client_portal_screen.dart' show ClientTrackingKey;
 import 'client_project_detail.dart';
 
 /// Client activity feed, updates across all shared projects.

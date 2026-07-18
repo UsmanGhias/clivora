@@ -1,10 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth/auth_service.dart';
-import '../../core/auth/user_roles.dart';
 import '../../core/cloud/cloud_message_repository.dart';
 import '../../core/cloud/supabase_auth_helper.dart';
-import '../../core/services/admin_management_service.dart';
 import '../../data/database/user_scoped_queries.dart';
 import '../../data/models/invoice_line_item.dart';
 import 'database_provider.dart';

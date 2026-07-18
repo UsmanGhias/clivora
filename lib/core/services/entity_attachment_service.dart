@@ -105,6 +105,7 @@ class EntityAttachmentService {
     await ref.read(databaseProvider).deleteAttachment(attachment.id);
   }
 
+  // ignore: unused_element
   Future<Directory> _attachmentDir(int ownerId, String entityType, int entityId) async {
     final base = await getApplicationDocumentsDirectory();
     final dir = Directory(p.join(base.path, 'attachments', '$ownerId', entityType, '$entityId'));
