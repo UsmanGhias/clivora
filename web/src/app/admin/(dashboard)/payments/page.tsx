@@ -6,31 +6,30 @@ import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
   ExportImportAdd,
-  downloadCsv,
-  matchesAdminQuery,
   KpiGrid,
   FilterBar,
   AdminTable,
   StatusPill,
   AvatarCell,
-  RowActions,
   PageLayout,
   SidePanel,
   SideCard,
   money,
   fmtDate,
   ErrorBanner,
+  AdminBtn,
 } from "@/components/admin/ui";
 
 function nameOf(u: Record<string, unknown>) {
-  return String(u.full_name || u.name || u.display_name || u.email || "—");
+  return String(u.full_name || u.name || u.display_name || u.email || "-");
 }
 
 export default function AdminPaymentsPage() {
-  const { data, loading } = useAdminData();
+  const { data, loading, refresh } = useAdminData();
   const [activeTab, setActiveTab] = useState("all");
-  const [q, setQ] = useState("");
-  const payments = data?.payments ?? [];
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const payments = useMemo(() => data?.payments ?? [], [data?.payments]);
 
   const kpis = useMemo(() => {
     const volume = payments.reduce((s, p) => s + Number(p.amount_usd ?? p.amount ?? 0), 0);
@@ -49,7 +48,7 @@ export default function AdminPaymentsPage() {
   const filtered = useMemo(() => {
     if (activeTab === "all") return payments;
     return payments.filter((p) => String(p.status).toLowerCase() === activeTab);
-  }, [payments, activeTab, q]);
+  }, [payments, activeTab]);
 
   const tabs = [
     { id: "all", label: "All", count: payments.length },
@@ -60,11 +59,61 @@ export default function AdminPaymentsPage() {
     })),
   ];
 
+  async function approvePayment(p: Record<string, unknown>) {
+    const id = String(p.id);
+    const email = String(p.email || "").trim();
+    if (!email) {
+      setActionError("Payment row is missing an email.");
+      return;
+    }
+    setBusyId(id);
+    setActionError(null);
+    try {
+      const plan = String(p.plan || "pro").toLowerCase().includes("plus") ? "pro_plus" : "pro";
+      const res = await fetch("/api/admin/grant-pro", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          plan,
+          paymentRequestId: id,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "Approve failed");
+      await refresh();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Approve failed");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function rejectPayment(p: Record<string, unknown>) {
+    const id = String(p.id);
+    setBusyId(id);
+    setActionError(null);
+    try {
+      const res = await fetch("/api/admin/payment-requests", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status: "rejected" }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "Reject failed");
+      await refresh();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Reject failed");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <div>
-      {data?.warning && (
+      {(data?.warning || actionError) && (
         <ErrorBanner
-          message={data.warning}
+          message={actionError || data?.warning || ""}
           onViewLogs={() => {
             window.location.href = "/admin/events";
           }}
@@ -73,8 +122,8 @@ export default function AdminPaymentsPage() {
 
       <AdminPageHeader
         title="Payments"
-        subtitle="Pro payment requests and platform transactions."
-        actions={null}
+        subtitle="Pro payment requests and platform transactions - Approve grants live plans."
+        actions={<ExportImportAdd entity="Payments" addLabel="Add Payment" />}
       />
 
       <KpiGrid
@@ -105,12 +154,10 @@ export default function AdminPaymentsPage() {
           <div>
             <FilterBar
               searchPlaceholder="Search payments…"
-              searchValue={q}
-              onSearchChange={setQ}
               tabs={tabs}
               activeTab={activeTab}
               onTabChange={setActiveTab}
-              onReset={() => { setActiveTab("all"); setQ(""); }}
+              onReset={() => setActiveTab("all")}
             />
 
             {!data && loading ? (
@@ -120,7 +167,11 @@ export default function AdminPaymentsPage() {
             ) : (
               <AdminTable
                 headers={["Payment ID", "Type / Plan", "From", "Method", "Amount", "Status", "Date", "Actions"]}
-                footer={<span>Showing {filtered.length} of {payments.length} payments</span>}
+                footer={
+                  <span>
+                    Showing {filtered.length} of {payments.length} payments
+                  </span>
+                }
               >
                 {filtered.length === 0 ? (
                   <tr>
@@ -129,35 +180,65 @@ export default function AdminPaymentsPage() {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((p) => (
-                    <tr key={String(p.id)} className="hover:bg-slate-50/80">
-                      <td className="px-3 py-3">
-                        <input type="checkbox" className="rounded border-slate-300" aria-label="Select row" />
-                      </td>
-                      <td className="px-3 py-3 font-mono text-xs font-bold text-slate-800">
-                        {String(p.id).slice(0, 10)}
-                      </td>
-                      <td className="px-3 py-3 text-sm font-semibold capitalize text-slate-700">
-                        {String(p.plan || p.type || "pro")}
-                      </td>
-                      <td className="px-3 py-3">
-                        <AvatarCell name={nameOf(p)} email={String(p.email ?? "")} />
-                      </td>
-                      <td className="px-3 py-3 text-sm text-slate-600">
-                        {String(p.payment_method || "—")}
-                      </td>
-                      <td className="px-3 py-3 font-semibold text-slate-800">
-                        {money(Number(p.amount_usd ?? p.amount ?? 0))}
-                      </td>
-                      <td className="px-3 py-3">
-                        <StatusPill status={String(p.status || "pending").replace(/_/g, " ")} />
-                      </td>
-                      <td className="px-3 py-3 text-sm text-slate-600">{fmtDate(String(p.created_at ?? ""))}</td>
-                      <td className="px-3 py-3">
-                        <RowActions />
-                      </td>
-                    </tr>
-                  ))
+                  filtered.map((p) => {
+                    const status = String(p.status || "pending").toLowerCase();
+                    const pending =
+                      status === "pending" || status === "submitted" || status === "review";
+                    return (
+                      <tr key={String(p.id)} className="hover:bg-slate-50/80">
+                        <td className="px-3 py-3">
+                          <input
+                            type="checkbox"
+                            className="rounded border-slate-300"
+                            aria-label="Select row"
+                          />
+                        </td>
+                        <td className="px-3 py-3 font-mono text-xs font-bold text-slate-800">
+                          {String(p.id).slice(0, 10)}
+                        </td>
+                        <td className="px-3 py-3 text-sm font-semibold capitalize text-slate-700">
+                          {String(p.plan || p.type || "pro")}
+                        </td>
+                        <td className="px-3 py-3">
+                          <AvatarCell name={nameOf(p)} email={String(p.email ?? "")} />
+                        </td>
+                        <td className="px-3 py-3 text-sm text-slate-600">
+                          {String(p.payment_method || "-")}
+                        </td>
+                        <td className="px-3 py-3 font-semibold text-slate-800">
+                          {money(Number(p.amount_usd ?? p.amount ?? 0))}
+                        </td>
+                        <td className="px-3 py-3">
+                          <StatusPill status={status.replace(/_/g, " ")} />
+                        </td>
+                        <td className="px-3 py-3 text-sm text-slate-600">
+                          {fmtDate(String(p.created_at ?? ""))}
+                        </td>
+                        <td className="px-3 py-3">
+                          {pending ? (
+                            <div className="flex flex-wrap gap-1">
+                              <AdminBtn
+                                variant="primary"
+                                disabled={busyId === String(p.id)}
+                                onClick={() => void approvePayment(p)}
+                              >
+                                Approve
+                              </AdminBtn>
+                              <AdminBtn
+                                variant="outline"
+                                disabled={busyId === String(p.id)}
+                                onClick={() => void rejectPayment(p)}
+                              >
+                                Reject
+                              </AdminBtn>
+                            </div>
+                          ) : (
+                            <span className="text-xs font-semibold text-slate-400">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </AdminTable>
             )}

@@ -7,9 +7,9 @@ export function FreelancerOSSection() {
   const s = marketing.freelancerOs;
 
   return (
-    <section id="freelancer-os" className="border-t border-slate-200/80 bg-white py-14 sm:py-20 lg:py-28">
-      <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 sm:gap-12 sm:px-5 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16 lg:px-8">
-        <div className="order-1">
+    <section id="freelancer-os" className="border-t border-slate-200/80 bg-white py-20 lg:py-28">
+      <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16 lg:px-8">
+        <div>
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
             Freelancer operating system
           </p>
@@ -41,22 +41,20 @@ export function FreelancerOSSection() {
           </Link>
         </div>
 
-        <div className="relative order-2 overflow-hidden">
+        <div className="relative">
           <div className="pointer-events-none absolute -inset-6 rounded-[2.5rem] bg-gradient-to-tr from-teal-100/60 via-slate-100/30 to-transparent blur-2xl" />
-          <div className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-lg shadow-slate-200/40">
-            <div className="max-h-[min(48vh,380px)] overflow-hidden sm:max-h-none">
-              <FreelancerDashMock />
-            </div>
+          <div className="relative">
+            <FreelancerDashMock />
           </div>
         </div>
       </div>
 
-      <div className="mx-auto mt-12 max-w-7xl px-4 sm:mt-16 sm:px-5 lg:px-8">
-        <div className="grid grid-cols-2 gap-4 rounded-2xl border border-slate-200 bg-[#F8FAFC] px-3 py-5 sm:grid-cols-3 sm:gap-6 sm:px-4 sm:py-6 lg:grid-cols-6 lg:px-8">
+      <div className="mx-auto mt-16 max-w-7xl px-5 lg:px-8">
+        <div className="grid grid-cols-2 gap-6 rounded-2xl border border-slate-200 bg-[#F8FAFC] px-4 py-6 sm:grid-cols-3 lg:grid-cols-6 lg:px-8">
           {s.stats.map((stat) => (
             <div key={stat.label} className="text-center">
-              <p className="font-display text-xl font-extrabold text-navy sm:text-3xl">{stat.value}</p>
-              <p className="mt-1 text-[11px] font-medium text-slate-500 sm:text-xs">{stat.label}</p>
+              <p className="font-display text-2xl font-extrabold text-navy sm:text-3xl">{stat.value}</p>
+              <p className="mt-1 text-xs font-medium text-slate-500">{stat.label}</p>
             </div>
           ))}
         </div>

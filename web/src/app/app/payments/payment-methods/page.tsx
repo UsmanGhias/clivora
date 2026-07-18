@@ -20,10 +20,9 @@ export default async function PaymentMethodsPage() {
       />
       <ClientCard title="Saved methods">
         <div className="rounded-xl border border-dashed border-border bg-client-surface/40 p-6 text-center">
-          <p className="font-semibold text-navy">No card gateway yet</p>
+          <p className="font-semibold text-navy">No cards on file yet</p>
           <p className="mt-1 text-sm text-text-secondary">
-            Card billing is coming soon. Manage your plan with JazzCash / bank transfer or Google
-            Play on Android. Keep invoices in CLIVORA as records.
+            Add a payment method through Stripe billing to pay invoices faster.
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             <ManageBillingButton />

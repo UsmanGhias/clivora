@@ -51,7 +51,7 @@ export default async function HubPage() {
         <div className="rounded-2xl border border-border bg-surface p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Profile readiness</p>
           <p className="mt-1 text-2xl font-extrabold text-primary">
-            {kpis.profileCompleteness == null ? "—" : `${kpis.profileCompleteness}%`}
+            {kpis.profileCompleteness == null ? "-" : `${kpis.profileCompleteness}%`}
           </p>
         </div>
       </div>
@@ -86,7 +86,7 @@ export default async function HubPage() {
           tone="teal"
         />
         <HubLink
-          href="/connect/manage"
+          href="/app/connect/manage"
           title="Trust profile"
           body={
             kpis.profileCompleteness != null

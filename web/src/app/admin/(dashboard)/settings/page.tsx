@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Save, Shield } from "lucide-react";
+import { useState } from "react";
+import { Database, Save, Shield, Network } from "lucide-react";
 import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
   AdminBtn,
+  ExportImportAdd,
   FilterBar,
   PageLayout,
   SidePanel,
@@ -13,56 +14,18 @@ import {
   StatusPill,
   ErrorBanner,
 } from "@/components/admin/ui";
-
-const STORAGE_KEY = "clivora.admin.settings.draft";
-
-type Draft = {
-  siteName: string;
-  supportEmail: string;
-  commission: string;
-  registrationOpen: boolean;
-  freelancerSignup: boolean;
-  fromName: string;
-  fromAddress: string;
-};
-
-const DEFAULTS: Draft = {
-  siteName: "CLIVORA",
-  supportEmail: "support@clivora.com",
-  commission: "0",
-  registrationOpen: true,
-  freelancerSignup: true,
-  fromName: "CLIVORA",
-  fromAddress: "noreply@clivora.com",
-};
+import { OdooSyncButton } from "@/components/app/OdooSyncButton";
+import { site } from "@/lib/site";
 
 export default function AdminSettingsPage() {
   const { data, loading } = useAdminData();
   const [activeTab, setActiveTab] = useState("general");
-  const [q, setQ] = useState("");
-  const [draft, setDraft] = useState<Draft>(DEFAULTS);
-  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [siteName, setSiteName] = useState("CLIVORA");
+  const [supportEmail, setSupportEmail] = useState("support@clivora.com");
+  const [commission, setCommission] = useState("10");
+  const [registrationOpen, setRegistrationOpen] = useState(true);
+  const [freelancerSignup, setFreelancerSignup] = useState(true);
   const flags = data?.flags ?? [];
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setDraft({ ...DEFAULTS, ...JSON.parse(raw) });
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  function save() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
-    setSavedAt(new Date().toLocaleString());
-  }
-
-  const tabMatch = (label: string) => {
-    const needle = q.trim().toLowerCase();
-    if (!needle) return true;
-    return label.toLowerCase().includes(needle);
-  };
 
   return (
     <div>
@@ -77,12 +40,8 @@ export default function AdminSettingsPage() {
 
       <AdminPageHeader
         title="System Settings"
-        subtitle="Local draft settings for this browser. Server-side config APIs ship next."
-        actions={
-          <AdminBtn variant="primary" onClick={save}>
-            <Save className="h-3.5 w-3.5" /> Save changes
-          </AdminBtn>
-        }
+        subtitle="Configure platform defaults, email, and feature flags."
+        actions={<ExportImportAdd entity="Settings" addLabel="Save Changes" />}
       />
 
       <PageLayout
@@ -90,19 +49,15 @@ export default function AdminSettingsPage() {
           <div>
             <FilterBar
               searchPlaceholder="Search settings…"
-              searchValue={q}
-              onSearchChange={setQ}
               tabs={[
                 { id: "general", label: "General" },
                 { id: "platform", label: "Platform" },
                 { id: "email", label: "Email" },
+                { id: "integrations", label: "Integrations" },
               ]}
               activeTab={activeTab}
               onTabChange={setActiveTab}
-              onReset={() => {
-                setActiveTab("general");
-                setQ("");
-              }}
+              onReset={() => setActiveTab("general")}
             />
 
             {!data && loading ? (
@@ -111,97 +66,107 @@ export default function AdminSettingsPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {savedAt && (
-                  <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-                    Draft saved on this device at {savedAt}.
-                  </p>
-                )}
-
-                {activeTab === "general" && tabMatch("general site name support") && (
+                {activeTab === "general" && (
                   <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                     <h3 className="mb-4 text-sm font-bold text-slate-900">Site information</h3>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <Field label="Site name">
                         <input
-                          value={draft.siteName}
-                          onChange={(e) => setDraft((d) => ({ ...d, siteName: e.target.value }))}
+                          value={siteName}
+                          onChange={(e) => setSiteName(e.target.value)}
                           className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-teal-400"
                         />
                       </Field>
                       <Field label="Support email">
                         <input
-                          value={draft.supportEmail}
-                          onChange={(e) => setDraft((d) => ({ ...d, supportEmail: e.target.value }))}
+                          value={supportEmail}
+                          onChange={(e) => setSupportEmail(e.target.value)}
                           className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-teal-400"
                         />
                       </Field>
                     </div>
                     <div className="mt-4 flex justify-end">
-                      <AdminBtn variant="primary" onClick={save}>
+                      <AdminBtn variant="primary">
                         <Save className="h-3.5 w-3.5" /> Save general
                       </AdminBtn>
                     </div>
                   </section>
                 )}
 
-                {activeTab === "platform" && tabMatch("platform commission registration freelancer") && (
+                {activeTab === "platform" && (
                   <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                     <h3 className="mb-4 text-sm font-bold text-slate-900">Platform</h3>
-                    <p className="mb-3 text-xs text-slate-500">
-                      CLIVORA markets $0 platform fee. Commission field is a draft note only.
-                    </p>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <Field label="Commission rate (%)">
                         <input
-                          value={draft.commission}
-                          onChange={(e) => setDraft((d) => ({ ...d, commission: e.target.value }))}
+                          value={commission}
+                          onChange={(e) => setCommission(e.target.value)}
                           className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-teal-400"
                         />
                       </Field>
                       <div className="space-y-3 sm:col-span-2">
                         <Toggle
                           label="Open registration"
-                          checked={draft.registrationOpen}
-                          onChange={(v) => setDraft((d) => ({ ...d, registrationOpen: v }))}
+                          checked={registrationOpen}
+                          onChange={setRegistrationOpen}
                         />
                         <Toggle
                           label="Allow freelancer signup"
-                          checked={draft.freelancerSignup}
-                          onChange={(v) => setDraft((d) => ({ ...d, freelancerSignup: v }))}
+                          checked={freelancerSignup}
+                          onChange={setFreelancerSignup}
                         />
                       </div>
                     </div>
                     <div className="mt-4 flex justify-end">
-                      <AdminBtn variant="primary" onClick={save}>
+                      <AdminBtn variant="primary">
                         <Save className="h-3.5 w-3.5" /> Save platform
                       </AdminBtn>
                     </div>
                   </section>
                 )}
 
-                {activeTab === "email" && tabMatch("email from name address") && (
+                {activeTab === "email" && (
                   <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                     <h3 className="mb-4 text-sm font-bold text-slate-900">Email</h3>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <Field label="From name">
                         <input
-                          value={draft.fromName}
-                          onChange={(e) => setDraft((d) => ({ ...d, fromName: e.target.value }))}
+                          defaultValue="CLIVORA"
                           className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-teal-400"
                         />
                       </Field>
                       <Field label="From address">
                         <input
-                          value={draft.fromAddress}
-                          onChange={(e) => setDraft((d) => ({ ...d, fromAddress: e.target.value }))}
+                          defaultValue="noreply@clivora.com"
                           className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-teal-400"
                         />
                       </Field>
                     </div>
                     <div className="mt-4 flex justify-end">
-                      <AdminBtn variant="primary" onClick={save}>
+                      <AdminBtn variant="primary">
                         <Save className="h-3.5 w-3.5" /> Save email
                       </AdminBtn>
+                    </div>
+                  </section>
+                )}
+
+                {activeTab === "integrations" && (
+                  <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="mb-4 flex items-start gap-3">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
+                        <Network className="h-5 w-5" />
+                      </span>
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-900">Odoo (existing apps only)</h3>
+                        <p className="mt-1 text-xs text-slate-500">
+                          Two-way sync with Odoo Contacts at clivora.odoo.com - pull partners into
+                          CLIVORA CRM and push customers (plus project/invoice tracking notes) back.
+                          No new Odoo modules. Admin-only.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <OdooSyncButton />
                     </div>
                   </section>
                 )}
@@ -209,25 +174,21 @@ export default function AdminSettingsPage() {
                 <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                   <h3 className="mb-3 text-sm font-bold text-slate-900">Feature flags</h3>
                   {flags.length === 0 ? (
-                    <p className="text-sm text-slate-500">No feature flags loaded.</p>
+                    <p className="text-sm text-slate-500">
+                      No rows in <code>app_feature_flags</code> (or table missing). This is live DB
+                      state - not demo content.
+                    </p>
                   ) : (
                     <ul className="divide-y divide-slate-100">
-                      {flags
-                        .filter((f) => tabMatch(String(f.key ?? "") + String(f.description ?? "")))
-                        .map((f) => (
-                          <li
-                            key={String(f.id ?? f.key)}
-                            className="flex items-center justify-between gap-3 py-2.5 text-sm"
-                          >
-                            <div className="min-w-0">
-                              <div className="font-bold text-slate-800">{String(f.key)}</div>
-                              <div className="truncate text-xs text-slate-500">
-                                {String(f.description || "")}
-                              </div>
-                            </div>
-                            <StatusPill status={f.value ? "active" : "inactive"} />
-                          </li>
-                        ))}
+                      {flags.map((f) => (
+                        <li key={String(f.id ?? f.key)} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                          <div className="min-w-0">
+                            <div className="font-bold text-slate-800">{String(f.key)}</div>
+                            <div className="truncate text-xs text-slate-500">{String(f.description || "")}</div>
+                          </div>
+                          <StatusPill status={f.value ? "active" : "inactive"} />
+                        </li>
+                      ))}
                     </ul>
                   )}
                 </section>
@@ -241,12 +202,29 @@ export default function AdminSettingsPage() {
               <div className="space-y-3 text-sm">
                 <div className="flex items-center gap-2">
                   <Shield className="h-4 w-4 text-teal-600" />
-                  <span className="font-bold text-slate-800">CLIVORA web</span>
+                  <span className="font-bold text-slate-800">v{site.appVersion}</span>
                 </div>
-                <p className="text-xs leading-relaxed text-slate-500">
-                  Settings above save as a browser draft. Backups and remote config require a later
-                  admin API — fake backup buttons were removed.
-                </p>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+                  <p>
+                    Users: <strong>{data?.overview.totalUsers ?? "-"}</strong>
+                  </p>
+                  <p className="mt-1">
+                    Source: <strong>{data?.source ?? "unavailable"}</strong>
+                  </p>
+                  <p className="mt-1 text-slate-500">
+                    Storage % is not measured in-app - check Supabase dashboard for DB size.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 pt-1">
+                  <AdminBtn
+                    variant="outline"
+                    onClick={() => {
+                      window.location.href = "/admin/events";
+                    }}
+                  >
+                    <Database className="h-3.5 w-3.5" /> View events
+                  </AdminBtn>
+                </div>
               </div>
             </SideCard>
           </SidePanel>

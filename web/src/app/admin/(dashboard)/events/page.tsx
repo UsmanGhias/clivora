@@ -1,13 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import { Flag } from "lucide-react";
 import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
   ExportImportAdd,
-  downloadCsv,
-  matchesAdminQuery,
   KpiGrid,
   FilterBar,
   AdminTable,
@@ -25,13 +22,7 @@ import {
 
 export default function AdminEventsPage() {
   const { data, loading } = useAdminData();
-  const [q, setQ] = useState("");
   const events = data?.events ?? [];
-
-  const filtered = useMemo(
-    () => events.filter((row) => matchesAdminQuery(row, q)),
-    [events, q],
-  );
 
   return (
     <div>
@@ -47,18 +38,7 @@ export default function AdminEventsPage() {
       <AdminPageHeader
         title="Events"
         subtitle="Live platform event stream."
-        actions={
-          <ExportImportAdd
-            entity="Events"
-            onExport={() =>
-              downloadCsv(
-                "events.csv",
-                Object.keys(filtered[0] ?? { id: "" }),
-                filtered.map((row) => Object.keys(filtered[0] ?? { id: "" }).map((k) => String(row[k] ?? ""))),
-              )
-            }
-          />
-        }
+        actions={<ExportImportAdd entity="Events" />}
       />
 
       <KpiGrid
@@ -69,7 +49,7 @@ export default function AdminEventsPage() {
             icon: <Flag className="h-4 w-4" />,
             iconBg: "bg-teal-50 text-teal-600",
           },
-          { label: "Source", value: data?.source ?? "—" },
+          { label: "Source", value: data?.source ?? "-" },
           { label: "Revenue tagged", value: money(data?.overview.totalRevenue ?? 0) },
         ]}
       />
@@ -77,12 +57,7 @@ export default function AdminEventsPage() {
       <PageLayout
         main={
           <div>
-            <FilterBar
-              searchPlaceholder="Search events…"
-              searchValue={q}
-              onSearchChange={setQ}
-              onReset={() => setQ("")}
-            />
+            <FilterBar searchPlaceholder="Search events…" onReset={() => undefined} />
             {!data && loading ? (
               <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
                 Loading events…
@@ -90,16 +65,16 @@ export default function AdminEventsPage() {
             ) : (
               <AdminTable
                 headers={["Event", "User", "Amount", "When", "Actions"]}
-                footer={<span>Showing {filtered.length} events</span>}
+                footer={<span>Showing {events.length} events</span>}
               >
-                {filtered.length === 0 ? (
+                {events.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-3 py-10 text-center text-sm text-slate-500">
                       No events found.
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((e) => (
+                  events.map((e) => (
                     <tr key={String(e.id)} className="hover:bg-slate-50/80">
                       <td className="px-3 py-3">
                         <input type="checkbox" className="rounded border-slate-300" aria-label="Select row" />
@@ -115,7 +90,7 @@ export default function AdminEventsPage() {
                         />
                       </td>
                       <td className="px-3 py-3 text-sm font-semibold text-slate-700">
-                        {e.amount != null ? money(Number(e.amount)) : "—"}
+                        {e.amount != null ? money(Number(e.amount)) : "-"}
                       </td>
                       <td className="px-3 py-3 text-sm text-slate-600">
                         {fmtDate(String(e.created_at ?? ""))}

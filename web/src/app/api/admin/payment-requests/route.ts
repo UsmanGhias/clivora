@@ -48,3 +48,48 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const body = await req.json();
+    await requireAdminRequest(req);
+    const key = serviceKey();
+    if (!key) {
+      return NextResponse.json(
+        { error: "SUPABASE_SERVICE_ROLE_KEY is not configured on Vercel" },
+        { status: 500 },
+      );
+    }
+    const id = String(body.id ?? "").trim();
+    const status = String(body.status ?? "").trim().toLowerCase();
+    if (!id || !["approved", "rejected", "pending"].includes(status)) {
+      return NextResponse.json({ error: "id and status (approved|rejected|pending) required" }, { status: 400 });
+    }
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/pro_payment_requests?id=eq.${encodeURIComponent(id)}`,
+      {
+        method: "PATCH",
+        headers: {
+          apikey: key,
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({
+          status,
+          reviewed_at: new Date().toISOString(),
+        }),
+      },
+    );
+    if (!res.ok) {
+      const text = await res.text();
+      return NextResponse.json({ error: text || "Failed to update payment request" }, { status: 400 });
+    }
+    return NextResponse.json({ ok: true, id, status });
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Failed" },
+      { status: e instanceof Error && e.message.includes("authorized") ? 403 : 500 },
+    );
+  }
+}

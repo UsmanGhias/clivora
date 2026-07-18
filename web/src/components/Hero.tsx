@@ -26,7 +26,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="font-display text-2xl font-extrabold tracking-[0.12em] text-white sm:tracking-[0.2em] sm:text-4xl lg:text-[2.75rem]"
+              className="font-display text-3xl font-extrabold tracking-[0.2em] text-white sm:text-4xl lg:text-[2.75rem]"
             >
               {site.name}
             </motion.p>
@@ -35,7 +35,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.05 }}
-              className="mt-5 font-display text-[1.75rem] font-extrabold leading-[1.15] tracking-tight text-white sm:text-5xl lg:text-[3.35rem]"
+              className="mt-5 font-display text-[2rem] font-extrabold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-[3.35rem]"
             >
               Hire freely.
               <br />

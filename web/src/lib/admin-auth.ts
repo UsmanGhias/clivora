@@ -2,6 +2,7 @@ import "server-only";
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/supabase-browser";
 
 export type AdminPrincipal = {
   id: string;
@@ -24,10 +25,12 @@ export class AdminAuthError extends Error {
   }
 }
 
+/**
+ * Align with `@/lib/supabase-browser` + `createClient()` so admin API routes do not
+ * 503 when NEXT_PUBLIC_* is unset but the shared fallbacks / SUPABASE_* still work.
+ */
 function assertSupabaseAuthConfig() {
-  const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anonKey) {
+  if (!SUPABASE_URL?.trim() || !SUPABASE_ANON_KEY?.trim()) {
     throw new AdminAuthError(
       "Admin authentication is unavailable.",
       503,
@@ -62,6 +65,7 @@ export async function requireAdmin(options: { requireAal2?: boolean } = {}) {
     .maybeSingle();
 
   if (profileError) {
+    console.error("admin profile lookup failed", profileError.message);
     throw new AdminAuthError(
       "Admin authorization is temporarily unavailable.",
       503,
@@ -78,19 +82,15 @@ export async function requireAdmin(options: { requireAal2?: boolean } = {}) {
     throw new AdminAuthError("Admin role required.", 403, "ADMIN_REQUIRED");
   }
 
+  // MFA AAL lookup can fail when the user has no factors enrolled. For read-only
+  // admin gates (requireAal2=false) treat that as aal1 so the console still loads.
   const { data: aal, error: aalError } =
     await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-  if (aalError || !aal) {
-    throw new AdminAuthError(
-      "Admin authentication is temporarily unavailable.",
-      503,
-      "AUTH_UNAVAILABLE",
-    );
-  }
+  const levelRaw = aalError || !aal ? "aal1" : aal.currentLevel;
+  const level: AdminPrincipal["assuranceLevel"] =
+    levelRaw === "aal2" ? "aal2" : "aal1";
 
-  const currentLevel = aal.currentLevel === "aal2" ? "aal2" : "aal1";
-
-  if (options.requireAal2 && currentLevel !== "aal2") {
+  if (options.requireAal2 && level !== "aal2") {
     throw new AdminAuthError(
       "Two-factor authentication is required for this action.",
       403,
@@ -101,7 +101,7 @@ export async function requireAdmin(options: { requireAal2?: boolean } = {}) {
   return {
     id: user.id,
     email: user.email ?? "",
-    assuranceLevel: currentLevel,
+    assuranceLevel: level,
   } satisfies AdminPrincipal;
 }
 

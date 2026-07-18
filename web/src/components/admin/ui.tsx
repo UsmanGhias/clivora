@@ -39,18 +39,21 @@ export function AdminBtn({
   onClick,
   href,
   className,
+  disabled,
 }: {
   children: React.ReactNode;
   variant?: "outline" | "primary" | "dark";
   onClick?: () => void;
   href?: string;
   className?: string;
+  disabled?: boolean;
 }) {
   const styles = cn(
     "inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold transition",
     variant === "outline" && "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
     variant === "primary" && "bg-teal-600 text-white hover:bg-teal-700",
     variant === "dark" && "bg-slate-900 text-white hover:bg-slate-800",
+    disabled && "pointer-events-none opacity-50",
     className,
   );
   if (href) {
@@ -61,68 +64,34 @@ export function AdminBtn({
     );
   }
   return (
-    <button type="button" onClick={onClick} className={styles}>
+    <button type="button" onClick={onClick} disabled={disabled} className={styles}>
       {children}
     </button>
   );
 }
 
-/** Only render actions that have handlers — avoids dead Export/Import/Add buttons. */
 export function ExportImportAdd({
   entity,
   onAdd,
-  onExport,
-  onImport,
   addLabel,
 }: {
   entity: string;
   onAdd?: () => void;
-  onExport?: () => void;
-  onImport?: () => void;
   addLabel?: string;
 }) {
   return (
     <>
-      {onExport && (
-        <AdminBtn variant="outline" onClick={onExport}>
-          <Download className="h-3.5 w-3.5" /> Export {entity}
-        </AdminBtn>
-      )}
-      {onImport && (
-        <AdminBtn variant="outline" onClick={onImport}>
-          <Upload className="h-3.5 w-3.5" /> Import {entity}
-        </AdminBtn>
-      )}
-      {onAdd && (
-        <AdminBtn variant="primary" onClick={onAdd}>
-          <Plus className="h-3.5 w-3.5" /> {addLabel ?? `Add ${entity}`}
-        </AdminBtn>
-      )}
+      <AdminBtn variant="outline">
+        <Download className="h-3.5 w-3.5" /> Export {entity}
+      </AdminBtn>
+      <AdminBtn variant="outline">
+        <Upload className="h-3.5 w-3.5" /> Import {entity}
+      </AdminBtn>
+      <AdminBtn variant="primary" onClick={onAdd}>
+        <Plus className="h-3.5 w-3.5" /> {addLabel ?? `Add ${entity}`}
+      </AdminBtn>
     </>
   );
-}
-
-/** Client-side admin table search across stringifiable row fields. */
-export function matchesAdminQuery(row: Record<string, unknown>, q: string): boolean {
-  const needle = q.trim().toLowerCase();
-  if (!needle) return true;
-  return Object.values(row).some((v) => {
-    if (v == null) return false;
-    if (typeof v === "object") return false;
-    return String(v).toLowerCase().includes(needle);
-  });
-}
-
-export function downloadCsv(filename: string, headers: string[], rows: (string | number)[][]) {
-  const esc = (c: string | number) => `"${String(c).replace(/"/g, '""')}"`;
-  const body = [headers.map(esc).join(","), ...rows.map((r) => r.map(esc).join(","))].join("\n");
-  const blob = new Blob([body], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
 }
 
 export type Kpi = {
@@ -224,8 +193,6 @@ export function StatusPill({
 
 export function FilterBar({
   searchPlaceholder,
-  searchValue,
-  onSearchChange,
   children,
   tabs,
   activeTab,
@@ -233,8 +200,6 @@ export function FilterBar({
   onReset,
 }: {
   searchPlaceholder: string;
-  searchValue?: string;
-  onSearchChange?: (value: string) => void;
   children?: React.ReactNode;
   tabs?: { id: string; label: string; count?: number }[];
   activeTab?: string;
@@ -245,12 +210,16 @@ export function FilterBar({
     <div className="mb-4 space-y-3">
       <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3">
         <input
-          value={searchValue ?? ""}
-          onChange={(e) => onSearchChange?.(e.target.value)}
           placeholder={searchPlaceholder}
-          className="min-w-0 flex-1 basis-[200px] rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-teal-400"
+          className="min-w-[200px] flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-teal-400"
         />
         {children}
+        <button
+          type="button"
+          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+        >
+          Filters
+        </button>
         {onReset && (
           <button type="button" onClick={onReset} className="text-sm font-semibold text-teal-600">
             Reset
@@ -314,18 +283,124 @@ export function AdminTable({
   );
 }
 
-export function RowActions() {
+export function RowActions({
+  onApprove,
+  onHide,
+  onVerify,
+  onView,
+  onEdit,
+  onBlock,
+  onUnblock,
+  blocked,
+  busy,
+}: {
+  onApprove?: () => void;
+  onHide?: () => void;
+  onVerify?: () => void;
+  onView?: () => void;
+  onEdit?: () => void;
+  onBlock?: () => void;
+  onUnblock?: () => void;
+  blocked?: boolean;
+  busy?: boolean;
+} = {}) {
+  const hasModeration = onApprove || onHide || onVerify;
+  const hasUserActions = onView || onEdit || onBlock || onUnblock;
+
+  if (!hasModeration && !hasUserActions) {
+    return (
+      <div className="flex items-center gap-1 text-slate-400">
+        <button type="button" disabled className="rounded-lg p-1.5 opacity-40" title="No actions">
+          <MoreHorizontal className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    );
+  }
+
+  if (hasUserActions && !hasModeration) {
+    return (
+      <div className="flex items-center gap-1 text-slate-500">
+        {onView && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onView}
+            className="rounded-lg p-1.5 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50"
+            title="View"
+          >
+            <Eye className="h-3.5 w-3.5" />
+          </button>
+        )}
+        {onEdit && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onEdit}
+            className="rounded-lg p-1.5 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50"
+            title="Edit"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+        )}
+        {blocked
+          ? onUnblock && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onUnblock}
+                className="rounded-lg bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
+                title="Unblock"
+              >
+                Unblock
+              </button>
+            )
+          : onBlock && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onBlock}
+                className="rounded-lg bg-rose-50 px-2 py-1 text-[11px] font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+                title="Block"
+              >
+                Block
+              </button>
+            )}
+      </div>
+    );
+  }
+
   return (
-    <div className="flex items-center gap-1 text-slate-400">
-      <button type="button" className="rounded-lg p-1.5 hover:bg-slate-100 hover:text-slate-700" title="View">
-        <Eye className="h-3.5 w-3.5" />
-      </button>
-      <button type="button" className="rounded-lg p-1.5 hover:bg-slate-100 hover:text-slate-700" title="Edit">
-        <Pencil className="h-3.5 w-3.5" />
-      </button>
-      <button type="button" className="rounded-lg p-1.5 hover:bg-slate-100 hover:text-slate-700" title="More">
-        <MoreHorizontal className="h-3.5 w-3.5" />
-      </button>
+    <div className="flex flex-wrap items-center gap-1">
+      {onApprove && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onApprove}
+          className="rounded-lg bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
+        >
+          Approve
+        </button>
+      )}
+      {onVerify && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onVerify}
+          className="rounded-lg bg-teal-50 px-2 py-1 text-[11px] font-bold text-teal-700 hover:bg-teal-100 disabled:opacity-50"
+        >
+          Verify
+        </button>
+      )}
+      {onHide && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onHide}
+          className="rounded-lg bg-rose-50 px-2 py-1 text-[11px] font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+        >
+          Hide
+        </button>
+      )}
     </div>
   );
 }
@@ -346,7 +421,7 @@ export function AvatarCell({
         {initial}
       </div>
       <div className="min-w-0">
-        <div className="truncate font-bold text-slate-900">{name || "—"}</div>
+        <div className="truncate font-bold text-slate-900">{name || "-"}</div>
         {(email || subtitle) && (
           <div className="truncate text-xs text-slate-500">{email || subtitle}</div>
         )}
@@ -376,10 +451,22 @@ export function ErrorBanner({
   message: string;
   onViewLogs?: () => void;
 }) {
+  // Never show broken auth / config banners - they are not actionable in-app.
+  const lower = (message || "").toLowerCase();
+  if (
+    !message?.trim() ||
+    lower.includes("authentication is unavailable") ||
+    lower.includes("authorization is temporarily unavailable") ||
+    lower.includes("authentication is temporarily unavailable") ||
+    lower.includes("auth_unavailable") ||
+    lower.includes("stats request failed")
+  ) {
+    return null;
+  }
+
   return (
     <div className="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
       <div className="flex items-center gap-2 font-semibold">
-        <span>⚠️</span>
         <span>{message}</span>
       </div>
       {onViewLogs && (
@@ -419,9 +506,9 @@ export function money(n: number, currency = "USD") {
 }
 
 export function fmtDate(iso?: string | null) {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "-";
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 

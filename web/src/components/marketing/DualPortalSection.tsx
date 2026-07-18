@@ -38,19 +38,19 @@ export function DualPortalSection() {
   const [tab, setTab] = useState<"freelancer" | "client">("freelancer");
 
   return (
-    <section id="platform" className="relative overflow-hidden bg-[#F8FAFC] py-14 sm:py-20 lg:py-28">
-      <div className="mx-auto max-w-7xl px-4 text-center sm:px-5 lg:px-8">
+    <section id="platform" className="relative overflow-hidden bg-[#F8FAFC] py-20 lg:py-28">
+      <div className="mx-auto max-w-7xl px-5 text-center lg:px-8">
         <span className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
-          <Sparkles className="h-3.5 w-3.5 shrink-0" />
+          <Sparkles className="h-3.5 w-3.5" />
           {d.badge}
         </span>
-        <h2 className="mt-5 font-display text-[1.75rem] font-extrabold tracking-tight text-navy sm:text-4xl lg:text-5xl">
+        <h2 className="mt-5 font-display text-3xl font-extrabold tracking-tight text-navy sm:text-4xl lg:text-5xl">
           {d.headline[0]}{" "}
           <span className="bg-gradient-to-r from-primary to-emerald-400 bg-clip-text text-transparent">
             {d.headline[1]}
           </span>
         </h2>
-        <p className="mx-auto mt-4 max-w-2xl text-[15px] text-slate-600 sm:text-lg">{d.body}</p>
+        <p className="mx-auto mt-4 max-w-2xl text-base text-slate-600 sm:text-lg">{d.body}</p>
 
         <div className="mt-8 flex w-full max-w-md mx-auto flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm sm:inline-flex sm:w-auto sm:max-w-none sm:flex-row sm:rounded-full">
           {d.tabs.map((t) => (
@@ -118,12 +118,8 @@ export function DualPortalSection() {
         </div>
       </div>
 
-      <div className="mx-auto mt-10 max-w-5xl px-4 sm:px-5 lg:hidden">
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="max-h-[min(48vh,400px)] overflow-hidden">
-            <DualPortalMock focus={tab} />
-          </div>
-        </div>
+      <div className="mx-auto mt-10 max-w-5xl px-5 lg:hidden">
+        <DualPortalMock focus={tab} />
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
           {[...d.sideFeatures.left, ...d.sideFeatures.right].map((f, i) => {
             const Icon = [...leftIcons, ...rightIcons][i] ?? LayoutDashboard;
@@ -140,14 +136,14 @@ export function DualPortalSection() {
         </div>
       </div>
 
-      <div className="mx-auto mt-10 max-w-6xl px-4 sm:px-5 lg:px-8">
-        <div className="flex flex-wrap items-center justify-center gap-x-1 gap-y-2 rounded-2xl border border-slate-200 bg-white px-2 py-3 shadow-sm sm:gap-x-0 sm:px-2">
+      <div className="mx-auto mt-10 max-w-6xl px-5 lg:px-8">
+        <div className="flex flex-wrap items-center justify-center gap-x-1 gap-y-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm sm:gap-x-0 sm:px-2">
           {d.bottomStrip.map((label, i) => {
             const Icon = stripIcons[i] ?? Settings2;
             return (
               <div
                 key={label}
-                className="inline-flex items-center gap-2 px-2.5 py-2 text-[11px] font-semibold text-slate-600 sm:px-3.5 sm:text-xs"
+                className="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-600 sm:px-3.5"
               >
                 <Icon className="h-3.5 w-3.5 shrink-0 text-primary" />
                 <span className="whitespace-nowrap">{label}</span>
@@ -160,9 +156,9 @@ export function DualPortalSection() {
         </div>
       </div>
 
-      <div className="mx-auto mt-8 flex max-w-5xl flex-col items-center justify-between gap-4 rounded-2xl border border-teal-100 bg-gradient-to-r from-teal-50 via-white to-emerald-50/50 px-4 py-4 sm:flex-row sm:px-6">
-        <p className="inline-flex items-center gap-2 text-center text-sm font-semibold text-navy sm:text-left">
-          <Sparkles className="h-4 w-4 shrink-0 text-primary" />
+      <div className="mx-auto mt-8 flex max-w-5xl flex-col items-center justify-between gap-4 rounded-2xl border border-teal-100 bg-gradient-to-r from-teal-50 via-white to-emerald-50/50 px-6 py-4 sm:flex-row">
+        <p className="inline-flex items-center gap-2 text-sm font-semibold text-navy">
+          <Sparkles className="h-4 w-4 text-primary" />
           {d.socialProof}
         </p>
         <span className="inline-flex items-center gap-2.5 rounded-full bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm">

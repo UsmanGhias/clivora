@@ -16,6 +16,7 @@ export type CrmCustomer = {
   notes: string;
   status: string;
   updated_at: string;
+  custom_fields?: Record<string, string> | null;
 };
 
 export type CrmProject = {
@@ -29,6 +30,7 @@ export type CrmProject = {
   currency: string;
   status: string;
   priority: string;
+  pricing_type?: string | null;
   deadline: string | null;
   updated_at: string;
 };
@@ -105,6 +107,7 @@ export async function upsertProjectClient(input: {
   currency?: string;
   status?: string;
   priority?: string;
+  pricing_type?: string | null;
   deadline?: string | null;
 }) {
   const supabase = createClient();
@@ -121,6 +124,7 @@ export async function upsertProjectClient(input: {
     currency: input.currency ?? "USD",
     status: input.status ?? "not_started",
     priority: input.priority ?? "medium",
+    pricing_type: input.pricing_type ?? "fixed",
     deadline: input.deadline || null,
     updated_at: new Date().toISOString(),
   };

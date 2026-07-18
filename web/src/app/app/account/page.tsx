@@ -40,23 +40,94 @@ export default async function AccountPage({
   if (!profile) redirect("/login");
 
   const client = isClientAccount(profile);
-  if (client) {
-    redirect("/app/settings");
-  }
-
   const params = searchParams ? await searchParams : {};
   const editing = params.edit === "1" || params.edit === "true";
+
+  if (client) {
+    return (
+      <div className="space-y-6 pb-10 theme-client">
+        <div>
+          <h1 className="font-display text-2xl font-extrabold text-navy">My Account</h1>
+          <p className="mt-1 text-sm text-text-secondary">
+            Profile, notifications, and client workspace shortcuts.
+          </p>
+        </div>
+
+        {editing && (
+          <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+            <h2 className="font-semibold text-navy">Edit profile</h2>
+            <div className="mt-3">
+              <AccountProfileEditor profile={profile} />
+            </div>
+          </div>
+        )}
+
+        <div className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="relative">
+              {profile.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={profile.avatar_url}
+                  alt=""
+                  className="h-24 w-24 rounded-full object-cover"
+                />
+              ) : (
+                <span className="flex h-24 w-24 items-center justify-center rounded-full bg-navy text-3xl font-bold text-white">
+                  {(profile.name || "?").charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="font-display text-xl font-extrabold text-navy">
+                {profile.name || "Client"}
+              </h2>
+              <p className="mt-1 text-xs text-text-muted">{profile.email}</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <PrimaryButton href="/app/account?edit=1">Edit Profile</PrimaryButton>
+                <OutlineButton href="/app/settings">Settings</OutlineButton>
+                <OutlineButton href="/app/hub">Client Hub</OutlineButton>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            { href: "/app/messages", label: "Messages", icon: Bell },
+            { href: "/app/notifications", label: "Notifications", icon: Bell },
+            { href: "/app/contracts", label: "Contracts", icon: ShieldCheck },
+            { href: "/app/invoices", label: "Invoices", icon: CreditCard },
+            { href: "/app/projects", label: "Projects", icon: Briefcase },
+            { href: "/app/connect", label: "Connect", icon: Star },
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 shadow-sm transition hover:border-client-accent/40"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-client-surface text-client-accent">
+                <item.icon className="h-5 w-5" />
+              </span>
+              <span className="font-semibold text-navy">{item.label}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const plus = isProPlus(profile);
   const plan = planLabel(profile);
   const fin = await loadFreelancerFinance(profile.id);
   const supabase = await createClient();
 
-  let location = "Location not set";
-  let avgRating = 0;
+  let location: string | null = null;
+  let avgRating: number | null = null;
   let reviewCount = 0;
   let completeness = 0;
-  let headline = "Freelancer";
+  let headline = profile.name ? `${profile.name}` : "Freelancer profile";
+  let hasConnectProfile = false;
 
   try {
     const { data: cp } = await supabase
@@ -67,10 +138,11 @@ export default async function AccountPage({
       .eq("user_id", profile.id)
       .maybeSingle();
     if (cp) {
-      location = cp.location_label || location;
-      avgRating = Number(cp.avg_rating || avgRating);
-      reviewCount = Number(cp.review_count || reviewCount);
-      completeness = Math.round(Number(cp.profile_completeness ?? 100));
+      hasConnectProfile = true;
+      location = cp.location_label || null;
+      avgRating = cp.avg_rating != null ? Number(cp.avg_rating) : null;
+      reviewCount = Number(cp.review_count || 0);
+      completeness = Math.round(Number(cp.profile_completeness ?? 0));
       headline = cp.headline || cp.display_title || headline;
     }
   } catch {
@@ -90,7 +162,7 @@ export default async function AccountPage({
           <AccountProfileEditor profile={profile} />
           <p className="mt-4 text-xs text-text-muted">
             For Connect listing fields (skills, rate, bio), use{" "}
-            <Link href="/connect/manage" className="font-semibold text-primary">
+            <Link href="/app/connect/manage" className="font-semibold text-primary">
               Manage Connect
             </Link>
             .
@@ -100,37 +172,45 @@ export default async function AccountPage({
 
       <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
         <FreelancerCard>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="relative">
               {profile.avatar_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={profile.avatar_url}
                   alt=""
-                  className="h-24 w-24 rounded-full object-cover"
+                  className="h-20 w-20 rounded-full object-cover"
                 />
               ) : (
-                <span className="flex h-24 w-24 items-center justify-center rounded-full bg-navy text-3xl font-bold text-white">
+                <span className="flex h-20 w-20 items-center justify-center rounded-full bg-navy text-2xl font-bold text-white">
                   {(profile.name || "?").charAt(0).toUpperCase()}
                 </span>
               )}
-              <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-white bg-success" />
+              <span className="absolute bottom-1 right-1 h-3.5 w-3.5 rounded-full border-2 border-white bg-success" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-display text-xl font-extrabold text-navy">
+                <h2 className="font-display text-lg font-extrabold text-navy sm:text-xl">
                   {profile.name || "Freelancer"}
                 </h2>
-                <BadgeCheck className="h-5 w-5 text-success" />
+                {plus && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700"
+                    title="Pro Plus verified"
+                  >
+                    <BadgeCheck className="h-4 w-4" />
+                    Verified
+                  </span>
+                )}
               </div>
               <p className="mt-1 inline-flex items-center gap-1 text-sm text-text-secondary">
                 <MapPin className="h-3.5 w-3.5" />
-                {location}
+                {location || (hasConnectProfile ? "Location not set" : "Add location in Connect")}
               </p>
               <p className="mt-1 text-xs text-text-muted">{profile.email}</p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <PrimaryButton href="/app/account?edit=1">Edit Profile</PrimaryButton>
-                <OutlineButton href="/connect/manage">Connect listing</OutlineButton>
+                <OutlineButton href="/app/connect/manage">Connect listing</OutlineButton>
                 <OutlineButton href="/app/connect">View Public Profile</OutlineButton>
               </div>
             </div>
@@ -163,7 +243,6 @@ export default async function AccountPage({
         <FreelancerStatCard
           label="Total Earnings"
           value={money(fin.totalRevenue)}
-          trend="+18.2% vs last month"
           icon={TrendingUp}
         />
         <FreelancerStatCard
@@ -175,23 +254,23 @@ export default async function AccountPage({
         />
         <FreelancerStatCard
           label="Average Rating"
-          value={avgRating.toFixed(1)}
-          sub={"★".repeat(5)}
+          value={avgRating != null ? avgRating.toFixed(1) : "-"}
+          sub={avgRating != null ? "★".repeat(Math.max(1, Math.round(avgRating))) : "No ratings yet"}
           icon={Star}
           iconTone="bg-amber-100 text-amber-700"
         />
         <FreelancerStatCard
           label="Total Reviews"
           value={reviewCount}
-          trend="+12% vs last 30 days"
+          sub={hasConnectProfile ? "From Connect" : "Complete Connect listing"}
           icon={Star}
           iconTone="bg-violet-100 text-violet-800"
           href="/app/reviews"
         />
         <FreelancerStatCard
           label="Response Time"
-          value="2h 15m"
-          sub="Very responsive"
+          value={hasConnectProfile ? "Based on activity" : "-"}
+          sub={hasConnectProfile ? "From recent messages" : "Unavailable until Connect is set up"}
           icon={Clock}
           iconTone="bg-orange-100 text-orange-700"
         />
@@ -201,8 +280,8 @@ export default async function AccountPage({
         <FreelancerCard title="Account information" className="lg:col-span-1">
           <ul className="space-y-3 text-sm">
             {[
-              ["Name", profile.name || "—", "/app/account?edit=1"],
-              ["Email", profile.email || "—", "/app/settings"],
+              ["Name", profile.name || "-", "/app/account?edit=1"],
+              ["Email", profile.email || "-", "/app/settings"],
               ["Role", "Freelancer", "/app/settings"],
               ["Plan", plan, "/pro?plan=pro_plus"],
             ].map(([k, v, href]) => (

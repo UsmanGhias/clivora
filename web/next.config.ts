@@ -5,6 +5,11 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: "/comapre",
+        destination: "/compare",
+        permanent: true,
+      },
+      {
         source: "/docs/ai-research-brief",
         destination: "/docs",
         permanent: true,

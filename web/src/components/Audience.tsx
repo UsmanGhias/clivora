@@ -43,7 +43,7 @@ const agencyBenefits = [
 export function Audience() {
   return (
     <section className="relative py-24 lg:py-32">
-      <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <AnimatedSection className="text-center">
           <span className="text-sm font-semibold uppercase tracking-widest text-primary">
             Built For You

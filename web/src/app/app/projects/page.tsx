@@ -107,12 +107,40 @@ export default async function ProjectsPage() {
   const fin = profile?.id ? await loadFreelancerFinance(profile.id) : null;
   const active = projects.filter((p) => {
     const s = (p.status || "").toLowerCase();
-    return !["completed", "done", "cancelled"].includes(s);
+    return !["completed", "done", "cancelled", "canceled"].includes(s);
   }).length;
   const inProgress = projects.filter((p) => {
     const s = (p.status || "").toLowerCase();
     return s.includes("progress") || s === "active";
   }).length;
+  const completed = projects.filter((p) => {
+    const s = (p.status || "").toLowerCase();
+    return s.includes("complet") || s === "done";
+  }).length;
+  const completionRate =
+    projects.length > 0 ? Math.round((completed / projects.length) * 100) : 0;
+
+  let tasksTotal = 0;
+  let tasksInProgress = 0;
+  if (profile?.id) {
+    try {
+      const supabase = await createClient();
+      const { data: taskRows } = await supabase
+        .from("client_tasks")
+        .select("id, status")
+        .eq("freelancer_uid", profile.id)
+        .limit(200);
+      const tasks = taskRows ?? [];
+      tasksTotal = tasks.length;
+      tasksInProgress = tasks.filter((t) => {
+        const s = (t.status || "").toLowerCase();
+        return s.includes("progress") || s === "open" || s === "pending" || s === "todo";
+      }).length;
+    } catch {
+      tasksTotal = 0;
+      tasksInProgress = 0;
+    }
+  }
 
   return (
     <div className="space-y-6 pb-10">
@@ -146,12 +174,36 @@ export default async function ProjectsPage() {
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         {[
-          { label: "Total Earnings", value: `$${(fin?.totalRevenue ?? 0).toLocaleString()}`, sub: "↑ 18.2%" },
-          { label: "Active Projects", value: String(active), sub: `${inProgress} in progress` },
-          { label: "Tasks in Progress", value: "18", sub: "of 42 total tasks" },
-          { label: "Hours Tracked", value: `${Math.floor(fin?.timeHours ?? 0)}h`, sub: "This month" },
-          { label: "Success Score", value: "98%", sub: "Top Rated" },
-          { label: "Pending Payments", value: `$${(fin?.pending ?? 0).toLocaleString()}`, sub: "Invoices" },
+          {
+            label: "Total Earnings",
+            value: `$${(fin?.totalRevenue ?? 0).toLocaleString()}`,
+            sub: "From paid invoices",
+          },
+          {
+            label: "Active Projects",
+            value: String(active),
+            sub: `${inProgress} in progress`,
+          },
+          {
+            label: "Tasks in Progress",
+            value: String(tasksInProgress),
+            sub: tasksTotal ? `of ${tasksTotal} shared tasks` : "No shared tasks yet",
+          },
+          {
+            label: "Hours Tracked",
+            value: `${Math.floor(fin?.timeHours ?? 0)}h`,
+            sub: "Logged time",
+          },
+          {
+            label: "Completion Rate",
+            value: `${completionRate}%`,
+            sub: `${completed} of ${projects.length} completed`,
+          },
+          {
+            label: "Pending Payments",
+            value: `$${(fin?.pending ?? 0).toLocaleString()}`,
+            sub: "Open invoices",
+          },
         ].map((s) => (
           <div key={s.label} className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
             <p className="text-xs font-semibold uppercase text-text-muted">{s.label}</p>

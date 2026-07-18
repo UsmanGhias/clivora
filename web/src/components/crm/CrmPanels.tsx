@@ -69,7 +69,27 @@ function ProjectProgress({ status }: { status?: string | null }) {
   );
 }
 
+function parseCustomFields(raw: unknown): CustomFields {
+  if (!raw) return {};
+  if (typeof raw === "object" && !Array.isArray(raw)) {
+    const out: CustomFields = {};
+    for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+      if (typeof k === "string" && k.trim()) out[k] = v == null ? "" : String(v);
+    }
+    return out;
+  }
+  if (typeof raw === "string" && raw.trim().startsWith("{")) {
+    try {
+      return parseCustomFields(JSON.parse(raw));
+    } catch {
+      return {};
+    }
+  }
+  return {};
+}
+
 function CustomFieldsEditor({ customerId, initialFields }: { customerId: string; initialFields: CustomFields }) {
+  const router = useRouter();
   const [fields, setFields] = useState<CustomFields>(initialFields);
   const [newKey, setNewKey] = useState("");
   const [newVal, setNewVal] = useState("");
@@ -85,11 +105,40 @@ function CustomFieldsEditor({ customerId, initialFields }: { customerId: string;
       const supabase = createClient();
       const { error: err } = await supabase
         .from("crm_customers")
-        .update({ custom_fields: updated })
+        .update({ custom_fields: updated, updated_at: new Date().toISOString() })
         .eq("id", customerId);
-      if (err) throw err;
+      if (err) {
+        // Fallback: persist as JSON in notes prefix if column/RLS blocks custom_fields
+        const marker = "<!--CLIVORA_CUSTOM_FIELDS-->";
+        const { data: row } = await supabase
+          .from("crm_customers")
+          .select("notes")
+          .eq("id", customerId)
+          .maybeSingle();
+        const notes = String(row?.notes || "");
+        const cleaned = notes.includes(marker)
+          ? notes.slice(0, notes.indexOf(marker)).trimEnd()
+          : notes;
+        const nextNotes = `${cleaned}\n${marker}${JSON.stringify(updated)}`.trim();
+        const { error: noteErr } = await supabase
+          .from("crm_customers")
+          .update({ notes: nextNotes, updated_at: new Date().toISOString() })
+          .eq("id", customerId);
+        if (noteErr) {
+          throw new Error(
+            err.message?.includes("custom_fields")
+              ? `Custom fields unavailable (${err.message}). Also could not save to notes: ${noteErr.message}`
+              : err.message || "Save failed",
+          );
+        }
+        setFields(updated);
+        setOk(true);
+        router.refresh();
+        return;
+      }
       setFields(updated);
       setOk(true);
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");
     } finally {
@@ -329,10 +378,15 @@ function CustomerRow({
   emails: string[];
 }) {
   const [showFields, setShowFields] = useState(false);
-  const customFields =
-    r.notes && typeof r.notes === "object"
-      ? (r.notes as Record<string, string>)
+  const marker = "<!--CLIVORA_CUSTOM_FIELDS-->";
+  const notesFallback =
+    typeof r.notes === "string" && r.notes.includes(marker)
+      ? parseCustomFields(r.notes.slice(r.notes.indexOf(marker) + marker.length))
       : {};
+  const customFields = {
+    ...notesFallback,
+    ...parseCustomFields(r.custom_fields),
+  };
 
   return (
     <li className="rounded-xl border border-border bg-surface px-4 py-3">
@@ -386,6 +440,7 @@ export function ProjectsCrmPanel({
   const [name, setName] = useState("");
   const [customerId, setCustomerId] = useState(customers[0]?.id ?? "");
   const [budget, setBudget] = useState("");
+  const [pricingType, setPricingType] = useState<"fixed" | "hourly">("fixed");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -399,6 +454,7 @@ export function ProjectsCrmPanel({
         name,
         customer_id: customerId || null,
         budget: Number(budget) || 0,
+        pricing_type: pricingType,
       });
       setRows((prev) => [
         {
@@ -412,6 +468,7 @@ export function ProjectsCrmPanel({
           currency: "USD",
           status: "not_started",
           priority: "medium",
+          pricing_type: pricingType,
           deadline: null,
           updated_at: new Date().toISOString(),
         },
@@ -419,6 +476,7 @@ export function ProjectsCrmPanel({
       ]);
       setName("");
       setBudget("");
+      setPricingType("fixed");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save project");
@@ -458,7 +516,7 @@ export function ProjectsCrmPanel({
             )}
           </p>
         )}
-        <div className="grid gap-2 sm:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <label className="block text-xs font-semibold text-text-secondary">
             Project name
             <input
@@ -490,11 +548,23 @@ export function ProjectsCrmPanel({
             </select>
           </label>
           <label className="block text-xs font-semibold text-text-secondary">
-            Budget
+            Pricing
+            <select
+              disabled={!canCreate || busy}
+              value={pricingType}
+              onChange={(e) => setPricingType(e.target.value as "fixed" | "hourly")}
+              className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
+            >
+              <option value="fixed">Fixed budget</option>
+              <option value="hourly">Hourly ($3-$500)</option>
+            </select>
+          </label>
+          <label className="block text-xs font-semibold text-text-secondary">
+            {pricingType === "hourly" ? "Hourly rate (USD)" : "Budget"}
             <input
               disabled={!canCreate || busy}
               inputMode="decimal"
-              placeholder="2500"
+              placeholder={pricingType === "hourly" ? "45" : "2500"}
               value={budget}
               onChange={(e) => setBudget(e.target.value)}
               className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
