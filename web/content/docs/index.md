@@ -1,6 +1,6 @@
 # CLIVORA Documentation
 
-Welcome to the official help center for **CLIVORA**, the Freelancer OS for freelancers and clients — Connect marketplace, CRM, projects, invoices, and payments in one platform.
+Welcome to the official help center for **CLIVORA**, the Freelancer OS for freelancers and clients — Connect marketplace, CRM, projects, timesheets, and invoices with payment-status records in one platform.
 
 **Live app:** [clivora.codcrafters.org](https://clivora.codcrafters.org)  
 **Marketing site:** [Home](/) · [Features](/features) · [Pricing](/pricing) · [For freelancers](/for-freelancers) · [For clients](/for-clients)  

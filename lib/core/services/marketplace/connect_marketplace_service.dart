@@ -276,11 +276,14 @@ class ConnectMarketplaceService {
     final uid = c?.auth.currentUser?.id;
     if (c == null || uid == null) throw StateError('Sign in required');
 
-    await c.from('connect_requests').update({
-      'status': accept ? 'accepted' : 'declined',
-      if (accept) 'revealed_at': DateTime.now().toIso8601String(),
-      'updated_at': DateTime.now().toIso8601String(),
-    }).eq('id', requestId).eq('to_user_id', uid);
+    try {
+      await c.rpc('connect_respond_request', params: {
+        'p_request_id': requestId,
+        'p_accept': accept,
+      });
+    } catch (e) {
+      throw mapConnectRpcError(e);
+    }
 
     if (accept) {
       await logConnectEvent('connect_request_accepted', payload: {'request_id': requestId});

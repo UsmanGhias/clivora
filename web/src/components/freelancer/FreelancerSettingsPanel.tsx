@@ -30,6 +30,7 @@ import {
 } from "@/components/freelancer/ui";
 import { ManageBillingButton } from "@/components/app/ManageBillingButton";
 import { ProfileEditForm } from "@/components/freelancer/ProfileEditForm";
+import { DeleteAccountPanel } from "@/components/settings/DeleteAccountPanel";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/profile-types";
@@ -289,6 +290,8 @@ function AccountTab({
           </div>
         </div>
       </FreelancerCard>
+
+      <DeleteAccountPanel email={profile.email || ""} />
 
       <FreelancerCard title="Quick actions">
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

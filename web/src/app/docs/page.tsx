@@ -27,7 +27,12 @@ export default function DocsIndexPage() {
   return (
     <DocsShell currentSlug="index">
       <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-10">
-        <Markdown content={stripLeadingH1(doc.content)} />
+        <h1 className="font-display text-3xl font-extrabold tracking-tight text-navy sm:text-4xl">
+          CLIVORA Documentation
+        </h1>
+        <div className="mt-6">
+          <Markdown content={stripLeadingH1(doc.content)} />
+        </div>
       </div>
     </DocsShell>
   );

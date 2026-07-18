@@ -50,17 +50,20 @@ export function LiveTimer({
   const startedAt = useRef<number | null>(null);
   const startedAtIso = useRef<string | null>(null);
 
-  const selected =
-    projects.find((p) => p.id === selectedProjectId) ||
-    (projectId
-      ? {
-          id: projectId,
-          name: projectName || "Project",
-          pricing_type: "hourly",
-          budget: null,
-          hourly_rate: null,
-        }
-      : null);
+  const selected = useMemo(() => {
+    return (
+      projects.find((p) => p.id === selectedProjectId) ||
+      (projectId
+        ? {
+            id: projectId,
+            name: projectName || "Project",
+            pricing_type: "hourly",
+            budget: null,
+            hourly_rate: null,
+          }
+        : null)
+    );
+  }, [projects, selectedProjectId, projectId, projectName]);
 
   const approvedRate = useMemo(() => {
     // Prefer explicit hourly_rate, then hourly budget - never fall back to Connect profile band.

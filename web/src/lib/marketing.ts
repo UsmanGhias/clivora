@@ -79,12 +79,12 @@ export const marketing = {
   },
 
   traction: {
-    line: "Early traction from people who hire and get hired for real projects - not demo dashboards.",
+    line: "Built for the full freelance loop - hire, deliver, invoice - without marketplace cut on the deal.",
     stats: [
-      { value: "1.2k+", label: "Workspaces opened" },
-      { value: "3.4k+", label: "Proposals sent" },
-      { value: "860+", label: "Projects tracked" },
       { value: "$0", label: "Deal platform fee" },
+      { value: "1", label: "Account for web + Android" },
+      { value: "Private", label: "Contact until mutual accept" },
+      { value: "Direct", label: "Client → freelancer invoices" },
     ],
   },
 
@@ -343,7 +343,12 @@ export const marketing = {
       },
       {
         feature: "Who pays the middleman",
-        values: ["Neither side on the deal", "Mostly freelancers", "Sellers (+ buyer extras)", "Both via fees/bids"],
+        values: [
+          "Neither side on the deal",
+          "Both sides: client marketplace/initiation fees; freelancer service fee varies by contract",
+          "Sellers (+ buyer extras)",
+          "Both via fees/bids",
+        ],
       },
       {
         feature: "Contact privacy",
@@ -497,7 +502,7 @@ export const marketing = {
           },
           {
             title: "Reviews & reputation",
-            description: "Build trust with verified reviews after completed work.",
+            description: "Build trust with reviews after eligible completed engagements.",
           },
         ],
       },
@@ -506,7 +511,7 @@ export const marketing = {
         items: [
           {
             title: "Payments Hub",
-            description: "Track payments, payouts, escrow, and outstanding balances in one place.",
+            description: "Track invoices and payment-status records (manual or processor-confirmed) and outstanding balances in one place.",
           },
           {
             title: "Contracts & Documents",
@@ -556,8 +561,8 @@ export const marketing = {
 
   forClients: {
     badge: "CLIENT PORTAL",
-    headline: "Hire talent. Manage projects. Pay with confidence.",
-    body: "Post jobs, review proposals, track active work, hold escrow, and collaborate with freelancers - all inside CLIVORA.",
+    headline: "Hire talent. Manage delivery and invoices clearly.",
+    body: "Post jobs, review proposals, track active work, collaborate with freelancers, and pay them directly against CLIVORA invoices - all inside one portal.",
     cta: { label: "Start as Client", href: "/signup?role=client" },
     secondaryCta: { label: "Browse Connect", href: "/connect" },
   },

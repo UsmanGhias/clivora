@@ -79,7 +79,7 @@ export function ConnectSection() {
               <ul className="mt-5 space-y-3">
                 {[
                   { icon: DollarSign, title: "No Platform Fees", tone: "text-emerald-600 bg-emerald-50" },
-                  { icon: ShieldCheck, title: "Verified Professionals", tone: "text-violet-600 bg-violet-50" },
+                  { icon: ShieldCheck, title: "Complete professional profiles", tone: "text-violet-600 bg-violet-50" },
                   { icon: Zap, title: "Smart Matching", tone: "text-orange-600 bg-orange-50" },
                 ].map((f) => (
                   <li key={f.title} className="flex items-center gap-3">
