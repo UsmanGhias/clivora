@@ -7,7 +7,9 @@ import { site } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
-  title: `CLIVORA vs Upwork, Fiverr & Freelancer.com | ${site.name}`,
+  title: {
+    absolute: `CLIVORA vs Upwork, Fiverr & Freelancer.com | ${site.name}`,
+  },
   description:
     "Compare CLIVORA to fee-heavy marketplaces. $0 platform fee on negotiated deals, direct invoicing, and a full Freelancer OS for clients and freelancers.",
 };

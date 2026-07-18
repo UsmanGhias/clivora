@@ -1213,8 +1213,8 @@ export function ConnectBoard({
             <p className="font-bold text-navy">Why Connect beats open marketplaces</p>
             <p className="mt-1 text-sm text-text-secondary">
               $0 platform fees on your deals (no Upwork-style Connect tokens), private contact until
-              mutual accept, milestone escrow status, star ratings on talent cards, and the same CRM
-              after you match. Pro Plus includes monthly Connect credits plus unlimited clients, projects,
+              mutual accept, direct invoicing after you match, star ratings on talent cards, and the same CRM
+              after you hire. Pro Plus includes monthly Connect credits plus unlimited clients, projects,
               and invoices.
             </p>
           </div>

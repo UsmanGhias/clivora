@@ -27,6 +27,7 @@ import {
   money,
 } from "@/components/client/ui";
 import { ManageBillingButton } from "@/components/app/ManageBillingButton";
+import { DeleteAccountPanel } from "@/components/settings/DeleteAccountPanel";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/profile-types";
@@ -131,6 +132,8 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
                   </div>
                 </div>
               </ClientCard>
+
+              <DeleteAccountPanel email={profile.email || ""} />
 
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <ClientStatCard

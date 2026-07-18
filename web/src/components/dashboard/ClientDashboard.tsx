@@ -37,7 +37,7 @@ type Props = {
   totalSpent: number;
   spendSeries?: EarningsPoint[];
   paidTotal: number;
-  escrowHeld: number;
+  openBalances: number;
   refunds: number;
   outstanding?: number;
   credits: ConnectCreditSummary | null;
@@ -98,7 +98,7 @@ export function ClientDashboard({
   totalSpent,
   spendSeries,
   paidTotal,
-  escrowHeld,
+  openBalances,
   refunds,
   outstanding = 0,
   credits,
@@ -212,8 +212,8 @@ export function ClientDashboard({
             series={spendSeries}
             summaryBoxes={[
               {
-                label: "Escrow Held",
-                value: money(escrowHeld),
+                label: "Open balances",
+                value: money(openBalances),
                 tone: "bg-sky-50 text-sky-800",
               },
               {
@@ -227,7 +227,7 @@ export function ClientDashboard({
                 tone: "bg-slate-50 text-slate-700",
               },
               {
-                label: "Outstanding",
+                label: "Outstanding invoices",
                 value: money(owed),
                 tone: "bg-amber-50 text-amber-900",
               },
