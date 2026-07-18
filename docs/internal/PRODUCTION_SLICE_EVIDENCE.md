@@ -49,3 +49,17 @@ Local Play signing keystore is **absent** in this environment. Signed artifacts 
 ## Explicit non-claims
 
 Not claiming full acceptance matrix green, live escrow, payment protection, or 100% web↔Android sync.
+
+## Post-ship blockers (18 Jul 2026 evening)
+
+### Web production mirror
+- `Sync web to clivora-web` failed: `CLIVORA_WEB_SYNC_TOKEN` empty / not supplied to checkout.
+- Local `CLIVORA_WEB_REMOTE` uses a GitHub App token (`ghs_`) that returns 404 for `UsmanGhias/clivora-web`.
+- **Action required:** set repo secret `CLIVORA_WEB_SYNC_TOKEN` to a classic PAT with `repo` access to `clivora-web`, then re-run the sync workflow (or push via `web/push-to-clivora-web.sh`).
+
+### Signed Android rebuild
+- `release-android.yml` progressed past analyze after `--no-fatal-infos` + warning cleanup.
+- Build step failed: `ANDROID_KEYSTORE_BASE64` / store / key password / alias secrets are **empty** in Actions.
+- Also fixed `build-android.sh` `rg` → `grep` (exit 127 on runners).
+- Existing Play assets remain at: https://github.com/UsmanGhias/clivora/releases/tag/v2.20.0-playstore
+  (`clivora-2.20.0.apk`, `clivora-2.20.0.aab`) — published earlier; **re-sign after keystore secrets are restored** to include Phase 1 Flutter RPC/deletion changes.
