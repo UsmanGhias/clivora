@@ -552,17 +552,17 @@ export const marketing = {
   },
 
   forFreelancers: {
-    badge: "FREELANCER PORTAL",
-    headline: "Run your freelance business like a pro.",
-    body: "Dashboard, CRM, projects, invoices, Connect jobs, time tracking, and AI - purpose-built for freelancers who want one OS, not ten tabs.",
+    badge: "Freelancer desk",
+    headline: "One operating desk for every client you keep.",
+    body: "Stop bouncing between CRM tabs, invoice tools, and marketplace apps. CLIVORA keeps your pipeline, delivery, time, and direct invoices on one account - web and Android.",
     cta: { label: "Start as Freelancer", href: "/signup?role=freelancer" },
     secondaryCta: { label: "See pricing", href: "/pricing" },
   },
 
   forClients: {
-    badge: "CLIENT PORTAL",
-    headline: "Hire talent. Manage delivery and invoices clearly.",
-    body: "Post jobs, review proposals, track active work, collaborate with freelancers, and pay them directly against CLIVORA invoices - all inside one portal.",
+    badge: "Client desk",
+    headline: "Hire, track delivery, and settle invoices in one place.",
+    body: "Post the brief, review proposals, follow active work, and pay freelancers directly on the invoice - without a marketplace taking a cut of the deal.",
     cta: { label: "Start as Client", href: "/signup?role=client" },
     secondaryCta: { label: "Browse Connect", href: "/connect" },
   },
@@ -599,10 +599,10 @@ export const marketing = {
   ],
 
   cta: {
-    headline: "Open a free workspace before your next invoice is due.",
-    body: "Freelancer or client - same signup. Connect stays private until mutual accept. Invoice directly. Upgrade to Pro when you need unlimited tools.",
+    headline: "Open your CLIVORA workspace before the next deal slips into five tabs.",
+    body: "Same signup for freelancers and clients. Private Connect until mutual accept. Direct invoices. Upgrade only when you need unlimited tools.",
     primary: { label: "Create free account", href: "/signup" },
-    secondary: { label: "Read docs", href: "/docs" },
+    secondary: { label: "Read the docs", href: "/docs" },
   },
 
   footer: {
