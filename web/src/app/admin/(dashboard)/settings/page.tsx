@@ -14,6 +14,7 @@ import {
   StatusPill,
   ErrorBanner,
 } from "@/components/admin/ui";
+import { AdminApiKeysPanel } from "@/components/admin/AdminApiKeysPanel";
 import { OdooSyncButton } from "@/components/app/OdooSyncButton";
 import { site } from "@/lib/site";
 
@@ -151,24 +152,29 @@ export default function AdminSettingsPage() {
                 )}
 
                 {activeTab === "integrations" && (
-                  <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div className="mb-4 flex items-start gap-3">
-                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
-                        <Network className="h-5 w-5" />
-                      </span>
-                      <div>
-                        <h3 className="text-sm font-bold text-slate-900">Odoo (existing apps only)</h3>
-                        <p className="mt-1 text-xs text-slate-500">
-                          Two-way sync with Odoo Contacts at clivora.odoo.com - pull partners into
-                          CLIVORA CRM and push customers (plus project/invoice tracking notes) back.
-                          No new Odoo modules. Admin-only.
-                        </p>
+                  <div className="space-y-4">
+                    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                      <AdminApiKeysPanel />
+                    </section>
+
+                    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                      <div className="mb-4 flex items-start gap-3">
+                        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
+                          <Network className="h-5 w-5" />
+                        </span>
+                        <div>
+                          <h3 className="text-sm font-bold text-slate-900">Odoo Phase 1-2</h3>
+                          <p className="mt-1 text-xs text-slate-500">
+                            Read-only health checks for Main and Social Odoo databases. Write sync is
+                            disabled by default and requires an explicit admin action.
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                      <OdooSyncButton />
-                    </div>
-                  </section>
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <OdooSyncButton />
+                      </div>
+                    </section>
+                  </div>
                 )}
 
                 <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
