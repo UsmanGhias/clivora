@@ -1,16 +1,20 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Briefcase,
+  Check,
+  Inbox,
+  Loader2,
   MapPin,
   MessageSquare,
   Search,
   ShieldCheck,
   Sparkles,
   Users,
+  X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CONNECT_CREDIT_COSTS, parseConnectCreditError } from "@/lib/connect-credits";
@@ -25,6 +29,7 @@ import { ConnectTrust } from "@/components/connect/ConnectTrust";
 import { ConnectActions } from "@/components/connect/ConnectActions";
 import { site } from "@/lib/site";
 import { cn } from "@/lib/utils";
+import { toggleBookmark, type BookmarkTargetType } from "@/lib/bookmarks";
 
 const CATEGORIES = [
   "Web & Software",
@@ -98,6 +103,8 @@ export function ConnectBoard({
   portalMode = false,
   accent = "teal",
   defaultTab = "talent",
+  loadError = null,
+  savedBookmarkIds = [],
 }: {
   profiles: ConnectProfile[];
   needs: ConnectNeed[];
@@ -110,20 +117,27 @@ export function ConnectBoard({
   portalMode?: boolean;
   accent?: "teal" | "slate";
   defaultTab?: Tab;
+  loadError?: string | null;
+  savedBookmarkIds?: string[];
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const slate = accent === "slate";
   const chipActive = slate ? "bg-client-accent text-white" : "bg-primary text-white";
   const chipIdle = slate ? "bg-client-surface text-client-accent" : "bg-teal-50 text-teal-900";
   const chipNavActive = slate ? "bg-client-accent text-white" : "bg-navy text-white";
   const actionBtn = slate ? "bg-client-accent hover:bg-client-header" : "bg-primary hover:bg-primary-dark";
   const [tab, setTab] = useState<Tab>(defaultTab);
+  const [inboxFilter, setInboxFilter] = useState<"all" | "pending" | "accepted" | "declined">("all");
   const [query, setQuery] = useState("");
   const [skillFilter, setSkillFilter] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [sort, setSort] = useState<SortMode>("featured");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [bookmarkBusyId, setBookmarkBusyId] = useState<string | null>(null);
+  const [savedIds, setSavedIds] = useState(() => new Set(savedBookmarkIds));
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [compose, setCompose] = useState<{
@@ -140,6 +154,38 @@ export function ConnectBoard({
   const [inboxVisible, setInboxVisible] = useState(12);
   const JOBS_PER_PAGE = 12;
   const PAGE_SIZE = 12;
+
+  useEffect(() => {
+    setTab(defaultTab);
+  }, [defaultTab]);
+
+  useEffect(() => {
+    setSavedIds(new Set(savedBookmarkIds));
+  }, [savedBookmarkIds]);
+
+  useEffect(() => {
+    const raw = String(searchParams.get("tab") ?? "").toLowerCase();
+    if (raw === "talent" || raw === "jobs" || raw === "inbox") {
+      setTab(raw);
+    }
+  }, [searchParams]);
+
+  function selectTab(next: Tab) {
+    setTab(next);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", next);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }
+
+  const pendingIncoming = useMemo(
+    () => requests.filter((r) => r.to_user_id === myUserId && r.status === "pending").length,
+    [requests, myUserId],
+  );
+
+  const filteredInbox = useMemo(() => {
+    if (inboxFilter === "all") return requests;
+    return requests.filter((r) => r.status === inboxFilter);
+  }, [requests, inboxFilter]);
 
   const popularSkills = useMemo(() => {
     const counts = new Map<string, number>();
@@ -324,6 +370,48 @@ export function ConnectBoard({
     action();
   }
 
+  async function onToggleBookmark({
+    targetId,
+    targetType,
+    title,
+    meta,
+  }: {
+    targetId: string;
+    targetType: BookmarkTargetType;
+    title?: string | null;
+    meta?: Record<string, unknown>;
+  }) {
+    if (!signedIn) {
+      router.push(`/login?next=${encodeURIComponent(pathname || "/connect")}`);
+      return;
+    }
+    const wasSaved = savedIds.has(targetId);
+    setError(null);
+    setOk(null);
+    setBookmarkBusyId(targetId);
+    setSavedIds((prev) => {
+      const next = new Set(prev);
+      if (wasSaved) next.delete(targetId);
+      else next.add(targetId);
+      return next;
+    });
+    try {
+      await toggleBookmark({ targetId, targetType, title, meta, saved: wasSaved });
+      setOk(wasSaved ? "Removed from bookmarks." : "Saved to bookmarks.");
+      router.refresh();
+    } catch (err) {
+      setSavedIds((prev) => {
+        const next = new Set(prev);
+        if (wasSaved) next.add(targetId);
+        else next.delete(targetId);
+        return next;
+      });
+      setError(err instanceof Error ? err.message : "Could not update bookmark.");
+    } finally {
+      setBookmarkBusyId(null);
+    }
+  }
+
   return (
     <div className="space-y-6">
       {!portalMode && (
@@ -370,7 +458,7 @@ export function ConnectBoard({
                 <button
                   key={t.id}
                   type="button"
-                  onClick={() => setTab(t.id)}
+                  onClick={() => selectTab(t.id)}
                   className={cn(
                     "inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold sm:flex-none",
                     tab === t.id ? chipNavActive : "text-text-secondary hover:text-navy",
@@ -378,6 +466,11 @@ export function ConnectBoard({
                 >
                   <t.icon className="h-3.5 w-3.5" />
                   {t.label}
+                  {t.id === "inbox" && pendingIncoming > 0 && (
+                    <span className="rounded-full bg-amber-500 px-1.5 text-[10px] text-white">
+                      {pendingIncoming}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -394,7 +487,7 @@ export function ConnectBoard({
               <button
                 key={t.id}
                 type="button"
-                onClick={() => setTab(t.id)}
+                onClick={() => selectTab(t.id)}
                 className={cn(
                   "inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold sm:flex-none",
                   tab === t.id ? "bg-navy text-white" : "text-text-secondary hover:text-navy",
@@ -402,9 +495,9 @@ export function ConnectBoard({
               >
                 <t.icon className="h-3.5 w-3.5" />
                 {t.label}
-                {t.id === "inbox" && requests.length > 0 && (
-                  <span className="rounded-full bg-primary px-1.5 text-[10px] text-white">
-                    {requests.length}
+                {t.id === "inbox" && pendingIncoming > 0 && (
+                  <span className="rounded-full bg-amber-500 px-1.5 text-[10px] text-white">
+                    {pendingIncoming}
                   </span>
                 )}
               </button>
@@ -769,9 +862,27 @@ export function ConnectBoard({
                       </button>
                       <button
                         type="button"
-                        className="rounded-xl border border-border px-4 py-2 text-sm font-semibold text-navy"
+                        disabled={bookmarkBusyId === p.user_id}
+                        onClick={() =>
+                          void onToggleBookmark({
+                            targetId: p.user_id,
+                            targetType: "freelancer",
+                            title: p.display_title || p.headline || "Freelancer",
+                            meta: {
+                              profile_id: p.id,
+                              headline: p.headline,
+                              location_label: p.location_label,
+                            },
+                          })
+                        }
+                        className={cn(
+                          "rounded-xl border px-4 py-2 text-sm font-semibold disabled:opacity-60",
+                          savedIds.has(p.user_id)
+                            ? "border-client-accent/30 bg-client-surface text-client-accent"
+                            : "border-border text-navy",
+                        )}
                       >
-                        Save
+                        {savedIds.has(p.user_id) ? "Unsave" : "Save"}
                       </button>
                     </div>
                   </div>
@@ -872,6 +983,30 @@ export function ConnectBoard({
                     className="mt-4 rounded-xl bg-navy px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
                   >
                     Contact
+                  </button>
+                  <button
+                    type="button"
+                    disabled={bookmarkBusyId === p.user_id}
+                    onClick={() =>
+                      void onToggleBookmark({
+                        targetId: p.user_id,
+                        targetType: "freelancer",
+                        title: p.display_title || p.headline || "Freelancer",
+                        meta: {
+                          profile_id: p.id,
+                          headline: p.headline,
+                          location_label: p.location_label,
+                        },
+                      })
+                    }
+                    className={cn(
+                      "mt-2 rounded-xl border px-4 py-2.5 text-sm font-semibold disabled:opacity-60",
+                      savedIds.has(p.user_id)
+                        ? "border-primary/30 bg-primary/10 text-primary-dark"
+                        : "border-border text-navy",
+                    )}
+                  >
+                    {savedIds.has(p.user_id) ? "Unsave" : "Save"}
                   </button>
                 </article>
               ))}
@@ -1012,6 +1147,29 @@ export function ConnectBoard({
                     >
                       Contact
                     </Link>
+                    <button
+                      type="button"
+                      disabled={bookmarkBusyId === n.id}
+                      onClick={() =>
+                        void onToggleBookmark({
+                          targetId: n.id,
+                          targetType: "job",
+                          title: n.title || "Job",
+                          meta: {
+                            budget_band: n.budget_band,
+                            client_user_id: n.client_user_id,
+                          },
+                        })
+                      }
+                      className={cn(
+                        "rounded-xl border px-4 py-2.5 text-sm font-semibold disabled:opacity-60",
+                        savedIds.has(n.id)
+                          ? "border-primary/30 bg-primary/10 text-primary-dark"
+                          : "border-border text-navy",
+                      )}
+                    >
+                      {savedIds.has(n.id) ? "Unsave" : "Save"}
+                    </button>
                     {signedIn &&
                       isProPlus &&
                       !isClient &&
@@ -1089,36 +1247,108 @@ export function ConnectBoard({
 
       {tab === "inbox" && (
         <section className="space-y-4">
-          <div>
-            <h2 className="font-display text-xl font-extrabold text-navy">Connect inbox</h2>
-            <p className="text-sm text-text-secondary">
-              Accept to reveal emails. Decline to keep privacy.
-            </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="font-display text-xl font-extrabold text-navy">Connect inbox</h2>
+              <p className="text-sm text-text-secondary">
+                Accept to reveal emails. Decline to keep privacy. No escrow claims.
+              </p>
+            </div>
+            {signedIn && requests.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {(
+                  [
+                    { id: "all" as const, label: "All" },
+                    { id: "pending" as const, label: "Pending" },
+                    { id: "accepted" as const, label: "Accepted" },
+                    { id: "declined" as const, label: "Declined" },
+                  ] as const
+                ).map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => {
+                      setInboxFilter(f.id);
+                      setInboxVisible(PAGE_SIZE);
+                    }}
+                    className={cn(
+                      "rounded-lg px-2.5 py-1 text-xs font-semibold",
+                      inboxFilter === f.id ? chipNavActive : "bg-background text-text-secondary",
+                    )}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
+
+          {(error || loadError) && (
+            <div
+              role="alert"
+              className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900"
+            >
+              {error || loadError}
+            </div>
+          )}
+          {ok && (
+            <div
+              role="status"
+              className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
+            >
+              {ok}
+            </div>
+          )}
+
           {!signedIn ? (
-            <Empty text="Sign in to see Connect requests." />
-          ) : requests.length === 0 ? (
-            <Empty text="No requests yet. Contact talent or apply to jobs to start." />
+            <Empty
+              text="Sign in to see Connect requests."
+              ctaHref="/login?next=/connect?tab=inbox"
+              ctaLabel="Sign in"
+              icon={Inbox}
+            />
+          ) : filteredInbox.length === 0 ? (
+            <Empty
+              text={
+                inboxFilter === "all"
+                  ? "No requests yet. Contact talent or apply to jobs to start."
+                  : `No ${inboxFilter} requests.`
+              }
+              icon={Inbox}
+            />
           ) : (
             <>
             <ul className="space-y-3">
-              {requests.slice(0, inboxVisible).map((r) => {
+              {filteredInbox.slice(0, inboxVisible).map((r) => {
                 const incoming = r.to_user_id === myUserId;
                 const peerName = incoming ? r.from_name || r.from_email : r.to_name || r.to_email;
                 const peerEmail = incoming ? r.from_email : r.to_email;
                 const revealed = r.status === "accepted" && r.revealed_at;
+                const responding = busyId === r.id;
                 return (
-                  <li key={r.id} className="rounded-2xl border border-border bg-surface p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
+                  <li
+                    key={r.id}
+                    className={cn(
+                      "rounded-2xl border bg-surface p-4 shadow-sm transition",
+                      r.status === "pending" && incoming
+                        ? "border-amber-200 ring-1 ring-amber-100"
+                        : "border-border",
+                    )}
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <p className="font-bold text-navy">
-                          {incoming ? "From" : "To"}: {peerName || "CLIVORA user"}
-                        </p>
-                        <p className="mt-1 text-sm text-text-secondary">{r.message}</p>
-                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span
                             className={cn(
-                              "rounded-full px-2 py-0.5 font-bold uppercase tracking-wide",
+                              "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+                              incoming ? "bg-sky-100 text-sky-800" : "bg-violet-100 text-violet-800",
+                            )}
+                          >
+                            {incoming ? "Incoming" : "Outgoing"}
+                          </span>
+                          <span
+                            className={cn(
+                              "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
                               r.status === "accepted"
                                 ? "bg-emerald-100 text-emerald-800"
                                 : r.status === "pending"
@@ -1129,33 +1359,52 @@ export function ConnectBoard({
                             {r.status}
                           </span>
                           {r.created_at && (
-                            <span className="text-text-muted">
+                            <span className="text-xs text-text-muted">
                               {new Date(r.created_at).toLocaleString()}
                             </span>
                           )}
                         </div>
+                        <p className="mt-2 font-bold text-navy">
+                          {peerName || "CLIVORA user"}
+                        </p>
+                        <p className="mt-1 text-sm leading-relaxed text-text-secondary">{r.message}</p>
                         {revealed && peerEmail && (
-                          <p className="mt-2 break-all text-sm font-semibold text-primary-dark">
-                            Contact: {peerEmail}
+                          <p className="mt-3 break-all rounded-xl bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-900">
+                            Contact unlocked: {peerEmail}
+                          </p>
+                        )}
+                        {r.status === "pending" && !incoming && (
+                          <p className="mt-2 text-xs text-text-muted">
+                            Waiting for them to accept before emails unlock.
                           </p>
                         )}
                       </div>
                       {incoming && r.status === "pending" && (
-                        <div className="flex gap-2">
+                        <div className="flex shrink-0 gap-2">
                           <button
                             type="button"
                             disabled={!!busyId}
                             onClick={() => respond(r.id, true)}
-                            className="rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-white"
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white disabled:opacity-60"
                           >
+                            {responding ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Check className="h-3.5 w-3.5" />
+                            )}
                             Accept
                           </button>
                           <button
                             type="button"
                             disabled={!!busyId}
                             onClick={() => respond(r.id, false)}
-                            className="rounded-xl border border-border px-3 py-1.5 text-xs font-bold"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold text-navy disabled:opacity-60"
                           >
+                            {responding ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <X className="h-3.5 w-3.5" />
+                            )}
                             Decline
                           </button>
                         </div>
@@ -1190,14 +1439,14 @@ export function ConnectBoard({
                 );
               })}
             </ul>
-            {requests.length > inboxVisible && (
+            {filteredInbox.length > inboxVisible && (
               <div className="flex justify-center">
                 <button
                   type="button"
                   onClick={() => setInboxVisible((n) => n + PAGE_SIZE)}
                   className="rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-bold text-navy"
                 >
-                  Load more ({requests.length - inboxVisible} left)
+                  Load more ({filteredInbox.length - inboxVisible} left)
                 </button>
               </div>
             )}
@@ -1228,14 +1477,16 @@ function Empty({
   text,
   ctaHref,
   ctaLabel,
+  icon: Icon = Users,
 }: {
   text: string;
   ctaHref?: string;
   ctaLabel?: string;
+  icon?: typeof Users;
 }) {
   return (
     <div className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center">
-      <Users className="mx-auto h-8 w-8 text-text-muted" />
+      <Icon className="mx-auto h-8 w-8 text-text-muted" />
       <p className="mt-3 text-sm text-text-secondary">{text}</p>
       {ctaHref && ctaLabel && (
         <Link

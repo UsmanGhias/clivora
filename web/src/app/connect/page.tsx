@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import {
   listMyConnectRequests,
   listPublicConnectNeeds,
@@ -13,6 +14,7 @@ import {
   isProPlus,
   isRestricted,
 } from "@/lib/profile";
+import { createClient } from "@/lib/supabase/server";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { ConnectMarketingHero } from "@/components/connect/ConnectMarketingHero";
@@ -25,18 +27,51 @@ export const metadata: Metadata = {
     "Hire freelancers and find clients on CLIVORA Connect. Private contact until mutual accept, then continue in the same CRM. Browse free.",
 };
 
-export default async function ConnectPage() {
+export default async function ConnectPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ tab?: string }>;
+}) {
   const profile = await getProfile();
   if (profile && isBlocked(profile)) redirect("/blocked");
-  const [profiles, needs, requests] = await Promise.all([
-    listPublicConnectProfiles(),
-    listPublicConnectNeeds(),
-    listMyConnectRequests(),
-  ]);
+  const sp = searchParams ? await searchParams : undefined;
+  const tabParam = String(sp?.tab ?? "").toLowerCase();
+  const defaultTab =
+    tabParam === "jobs" || tabParam === "talent" || tabParam === "inbox"
+      ? (tabParam as "jobs" | "talent" | "inbox")
+      : "talent";
+  let profiles: Awaited<ReturnType<typeof listPublicConnectProfiles>> = [];
+  let needs: Awaited<ReturnType<typeof listPublicConnectNeeds>> = [];
+  let requests: Awaited<ReturnType<typeof listMyConnectRequests>> = [];
+  let loadError: string | null = null;
+  try {
+    [profiles, needs, requests] = await Promise.all([
+      listPublicConnectProfiles(),
+      listPublicConnectNeeds(),
+      listMyConnectRequests(),
+    ]);
+  } catch {
+    loadError = "Could not load Connect right now. Refresh to try again.";
+  }
   const signedIn = !!profile;
   const plus = isProPlus(profile);
   const client = isClientAccount(profile);
   const restricted = isRestricted(profile);
+  let savedBookmarkIds: string[] = [];
+  if (profile) {
+    try {
+      const supabase = await createClient();
+      const { data } = await supabase
+        .from("freelancer_bookmarks")
+        .select("target_id")
+        .eq("user_id", profile.id)
+        .in("target_type", ["freelancer", "job"])
+        .limit(500);
+      savedBookmarkIds = (data ?? []).map((row) => String(row.target_id));
+    } catch {
+      savedBookmarkIds = [];
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-navy antialiased">
@@ -52,17 +87,22 @@ export default async function ConnectPage() {
         )}
 
         <div id="board" className="scroll-mt-24">
-          <ConnectBoard
-            profiles={profiles}
-            needs={needs}
-            requests={requests}
-            signedIn={signedIn}
-            isProPlus={plus}
-            isClient={client}
-            isRestricted={restricted}
-            myUserId={profile?.id}
-            accent={client ? "slate" : "teal"}
-          />
+          <Suspense fallback={<div className="rounded-2xl border border-border bg-surface p-8 text-sm text-text-secondary">Loading Connect…</div>}>
+            <ConnectBoard
+              profiles={profiles}
+              needs={needs}
+              requests={requests}
+              signedIn={signedIn}
+              isProPlus={plus}
+              isClient={client}
+              isRestricted={restricted}
+              myUserId={profile?.id}
+              accent={client ? "slate" : "teal"}
+              defaultTab={defaultTab}
+              loadError={loadError}
+              savedBookmarkIds={savedBookmarkIds}
+            />
+          </Suspense>
         </div>
 
         <section className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-6 sm:grid-cols-3">

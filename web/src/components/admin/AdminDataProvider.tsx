@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { PlatformSnapshot } from "@/lib/admin-platform-types";
 import { AdminShell, type AdminBadgeCounts } from "@/components/admin/AdminShell";
-import { createBrowserSupabaseClient } from "@/lib/supabase-browser";
+import { createClient } from "@/lib/supabase/client";
 
 type Ctx = {
   data: PlatformSnapshot | null;
@@ -65,7 +65,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     void refresh();
-    const supabase = createBrowserSupabaseClient();
+    const supabase = createClient();
     void supabase.auth.getUser().then(({ data: session }) => {
       const u = session.user;
       if (!u) return;

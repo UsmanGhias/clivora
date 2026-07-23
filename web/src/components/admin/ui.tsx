@@ -73,23 +73,33 @@ export function AdminBtn({
 export function ExportImportAdd({
   entity,
   onAdd,
+  onExport,
+  onImport,
   addLabel,
 }: {
   entity: string;
   onAdd?: () => void;
+  onExport?: () => void;
+  onImport?: () => void;
   addLabel?: string;
 }) {
   return (
     <>
-      <AdminBtn variant="outline">
-        <Download className="h-3.5 w-3.5" /> Export {entity}
-      </AdminBtn>
-      <AdminBtn variant="outline">
-        <Upload className="h-3.5 w-3.5" /> Import {entity}
-      </AdminBtn>
-      <AdminBtn variant="primary" onClick={onAdd}>
-        <Plus className="h-3.5 w-3.5" /> {addLabel ?? `Add ${entity}`}
-      </AdminBtn>
+      {onExport && (
+        <AdminBtn variant="outline" onClick={onExport}>
+          <Download className="h-3.5 w-3.5" /> Export {entity}
+        </AdminBtn>
+      )}
+      {onImport && (
+        <AdminBtn variant="outline" onClick={onImport}>
+          <Upload className="h-3.5 w-3.5" /> Import {entity}
+        </AdminBtn>
+      )}
+      {onAdd && (
+        <AdminBtn variant="primary" onClick={onAdd}>
+          <Plus className="h-3.5 w-3.5" /> {addLabel ?? `Add ${entity}`}
+        </AdminBtn>
+      )}
     </>
   );
 }
@@ -193,33 +203,44 @@ export function StatusPill({
 
 export function FilterBar({
   searchPlaceholder,
+  searchValue,
+  onSearchChange,
   children,
   tabs,
   activeTab,
   onTabChange,
   onReset,
+  onFilters,
 }: {
   searchPlaceholder: string;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
   children?: React.ReactNode;
   tabs?: { id: string; label: string; count?: number }[];
   activeTab?: string;
   onTabChange?: (id: string) => void;
   onReset?: () => void;
+  onFilters?: () => void;
 }) {
   return (
     <div className="mb-4 space-y-3">
       <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3">
         <input
+          value={searchValue ?? ""}
+          onChange={(e) => onSearchChange?.(e.target.value)}
           placeholder={searchPlaceholder}
           className="min-w-[200px] flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-teal-400"
         />
         {children}
-        <button
-          type="button"
-          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
-        >
-          Filters
-        </button>
+        {onFilters && (
+          <button
+            type="button"
+            onClick={onFilters}
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+          >
+            Filters
+          </button>
+        )}
         {onReset && (
           <button type="button" onClick={onReset} className="text-sm font-semibold text-teal-600">
             Reset

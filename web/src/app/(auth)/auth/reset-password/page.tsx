@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { site } from "@/lib/site";
@@ -13,6 +13,27 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    const supabase = createClient();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setMode("update");
+        setMessage("Choose a new password for your CLIVORA account.");
+      }
+    });
+    void supabase.auth.getSession().then(({ data }) => {
+      if (data.session && typeof window !== "undefined") {
+        const hash = window.location.hash.toLowerCase();
+        if (hash.includes("type=recovery") || hash.includes("access_token")) {
+          setMode("update");
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   async function onRequest(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -21,14 +42,14 @@ export default function ResetPasswordPage() {
     const supabase = createClient();
     const { error: err } = await supabase.auth.resetPasswordForEmail(
       email.trim().toLowerCase(),
-      { redirectTo: `${site.url}/auth/reset-password` }
+      { redirectTo: `${site.url}/auth/reset-password` },
     );
     setLoading(false);
     if (err) {
       setError(err.message);
       return;
     }
-    setMessage("Check your inbox for the reset link.");
+    setMessage("Check your inbox for the official Supabase Auth reset link (website redirect).");
   }
 
   async function onUpdate(e: FormEvent) {
@@ -50,7 +71,8 @@ export default function ResetPasswordPage() {
     <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
       <h1 className="text-2xl font-extrabold text-text-primary">Reset password</h1>
       <p className="mt-1 text-sm text-text-secondary">
-        Used by the mobile app and web. Same Supabase Auth project.
+        Reset links open on the website at {site.url}/auth/reset-password. Delivery uses Supabase Auth
+        (Resend/SMTP configured in the dashboard — never commit API keys).
       </p>
       <div className="mt-4 grid grid-cols-2 gap-2 rounded-xl bg-background p-1">
         <button

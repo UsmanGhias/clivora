@@ -38,7 +38,12 @@ RESEND_API_KEY=<your-resend-api-key>
 RESEND_FROM=CLIVORA <onboarding@resend.dev>
 ```
 
+**Resend is the preferred sender** for `send-clivora-email`. Optional Gmail SMTP may be configured only in the Supabase Auth dashboard (Authentication → SMTP Settings) for Auth-generated mails such as password reset — never put a Gmail app password in git, Flutter, chat logs, or `NEXT_PUBLIC_*` vars. If a Gmail app password was shared in chat, rotate it in Google Account → Security after dashboard setup.
+
 For production delivery to any recipient, verify your domain in Resend and set `RESEND_FROM` to an address on that domain (e.g. `CLIVORA <noreply@codcrafters.org>`).
+
+Password reset redirect (web + Android + admin): `https://clivora.codcrafters.org/auth/reset-password`.
+The branded `password_reset` Edge template is a notice only — the secure token link comes from Supabase Auth.
 
 Optional for Play billing verify:
 
