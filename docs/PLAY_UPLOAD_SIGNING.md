@@ -51,8 +51,15 @@ Verify signing before upload:
 keytool -printcert -jarfile releases/clivora-2.6.7.aab | grep SHA1
 ```
 
-You should see `96:93:81:80:...`, not `07:FF:0F:A4:...`.
+You should see `96:93:81:80:...`, not `07:FF:0F:A4:...` or the preview key `7F:6B:CA:0D:...`.
 
-## If you lost the upload keystore
+## Sideload / preview builds (Google Sign-In)
 
-Request an upload key reset in Google Play Console → App integrity → Upload key.
+Preview keystore SHA-1 (`7F:6B:CA:0D:63:D2:3C:AD:48:26:D5:C8:83:24:3B:2C:91:0D:A2:05`) is **not** a Play upload key.
+
+For Google Sign-In on sideloaded preview APKs:
+1. Prefer the Play Store build (upload SHA already in Firebase), or
+2. Add the preview SHA-1 in Firebase Console → Project settings → Android app, **and**
+3. Ensure Supabase Auth redirect URLs include `org.codcrafters.clivora://login-callback` (browser OAuth fallback in app ≥ 4.1.7).
+
+Never upload a preview-signed AAB to Play Console.

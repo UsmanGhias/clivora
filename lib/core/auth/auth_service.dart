@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -37,6 +38,15 @@ const _sessionUserIdKey = 'clivora_user_id';
 
 const kGoogleWebClientId =
     '976757530869-ap3ea6t2noq56o46tfokgdp6haj6ioqj.apps.googleusercontent.com';
+
+/// Deep link must also be listed in Supabase Auth → Redirect URLs.
+const kGoogleOAuthRedirect = 'org.codcrafters.clivora://login-callback';
+
+/// Sideloaded preview APK SHA-1 (not Play upload). Add in Firebase if native Google fails.
+const kPreviewApkSha1 = '7F:6B:CA:0D:63:D2:3C:AD:48:26:D5:C8:83:24:3B:2C:91:0D:A2:05';
+
+/// Play upload key SHA-1 (required for Store AAB / Google Sign-In on Play builds).
+const kPlayUploadSha1 = '96:93:81:80:EE:59:27:D2:46:B2:BD:FC:6C:96:C6:93:2E:1A:1D:36';
 
 /// Salted SHA-256 password hash. Format: `v2:<saltHex>:<hashHex>`.
 /// Legacy unsalted hex hashes are still accepted and upgraded on next successful login.
@@ -327,7 +337,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
 
       final googleAuth = await googleUser.authentication;
       if (googleAuth.idToken == null) {
-        return 'Google sign-in failed: no ID token. Add this APK signing SHA-1 in Firebase Console.';
+        return _signInWithGoogleOAuthBrowser(accountType: accountType);
       }
 
       try {
@@ -339,94 +349,161 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         return supabaseAuthErrorMessage(e);
       }
 
-      final cloudUid = SupabaseAuthHelper.currentUid;
-      if (cloudUid == null) return 'Google sign-in failed: no Supabase session.';
-
-      final isAdmin = kAdminEmails.contains(email);
-      final displayName = googleUser.displayName ?? email.split('@').first;
-      final requestedType = AccountTypeGuard.normalizedAccountType(
-        isAdmin ? kAccountAdmin : (accountType ?? kAccountFreelancer),
-        email: email,
+      return _finalizeGoogleCloudSession(
+        accountType: accountType,
+        displayNameFallback: googleUser.displayName,
       );
-
-      final ownProfile = await SupabaseAuthHelper.fetchOwnProfile();
-      final cloudType = ownProfile?['account_type'] as String?;
-      final cloudLocked = ownProfile?['account_type_locked'] as bool? ?? false;
-      final cloudName = _profileString(ownProfile, 'name');
-      final cloudAvatarUrl = _profileString(ownProfile, 'avatar_url');
-      final initialName = cloudName ?? displayName;
-
-      var user = await _db.safeGetUserByEmail(email);
-      user ??= await _db.recoverUserByEmail(email);
-
-      if (user == null) {
-        String type = requestedType;
-        if (cloudLocked && cloudType != null && cloudType.isNotEmpty && !isAdmin) {
-          type = cloudType == kAccountClient ? kAccountClient : kAccountFreelancer;
-          if (accountType != null) {
-            final wantsClient = accountType == kAccountClient;
-            final isClient = type == kAccountClient;
-            if (wantsClient != isClient) {
-              return 'This email is registered as ${isClient ? 'Client' : 'Freelancer'}. Use the correct sign-in option.';
-            }
-          }
-        } else {
-          await SupabaseAuthHelper.finalizeAccountType(
-            accountType: type,
-            name: initialName,
-          );
-        }
-
-        return _createLocalAccount(
-          name: initialName,
-          email: email,
-          password: '',
-          accountType: type,
-          isAdmin: isAdmin,
-          cloudUid: cloudUid,
-          profilePhotoPath: cloudAvatarUrl,
-          trackSignup: true,
-          finalizeCloudRole: true,
-        );
-      }
-
-      final roleErr = AccountTypeGuard.validateSignInRole(user: user, loginAsType: accountType);
-      if (roleErr != null) return roleErr;
-
-      if (user.googleId != cloudUid) {
-        await _db.updateUser(user.copyWith(
-          googleId: Value(cloudUid),
-        ));
-        final linkedUser = await _db.safeGetUser(user.id);
-        if (linkedUser == null) return 'Could not load your profile. Try again.';
-        user = linkedUser;
-      }
-      user = await _applyCloudProfileToLocal(user, ownProfile);
-
-      if (isAdmin) {
-        await _db.updateUser(user.copyWith(role: 'admin'));
-      }
-
-      final sessionUser = await _db.safeGetUser(user.id);
-      if (sessionUser == null) return 'Could not load your profile. Try again.';
-      await _syncCloudSubscriptionPlan(sessionUser.id);
-      await _setSession(sessionUser.id);
-      _invalidateUserData();
-
-      if (isAdmin) {
-        try {
-          await ref.read(planLimitServiceProvider).setPlan(PlanLimits.proPlusPlan);
-        } catch (_) {}
-      }
-      return null;
     } catch (e, st) {
       debugPrint('Google sign-in error: $e\n$st');
       final msg = e.toString();
-      if (msg.contains('ApiException: 10') || msg.contains('sign_in_failed')) {
-        return 'Google sign-in failed. Register this APK SHA-1 in Firebase, then retry.';
+      if (msg.contains('ApiException: 10') ||
+          msg.contains('sign_in_failed') ||
+          msg.contains('DEVELOPER_ERROR')) {
+        final oauthErr = await _signInWithGoogleOAuthBrowser(accountType: accountType);
+        if (oauthErr == null) return null;
+        return 'Google sign-in needs the Play-signed app (SHA $kPlayUploadSha1) '
+            'or add this APK SHA to Firebase: $kPreviewApkSha1. '
+            'Browser fallback: $oauthErr';
       }
       return 'Google sign-in failed. Try again or use email sign-in.';
     }
+  }
+
+  /// Browser Google OAuth via Supabase — works even when Android SHA is missing from Firebase.
+  Future<String?> _signInWithGoogleOAuthBrowser({String? accountType}) async {
+    try {
+      final auth = Supabase.instance.client.auth;
+      if (auth.currentSession != null) {
+        return _finalizeGoogleCloudSession(accountType: accountType);
+      }
+
+      late final StreamSubscription<AuthState> sub;
+      final done = Completer<AuthState>();
+      sub = auth.onAuthStateChange.listen((event) {
+        if (event.session != null && !done.isCompleted) {
+          done.complete(event);
+        }
+      });
+
+      final launched = await auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: kGoogleOAuthRedirect,
+        authScreenLaunchMode: LaunchMode.externalApplication,
+      );
+      if (!launched) {
+        await sub.cancel();
+        return 'Could not open Google sign-in.';
+      }
+
+      try {
+        await done.future.timeout(const Duration(minutes: 3));
+      } on TimeoutException {
+        await sub.cancel();
+        return 'Google sign-in timed out. Return to the app after approving Google.';
+      } finally {
+        await sub.cancel();
+      }
+
+      if (auth.currentSession == null) {
+        return 'Google sign-in did not complete. Ensure Supabase Redirect URLs include $kGoogleOAuthRedirect.';
+      }
+      return _finalizeGoogleCloudSession(accountType: accountType);
+    } catch (e, st) {
+      debugPrint('Google OAuth browser error: $e\n$st');
+      return 'Google browser sign-in failed. Use email sign-in or install from Play Store.';
+    }
+  }
+
+  Future<String?> _finalizeGoogleCloudSession({
+    String? accountType,
+    String? displayNameFallback,
+  }) async {
+    final cloudUid = SupabaseAuthHelper.currentUid;
+    if (cloudUid == null) return 'Google sign-in failed: no Supabase session.';
+
+    final email = (SupabaseAuthHelper.currentEmail ?? '').trim().toLowerCase();
+    if (email.isEmpty) return 'Google account has no email address.';
+
+    final isAdmin = kAdminEmails.contains(email);
+    final metaName = Supabase.instance.client.auth.currentUser?.userMetadata?['full_name'] ??
+        Supabase.instance.client.auth.currentUser?.userMetadata?['name'];
+    final displayName =
+        (displayNameFallback ?? metaName?.toString() ?? email.split('@').first).trim();
+    final requestedType = AccountTypeGuard.normalizedAccountType(
+      isAdmin ? kAccountAdmin : (accountType ?? kAccountFreelancer),
+      email: email,
+    );
+
+    final ownProfile = await SupabaseAuthHelper.fetchOwnProfile();
+    final cloudType = ownProfile?['account_type'] as String?;
+    final cloudLocked = ownProfile?['account_type_locked'] as bool? ?? false;
+    final cloudName = _profileString(ownProfile, 'name');
+    final cloudAvatarUrl = _profileString(ownProfile, 'avatar_url');
+    final initialName = cloudName ?? displayName;
+
+    var user = await _db.safeGetUserByEmail(email);
+    user ??= await _db.recoverUserByEmail(email);
+
+    if (user == null) {
+      String type = requestedType;
+      if (cloudLocked && cloudType != null && cloudType.isNotEmpty && !isAdmin) {
+        type = cloudType == kAccountClient ? kAccountClient : kAccountFreelancer;
+        if (accountType != null) {
+          final wantsClient = accountType == kAccountClient;
+          final isClient = type == kAccountClient;
+          if (wantsClient != isClient) {
+            return 'This email is registered as ${isClient ? 'Client' : 'Freelancer'}. Use the correct sign-in option.';
+          }
+        }
+      } else {
+        await SupabaseAuthHelper.finalizeAccountType(
+          accountType: type,
+          name: initialName,
+        );
+      }
+
+      return _createLocalAccount(
+        name: initialName,
+        email: email,
+        password: '',
+        accountType: type,
+        isAdmin: isAdmin,
+        cloudUid: cloudUid,
+        profilePhotoPath: cloudAvatarUrl,
+        trackSignup: true,
+        finalizeCloudRole: true,
+      );
+    }
+
+    final roleErr = AccountTypeGuard.validateSignInRole(user: user, loginAsType: accountType);
+    if (roleErr != null) return roleErr;
+
+    if (user.googleId != cloudUid) {
+      await _db.updateUser(user.copyWith(
+        googleId: Value(cloudUid),
+      ));
+      final linkedUser = await _db.safeGetUser(user.id);
+      if (linkedUser == null) return 'Could not load your profile. Try again.';
+      user = linkedUser;
+    }
+    user = await _applyCloudProfileToLocal(user, ownProfile);
+
+    if (isAdmin) {
+      await _db.updateUser(user.copyWith(role: 'admin'));
+    }
+
+    final sessionUser = await _db.safeGetUser(user.id);
+    if (sessionUser == null) return 'Could not load your profile. Try again.';
+    await _syncCloudSubscriptionPlan(sessionUser.id);
+    await _setSession(sessionUser.id);
+    _invalidateUserData();
+
+    if (isAdmin) {
+      try {
+        await ref.read(planLimitServiceProvider).setPlan(PlanLimits.proPlusPlan);
+      } catch (_) {}
+    }
+    return null;
   }
 
   Future<String?> _createLocalAccount({

@@ -41,7 +41,7 @@ type OdooPartner = {
   name: string;
   email: string | false;
   phone: string | false;
-  mobile: string | false;
+  mobile?: string | false;
   street: string | false;
   city: string | false;
   zip: string | false;
@@ -251,7 +251,15 @@ export async function readOdooPartners(options: {
   limit?: number;
 }) {
   const { cfg, uid, limit = 50 } = options;
-  const fields = ["id", "name", "email", "phone", "mobile", "write_date"];
+  // Odoo Online / some DBs omit `mobile` on res.partner — never request it unconditionally.
+  const fields = await resolvePartnerReadFields(cfg, uid, [
+    "id",
+    "name",
+    "email",
+    "phone",
+    "mobile",
+    "write_date",
+  ]);
   return (await odooJsonRpc(cfg.url, "object", "execute_kw", [
     cfg.db,
     uid,
@@ -261,6 +269,30 @@ export async function readOdooPartners(options: {
     [[["active", "=", true]]],
     { fields, limit: Math.min(Math.max(limit, 1), 200), order: "write_date desc" },
   ])) as Pick<OdooPartner, "id" | "name" | "email" | "phone" | "mobile" | "write_date">[];
+}
+
+/** Prefer requested fields; drop ones the target Odoo DB does not expose (e.g. mobile). */
+async function resolvePartnerReadFields(
+  cfg: OdooCfg,
+  uid: number,
+  requested: string[],
+): Promise<string[]> {
+  try {
+    const meta = (await odooJsonRpc(cfg.url, "object", "execute_kw", [
+      cfg.db,
+      uid,
+      cfg.apiKey,
+      "res.partner",
+      "fields_get",
+      [requested],
+      { attributes: ["type"] },
+    ])) as Record<string, unknown>;
+    const available = requested.filter((f) => Object.prototype.hasOwnProperty.call(meta, f));
+    if (available.includes("id") && available.includes("name")) return available;
+  } catch {
+    // Fall through to safe defaults.
+  }
+  return requested.filter((f) => f !== "mobile");
 }
 
 export type OdooHealth = {
@@ -664,7 +696,7 @@ export async function pullContactsFromOdoo(options: {
     throw new Error("SUPABASE_SERVICE_ROLE_KEY required to pull Odoo contacts into CLIVORA");
   }
 
-  const partnerFields = [
+  const partnerFields = await resolvePartnerReadFields(cfg, uid, [
     "id",
     "name",
     "email",
@@ -677,7 +709,7 @@ export async function pullContactsFromOdoo(options: {
     "is_company",
     "type",
     "write_date",
-  ];
+  ]);
 
   // Active contacts - simple domain (complex email!=false domains break on some Odoo 19 builds).
   const partners = (await odooJsonRpc(cfg.url, "object", "execute_kw", [
