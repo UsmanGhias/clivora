@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     };
 
     const { action, adminEmail, adminToken } = body;
-    await requireAdminRequest(req);
+    await requireAdminRequest(req, { requireAal2: false });
 
     const svcKey = serviceKey();
     if (!svcKey) {

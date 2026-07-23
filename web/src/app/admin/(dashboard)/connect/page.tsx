@@ -5,7 +5,6 @@ import { Network, Send, UserCircle2, Zap } from "lucide-react";
 import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
-  ExportImportAdd,
   KpiGrid,
   FilterBar,
   AdminTable,
@@ -94,7 +93,15 @@ export default function AdminConnectPage() {
       <AdminPageHeader
         title="Connect"
         subtitle="Profiles, needs, and connection requests."
-        actions={<ExportImportAdd entity="Connect" addLabel="Add Connection" />}
+        actions={
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            Refresh
+          </button>
+        }
       />
 
       <KpiGrid

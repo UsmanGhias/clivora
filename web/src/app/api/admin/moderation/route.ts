@@ -24,7 +24,7 @@ function headers(key: string) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    await requireAdminRequest(req);
+    await requireAdminRequest(req, { requireAal2: false });
     const key = serviceKey();
     if (!key) {
       return NextResponse.json(

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Database, Save, Shield, Network } from "lucide-react";
 import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
@@ -18,14 +18,68 @@ import { OdooSyncButton } from "@/components/app/OdooSyncButton";
 import { site } from "@/lib/site";
 
 export default function AdminSettingsPage() {
-  const { data, loading } = useAdminData();
+  const { data, loading, refresh } = useAdminData();
   const [activeTab, setActiveTab] = useState("general");
-  const [siteName, setSiteName] = useState("CLIVORA");
-  const [supportEmail, setSupportEmail] = useState("support@clivora.com");
-  const [commission, setCommission] = useState("10");
-  const [registrationOpen, setRegistrationOpen] = useState(true);
-  const [freelancerSignup, setFreelancerSignup] = useState(true);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [autoProfiles, setAutoProfiles] = useState(true);
+  const [autoNeeds, setAutoNeeds] = useState(true);
+  const [flagBusy, setFlagBusy] = useState<string | null>(null);
   const flags = data?.flags ?? [];
+
+  useEffect(() => {
+    setAutoProfiles(data?.settings?.connect_auto_approve_profiles !== false);
+    setAutoNeeds(data?.settings?.connect_auto_approve_needs !== false);
+  }, [data?.settings]);
+
+  async function saveConnectSettings() {
+    setBusy(true);
+    setMsg(null);
+    setErr(null);
+    try {
+      const posts = [
+        { target: "profiles", enabled: autoProfiles },
+        { target: "needs", enabled: autoNeeds },
+      ];
+      for (const p of posts) {
+        const res = await fetch("/api/admin/moderation", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "set_auto_approve", ...p }),
+        });
+        const json = (await res.json()) as { error?: string };
+        if (!res.ok) throw new Error(json.error || "Could not save settings");
+      }
+      setMsg("Connect auto-approve settings saved.");
+      await refresh();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Save failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function toggleFlag(key: string, enabled: boolean) {
+    setFlagBusy(key);
+    setErr(null);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/admin/feature-flags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "set", key, value: !enabled }),
+      });
+      const json = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(json.error || "Could not update flag");
+      setMsg(`Feature flag ${key} ${!enabled ? "enabled" : "disabled"}.`);
+      await refresh();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Flag update failed");
+    } finally {
+      setFlagBusy(null);
+    }
+  }
 
   return (
     <div>
@@ -37,12 +91,18 @@ export default function AdminSettingsPage() {
           }}
         />
       )}
+      {err && <ErrorBanner message={err} />}
+      {msg && (
+        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          {msg}
+        </div>
+      )}
 
       <AdminPageHeader
         title="System Settings"
-        subtitle="Configure platform defaults, email, and feature flags."
+        subtitle="Configure Connect defaults, integrations, and feature flags."
         actions={
-          <AdminBtn variant="primary" onClick={() => window.location.reload()}>
+          <AdminBtn variant="primary" onClick={() => void refresh()}>
             <Save className="h-3.5 w-3.5" /> Refresh
           </AdminBtn>
         }
@@ -72,57 +132,49 @@ export default function AdminSettingsPage() {
               <div className="space-y-4">
                 {activeTab === "general" && (
                   <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <h3 className="mb-4 text-sm font-bold text-slate-900">Site information</h3>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <Field label="Site name">
-                        <input
-                          value={siteName}
-                          onChange={(e) => setSiteName(e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-teal-400"
-                        />
-                      </Field>
-                      <Field label="Support email">
-                        <input
-                          value={supportEmail}
-                          onChange={(e) => setSupportEmail(e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-teal-400"
-                        />
-                      </Field>
-                    </div>
-                    <div className="mt-4 flex justify-end">
-                      <AdminBtn variant="primary">
-                        <Save className="h-3.5 w-3.5" /> Save general
-                      </AdminBtn>
-                    </div>
+                    <h3 className="mb-2 text-sm font-bold text-slate-900">Site information</h3>
+                    <p className="mb-4 text-sm text-slate-600">
+                      Brand and support identity are fixed in deployment config (
+                      <code>site.name</code> / <code>v{site.appVersion}</code>). Use Platform for
+                      live Connect moderation defaults.
+                    </p>
+                    <dl className="grid gap-3 sm:grid-cols-2 text-sm">
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                        <dt className="text-xs font-semibold text-slate-500">Site name</dt>
+                        <dd className="font-bold text-slate-900">CLIVORA</dd>
+                      </div>
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                        <dt className="text-xs font-semibold text-slate-500">Support email</dt>
+                        <dd className="font-bold text-slate-900">support@clivora.com</dd>
+                      </div>
+                    </dl>
                   </section>
                 )}
 
                 {activeTab === "platform" && (
                   <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <h3 className="mb-4 text-sm font-bold text-slate-900">Platform</h3>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <Field label="Commission rate (%)">
-                        <input
-                          value={commission}
-                          onChange={(e) => setCommission(e.target.value)}
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-teal-400"
-                        />
-                      </Field>
-                      <div className="space-y-3 sm:col-span-2">
-                        <Toggle
-                          label="Open registration"
-                          checked={registrationOpen}
-                          onChange={setRegistrationOpen}
-                        />
-                        <Toggle
-                          label="Allow freelancer signup"
-                          checked={freelancerSignup}
-                          onChange={setFreelancerSignup}
-                        />
-                      </div>
+                    <h3 className="mb-4 text-sm font-bold text-slate-900">Connect auto-approve</h3>
+                    <p className="mb-4 text-sm text-slate-600">
+                      When enabled, new Connect profiles and need posts skip the moderation queue.
+                    </p>
+                    <div className="space-y-3">
+                      <Toggle
+                        label="Auto-approve Connect profiles"
+                        checked={autoProfiles}
+                        onChange={setAutoProfiles}
+                      />
+                      <Toggle
+                        label="Auto-approve Connect needs"
+                        checked={autoNeeds}
+                        onChange={setAutoNeeds}
+                      />
                     </div>
                     <div className="mt-4 flex justify-end">
-                      <AdminBtn variant="primary">
+                      <AdminBtn
+                        variant="primary"
+                        disabled={busy}
+                        onClick={() => void saveConnectSettings()}
+                      >
                         <Save className="h-3.5 w-3.5" /> Save platform
                       </AdminBtn>
                     </div>
@@ -133,8 +185,8 @@ export default function AdminSettingsPage() {
                   <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                     <h3 className="mb-4 text-sm font-bold text-slate-900">Email (Resend-first)</h3>
                     <p className="mb-4 text-sm text-slate-600">
-                      Delivery uses Supabase Edge Function secrets <code>RESEND_API_KEY</code> and
-                      <code>RESEND_FROM</code>. Password reset redirects to the website
+                      Delivery uses Supabase Edge Function secrets <code>RESEND_API_KEY</code> and{" "}
+                      <code>RESEND_FROM</code>. Password reset redirects to the website{" "}
                       <code>/auth/reset-password</code>. Optional Gmail SMTP is dashboard-only.
                     </p>
                     <div className="mt-4 flex justify-end">
@@ -163,7 +215,8 @@ export default function AdminSettingsPage() {
                           <h3 className="text-sm font-bold text-slate-900">Odoo Phase 1-2</h3>
                           <p className="mt-1 text-xs text-slate-500">
                             Read-only health checks for Main and Social Odoo databases. Write sync is
-                            disabled by default and requires an explicit admin action.
+                            disabled by default and requires an explicit admin action. Credentials
+                            prefer database secrets over env so rotated API keys apply immediately.
                           </p>
                         </div>
                       </div>
@@ -183,15 +236,33 @@ export default function AdminSettingsPage() {
                     </p>
                   ) : (
                     <ul className="divide-y divide-slate-100">
-                      {flags.map((f) => (
-                        <li key={String(f.id ?? f.key)} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                          <div className="min-w-0">
-                            <div className="font-bold text-slate-800">{String(f.key)}</div>
-                            <div className="truncate text-xs text-slate-500">{String(f.description || "")}</div>
-                          </div>
-                          <StatusPill status={(f.enabled ?? f.value) ? "active" : "inactive"} />
-                        </li>
-                      ))}
+                      {flags.map((f) => {
+                        const key = String(f.key);
+                        const enabled = Boolean(f.enabled ?? f.value);
+                        return (
+                          <li
+                            key={String(f.id ?? f.key)}
+                            className="flex items-center justify-between gap-3 py-2.5 text-sm"
+                          >
+                            <div className="min-w-0">
+                              <div className="font-bold text-slate-800">{key}</div>
+                              <div className="truncate text-xs text-slate-500">
+                                {String(f.description || "")}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <StatusPill status={enabled ? "active" : "inactive"} />
+                              <AdminBtn
+                                variant="outline"
+                                disabled={flagBusy === key}
+                                onClick={() => void toggleFlag(key, enabled)}
+                              >
+                                {enabled ? "Disable" : "Enable"}
+                              </AdminBtn>
+                            </div>
+                          </li>
+                        );
+                      })}
                     </ul>
                   )}
                 </section>
@@ -234,15 +305,6 @@ export default function AdminSettingsPage() {
         }
       />
     </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block text-sm">
-      <span className="mb-1.5 block text-xs font-semibold text-slate-500">{label}</span>
-      {children}
-    </label>
   );
 }
 

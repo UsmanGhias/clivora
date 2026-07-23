@@ -4,25 +4,43 @@ import { FileText } from "lucide-react";
 import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
-  ExportImportAdd,
+  AdminBtn,
   KpiGrid,
-  FilterBar,
-  AdminTable,
-  StatusPill,
-  AvatarCell,
-  RowActions,
   PageLayout,
   SidePanel,
   SideCard,
   money,
-  fmtDate,
-  relative,
   ErrorBanner,
 } from "@/components/admin/ui";
 
 export default function AdminReportsPage() {
-  const { data, loading } = useAdminData();
+  const { data, loading, refresh } = useAdminData();
   const o = data?.overview;
+
+  function downloadCsv() {
+    if (!data) return;
+    const lines = [
+      "metric,value",
+      `total_users,${o?.totalUsers ?? 0}`,
+      `freelancers,${o?.freelancers ?? 0}`,
+      `clients,${o?.clients ?? 0}`,
+      `active_projects,${o?.activeProjects ?? 0}`,
+      `jobs,${o?.totalJobs ?? 0}`,
+      `revenue,${o?.totalRevenue ?? 0}`,
+      `escrow_held,${o?.escrowHeld ?? 0}`,
+      `payouts,${o?.totalPayouts ?? 0}`,
+      `tickets,${data.tickets ?? 0}`,
+      `disputes,${data.disputes ?? 0}`,
+      `exported_at,${data.meta?.exportedAt ?? new Date().toISOString()}`,
+    ];
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `clivora-platform-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <div>
@@ -37,8 +55,17 @@ export default function AdminReportsPage() {
 
       <AdminPageHeader
         title="Reports"
-        subtitle="Exportable platform summaries and KPIs."
-        actions={<ExportImportAdd entity="Reports" addLabel="Generate Report" />}
+        subtitle="Live platform KPIs from the admin snapshot."
+        actions={
+          <div className="flex gap-2">
+            <AdminBtn variant="outline" onClick={() => void refresh()}>
+              Refresh
+            </AdminBtn>
+            <AdminBtn variant="primary" onClick={downloadCsv} disabled={!data}>
+              Export CSV
+            </AdminBtn>
+          </div>
+        }
       />
 
       <KpiGrid
@@ -58,49 +85,40 @@ export default function AdminReportsPage() {
       <PageLayout
         main={
           <div>
-            <FilterBar searchPlaceholder="Search reports…" onReset={() => undefined} />
             {!data && loading ? (
               <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
                 Loading reports…
               </div>
             ) : (
-              <AdminTable
-                headers={["Report", "Period", "Status", "Generated", "Actions"]}
-                footer={<span>Built-in report templates</span>}
-              >
-                {[
-                  { id: "rev", name: "Revenue summary", period: "Last 30 days" },
-                  { id: "users", name: "User growth", period: "Last 30 days" },
-                  { id: "escrow", name: "Escrow balance", period: "Current" },
-                ].map((r) => (
-                  <tr key={r.id} className="hover:bg-slate-50/80">
-                    <td className="px-3 py-3">
-                      <input type="checkbox" className="rounded border-slate-300" aria-label="Select row" />
-                    </td>
-                    <td className="px-3 py-3">
-                      <AvatarCell name={r.name} subtitle={r.period} />
-                    </td>
-                    <td className="px-3 py-3 text-sm text-slate-600">{r.period}</td>
-                    <td className="px-3 py-3">
-                      <StatusPill status="active" />
-                    </td>
-                    <td className="px-3 py-3 text-sm text-slate-600">
-                      {fmtDate(new Date().toISOString())}
-                      <span className="ml-1 text-xs text-slate-400">{relative(new Date().toISOString())}</span>
-                    </td>
-                    <td className="px-3 py-3">
-                      <RowActions />
-                    </td>
-                  </tr>
-                ))}
-              </AdminTable>
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h3 className="mb-3 text-sm font-bold text-slate-900">Snapshot summary</h3>
+                <dl className="grid gap-3 sm:grid-cols-2 text-sm">
+                  {[
+                    ["Freelancers", o?.freelancers ?? 0],
+                    ["Clients", o?.clients ?? 0],
+                    ["Jobs", o?.totalJobs ?? 0],
+                    ["Escrow held", money(o?.escrowHeld ?? 0)],
+                    ["Payouts", money(o?.totalPayouts ?? 0)],
+                    ["Support tickets", data?.tickets ?? 0],
+                    ["Disputes", data?.disputes ?? 0],
+                    ["Source", data?.source ?? "-"],
+                  ].map(([label, value]) => (
+                    <div key={String(label)} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
+                      <dt className="text-xs font-semibold text-slate-500">{label}</dt>
+                      <dd className="font-bold text-slate-900">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
             )}
           </div>
         }
         side={
           <SidePanel>
-            <SideCard title="Report tips">
-              <p className="text-xs text-slate-500">Use Export to download CSV snapshots of live KPIs.</p>
+            <SideCard title="Export">
+              <p className="text-xs text-slate-500">
+                CSV export uses the same live counts as Overview — not template placeholders.
+              </p>
             </SideCard>
           </SidePanel>
         }

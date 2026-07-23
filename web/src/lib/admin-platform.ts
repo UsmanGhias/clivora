@@ -79,8 +79,13 @@ function emptySnapshot(warning?: string): PlatformSnapshot {
     customers: [],
     events: [],
     tickets: 0,
+    ticketRows: [],
     disputes: 0,
     flags: [],
+    settings: {
+      connect_auto_approve_profiles: true,
+      connect_auto_approve_needs: true,
+    },
   };
 }
 
@@ -120,6 +125,7 @@ export async function loadPlatformSnapshot(): Promise<PlatformSnapshot> {
       payments,
       milestones,
       tickets,
+      ticketRows,
       customers,
       newUsers,
       newFreelancers,
@@ -136,6 +142,7 @@ export async function loadPlatformSnapshot(): Promise<PlatformSnapshot> {
       customerRows,
       events,
       flags,
+      settingsRows,
     ] = await Promise.all([
       restCount(cfg, "profiles"),
       restCount(cfg, "profiles", "account_type=eq.freelancer"),
@@ -147,6 +154,13 @@ export async function loadPlatformSnapshot(): Promise<PlatformSnapshot> {
       restCount(cfg, "pro_payment_requests"),
       restCount(cfg, "connect_milestones"),
       restCount(cfg, "support_tickets"),
+      restList(
+        cfg,
+        "support_tickets",
+        "id,user_id,subject,body,status,priority,admin_notes,created_at,updated_at",
+        "updated_at.desc",
+        100,
+      ),
       restCount(cfg, "crm_customers"),
       // profiles has no created_at - approximate "new" via updated_at
       restCount(cfg, "profiles", `updated_at=gte.${since}`),
@@ -236,12 +250,32 @@ export async function loadPlatformSnapshot(): Promise<PlatformSnapshot> {
         100,
       ),
       restList(cfg, "app_feature_flags", "key,enabled,updated_at,updated_by", "updated_at.desc", 50),
+      restList(
+        cfg,
+        "app_settings",
+        "key,value",
+        "key.asc",
+        20,
+        "key=in.(connect_auto_approve_profiles,connect_auto_approve_needs)",
+      ),
     ]);
 
     const freelancerRows = userRows.filter(
       (u) => String(u.account_type ?? "freelancer") !== "client",
     );
     const clientRows = userRows.filter((u) => String(u.account_type) === "client");
+
+    const profileById = new Map(
+      userRows.map((u) => [String(u.id), u] as const),
+    );
+    const ticketRowsEnriched = ticketRows.map((t) => {
+      const profile = profileById.get(String(t.user_id ?? ""));
+      return {
+        ...t,
+        user_email: profile?.email ?? null,
+        user_name: profile?.name ?? null,
+      };
+    });
 
     const paidInvoices = invoiceRows.filter((i) => String(i.status) === "paid");
     const totalRevenue =
@@ -259,6 +293,25 @@ export async function loadPlatformSnapshot(): Promise<PlatformSnapshot> {
     const releasedPayouts = milestoneRows
       .filter((m) => ["released", "paid"].includes(String(m.status).toLowerCase()))
       .reduce((s, m) => s + Number(m.amount ?? 0), 0);
+
+    const disputedMilestones = milestoneRows.filter((m) =>
+      String(m.status).toLowerCase().includes("dispute"),
+    ).length;
+
+    const settings = {
+      connect_auto_approve_profiles: true,
+      connect_auto_approve_needs: true,
+    };
+    for (const row of settingsRows) {
+      const key = String(row.key ?? "");
+      const value = row.value as { enabled?: boolean } | null;
+      if (key === "connect_auto_approve_profiles") {
+        settings.connect_auto_approve_profiles = value?.enabled !== false;
+      }
+      if (key === "connect_auto_approve_needs") {
+        settings.connect_auto_approve_needs = value?.enabled !== false;
+      }
+    }
 
     const activeProjects =
       projectRows.filter((p) =>
@@ -279,7 +332,7 @@ export async function loadPlatformSnapshot(): Promise<PlatformSnapshot> {
         invoices,
         payouts: moneyBadge(releasedPayouts),
         escrow: moneyBadge(escrowHeld || milestones),
-        disputes: 0,
+        disputes: disputedMilestones,
         tickets,
       },
       overview: {
@@ -313,8 +366,10 @@ export async function loadPlatformSnapshot(): Promise<PlatformSnapshot> {
       customers: customerRows,
       events,
       tickets,
-      disputes: 0,
+      ticketRows: ticketRowsEnriched,
+      disputes: disputedMilestones,
       flags,
+      settings,
       meta: {
         customerCount: customers,
         exportedAt: new Date().toISOString(),
