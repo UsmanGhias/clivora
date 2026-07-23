@@ -36,7 +36,7 @@ class AppShell extends ConsumerWidget {
   static const _freelancerBaseTabs = [
     _NavItem('/dashboard', Icons.home_outlined, Icons.home_rounded, 'Home'),
     _NavItem('/customers', Icons.groups_outlined, Icons.groups, 'Clients'),
-    _NavItem('/more', Icons.hub_outlined, Icons.hub, 'Hub'),
+    _NavItem('/more', Icons.grid_view_outlined, Icons.grid_view_rounded, 'Hub'),
     _NavItem('/invoices', Icons.receipt_long_outlined, Icons.receipt_long, 'Billing'),
     _NavItem('/menu', Icons.apps_outlined, Icons.apps, 'More'),
   ];
@@ -45,9 +45,9 @@ class AppShell extends ConsumerWidget {
   static const _freelancerPlusTabs = [
     _NavItem('/dashboard', Icons.home_outlined, Icons.home_rounded, 'Home'),
     _NavItem('/customers', Icons.groups_outlined, Icons.groups, 'Clients'),
-    _NavItem('/connect', Icons.travel_explore_outlined, Icons.travel_explore, 'Connect', connectBadge: true),
+    _NavItem('/connect', Icons.handshake_outlined, Icons.handshake, 'Connect', connectBadge: true),
     _NavItem('/invoices', Icons.receipt_long_outlined, Icons.receipt_long, 'Billing'),
-    _NavItem('/more', Icons.hub_outlined, Icons.hub, 'Hub'),
+    _NavItem('/more', Icons.grid_view_outlined, Icons.grid_view_rounded, 'Hub'),
   ];
 
   /// Free client: keep Account (profile/login) on the bar. Hub lives inside Account.
@@ -63,7 +63,7 @@ class AppShell extends ConsumerWidget {
   static const _clientPlusTabs = [
     _NavItem('/client-portal', Icons.home_outlined, Icons.home_rounded, 'Home'),
     _NavItem('/client-messages', Icons.mail_outline, Icons.mail_rounded, 'Messages'),
-    _NavItem('/connect', Icons.hub_outlined, Icons.hub, 'Connect', connectBadge: true),
+    _NavItem('/connect', Icons.handshake_outlined, Icons.handshake, 'Connect', connectBadge: true),
     _NavItem('/client-invoices', Icons.receipt_long_outlined, Icons.receipt_long, 'Invoices'),
     _NavItem('/client-account', Icons.person_outline, Icons.person, 'Account'),
   ];

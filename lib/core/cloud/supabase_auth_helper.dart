@@ -99,7 +99,7 @@ class SupabaseAuthHelper {
     }
   }
 
-  static Future<void> upsertProfile({
+  static Future<String?> upsertProfile({
     required String email,
     required String name,
     required String accountType,
@@ -108,7 +108,7 @@ class SupabaseAuthHelper {
     String? avatarUrl,
   }) async {
     final uid = currentUid;
-    if (uid == null) return;
+    if (uid == null) return null;
     try {
       final existing = await fetchOwnProfile();
       final locked = existing?['account_type_locked'] as bool? ?? false;
@@ -116,7 +116,7 @@ class SupabaseAuthHelper {
 
       if (locked && lockedType != null && lockedType.isNotEmpty && lockedType != accountType && !forceLock) {
         debugPrint('Profile upsert: type locked as $lockedType');
-        return;
+        return null;
       }
 
       await client.from('profiles').upsert({
@@ -129,8 +129,10 @@ class SupabaseAuthHelper {
         'account_type_locked': forceLock || locked,
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       });
+      return null;
     } catch (e) {
       debugPrint('Supabase profile upsert: $e');
+      return '$e';
     }
   }
 
