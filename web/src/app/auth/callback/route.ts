@@ -23,13 +23,11 @@ export async function GET(request: Request) {
         "freelancer";
       const { data: existingProfile } = await supabase
         .from("profiles")
-        .select("subscription_plan")
+        .select("id, subscription_plan")
         .eq("id", data.user.id)
         .maybeSingle();
-      const existingPlan = String(existingProfile?.subscription_plan ?? "").toLowerCase();
-      const subscriptionPlan = existingPlan && existingPlan !== "free" ? existingPlan : earlyAccessPlanForSignup();
 
-      await supabase.from("profiles").upsert({
+      const patch: Record<string, unknown> = {
         id: data.user.id,
         email: data.user.email ?? "",
         name:
@@ -38,9 +36,15 @@ export async function GET(request: Request) {
           data.user.email?.split("@")[0] ||
           "",
         account_type: accountType === "client" ? "client" : "freelancer",
-        subscription_plan: subscriptionPlan,
         updated_at: new Date().toISOString(),
-      });
+      };
+
+      // Never overwrite an existing paid (or free) plan on login — only set plan for brand-new profiles.
+      if (!existingProfile) {
+        patch.subscription_plan = earlyAccessPlanForSignup();
+      }
+
+      await supabase.from("profiles").upsert(patch);
       return NextResponse.redirect(`${base}${next.startsWith("/") ? next : `/${next}`}`);
     }
   }

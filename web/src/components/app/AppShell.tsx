@@ -35,7 +35,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/profile-types";
-import { isProPlus, planLabel } from "@/lib/plan";
+import { isPro, isProPlus, planLabel } from "@/lib/plan";
 import { Logo } from "@/components/ui/Logo";
 import type { PortalNavCounts } from "@/lib/portal-nav";
 import { CommandPalette, type CommandItem } from "@/components/app/CommandPalette";
@@ -116,6 +116,7 @@ export function AppShell({
   const pathname = usePathname();
   const router = useRouter();
   const plus = isProPlus(profile);
+  const pro = isPro(profile);
   const plan = planLabel(profile);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
@@ -336,7 +337,7 @@ export function AppShell({
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold">{profile.name || profile.email}</p>
-              {plus && (
+              {pro && (
                 <span
                   className={cn(
                     "mt-1 inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase",
@@ -347,7 +348,7 @@ export function AppShell({
                   {plan}
                 </span>
               )}
-              {!plus && (
+              {!pro && (
                 <span className="mt-1 inline-block text-[10px] font-semibold uppercase tracking-wide text-white/50">
                   Free plan
                 </span>
@@ -482,18 +483,18 @@ export function AppShell({
             </Link>
           )}
           <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-            <p className="text-xs font-bold text-white/80">{plus ? `${plan} plan` : "Free Plan"}</p>
+            <p className="text-xs font-bold text-white/80">{plan} plan</p>
             <p className="mt-1 text-[10px] text-white/50">
-              {plus ? "Renews on Oct 10, 2026" : "Upgrade for Connect credits"}
+              {pro ? (plus ? "Full Pro Plus access" : "Pro access active") : "Upgrade for Connect credits"}
             </p>
             <Link
-              href={plus ? "/app/settings?tab=billing" : "/pro?plan=pro_plus"}
+              href={pro ? "/app/settings?tab=billing" : "/pro?plan=pro_plus"}
               className={cn(
                 "mt-2 block rounded-lg px-3 py-1.5 text-center text-xs font-semibold text-white",
                 isClient ? "bg-white/15 hover:bg-white/25" : "bg-primary",
               )}
             >
-              {plus ? "You're on Plus, enjoy" : "Manage plan"}
+              {plus ? "You're on Plus" : pro ? "Manage plan" : "Upgrade plan"}
             </Link>
           </div>
         </div>

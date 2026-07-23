@@ -15,7 +15,7 @@ function serviceKey(): string | null {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    await requireAdminRequest(req);
+    await requireAdminRequest(req, { requireAal2: false });
 
     const key = serviceKey();
     if (!key) {
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
-    await requireAdminRequest(req);
+    await requireAdminRequest(req, { requireAal2: false });
     const key = serviceKey();
     if (!key) {
       return NextResponse.json(
@@ -65,6 +65,80 @@ export async function PATCH(req: NextRequest) {
     if (!id || !["approved", "rejected", "pending"].includes(status)) {
       return NextResponse.json({ error: "id and status (approved|rejected|pending) required" }, { status: 400 });
     }
+
+    // Load request so Approve can also grant the plan (status-only was leaving profiles on Free).
+    const getRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/pro_payment_requests?id=eq.${encodeURIComponent(id)}&select=id,email,plan,status&limit=1`,
+      {
+        headers: { apikey: key, Authorization: `Bearer ${key}` },
+        cache: "no-store",
+      },
+    );
+    if (!getRes.ok) {
+      return NextResponse.json({ error: await getRes.text() }, { status: 400 });
+    }
+    const rows = (await getRes.json()) as Array<{ id: string; email?: string; plan?: string }>;
+    const row = rows[0];
+    if (!row) return NextResponse.json({ error: "Payment request not found" }, { status: 404 });
+
+    if (status === "approved") {
+      const email = String(row.email ?? "").trim().toLowerCase();
+      const planRaw = String(row.plan ?? "pro").toLowerCase();
+      const plan = planRaw.includes("plus") ? "pro_plus" : "pro";
+      if (!email.includes("@")) {
+        return NextResponse.json({ error: "Payment request missing email" }, { status: 400 });
+      }
+      const profileRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?select=id&email=ilike.${encodeURIComponent(email)}&limit=1`,
+        { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: "no-store" },
+      );
+      const profiles = profileRes.ok
+        ? ((await profileRes.json()) as Array<{ id: string }>)
+        : [];
+      if (!profiles.length) {
+        return NextResponse.json({ error: `No profile for ${email}` }, { status: 404 });
+      }
+      const userId = profiles[0].id;
+      const nowIso = new Date().toISOString();
+      const patchProfile = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`,
+        {
+          method: "PATCH",
+          headers: {
+            apikey: key,
+            Authorization: `Bearer ${key}`,
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({ subscription_plan: plan, updated_at: nowIso }),
+        },
+      );
+      if (!patchProfile.ok) {
+        return NextResponse.json({ error: await patchProfile.text() }, { status: 400 });
+      }
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/subscriptions?user_id=eq.${userId}&product_id=like.admin_grant_*`,
+        { method: "DELETE", headers: { apikey: key, Authorization: `Bearer ${key}` } },
+      );
+      await fetch(`${SUPABASE_URL}/rest/v1/subscriptions`, {
+        method: "POST",
+        headers: {
+          apikey: key,
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          product_id: `admin_grant_${plan}`,
+          purchase_token: `admin_${userId}_${plan}_${Date.now()}`,
+          status: "active",
+          expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+          verified_at: nowIso,
+        }),
+      });
+    }
+
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/pro_payment_requests?id=eq.${encodeURIComponent(id)}`,
       {

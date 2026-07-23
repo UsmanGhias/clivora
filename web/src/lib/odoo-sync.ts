@@ -91,6 +91,22 @@ export function isOdooSyncEnabled() {
   return raw === "1" || raw === "true" || raw === "yes";
 }
 
+/** Env first, then admin_integration_secrets.ODOO_SYNC_ENABLED (no Vercel redeploy needed). */
+export async function resolveOdooSyncEnabled(): Promise<boolean> {
+  if (isOdooSyncEnabled()) return true;
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("admin_get_integration_secret", {
+      p_key: "ODOO_SYNC_ENABLED",
+    });
+    if (error || data == null) return false;
+    const raw = String(data).trim().toLowerCase();
+    return raw === "1" || raw === "true" || raw === "yes";
+  } catch {
+    return false;
+  }
+}
+
 function targetAttempts(target: OdooTarget): OdooTarget[] {
   return target === "main" ? ["main", "legacy"] : [target];
 }

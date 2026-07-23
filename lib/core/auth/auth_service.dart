@@ -635,8 +635,10 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
             await file.readAsBytes(),
             fileOptions: FileOptions(contentType: _avatarContentType(ext), upsert: true),
           );
+      final publicUrl = SupabaseAuthHelper.client.storage.from('avatars').getPublicUrl(storagePath);
+      final bust = DateTime.now().millisecondsSinceEpoch;
       return _AvatarUploadResult(
-        url: SupabaseAuthHelper.client.storage.from('avatars').getPublicUrl(storagePath),
+        url: publicUrl.contains('?') ? '$publicUrl&v=$bust' : '$publicUrl?v=$bust',
       );
     } catch (e) {
       debugPrint('Profile avatar upload: $e');

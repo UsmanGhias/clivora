@@ -29,7 +29,7 @@ async function readError(res: Response, fallback: string) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    await requireAdminRequest(req);
+    await requireAdminRequest(req, { requireAal2: false });
 
     const target = String(body.email ?? "").trim().toLowerCase();
     const revoke = Boolean(body.revoke);

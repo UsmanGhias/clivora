@@ -25,7 +25,7 @@ const TARGET_LABEL: Record<"main" | "social", string> = {
   social: "Social Odoo",
 };
 
-/** Admin-only Odoo Phase 1-2 read-only health + explicit legacy write sync. */
+/** Admin Odoo health + bidirectional Contacts sync for Main and Social. */
 export function OdooSyncButton() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -37,7 +37,7 @@ export function OdooSyncButton() {
   const [formDb, setFormDb] = useState("");
   const [formUser, setFormUser] = useState("");
   const [formKey, setFormKey] = useState("");
-  const [showWriteSync, setShowWriteSync] = useState(false);
+  const [syncTarget, setSyncTarget] = useState<"main" | "social">("main");
   const [forceWriteSync, setForceWriteSync] = useState(false);
 
   async function refreshStatus() {
@@ -68,7 +68,7 @@ export function OdooSyncButton() {
       if (mainReady || socialReady) {
         setMsg(json.note || "Odoo health checks are available.");
       } else if (!json.configured) {
-        setMsg(json.hint || "Odoo is not configured. Save credentials below or set Vercel env.");
+        setMsg(json.hint || "Odoo is not configured. Save credentials below or set secrets.");
         setShowForm(true);
       } else {
         setMsg("Odoo credentials are present but health checks are not ready.");
@@ -120,7 +120,12 @@ export function OdooSyncButton() {
       const res = await fetch("/api/integrations/odoo/sync-contacts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ direction, includeTracking: true, force: forceWriteSync, target: "main" }),
+        body: JSON.stringify({
+          direction,
+          includeTracking: true,
+          force: !syncEnabled || forceWriteSync,
+          target: syncTarget,
+        }),
       });
       const json = (await res.json()) as {
         ok?: boolean;
@@ -135,7 +140,7 @@ export function OdooSyncButton() {
         setMsg(json.hint || json.error || "Sync failed");
         return;
       }
-      const parts: string[] = [];
+      const parts: string[] = [`${TARGET_LABEL[syncTarget]}:`];
       if (json.pull) {
         parts.push(
           `Odoo→CLIVORA created ${json.pull.created ?? 0}, updated ${json.pull.updated ?? 0} (scanned ${json.pull.total ?? 0})`,
@@ -158,15 +163,29 @@ export function OdooSyncButton() {
     }
   }
 
-  const mainReady = !!health?.main?.ready;
-  const writeSyncReady = mainReady && forceWriteSync;
+  const targetReady = !!health?.[syncTarget]?.ready;
+  const canSync = targetReady && (syncEnabled || forceWriteSync);
 
   return (
     <div className="space-y-3">
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-        <strong>Sync disabled by default.</strong> Phase 1-2 performs read-only health checks for
-        Main and Social Odoo databases. Legacy write sync requires an explicit admin force action
-        and {syncEnabled ? "the environment flag is enabled." : "ODOO_SYNC_ENABLED is currently false."}
+      <div
+        className={`rounded-xl border p-3 text-xs ${
+          syncEnabled
+            ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+            : "border-amber-200 bg-amber-50 text-amber-900"
+        }`}
+      >
+        {syncEnabled ? (
+          <>
+            <strong>Write sync enabled.</strong> Health checks and Contacts push/pull are available
+            for Main and Social Odoo databases.
+          </>
+        ) : (
+          <>
+            <strong>Write sync disabled.</strong> Health checks still run. Set{" "}
+            <code>ODOO_SYNC_ENABLED=true</code> in secrets (or check Force below) to write.
+          </>
+        )}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -258,63 +277,63 @@ export function OdooSyncButton() {
         </div>
       )}
 
-      <div className="rounded-xl border border-slate-200 bg-white p-3">
-        <button
-          type="button"
-          onClick={() => setShowWriteSync((value) => !value)}
-          className="text-sm font-semibold text-slate-800"
-        >
-          {showWriteSync ? "Hide legacy write sync" : "Show legacy write sync controls"}
-        </button>
-
-        {showWriteSync && (
-          <div className="mt-3 space-y-3">
-            <label className="flex gap-2 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
-              <input
-                type="checkbox"
-                checked={forceWriteSync}
-                onChange={(event) => setForceWriteSync(event.target.checked)}
-              />
-              <span>
-                I understand this can create/update contacts in Odoo or CLIVORA. Run only as an
-                explicit admin action for the Main database.
-              </span>
-            </label>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                disabled={busy || !writeSyncReady}
-                onClick={() => void sync("both")}
-                className="inline-flex rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-              >
-                {busy ? "Syncing..." : "Force two-way sync"}
-              </button>
-              <button
-                type="button"
-                disabled={busy || !writeSyncReady}
-                onClick={() => void sync("pull")}
-                className="inline-flex rounded-xl border border-teal-200 bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-800 disabled:opacity-50"
-              >
-                Force Odoo {"->"} CLIVORA
-              </button>
-              <button
-                type="button"
-                disabled={busy || !writeSyncReady}
-                onClick={() => void sync("push")}
-                className="inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 disabled:opacity-50"
-              >
-                Force CLIVORA {"->"} Odoo
-              </button>
-            </div>
-          </div>
+      <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-3">
+        <h4 className="text-sm font-bold text-slate-900">Contacts sync</h4>
+        <label className="block text-xs font-medium text-slate-600">
+          Sync target
+          <select
+            className="mt-1 w-full max-w-xs rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
+            value={syncTarget}
+            onChange={(e) => setSyncTarget(e.target.value === "social" ? "social" : "main")}
+          >
+            <option value="main">Main Odoo</option>
+            <option value="social">Social Odoo</option>
+          </select>
+        </label>
+        {!syncEnabled && (
+          <label className="flex gap-2 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
+            <input
+              type="checkbox"
+              checked={forceWriteSync}
+              onChange={(event) => setForceWriteSync(event.target.checked)}
+            />
+            <span>Force write sync even though ODOO_SYNC_ENABLED is false.</span>
+          </label>
+        )}
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={busy || !canSync}
+            onClick={() => void sync("both")}
+            className="inline-flex rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            {busy ? "Syncing..." : "Two-way sync"}
+          </button>
+          <button
+            type="button"
+            disabled={busy || !canSync}
+            onClick={() => void sync("pull")}
+            className="inline-flex rounded-xl border border-teal-200 bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-800 disabled:opacity-50"
+          >
+            Odoo → CLIVORA
+          </button>
+          <button
+            type="button"
+            disabled={busy || !canSync}
+            onClick={() => void sync("push")}
+            className="inline-flex rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 disabled:opacity-50"
+          >
+            CLIVORA → Odoo
+          </button>
+        </div>
+        {!targetReady && (
+          <p className="text-xs text-amber-700">
+            {TARGET_LABEL[syncTarget]} must be Ready before sync. Use Refresh health / Save credentials.
+          </p>
         )}
       </div>
 
       {msg && <p className="text-xs text-slate-600">{msg}</p>}
-      <p className="text-[11px] text-slate-500">
-        Health checks authenticate and count active Odoo partners with the existing{" "}
-        <strong>Contacts</strong> app only. No Odoo write sync runs automatically.
-      </p>
     </div>
   );
 }

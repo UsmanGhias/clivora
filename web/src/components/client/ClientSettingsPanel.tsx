@@ -27,9 +27,11 @@ import {
 } from "@/components/client/ui";
 import { ManageBillingButton } from "@/components/app/ManageBillingButton";
 import { DeleteAccountPanel } from "@/components/settings/DeleteAccountPanel";
+import { ProfileEditForm } from "@/components/freelancer/ProfileEditForm";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/profile-types";
+import { useRouter } from "next/navigation";
 
 const NAV = [
   { key: "account", label: "Account & profile", icon: User },
@@ -55,11 +57,13 @@ type Props = {
 };
 
 export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
+  const router = useRouter();
   const [tab, setTab] = useState<(typeof NAV)[number]["key"]>("account");
   const [name, setName] = useState(profile.name ?? "");
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileMsg, setProfileMsg] = useState<string | null>(null);
   const [profileErr, setProfileErr] = useState<string | null>(null);
+  const [editingProfile, setEditingProfile] = useState(false);
 
   const memberSince = useMemo(() => {
     const raw = profile.created_at;
@@ -87,6 +91,7 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
         .eq("id", user.id);
       if (error) throw error;
       setProfileMsg("Profile saved. Changes sync to web and Android.");
+      router.refresh();
     } catch (err) {
       setProfileErr(err instanceof Error ? err.message : "Could not save profile");
     } finally {
@@ -126,6 +131,17 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
           {tab === "account" && (
             <>
               <ClientCard title="Account & profile">
+                {editingProfile ? (
+                  <ProfileEditForm
+                    profile={profile}
+                    onSaved={() => {
+                      setEditingProfile(false);
+                      setProfileMsg("Profile photo and name saved.");
+                      router.refresh();
+                    }}
+                    onCancel={() => setEditingProfile(false)}
+                  />
+                ) : (
                 <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
                   <div className="flex min-w-0 flex-1 items-start gap-4">
                     <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-navy text-xl font-bold text-white">
@@ -169,14 +185,23 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
                       )}
                       {profileErr && <p className="text-sm text-error">{profileErr}</p>}
                       {profileMsg && <p className="text-sm text-success">{profileMsg}</p>}
-                      <button
-                        type="button"
-                        disabled={savingProfile || !name.trim()}
-                        onClick={() => void saveProfile()}
-                        className="rounded-xl bg-client-accent px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
-                      >
-                        {savingProfile ? "Saving…" : "Save profile"}
-                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          disabled={savingProfile || !name.trim()}
+                          onClick={() => void saveProfile()}
+                          className="rounded-xl bg-client-accent px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+                        >
+                          {savingProfile ? "Saving…" : "Save name"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingProfile(true)}
+                          className="rounded-xl border border-border px-4 py-2 text-sm font-bold text-navy hover:bg-client-surface"
+                        >
+                          Change photo
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <div className="rounded-xl border border-border bg-client-surface/50 p-4">
@@ -195,6 +220,7 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
                     </div>
                   </div>
                 </div>
+                )}
               </ClientCard>
 
               <DeleteAccountPanel email={profile.email || ""} />

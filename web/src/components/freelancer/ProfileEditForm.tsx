@@ -34,7 +34,8 @@ async function uploadAvatar(
   }
   const { data } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(path);
   if (!data?.publicUrl) throw new Error("Could not create a public avatar URL.");
-  return data.publicUrl;
+  const bust = `v=${Date.now()}`;
+  return data.publicUrl.includes("?") ? `${data.publicUrl}&${bust}` : `${data.publicUrl}?${bust}`;
 }
 
 export function ProfileEditForm({
@@ -93,22 +94,10 @@ export function ProfileEditForm({
       if (nextAvatar) patch.avatar_url = nextAvatar;
 
       const { error: err } = await supabase.from("profiles").update(patch).eq("id", user.id);
-      if (err) {
-        if (err.message?.toLowerCase().includes("avatar_url")) {
-          const { error: nameOnly } = await supabase
-            .from("profiles")
-            .update({ name: name.trim(), updated_at: new Date().toISOString() })
-            .eq("id", user.id);
-          if (nameOnly) throw nameOnly;
-          setError("Name saved. Avatar column unavailable on this project.");
-        } else {
-          throw err;
-        }
-      } else {
-        setAvatarUrl(nextAvatar);
-        setPendingFile(null);
-      }
+      if (err) throw err;
 
+      setAvatarUrl(nextAvatar);
+      setPendingFile(null);
       onSaved?.();
       router.refresh();
     } catch (cause) {
