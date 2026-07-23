@@ -20,7 +20,6 @@ import {
 import {
   ClientCard,
   ClientPageHeader,
-  ClientOutlineButton,
   ClientPrimaryButton,
   ClientStatCard,
   ClientStatusPill,
@@ -33,8 +32,7 @@ import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/profile-types";
 
 const NAV = [
-  { key: "account", label: "Account", icon: User },
-  { key: "profile", label: "Profile", icon: User },
+  { key: "account", label: "Account & profile", icon: User },
   { key: "notifications", label: "Notifications", icon: Bell },
   { key: "security", label: "Security", icon: Shield },
   { key: "payment", label: "Payment methods", icon: CreditCard },
@@ -58,6 +56,43 @@ type Props = {
 
 export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
   const [tab, setTab] = useState<(typeof NAV)[number]["key"]>("account");
+  const [name, setName] = useState(profile.name ?? "");
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileMsg, setProfileMsg] = useState<string | null>(null);
+  const [profileErr, setProfileErr] = useState<string | null>(null);
+
+  const memberSince = useMemo(() => {
+    const raw = profile.created_at;
+    if (!raw) return null;
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  }, [profile.created_at]);
+
+  async function saveProfile() {
+    setSavingProfile(true);
+    setProfileMsg(null);
+    setProfileErr(null);
+    try {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Sign in required");
+      const trimmed = name.trim();
+      if (!trimmed) throw new Error("Name is required");
+      const { error } = await supabase
+        .from("profiles")
+        .update({ name: trimmed, updated_at: new Date().toISOString() })
+        .eq("id", user.id);
+      if (error) throw error;
+      setProfileMsg("Profile saved. Changes sync to web and Android.");
+    } catch (err) {
+      setProfileErr(err instanceof Error ? err.message : "Could not save profile");
+    } finally {
+      setSavingProfile(false);
+    }
+  }
 
   return (
     <div className="space-y-6 pb-10">
@@ -88,23 +123,36 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
         </nav>
 
         <div className="space-y-4">
-          {(tab === "account" || tab === "profile") && (
+          {tab === "account" && (
             <>
-              <ClientCard
-                title="Account information"
-                action={<ClientOutlineButton href="/app/account">Edit profile</ClientOutlineButton>}
-              >
+              <ClientCard title="Account & profile">
                 <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="flex items-start gap-4">
-                    <span className="flex h-16 w-16 items-center justify-center rounded-full bg-navy text-xl font-bold text-white">
-                      {(profile.name || profile.email || "?").charAt(0).toUpperCase()}
+                  <div className="flex min-w-0 flex-1 items-start gap-4">
+                    <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-navy text-xl font-bold text-white">
+                      {profile.avatar_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        (profile.name || profile.email || "?").charAt(0).toUpperCase()
+                      )}
                     </span>
-                    <div>
-                      <p className="font-display text-lg font-bold text-navy">
-                        {profile.name || "Client"}
-                      </p>
-                      <p className="text-sm text-text-secondary">{profile.email}</p>
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <div className="min-w-0 flex-1 space-y-3">
+                      <div>
+                        <label htmlFor="client-display-name" className="text-xs font-semibold uppercase text-text-muted">
+                          Display name
+                        </label>
+                        <input
+                          id="client-display-name"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm font-semibold text-navy outline-none focus:ring-2 focus:ring-client-accent"
+                        />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase text-text-muted">Email</p>
+                        <p className="mt-1 text-sm text-text-secondary">{profile.email}</p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
                         {plus ? (
                           <ClientStatusPill tone="green">
                             <span className="inline-flex items-center gap-1">
@@ -114,9 +162,21 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
                         ) : (
                           <ClientStatusPill tone="blue">{plan}</ClientStatusPill>
                         )}
-                        <span className="text-xs text-text-muted">Remote</span>
+                        <span className="text-xs text-text-muted">Client account</span>
                       </div>
-                      <p className="mt-2 text-xs text-text-muted">Member since Aug 1, 2024</p>
+                      {memberSince && (
+                        <p className="text-xs text-text-muted">Member since {memberSince}</p>
+                      )}
+                      {profileErr && <p className="text-sm text-error">{profileErr}</p>}
+                      {profileMsg && <p className="text-sm text-success">{profileMsg}</p>}
+                      <button
+                        type="button"
+                        disabled={savingProfile || !name.trim()}
+                        onClick={() => void saveProfile()}
+                        className="rounded-xl bg-client-accent px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+                      >
+                        {savingProfile ? "Saving…" : "Save profile"}
+                      </button>
                     </div>
                   </div>
                   <div className="rounded-xl border border-border bg-client-surface/50 p-4">
@@ -125,7 +185,11 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
                       <p className="font-bold text-navy">{plan}</p>
                       {plus && <ClientStatusPill tone="green">Active</ClientStatusPill>}
                     </div>
-                    <p className="mt-1 text-xs text-text-secondary">Renews on Aug 1, 2026</p>
+                    <p className="mt-1 text-xs text-text-secondary">
+                      {plus
+                        ? "Manual, JazzCash, bank, or Google Play approvals."
+                        : "Upgrade anytime from checkout."}
+                    </p>
                     <div className="mt-3">
                       <ManageBillingButton />
                     </div>
@@ -188,6 +252,9 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
                             e.preventDefault();
                             if (a.label === "Change password") setTab("security");
                             if (a.label === "Notification settings") setTab("notifications");
+                            if (a.label === "Delete account") {
+                              document.getElementById("delete-account")?.scrollIntoView({ behavior: "smooth" });
+                            }
                           }
                         }}
                         className={cn(
@@ -249,8 +316,8 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
             <ClientCard title={tab === "payment" ? "Payment methods" : "Billing & plans"}>
               <p className="text-sm text-text-secondary">
                 {tab === "payment"
-                  ? "Add or update cards used for hiring and invoices."
-                  : `You are on ${plan}. Manage renewal and invoices via Stripe.`}
+                  ? "JazzCash, Easypaisa, bank transfer, and Google Play are used for Pro upgrades. Hiring invoices go direct between you and freelancers."
+                  : `You are on ${plan}. Renewals are approved manually after JazzCash, bank, promo, or Google Play payment — not Stripe.`}
               </p>
               <div className="mt-4">
                 <ManageBillingButton />
