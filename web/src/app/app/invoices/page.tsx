@@ -216,14 +216,14 @@ export default async function InvoicesPage() {
           />
           <FreelancerCard title="Payment methods">
             <p className="text-sm text-text-secondary">
-              Card gateways (Stripe / PayPal / Wise) are not live yet. Use bank or JazzCash payout
-              details for client invoices.
+              Card gateways on web use SafePay for Pro. Android uses Google Play Billing for monthly
+              subscriptions. Invoice payouts still use bank / JazzCash details for client invoices.
             </p>
             <ul className="mt-3 space-y-2 text-sm">
               {[
-                { name: "Stripe", status: "Not connected" },
-                { name: "PayPal", status: "Not connected" },
-                { name: "Wise", status: "Not connected" },
+                { name: "SafePay", status: "Pro checkout" },
+                { name: "Google Play", status: "Android subs" },
+                { name: "JazzCash / bank", status: "Manual Pro + payouts" },
               ].map((m) => (
                 <li
                   key={m.name}

@@ -79,9 +79,9 @@ class ConnectMarketplaceService {
 
   Future<void> acceptProposal({
     required String proposalId,
-    required String requestId,
     required String clientUserId,
     required String freelancerUserId,
+    String? requestId,
     double amount = 0,
   }) async {
     final c = client;
@@ -92,7 +92,10 @@ class ConnectMarketplaceService {
     } catch (e) {
       throw mapConnectRpcError(e);
     }
-    // Kickoff milestone remains a free follow-up after accept.
+    if (requestId == null || requestId.isEmpty) {
+      return;
+    }
+    // Kickoff milestone remains a free follow-up after accepting an engagement request.
     await c.from('connect_milestones').insert({
       'engagement_request_id': requestId,
       'client_user_id': clientUserId,

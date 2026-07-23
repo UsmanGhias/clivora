@@ -93,10 +93,13 @@ export default async function TimesheetsPage() {
     let shares: Share[] = [];
     let entries: TimeEntry[] = [];
     try {
+      const clientFilter = profile.email
+        ? `client_uid.eq.${uid},client_email.eq.${profile.email}`
+        : `client_uid.eq.${uid}`;
       const { data: shareRows } = await supabase
         .from("project_shares")
         .select("share_id, project_name, freelancer_uid, freelancer_email, status")
-        .eq("client_uid", uid)
+        .or(clientFilter)
         .limit(50);
       shares = (shareRows ?? []) as Share[];
       const freelancerIds = [
