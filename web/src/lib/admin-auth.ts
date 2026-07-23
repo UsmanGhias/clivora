@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createClient as createSupabaseJsClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/supabase-browser";
@@ -39,16 +40,12 @@ function assertSupabaseAuthConfig() {
   }
 }
 
-/**
- * Authorize an admin from the verified Supabase cookie session.
- *
- * Email allowlists, request-body credentials, and user metadata are deliberately
- * ignored. The role must be present on the caller's own database profile row.
- */
-export async function requireAdmin(options: { requireAal2?: boolean } = {}) {
-  assertSupabaseAuthConfig();
+type AuthClient = Awaited<ReturnType<typeof createClient>>;
 
-  const supabase = await createClient();
+async function authorizeAdminClient(
+  supabase: AuthClient,
+  options: { requireAal2?: boolean } = {},
+): Promise<AdminPrincipal> {
   const {
     data: { user },
     error: userError,
@@ -105,9 +102,45 @@ export async function requireAdmin(options: { requireAal2?: boolean } = {}) {
   } satisfies AdminPrincipal;
 }
 
-/** Route-compatible alias. The cookie-backed server client is the only credential source. */
-export async function requireAdminRequest(_request: Request) {
-  return requireAdmin({ requireAal2: true });
+/**
+ * Authorize an admin from the verified Supabase cookie session.
+ *
+ * Email allowlists, request-body credentials, and user metadata are deliberately
+ * ignored. The role must be present on the caller's own database profile row.
+ */
+export async function requireAdmin(options: { requireAal2?: boolean } = {}) {
+  assertSupabaseAuthConfig();
+  const supabase = await createClient();
+  return authorizeAdminClient(supabase, options);
+}
+
+/**
+ * Prefer cookie session; fall back to Authorization Bearer so client actions that
+ * send the access token still work when SSR cookies were missing after login.
+ */
+export async function requireAdminRequest(
+  request: Request,
+  options: { requireAal2?: boolean } = { requireAal2: true },
+) {
+  assertSupabaseAuthConfig();
+  try {
+    return await requireAdmin(options);
+  } catch (err) {
+    if (!(err instanceof AdminAuthError) || err.code !== "AUTH_REQUIRED") {
+      throw err;
+    }
+    const header = request.headers.get("Authorization") ?? "";
+    if (!header.startsWith("Bearer ")) throw err;
+    const token = header.slice("Bearer ".length).trim();
+    if (!token) throw err;
+
+    const supabase = createSupabaseJsClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    }) as unknown as AuthClient;
+
+    return authorizeAdminClient(supabase, options);
+  }
 }
 
 const PRIVATE_NO_STORE_HEADERS = {

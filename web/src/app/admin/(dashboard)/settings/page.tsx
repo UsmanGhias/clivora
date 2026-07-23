@@ -6,7 +6,6 @@ import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
   AdminPageHeader,
   AdminBtn,
-  ExportImportAdd,
   FilterBar,
   PageLayout,
   SidePanel,
@@ -42,7 +41,11 @@ export default function AdminSettingsPage() {
       <AdminPageHeader
         title="System Settings"
         subtitle="Configure platform defaults, email, and feature flags."
-        actions={<ExportImportAdd entity="Settings" addLabel="Save Changes" />}
+        actions={
+          <AdminBtn variant="primary" onClick={() => window.location.reload()}>
+            <Save className="h-3.5 w-3.5" /> Refresh
+          </AdminBtn>
+        }
       />
 
       <PageLayout
@@ -128,24 +131,18 @@ export default function AdminSettingsPage() {
 
                 {activeTab === "email" && (
                   <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <h3 className="mb-4 text-sm font-bold text-slate-900">Email</h3>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <Field label="From name">
-                        <input
-                          defaultValue="CLIVORA"
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-teal-400"
-                        />
-                      </Field>
-                      <Field label="From address">
-                        <input
-                          defaultValue="noreply@clivora.com"
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-teal-400"
-                        />
-                      </Field>
-                    </div>
+                    <h3 className="mb-4 text-sm font-bold text-slate-900">Email (Resend-first)</h3>
+                    <p className="mb-4 text-sm text-slate-600">
+                      Delivery uses Supabase Edge Function secrets <code>RESEND_API_KEY</code> and
+                      <code>RESEND_FROM</code>. Password reset redirects to the website
+                      <code>/auth/reset-password</code>. Optional Gmail SMTP is dashboard-only.
+                    </p>
                     <div className="mt-4 flex justify-end">
-                      <AdminBtn variant="primary">
-                        <Save className="h-3.5 w-3.5" /> Save email
+                      <AdminBtn
+                        variant="primary"
+                        href="https://supabase.com/dashboard/project/jtzjwgovqczlccyeujhq/functions"
+                      >
+                        Open Edge Function secrets
                       </AdminBtn>
                     </div>
                   </section>
@@ -192,7 +189,7 @@ export default function AdminSettingsPage() {
                             <div className="font-bold text-slate-800">{String(f.key)}</div>
                             <div className="truncate text-xs text-slate-500">{String(f.description || "")}</div>
                           </div>
-                          <StatusPill status={f.value ? "active" : "inactive"} />
+                          <StatusPill status={(f.enabled ?? f.value) ? "active" : "inactive"} />
                         </li>
                       ))}
                     </ul>

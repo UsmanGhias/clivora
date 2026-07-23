@@ -26,6 +26,7 @@ function nameOf(u: Record<string, unknown>) {
 export default function AdminUsersPage() {
   const { data, loading, refresh } = useAdminData();
   const [activeTab, setActiveTab] = useState("all");
+  const [query, setQuery] = useState("");
   const users = useMemo(() => data?.users ?? [], [data?.users]);
 
   const kpis = useMemo(() => {
@@ -43,16 +44,19 @@ export default function AdminUsersPage() {
   }, [users, data?.overview]);
 
   const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
     return users.filter((u) => {
       const type = String(u.account_type ?? "freelancer").toLowerCase();
       const plan = String(u.subscription_plan || u.plan || "").toLowerCase();
-      if (activeTab === "clients") return type === "client";
-      if (activeTab === "freelancers") return type !== "client";
-      if (activeTab === "pro") return ["pro", "premium", "pro_plus"].includes(plan);
-      if (activeTab === "suspended") return Boolean(u.is_blocked || u.is_restricted);
-      return true;
+      if (activeTab === "clients" && type !== "client") return false;
+      if (activeTab === "freelancers" && type === "client") return false;
+      if (activeTab === "pro" && !["pro", "premium", "pro_plus"].includes(plan)) return false;
+      if (activeTab === "suspended" && !Boolean(u.is_blocked || u.is_restricted)) return false;
+      if (!q) return true;
+      const hay = `${nameOf(u)} ${String(u.email || "")} ${type} ${plan}`.toLowerCase();
+      return hay.includes(q);
     });
-  }, [users, activeTab]);
+  }, [users, activeTab, query]);
 
   return (
     <div>
@@ -68,7 +72,7 @@ export default function AdminUsersPage() {
       <AdminPageHeader
         title="Users"
         subtitle="Manage clients, freelancers, and platform accounts."
-        actions={<ExportImportAdd entity="Users" addLabel="Add User" />}
+        actions={<ExportImportAdd entity="Users" onAdd={() => refresh()} addLabel="Refresh users" />}
       />
 
       <KpiGrid
@@ -117,6 +121,8 @@ export default function AdminUsersPage() {
           <div>
             <FilterBar
               searchPlaceholder="Search users by name or email…"
+              searchValue={query}
+              onSearchChange={setQuery}
               tabs={[
                 { id: "all", label: "All", count: kpis.total },
                 { id: "clients", label: "Clients", count: kpis.clients },
@@ -126,7 +132,10 @@ export default function AdminUsersPage() {
               ]}
               activeTab={activeTab}
               onTabChange={setActiveTab}
-              onReset={() => setActiveTab("all")}
+              onReset={() => {
+                setActiveTab("all");
+                setQuery("");
+              }}
             />
 
             {!data && loading ? (
