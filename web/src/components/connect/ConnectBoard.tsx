@@ -29,6 +29,7 @@ import { ConnectTrust } from "@/components/connect/ConnectTrust";
 import { ConnectActions } from "@/components/connect/ConnectActions";
 import { site } from "@/lib/site";
 import { cn } from "@/lib/utils";
+import { toggleBookmark, type BookmarkTargetType } from "@/lib/bookmarks";
 
 const CATEGORIES = [
   "Web & Software",
@@ -103,6 +104,7 @@ export function ConnectBoard({
   accent = "teal",
   defaultTab = "talent",
   loadError = null,
+  savedBookmarkIds = [],
 }: {
   profiles: ConnectProfile[];
   needs: ConnectNeed[];
@@ -116,6 +118,7 @@ export function ConnectBoard({
   accent?: "teal" | "slate";
   defaultTab?: Tab;
   loadError?: string | null;
+  savedBookmarkIds?: string[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -133,6 +136,8 @@ export function ConnectBoard({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [sort, setSort] = useState<SortMode>("featured");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [bookmarkBusyId, setBookmarkBusyId] = useState<string | null>(null);
+  const [savedIds, setSavedIds] = useState(() => new Set(savedBookmarkIds));
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [compose, setCompose] = useState<{
@@ -153,6 +158,10 @@ export function ConnectBoard({
   useEffect(() => {
     setTab(defaultTab);
   }, [defaultTab]);
+
+  useEffect(() => {
+    setSavedIds(new Set(savedBookmarkIds));
+  }, [savedBookmarkIds]);
 
   useEffect(() => {
     const raw = String(searchParams.get("tab") ?? "").toLowerCase();
@@ -359,6 +368,48 @@ export function ConnectBoard({
       return;
     }
     action();
+  }
+
+  async function onToggleBookmark({
+    targetId,
+    targetType,
+    title,
+    meta,
+  }: {
+    targetId: string;
+    targetType: BookmarkTargetType;
+    title?: string | null;
+    meta?: Record<string, unknown>;
+  }) {
+    if (!signedIn) {
+      router.push(`/login?next=${encodeURIComponent(pathname || "/connect")}`);
+      return;
+    }
+    const wasSaved = savedIds.has(targetId);
+    setError(null);
+    setOk(null);
+    setBookmarkBusyId(targetId);
+    setSavedIds((prev) => {
+      const next = new Set(prev);
+      if (wasSaved) next.delete(targetId);
+      else next.add(targetId);
+      return next;
+    });
+    try {
+      await toggleBookmark({ targetId, targetType, title, meta, saved: wasSaved });
+      setOk(wasSaved ? "Removed from bookmarks." : "Saved to bookmarks.");
+      router.refresh();
+    } catch (err) {
+      setSavedIds((prev) => {
+        const next = new Set(prev);
+        if (wasSaved) next.add(targetId);
+        else next.delete(targetId);
+        return next;
+      });
+      setError(err instanceof Error ? err.message : "Could not update bookmark.");
+    } finally {
+      setBookmarkBusyId(null);
+    }
   }
 
   return (
@@ -811,9 +862,27 @@ export function ConnectBoard({
                       </button>
                       <button
                         type="button"
-                        className="rounded-xl border border-border px-4 py-2 text-sm font-semibold text-navy"
+                        disabled={bookmarkBusyId === p.user_id}
+                        onClick={() =>
+                          void onToggleBookmark({
+                            targetId: p.user_id,
+                            targetType: "freelancer",
+                            title: p.display_title || p.headline || "Freelancer",
+                            meta: {
+                              profile_id: p.id,
+                              headline: p.headline,
+                              location_label: p.location_label,
+                            },
+                          })
+                        }
+                        className={cn(
+                          "rounded-xl border px-4 py-2 text-sm font-semibold disabled:opacity-60",
+                          savedIds.has(p.user_id)
+                            ? "border-client-accent/30 bg-client-surface text-client-accent"
+                            : "border-border text-navy",
+                        )}
                       >
-                        Save
+                        {savedIds.has(p.user_id) ? "Unsave" : "Save"}
                       </button>
                     </div>
                   </div>
@@ -914,6 +983,30 @@ export function ConnectBoard({
                     className="mt-4 rounded-xl bg-navy px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
                   >
                     Contact
+                  </button>
+                  <button
+                    type="button"
+                    disabled={bookmarkBusyId === p.user_id}
+                    onClick={() =>
+                      void onToggleBookmark({
+                        targetId: p.user_id,
+                        targetType: "freelancer",
+                        title: p.display_title || p.headline || "Freelancer",
+                        meta: {
+                          profile_id: p.id,
+                          headline: p.headline,
+                          location_label: p.location_label,
+                        },
+                      })
+                    }
+                    className={cn(
+                      "mt-2 rounded-xl border px-4 py-2.5 text-sm font-semibold disabled:opacity-60",
+                      savedIds.has(p.user_id)
+                        ? "border-primary/30 bg-primary/10 text-primary-dark"
+                        : "border-border text-navy",
+                    )}
+                  >
+                    {savedIds.has(p.user_id) ? "Unsave" : "Save"}
                   </button>
                 </article>
               ))}
@@ -1054,6 +1147,29 @@ export function ConnectBoard({
                     >
                       Contact
                     </Link>
+                    <button
+                      type="button"
+                      disabled={bookmarkBusyId === n.id}
+                      onClick={() =>
+                        void onToggleBookmark({
+                          targetId: n.id,
+                          targetType: "job",
+                          title: n.title || "Job",
+                          meta: {
+                            budget_band: n.budget_band,
+                            client_user_id: n.client_user_id,
+                          },
+                        })
+                      }
+                      className={cn(
+                        "rounded-xl border px-4 py-2.5 text-sm font-semibold disabled:opacity-60",
+                        savedIds.has(n.id)
+                          ? "border-primary/30 bg-primary/10 text-primary-dark"
+                          : "border-border text-navy",
+                      )}
+                    >
+                      {savedIds.has(n.id) ? "Unsave" : "Save"}
+                    </button>
                     {signedIn &&
                       isProPlus &&
                       !isClient &&

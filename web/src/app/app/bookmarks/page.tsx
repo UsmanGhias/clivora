@@ -7,7 +7,6 @@ import {
   FolderKanban,
   Plus,
   ShoppingBag,
-  Smartphone,
   Star,
   Users,
 } from "lucide-react";
@@ -61,25 +60,32 @@ export default async function BookmarksPage() {
 
   if (isClient) {
     const freelancerBookmarks = bookmarks.filter(
-      (b) => b.target_type === "freelancer" || b.target_type === "job",
+      (b) => b.target_type === "freelancer",
     );
+    const jobBookmarks = bookmarks.filter((b) => b.target_type === "job");
     let talent: Awaited<ReturnType<typeof listPublicConnectProfiles>> = [];
+    let jobs: Awaited<ReturnType<typeof listPublicConnectNeeds>> = [];
     try {
-      talent = await listPublicConnectProfiles();
+      [talent, jobs] = await Promise.all([
+        listPublicConnectProfiles(),
+        listPublicConnectNeeds(),
+      ]);
     } catch {
       talent = [];
+      jobs = [];
     }
     const byUserId = new Map(talent.map((t) => [t.user_id, t]));
     const byId = new Map(talent.map((t) => [t.id, t]));
-    const savedTalent = freelancerBookmarks
-      .map((b) => {
-        const profileRow = byUserId.get(b.target_id) || byId.get(b.target_id);
-        return {
-          bookmark: b,
-          profile: profileRow,
-        };
-      })
-      .filter((x) => x.profile || x.bookmark.title);
+    const jobsById = new Map(jobs.map((j) => [j.id, j]));
+    const savedTalent = freelancerBookmarks.flatMap((bookmark) => {
+      const profileRow = byUserId.get(bookmark.target_id) || byId.get(bookmark.target_id);
+      return profileRow ? [{ bookmark, profile: profileRow }] : [];
+    });
+    const savedJobs = jobBookmarks.flatMap((bookmark) => {
+      const job = jobsById.get(bookmark.target_id);
+      return job ? [{ bookmark, job }] : [];
+    });
+    const totalSaved = savedTalent.length + savedJobs.length;
 
     return (
       <div className="space-y-6 pb-10">
@@ -97,16 +103,11 @@ export default async function BookmarksPage() {
 
         <div className="grid gap-3 sm:grid-cols-3">
           <ClientStatCard label="Saved freelancers" value={savedTalent.length} icon={Users} />
+          <ClientStatCard label="Saved jobs" value={savedJobs.length} icon={ShoppingBag} />
           <ClientStatCard
             label="Total bookmarks"
-            value={bookmarks.length}
+            value={totalSaved}
             icon={Bookmark}
-          />
-          <ClientStatCard
-            label="Connect pool"
-            value={talent.length}
-            icon={Star}
-            href="/app/connect"
           />
         </div>
 
@@ -161,6 +162,55 @@ export default async function BookmarksPage() {
             </ul>
           )}
         </ClientCard>
+
+        <ClientCard title="Saved jobs">
+          {savedJobs.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border px-4 py-8 text-center">
+              <p className="font-semibold text-navy">No saved jobs yet</p>
+              <p className="mt-2 text-sm text-text-secondary">
+                Save Connect job posts to review them later.
+              </p>
+              <Link
+                href="/app/connect?tab=jobs"
+                className="mt-4 inline-block text-sm font-semibold text-client-accent"
+              >
+                Browse jobs →
+              </Link>
+            </div>
+          ) : (
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {savedJobs.map(({ bookmark, job }) => (
+                <li
+                  key={bookmark.id}
+                  className="rounded-xl border border-border bg-background px-4 py-3"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-client-surface text-client-accent">
+                      <ShoppingBag className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-navy">{job.title || "Connect job"}</p>
+                      <p className="line-clamp-2 text-xs text-text-secondary">
+                        {job.summary || "Open Connect brief"}
+                      </p>
+                      {job.budget_band && (
+                        <p className="mt-1 text-xs font-semibold text-client-accent">
+                          {job.budget_band}
+                        </p>
+                      )}
+                      <Link
+                        href={`/app/connect?tab=jobs`}
+                        className="mt-2 inline-block text-xs font-semibold text-client-accent"
+                      >
+                        View jobs →
+                      </Link>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </ClientCard>
       </div>
     );
   }
@@ -181,14 +231,84 @@ export default async function BookmarksPage() {
     /* ignore */
   }
 
-  const savedIds = bookmarks.map((d) => d.target_id);
+  function matchesTargetId(
+    row: { id?: string | null; local_id?: number | null },
+    targetId: string,
+  ) {
+    return String(row.id ?? "") === targetId || String(row.local_id ?? "") === targetId;
+  }
 
-  const savedProjects = projects.slice(0, 4);
-  const savedClients = customers.slice(0, 4);
-  const savedTalent = talent.slice(0, 4);
-  const savedJobs = jobs.slice(0, 2);
-  const total =
-    savedProjects.length + savedClients.length + savedTalent.length + savedJobs.length || 0;
+  const findProject = (targetId: string) => projects.find((p) => matchesTargetId(p, targetId));
+  const findCustomer = (targetId: string) => customers.find((c) => matchesTargetId(c, targetId));
+  const findTalent = (targetId: string) =>
+    talent.find((t) => t.user_id === targetId || t.id === targetId);
+  const findJob = (targetId: string) => jobs.find((j) => j.id === targetId);
+
+  const savedProjects = bookmarks
+    .filter((b) => b.target_type === "project")
+    .flatMap((bookmark) => {
+      const project = findProject(bookmark.target_id);
+      return project ? [{ bookmark, project }] : [];
+    });
+  const savedClients = bookmarks
+    .filter((b) => b.target_type === "client")
+    .flatMap((bookmark) => {
+      const client = findCustomer(bookmark.target_id);
+      return client ? [{ bookmark, client }] : [];
+    });
+  const savedTalent = bookmarks
+    .filter((b) => b.target_type === "freelancer")
+    .flatMap((bookmark) => {
+      const profile = findTalent(bookmark.target_id);
+      return profile ? [{ bookmark, profile }] : [];
+    });
+  const savedJobs = bookmarks
+    .filter((b) => b.target_type === "job")
+    .flatMap((bookmark) => {
+      const job = findJob(bookmark.target_id);
+      return job ? [{ bookmark, job }] : [];
+    });
+  const total = savedProjects.length + savedClients.length + savedTalent.length + savedJobs.length;
+  const recentBookmarks = bookmarks
+    .map((bookmark) => {
+      if (bookmark.target_type === "project") {
+        const project = findProject(bookmark.target_id);
+        return project
+          ? { id: bookmark.id, label: project.name, type: "Project", icon: "project" as const }
+          : null;
+      }
+      if (bookmark.target_type === "client") {
+        const clientRow = findCustomer(bookmark.target_id);
+        return clientRow
+          ? {
+              id: bookmark.id,
+              label: clientRow.company || clientRow.contact_person || "Client",
+              type: "Client",
+              icon: "client" as const,
+            }
+          : null;
+      }
+      if (bookmark.target_type === "freelancer") {
+        const profileRow = findTalent(bookmark.target_id);
+        return profileRow
+          ? {
+              id: bookmark.id,
+              label: profileRow.display_title || profileRow.headline || "Freelancer",
+              type: "Freelancer",
+              icon: "talent" as const,
+            }
+          : null;
+      }
+      if (bookmark.target_type === "job") {
+        const job = findJob(bookmark.target_id);
+        return job
+          ? { id: bookmark.id, label: job.title || "Job", type: "Job", icon: "job" as const }
+          : null;
+      }
+      return null;
+    })
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
+    .slice(0, 5);
 
   return (
     <div className="space-y-6 pb-10">
@@ -212,11 +332,11 @@ export default async function BookmarksPage() {
 
       <div className="flex flex-wrap gap-2">
         {[
-          { label: `All Items (${total || 24})`, active: true },
-          { label: `Projects (${savedProjects.length || 12})`, active: false },
-          { label: `Clients (${savedClients.length || 6})`, active: false },
-          { label: `Freelancers (${savedTalent.length || 4})`, active: false },
-          { label: `Jobs (${savedJobs.length || 2})`, active: false },
+          { label: `All Items (${total})`, active: true },
+          { label: `Projects (${savedProjects.length})`, active: false },
+          { label: `Clients (${savedClients.length})`, active: false },
+          { label: `Freelancers (${savedTalent.length})`, active: false },
+          { label: `Jobs (${savedJobs.length})`, active: false },
         ].map((t) => (
           <button
             key={t.label}
@@ -235,12 +355,9 @@ export default async function BookmarksPage() {
           <section>
             <h2 className="mb-3 font-display text-lg font-bold text-navy">Saved projects</h2>
             <div className="space-y-3">
-              {(savedProjects.length ? savedProjects : [
-                { id: "demo1", name: "E-commerce Website Redesign", description: "FinTech Solutions", budget: 2500, status: "active" },
-                { id: "demo2", name: "Mobile Banking App", description: "Nova Startup", budget: 4000, status: "active" },
-              ]).map((p, i) => (
+              {savedProjects.map(({ bookmark, project: p }, i) => (
                 <article
-                  key={p.id}
+                  key={bookmark.id}
                   className="relative flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm sm:flex-row sm:items-center"
                 >
                   <span className="absolute left-3 top-0 text-violet-500">
@@ -251,16 +368,16 @@ export default async function BookmarksPage() {
                       i % 2 === 0 ? "bg-primary" : "bg-violet-500"
                     }`}
                   >
-                    {i % 2 === 0 ? <ShoppingBag className="h-5 w-5" /> : <Smartphone className="h-5 w-5" />}
+                    <ShoppingBag className="h-5 w-5" />
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="font-bold text-navy">{p.name}</p>
                     <p className="text-xs text-text-secondary">
-                      {(p as { description?: string }).description || "CRM project"}
+                      {p.description || "CRM project"}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
-                      <StatusPill tone="violet">Web Development</StatusPill>
-                      <StatusPill tone="blue">React</StatusPill>
+                      <StatusPill tone="violet">{p.status || "Project"}</StatusPill>
+                      <StatusPill tone="blue">{p.currency || "USD"}</StatusPill>
                     </div>
                   </div>
                   <div className="text-right">
@@ -271,6 +388,11 @@ export default async function BookmarksPage() {
                   </div>
                 </article>
               ))}
+              {savedProjects.length === 0 && (
+                <p className="rounded-2xl border border-dashed border-border bg-surface p-5 text-sm text-text-secondary">
+                  Bookmark CRM projects to see them here.
+                </p>
+              )}
             </div>
             <Link
               href="/app/projects"
@@ -283,9 +405,9 @@ export default async function BookmarksPage() {
           <section>
             <h2 className="mb-3 font-display text-lg font-bold text-navy">Saved clients</h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {(savedClients.length ? savedClients : []).slice(0, 4).map((c) => (
+              {savedClients.slice(0, 4).map(({ bookmark, client: c }) => (
                 <article
-                  key={c.id}
+                  key={bookmark.id}
                   className="relative rounded-2xl border border-border bg-surface p-4 shadow-sm"
                 >
                   <Bookmark className="absolute right-3 top-3 h-4 w-4 fill-violet-500 text-violet-500" />
@@ -296,7 +418,9 @@ export default async function BookmarksPage() {
                   <p className="truncate text-xs text-text-secondary">
                     {Array.isArray(c.emails) ? String(c.emails[0] || "") : c.city || "Client"}
                   </p>
-                  <p className="mt-2 text-xs text-amber-600">★ 4.9 · Projects</p>
+                  <p className="mt-2 text-xs font-semibold text-text-muted">
+                    {c.status || "CRM client"}
+                  </p>
                 </article>
               ))}
               {savedClients.length === 0 && (
@@ -309,15 +433,76 @@ export default async function BookmarksPage() {
               )}
             </div>
           </section>
+
+          <section>
+            <h2 className="mb-3 font-display text-lg font-bold text-navy">Saved Connect</h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {savedTalent.map(({ bookmark, profile: cp }) => (
+                <article
+                  key={bookmark.id}
+                  className="rounded-2xl border border-border bg-surface p-4 shadow-sm"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <Star className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-navy">{cp.display_title || "Freelancer"}</p>
+                      <p className="line-clamp-2 text-xs text-text-secondary">
+                        {cp.headline || "Connect profile"}
+                      </p>
+                      {cp.rate_band && (
+                        <p className="mt-1 text-xs font-semibold text-primary-dark">
+                          {cp.rate_band}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              ))}
+              {savedJobs.map(({ bookmark, job }) => (
+                <article
+                  key={bookmark.id}
+                  className="rounded-2xl border border-border bg-surface p-4 shadow-sm"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <Users className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-navy">{job.title || "Job"}</p>
+                      <p className="line-clamp-2 text-xs text-text-secondary">
+                        {job.summary || "Open Connect brief"}
+                      </p>
+                      {job.budget_band && (
+                        <p className="mt-1 text-xs font-semibold text-primary-dark">
+                          {job.budget_band}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              ))}
+              {savedTalent.length === 0 && savedJobs.length === 0 && (
+                <p className="col-span-full text-sm text-text-secondary">
+                  Save Connect profiles or jobs to see them here.{" "}
+                  <Link href="/app/connect" className="font-semibold text-primary">
+                    Open Connect →
+                  </Link>
+                </p>
+              )}
+            </div>
+          </section>
         </div>
 
         <aside className="space-y-4">
           <FreelancerCard title="Collections">
             <ul className="space-y-2">
               {[
-                { name: "High Priority Projects", color: "bg-violet-500", count: savedProjects.length || 5 },
-                { name: "Potential Clients", color: "bg-primary", count: savedClients.length || 3 },
-                { name: "Connect Talent", color: "bg-sky-500", count: savedTalent.length || 2 },
+                { name: "Saved projects", color: "bg-violet-500", count: savedProjects.length },
+                { name: "Saved clients", color: "bg-primary", count: savedClients.length },
+                { name: "Connect talent", color: "bg-sky-500", count: savedTalent.length },
+                { name: "Connect jobs", color: "bg-amber-500", count: savedJobs.length },
               ].map((c) => (
                 <li
                   key={c.name}
@@ -329,28 +514,26 @@ export default async function BookmarksPage() {
                 </li>
               ))}
             </ul>
-            <button type="button" className="mt-3 text-sm font-semibold text-primary">
-              + New Collection
-            </button>
           </FreelancerCard>
 
           <FreelancerCard title="Recent bookmarks">
             <ul className="space-y-3 text-sm">
-              {savedProjects.slice(0, 3).map((p) => (
-                <li key={p.id} className="flex items-center gap-2">
-                  <FolderKanban className="h-4 w-4 text-primary" />
-                  <span className="flex-1 truncate font-medium text-navy">{p.name}</span>
-                  <span className="text-[10px] text-text-muted">Project</span>
+              {recentBookmarks.map((item) => (
+                <li key={item.id} className="flex items-center gap-2">
+                  {item.icon === "project" ? (
+                    <FolderKanban className="h-4 w-4 text-primary" />
+                  ) : item.icon === "client" ? (
+                    <Building2 className="h-4 w-4 text-primary" />
+                  ) : item.icon === "talent" ? (
+                    <Star className="h-4 w-4 text-sky-600" />
+                  ) : (
+                    <Users className="h-4 w-4 text-sky-600" />
+                  )}
+                  <span className="flex-1 truncate font-medium text-navy">{item.label}</span>
+                  <span className="text-[10px] text-text-muted">{item.type}</span>
                 </li>
               ))}
-              {savedJobs.slice(0, 2).map((j) => (
-                <li key={j.id} className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-sky-600" />
-                  <span className="flex-1 truncate font-medium text-navy">{j.title}</span>
-                  <span className="text-[10px] text-text-muted">Job</span>
-                </li>
-              ))}
-              {savedProjects.length === 0 && savedJobs.length === 0 && (
+              {recentBookmarks.length === 0 && (
                 <li className="text-text-secondary">No recent bookmarks yet.</li>
               )}
             </ul>
@@ -365,8 +548,8 @@ export default async function BookmarksPage() {
               Learn more →
             </Link>
           </div>
-          {savedIds.length > 0 && (
-            <p className="text-[10px] text-text-muted">{savedIds.length} synced bookmarks</p>
+          {bookmarks.length > 0 && (
+            <p className="text-[10px] text-text-muted">{bookmarks.length} synced bookmarks</p>
           )}
         </aside>
       </div>
