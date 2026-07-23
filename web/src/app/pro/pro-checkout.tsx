@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Check, Shield, Sparkles, HardDrive } from "lucide-react";
+import { Check, ChevronDown, CreditCard, HardDrive, Shield, Smartphone, Sparkles } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase-browser";
 import {
   OFFICIAL_EMAIL,
@@ -17,6 +17,19 @@ import { SmartAppCta } from "@/components/app/SmartAppCta";
 import { cn } from "@/lib/utils";
 
 type Plan = "pro" | "pro_plus";
+type AccountType = "freelancer" | "client";
+type PaymentMethod = "jazzcash" | "easypaisa" | "bank" | "manual";
+
+const PAYMENT_METHODS: Array<{
+  value: PaymentMethod;
+  label: string;
+  detail: string;
+}> = [
+  { value: "jazzcash", label: "JazzCash", detail: "Mobile wallet transfer" },
+  { value: "easypaisa", label: "Easypaisa", detail: "Mobile wallet transfer" },
+  { value: "bank", label: "Bank transfer", detail: "Local or wire transfer" },
+  { value: "manual", label: "Manual", detail: "Share details for team review" },
+];
 
 const FEATURES = [
   {
@@ -38,12 +51,12 @@ export default function ProCheckout() {
   const [plan, setPlan] = useState<Plan>(initialPlan);
   const [fullName, setFullName] = useState(params.get("name") ?? "");
   const [email, setEmail] = useState(params.get("email") ?? "");
-  const [accountType, setAccountType] = useState(
+  const [accountType, setAccountType] = useState<AccountType>(
     params.get("type") === "client" ? "client" : "freelancer",
   );
   const [loggedIn, setLoggedIn] = useState(false);
   const [country, setCountry] = useState("PK");
-  const [paymentMethod, setPaymentMethod] = useState("jazzcash");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("jazzcash");
   const [paymentReference, setPaymentReference] = useState("");
   const [notes, setNotes] = useState("");
   const [promoCode, setPromoCode] = useState(params.get("promo") ?? params.get("ref") ?? "");
@@ -51,7 +64,7 @@ export default function ProCheckout() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
-  const [stripeBusy, setStripeBusy] = useState(false);
+  const [comparisonOpen, setComparisonOpen] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<string | null>(null);
   const [loadingPlan, setLoadingPlan] = useState(true);
 
@@ -203,7 +216,7 @@ export default function ProCheckout() {
       ]}
       title="CLIVORA Pro"
     >
-      <div className="mx-auto max-w-4xl space-y-6">
+      <div className="mx-auto max-w-6xl space-y-6">
         {loadingPlan && <p className="text-sm text-text-secondary">Checking your plan…</p>}
 
         {!loadingPlan && alreadyProPlus && (
@@ -262,239 +275,280 @@ export default function ProCheckout() {
           </div>
         )}
 
-        {!loadingPlan && !alreadyProPlus && (
-          <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-            <div className="border-b border-border bg-gradient-to-r from-primary/10 via-teal-50 to-transparent px-5 py-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
-                <h2 className="font-display text-lg font-bold text-navy">Compare plans</h2>
-              </div>
-              <p className="mt-1 text-sm text-text-secondary">
-                Pro Plus includes all Pro features, plus Connect posting and MFA.
-              </p>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[540px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-background/80">
-                    <th className="px-4 py-3 font-semibold text-text-muted">Feature</th>
-                    <th className="px-4 py-3 font-semibold text-navy">Free</th>
-                    <th className="px-4 py-3 font-semibold text-primary">Pro</th>
-                    <th className="px-4 py-3 font-semibold text-teal-800">Pro Plus</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {FEATURES.map((row) => (
-                    <tr key={row.label} className="border-b border-border/70">
-                      <td className="px-4 py-2.5 font-medium text-navy">{row.label}</td>
-                      <td className="px-4 py-2.5 text-text-secondary">{row.free}</td>
-                      <td className="px-4 py-2.5 text-text-secondary">{row.pro}</td>
-                      <td className="px-4 py-2.5 font-semibold text-teal-900">{row.plus}</td>
+        {!loadingPlan && !alreadyProPlus && !done && (
+          <section className="overflow-hidden rounded-3xl border border-navy/10 bg-surface shadow-sm">
+            <button
+              type="button"
+              aria-expanded={comparisonOpen}
+              aria-controls="pro-plan-comparison"
+              onClick={() => setComparisonOpen((open) => !open)}
+              className="flex w-full items-center justify-between gap-4 bg-gradient-to-r from-primary/10 via-teal-50 to-white px-5 py-4 text-left transition hover:from-primary/15 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+            >
+              <span>
+                <span className="flex flex-wrap items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" aria-hidden="true" />
+                  <span className="font-display text-lg font-bold text-navy">Compare plans</span>
+                </span>
+                <span className="mt-1 block text-sm text-text-secondary">
+                  Pro Plus includes all Pro features, plus Connect posting and MFA.
+                </span>
+              </span>
+              <ChevronDown
+                className={cn("h-5 w-5 shrink-0 text-navy transition", comparisonOpen && "rotate-180")}
+                aria-hidden="true"
+              />
+            </button>
+            <div id="pro-plan-comparison" className={comparisonOpen ? "block" : "hidden"}>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[540px] text-left text-sm">
+                  <caption className="sr-only">CLIVORA Free, Pro, and Pro Plus feature comparison</caption>
+                  <thead>
+                    <tr className="border-b border-border bg-background/80">
+                      <th scope="col" className="px-4 py-3 font-semibold text-text-muted">
+                        Feature
+                      </th>
+                      <th scope="col" className="px-4 py-3 font-semibold text-navy">
+                        Free
+                      </th>
+                      <th scope="col" className="px-4 py-3 font-semibold text-primary">
+                        Pro
+                      </th>
+                      <th scope="col" className="px-4 py-3 font-semibold text-teal-800">
+                        Pro Plus
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {FEATURES.map((row) => (
+                      <tr key={row.label} className="border-b border-border/70">
+                        <th scope="row" className="px-4 py-2.5 font-medium text-navy">
+                          {row.label}
+                        </th>
+                        <td className="px-4 py-2.5 text-text-secondary">{row.free}</td>
+                        <td className="px-4 py-2.5 text-text-secondary">{row.pro}</td>
+                        <td className="px-4 py-2.5 font-semibold text-teal-900">{row.plus}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="grid gap-2 border-t border-border bg-primary/5 px-4 py-3 text-xs text-text-secondary sm:grid-cols-3">
+                <span className="inline-flex items-center gap-1.5">
+                  <HardDrive className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> Vault scales with plan
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Shield className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> MFA on Pro Plus only
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Check className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> Pro Plus = Pro + Connect
+                </span>
+              </div>
             </div>
-            <div className="grid gap-2 border-t border-border bg-primary/5 px-4 py-3 text-xs text-text-secondary sm:grid-cols-3">
-              <span className="inline-flex items-center gap-1.5">
-                <HardDrive className="h-3.5 w-3.5 text-primary" /> Vault scales with plan
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Shield className="h-3.5 w-3.5 text-primary" /> MFA on Pro Plus only
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Check className="h-3.5 w-3.5 text-primary" /> Pro Plus = Pro + Connect
-              </span>
-            </div>
-          </div>
+          </section>
         )}
 
         {showForm && (
-          <form
-            onSubmit={onSubmit}
-            className="space-y-4 rounded-2xl border border-border bg-surface p-6 shadow-sm"
-          >
-            <Logo size="sm" variant="onLight" />
-            {alreadyPro && (
-              <p className="rounded-xl bg-primary/10 px-3 py-2 text-sm text-primary-dark">
-                You already have <strong>Pro</strong>. Pro Plus upgrades Connect + MFA and includes
-                every Pro feature.
-              </p>
-            )}
-            <p className="text-sm text-text-secondary">
-              Website checkout.{" "}
-              <strong className="text-navy">Android users subscribe via Google Play</strong> in the
-              app.
-            </p>
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+            <form
+              onSubmit={onSubmit}
+              className="space-y-5 rounded-3xl border border-navy/10 bg-surface p-5 shadow-sm sm:p-6"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <Logo size="sm" variant="onLight" />
+                  <h2 className="mt-4 font-display text-2xl font-extrabold text-navy">
+                    Choose your CLIVORA upgrade
+                  </h2>
+                  <p className="mt-2 max-w-2xl text-sm text-text-secondary">
+                    Submit your payment details for manual approval. Android users can also subscribe
+                    through Google Play Billing inside the app.
+                  </p>
+                </div>
+                <span className="inline-flex items-center gap-2 rounded-full bg-teal-50 px-3 py-1 text-xs font-bold text-teal-900">
+                  <Smartphone className="h-3.5 w-3.5" aria-hidden="true" /> Google Play ready
+                </span>
+              </div>
+              {alreadyPro && (
+                <p className="rounded-xl bg-primary/10 px-3 py-2 text-sm text-primary-dark">
+                  You already have <strong>Pro</strong>. Pro Plus upgrades Connect + MFA and includes
+                  every Pro feature.
+                </p>
+              )}
 
-            <div className="grid grid-cols-2 gap-3">
-              <PlanOption
-                active={plan === "pro"}
-                title="Pro"
-                price={`$${PRO_PRICE_USD}/mo`}
-                blurb={`${site.proLimits.fileVaultGb}GB vault · CRM unlimited`}
-                disabled={alreadyPro}
-                onClick={() => !alreadyPro && setPlan("pro")}
-              />
-              <PlanOption
-                active={plan === "pro_plus"}
-                title="Pro Plus"
-                price={`$${PRO_PLUS_PRICE_USD}/mo`}
-                blurb={`All Pro + Connect + MFA · ${site.proPlusLimits.fileVaultGb}GB`}
-                badge="Best value"
-                onClick={() => setPlan("pro_plus")}
-              />
-            </div>
+              <fieldset>
+                <legend className="text-sm font-semibold text-navy">Plan</legend>
+                <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <PlanOption
+                    active={plan === "pro"}
+                    title="Pro"
+                    price={`$${PRO_PRICE_USD}/mo`}
+                    blurb={`${site.proLimits.fileVaultGb}GB vault · CRM unlimited`}
+                    disabled={alreadyPro}
+                    onClick={() => !alreadyPro && setPlan("pro")}
+                  />
+                  <PlanOption
+                    active={plan === "pro_plus"}
+                    title="Pro Plus"
+                    price={`$${PRO_PLUS_PRICE_USD}/mo`}
+                    blurb={`All Pro + Connect + MFA · ${site.proPlusLimits.fileVaultGb}GB`}
+                    badge="Best value"
+                    onClick={() => setPlan("pro_plus")}
+                  />
+                </div>
+              </fieldset>
 
-            <label className="block text-sm font-semibold text-navy">
-              Promo / referral code (optional)
-              <input
-                value={promoCode}
-                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                className="mt-1 w-full rounded-xl border border-border px-3 py-2.5 font-mono uppercase"
-                placeholder="CLIVORA15 or CLV…"
-              />
-            </label>
-            {promoNote && (
-              <p className="text-xs font-semibold text-primary-dark">{promoNote}</p>
-            )}
-            <label className="block text-sm font-semibold text-navy">
-              Full name
-              <input
-                required
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-border px-3 py-2.5"
-              />
-            </label>
-            <label className="block text-sm font-semibold text-navy">
-              Email
-              <input
-                required
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                readOnly={loggedIn}
-                className={cn(
-                  "mt-1 w-full rounded-xl border border-border px-3 py-2.5",
-                  loggedIn && "bg-background text-text-secondary",
+              <label htmlFor="promo-code" className="block text-sm font-semibold text-navy">
+                Promo / referral code (optional)
+                <input
+                  id="promo-code"
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                  className="mt-1 w-full rounded-xl border border-border px-3 py-2.5 font-mono uppercase focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="CLIVORA15 or CLV..."
+                />
+              </label>
+              {promoNote && (
+                <p className="text-xs font-semibold text-primary-dark">{promoNote}</p>
+              )}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label htmlFor="full-name" className="block text-sm font-semibold text-navy">
+                  Full name
+                  <input
+                    id="full-name"
+                    required
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-border px-3 py-2.5 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </label>
+                <label htmlFor="email" className="block text-sm font-semibold text-navy">
+                  Email
+                  <input
+                    id="email"
+                    required
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    readOnly={loggedIn}
+                    className={cn(
+                      "mt-1 w-full rounded-xl border border-border px-3 py-2.5 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20",
+                      loggedIn && "bg-background text-text-secondary",
+                    )}
+                  />
+                </label>
+              </div>
+              <fieldset>
+                <legend className="text-sm font-semibold text-navy">Account type</legend>
+                <div className="mt-2 grid grid-cols-2 gap-2 rounded-2xl border border-border bg-background p-1">
+                  {(["freelancer", "client"] as const).map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      aria-pressed={accountType === type}
+                      onClick={() => setAccountType(type)}
+                      className={cn(
+                        "rounded-xl px-3 py-2.5 text-sm font-bold capitalize transition focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
+                        accountType === type
+                          ? "bg-navy text-white shadow-sm"
+                          : "text-text-secondary hover:bg-white hover:text-navy",
+                      )}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+                {loggedIn && (
+                  <p className="mt-2 text-xs text-text-muted">
+                    Preselected from your profile; change it here if this request is for another workspace type.
+                  </p>
                 )}
-              />
-            </label>
-            {!loggedIn && (
-              <label className="block text-sm font-semibold text-navy">
-                Account type
+              </fieldset>
+              <label htmlFor="country" className="block text-sm font-semibold text-navy">
+                Country
                 <select
-                  value={accountType}
-                  onChange={(e) => setAccountType(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-border px-3 py-2.5"
+                  id="country"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-border px-3 py-2.5 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
-                  <option value="freelancer">Freelancer</option>
-                  <option value="client">Client</option>
+                  <option value="PK">Pakistan</option>
+                  <option value="US">United States</option>
+                  <option value="OTHER">Other</option>
                 </select>
               </label>
-            )}
-            {loggedIn && (
-              <p className="rounded-xl border border-border bg-background px-3 py-2 text-sm text-text-secondary">
-                Account type:{" "}
-                <strong className="text-navy capitalize">{accountType}</strong> (from your profile)
-              </p>
-            )}
-            <label className="block text-sm font-semibold text-navy">
-              Country
-              <select
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-border px-3 py-2.5"
+              <fieldset>
+                <legend className="text-sm font-semibold text-navy">Payment method</legend>
+                <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                  {PAYMENT_METHODS.map((method) => (
+                    <button
+                      key={method.value}
+                      type="button"
+                      aria-pressed={paymentMethod === method.value}
+                      onClick={() => setPaymentMethod(method.value)}
+                      className={cn(
+                        "rounded-2xl border p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
+                        paymentMethod === method.value
+                          ? "border-primary bg-primary/5 shadow-sm"
+                          : "border-border bg-white hover:border-primary/40",
+                      )}
+                    >
+                      <span className="flex items-center justify-between gap-3">
+                        <span className="font-bold text-navy">{method.label}</span>
+                        {paymentMethod === method.value && (
+                          <Check className="h-4 w-4 text-primary" aria-hidden="true" />
+                        )}
+                      </span>
+                      <span className="mt-1 block text-xs text-text-secondary">{method.detail}</span>
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+              <label htmlFor="payment-reference" className="block text-sm font-semibold text-navy">
+                Payment reference
+                <input
+                  id="payment-reference"
+                  required
+                  value={paymentReference}
+                  onChange={(e) => setPaymentReference(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-border px-3 py-2.5 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="Txn ID, receipt number, or manual reference"
+                />
+              </label>
+              <label htmlFor="payment-notes" className="block text-sm font-semibold text-navy">
+                Notes
+                <textarea
+                  id="payment-notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-border px-3 py-2.5 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  rows={3}
+                  placeholder="Add sender account, payment time, or approval notes."
+                />
+              </label>
+              <div className="rounded-2xl border border-teal-100 bg-teal-50 px-3 py-3 text-xs text-text-secondary">
+                Amount due: <strong className="text-navy">${amount} USD</strong>
+                {plan === "pro_plus" && " · Pro Plus includes all Pro features"}. Email {OFFICIAL_EMAIL}{" "}
+                if approval is delayed.
+              </div>
+              {error && <p className="rounded-lg bg-error/10 px-3 py-2 text-sm text-error">{error}</p>}
+              <button
+                type="submit"
+                disabled={busy || wantsSameOrLower}
+                className="w-full rounded-xl bg-primary py-3 text-sm font-bold text-white shadow-sm hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-60"
               >
-                <option value="PK">Pakistan</option>
-                <option value="US">United States</option>
-                <option value="OTHER">Other</option>
-              </select>
-            </label>
-            <label className="block text-sm font-semibold text-navy">
-              Payment method
-              <select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-border px-3 py-2.5"
-              >
-                <option value="jazzcash">JazzCash</option>
-                <option value="easypaisa">Easypaisa</option>
-                <option value="bank">Bank transfer</option>
-                <option value="other">Other</option>
-              </select>
-            </label>
-            <label className="block text-sm font-semibold text-navy">
-              Payment reference
-              <input
-                required
-                value={paymentReference}
-                onChange={(e) => setPaymentReference(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-border px-3 py-2.5"
-                placeholder="Txn ID / receipt #"
-              />
-            </label>
-            <label className="block text-sm font-semibold text-navy">
-              Notes
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-border px-3 py-2.5"
-                rows={2}
-              />
-            </label>
-            <div className="rounded-xl bg-teal-50 px-3 py-2 text-xs text-text-secondary">
-              Amount due: <strong className="text-navy">${amount} USD</strong>
-              {plan === "pro_plus" && " · Pro Plus includes all Pro features"}. Email {OFFICIAL_EMAIL}{" "}
-              if approval is delayed.
-            </div>
-            {error && <p className="rounded-lg bg-error/10 px-3 py-2 text-sm text-error">{error}</p>}
-            <button
-              type="submit"
-              disabled={busy || wantsSameOrLower}
-              className="w-full rounded-xl bg-primary py-3 text-sm font-bold text-white hover:bg-primary-dark disabled:opacity-60"
-            >
-              {busy
-                ? "Submitting…"
-                : `Submit ${plan === "pro_plus" ? "Pro Plus" : "Pro"} request`}
-            </button>
-
-            <div className="relative flex items-center gap-3">
-              <div className="flex-1 border-t border-border" />
-              <span className="text-xs text-text-muted">or</span>
-              <div className="flex-1 border-t border-border" />
-            </div>
-            <button
-              type="button"
-              disabled={stripeBusy || wantsSameOrLower}
-              onClick={async () => {
-                setStripeBusy(true);
-                setError("");
-                try {
-                  const res = await fetch("/api/stripe/checkout", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      plan,
-                      email: email.trim().toLowerCase(),
-                      promoCode: promoCode.trim() || undefined,
-                    }),
-                  });
-                  const json = await res.json();
-                  if (!res.ok) throw new Error(json.error || "Stripe checkout unavailable");
-                  if (json.url) window.location.href = json.url;
-                } catch (err) {
-                  setError(err instanceof Error ? err.message : "Stripe checkout failed");
-                } finally {
-                  setStripeBusy(false);
-                }
-              }}
-              className="w-full rounded-xl border border-border bg-white py-3 text-sm font-bold text-navy shadow-sm hover:bg-slate-50 disabled:opacity-60"
-            >
-              {stripeBusy ? "Redirecting…" : "Pay with Stripe"}
-            </button>
-          </form>
+                {busy
+                  ? "Submitting..."
+                  : `Submit ${plan === "pro_plus" ? "Pro Plus" : "Pro"} request`}
+              </button>
+            </form>
+            <OrderSummary
+              accountType={accountType}
+              amount={amount}
+              paymentMethod={paymentMethod}
+              plan={plan}
+              promoCode={promoCode}
+            />
+          </div>
         )}
 
         {!alreadyProPlus && (
@@ -532,8 +586,9 @@ function PlanOption({
       type="button"
       onClick={onClick}
       disabled={disabled}
+      aria-pressed={active}
       className={cn(
-        "rounded-2xl border-2 p-4 text-left transition",
+        "rounded-2xl border-2 p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
         active ? "border-primary bg-primary/5 shadow-sm" : "border-border bg-white",
         disabled && "cursor-not-allowed opacity-50",
       )}
@@ -549,5 +604,76 @@ function PlanOption({
       <p className="mt-1 font-extrabold text-primary">{price}</p>
       {blurb && <p className="mt-1 text-[11px] leading-snug text-text-secondary">{blurb}</p>}
     </button>
+  );
+}
+
+function OrderSummary({
+  accountType,
+  amount,
+  paymentMethod,
+  plan,
+  promoCode,
+}: {
+  accountType: AccountType;
+  amount: number;
+  paymentMethod: PaymentMethod;
+  plan: Plan;
+  promoCode: string;
+}) {
+  const method = PAYMENT_METHODS.find((item) => item.value === paymentMethod);
+  const planName = plan === "pro_plus" ? "Pro Plus" : "Pro";
+
+  return (
+    <aside className="lg:sticky lg:top-6">
+      <div className="overflow-hidden rounded-3xl border border-navy/10 bg-navy text-white shadow-xl">
+        <div className="bg-gradient-to-br from-primary/30 via-transparent to-teal-900/40 p-5">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-bold uppercase tracking-wide text-teal-100">Order summary</p>
+            <CreditCard className="h-5 w-5 text-teal-100" aria-hidden="true" />
+          </div>
+          <h3 className="mt-4 font-display text-3xl font-extrabold">{planName}</h3>
+          <p className="mt-1 text-sm text-white/70">
+            For {accountType === "client" ? "client" : "freelancer"} accounts
+          </p>
+          <div className="mt-5 flex items-end gap-1">
+            <span className="text-5xl font-extrabold">${amount}</span>
+            <span className="pb-2 text-sm font-semibold text-white/60">USD / month</span>
+          </div>
+        </div>
+        <div className="space-y-4 bg-white p-5 text-navy">
+          <SummaryRow label="Payment" value={method?.label ?? "Manual"} />
+          <SummaryRow label="Promo" value={promoCode.trim() ? promoCode.trim().toUpperCase() : "Optional"} />
+          <div className="rounded-2xl bg-teal-50 p-4 text-sm text-text-secondary">
+            <p className="font-bold text-navy">What happens next</p>
+            <ul className="mt-3 space-y-2">
+              <li className="flex gap-2">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                Submit this request to the CLIVORA team.
+              </li>
+              <li className="flex gap-2">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                We verify the payment reference and apply your plan.
+              </li>
+              <li className="flex gap-2">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                Android users may subscribe in-app with Google Play instead.
+              </li>
+            </ul>
+          </div>
+          <p className="text-xs leading-relaxed text-text-muted">
+            Keep your transfer proof available in case support asks for it at {OFFICIAL_EMAIL}.
+          </p>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-border pb-3 text-sm">
+      <span className="text-text-secondary">{label}</span>
+      <span className="font-bold text-navy">{value}</span>
+    </div>
   );
 }
