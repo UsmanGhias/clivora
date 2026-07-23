@@ -73,7 +73,7 @@ export default async function TasksPage() {
       <TasksClient
         initial={rows}
         isClient={!!client}
-        canCreate={peers.length > 0}
+        canCreate={!!client && peers.length > 0}
         peers={peers}
       />
     </div>
