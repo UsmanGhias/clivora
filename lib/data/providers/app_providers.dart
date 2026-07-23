@@ -410,8 +410,6 @@ final isProProvider = Provider<bool>((ref) {
   final user = ref.watch(authStateProvider).valueOrNull;
   if (isAdminUser(user)) return true;
   final serverSub = ref.watch(serverSubscriptionProvider).valueOrNull;
-  // Explicit false = expired/inactive Play or SafePay row — do not trust a stale profile plan.
-  if (serverSub == false) return false;
   if (serverSub == true) return true;
   final cloudPlan = ref.watch(cloudSubscriptionPlanProvider).valueOrNull;
   if (cloudPlan == PlanLimits.proPlan || cloudPlan == PlanLimits.proPlusPlan) return true;
@@ -423,8 +421,6 @@ final isProProvider = Provider<bool>((ref) {
 final isProPlusProvider = Provider<bool>((ref) {
   final user = ref.watch(authStateProvider).valueOrNull;
   if (isAdminUser(user)) return true;
-  final serverSub = ref.watch(serverSubscriptionProvider).valueOrNull;
-  if (serverSub == false) return false;
   final cloudPlan = ref.watch(cloudSubscriptionPlanProvider).valueOrNull;
   if (cloudPlan == PlanLimits.proPlusPlan) return true;
   final plan = ref.watch(subscriptionPlanProvider).valueOrNull;

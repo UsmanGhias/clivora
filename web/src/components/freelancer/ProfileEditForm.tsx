@@ -7,8 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { OutlineButton, PrimaryButton } from "@/components/freelancer/ui";
 import type { Profile } from "@/lib/profile-types";
 
-const AVATAR_BUCKETS = ["avatars", "profile-photos"] as const;
-const MAX_DATA_URL_CHARS = 350_000;
+const AVATAR_BUCKET = "avatars";
 
 async function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -19,23 +18,23 @@ async function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
-async function tryUploadAvatar(
+async function uploadAvatar(
   supabase: ReturnType<typeof createClient>,
   userId: string,
   file: File,
-): Promise<string | null> {
+): Promise<string> {
   const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
   const path = `${userId}/${Date.now()}.${ext}`;
-  for (const bucket of AVATAR_BUCKETS) {
-    const { error } = await supabase.storage.from(bucket).upload(path, file, {
-      upsert: true,
-      contentType: file.type || "image/jpeg",
-    });
-    if (error) continue;
-    const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-    if (data?.publicUrl) return data.publicUrl;
+  const { error } = await supabase.storage.from(AVATAR_BUCKET).upload(path, file, {
+    upsert: true,
+    contentType: file.type || "image/jpeg",
+  });
+  if (error) {
+    throw new Error(`Could not upload avatar to storage: ${error.message}`);
   }
-  return null;
+  const { data } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(path);
+  if (!data?.publicUrl) throw new Error("Could not create a public avatar URL.");
+  return data.publicUrl;
 }
 
 export function ProfileEditForm({
@@ -84,16 +83,7 @@ export function ProfileEditForm({
 
       let nextAvatar = avatarUrl;
       if (pendingFile) {
-        const uploaded = await tryUploadAvatar(supabase, user.id, pendingFile);
-        if (uploaded) {
-          nextAvatar = uploaded;
-        } else {
-          const dataUrl = await fileToDataUrl(pendingFile);
-          if (dataUrl.length > MAX_DATA_URL_CHARS) {
-            throw new Error("Image too large for inline storage. Use a smaller photo.");
-          }
-          nextAvatar = dataUrl;
-        }
+        nextAvatar = await uploadAvatar(supabase, user.id, pendingFile);
       }
 
       const patch: Record<string, string> = {
@@ -138,7 +128,7 @@ export function ProfileEditForm({
         >
           {preview ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={preview} alt="" className="h-full w-full object-cover" />
+            <img src={preview} alt="" className="h-full w-full object-cover" onError={() => setPreview("")} />
           ) : (
             <span className="flex h-full w-full items-center justify-center text-2xl font-bold text-primary">
               {(name || "?").charAt(0).toUpperCase()}

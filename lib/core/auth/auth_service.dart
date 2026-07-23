@@ -612,16 +612,22 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
   }
 
   Future<String?> _profilePhotoCloudUrl(String? photoPath) async {
+    return (await _profilePhotoCloudUpload(photoPath)).url;
+  }
+
+  Future<_AvatarUploadResult> _profilePhotoCloudUpload(String? photoPath) async {
     final path = photoPath?.trim();
-    if (path == null || path.isEmpty) return null;
-    if (_isRemoteUrl(path)) return path;
+    if (path == null || path.isEmpty) return const _AvatarUploadResult();
+    if (_isRemoteUrl(path)) return _AvatarUploadResult(url: path);
 
     final uid = SupabaseAuthHelper.currentUid;
-    if (uid == null || uid.isEmpty) return null;
+    if (uid == null || uid.isEmpty) return const _AvatarUploadResult();
 
     try {
       final file = File(path);
-      if (!await file.exists()) return null;
+      if (!await file.exists()) {
+        return const _AvatarUploadResult(error: 'Selected profile photo is no longer available on this device.');
+      }
       final ext = _avatarExtension(path);
       final storagePath = '$uid/avatar.$ext';
       await SupabaseAuthHelper.client.storage.from('avatars').uploadBinary(
@@ -629,10 +635,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
             await file.readAsBytes(),
             fileOptions: FileOptions(contentType: _avatarContentType(ext), upsert: true),
           );
-      return SupabaseAuthHelper.client.storage.from('avatars').getPublicUrl(storagePath);
+      return _AvatarUploadResult(
+        url: SupabaseAuthHelper.client.storage.from('avatars').getPublicUrl(storagePath),
+      );
     } catch (e) {
       debugPrint('Profile avatar upload: $e');
-      return null;
+      return _AvatarUploadResult(error: '$e');
     }
   }
 
@@ -753,7 +761,13 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     final user = state.valueOrNull;
     if (user == null) return 'Not signed in';
 
-    final savedPath = await _persistImage(sourcePath, 'profile_${user.id}');
+    late final String savedPath;
+    try {
+      savedPath = await _persistImage(sourcePath, 'profile_${user.id}');
+    } catch (e) {
+      debugPrint('Persist profile photo: $e');
+      return 'Could not save profile photo on this device: $e';
+    }
     await _db.updateUser(user.copyWith(profilePhotoPath: Value(savedPath)));
     await _db.saveBusinessProfileForUser(
       user.id,
@@ -764,14 +778,20 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     if (updated == null) return 'Could not reload your profile photo.';
     state = AsyncValue.data(updated);
     setAuthSession(updated);
-    final avatarUrl = await _profilePhotoCloudUrl(savedPath);
-    await SupabaseAuthHelper.upsertProfile(
+    final avatarUpload = await _profilePhotoCloudUpload(savedPath);
+    final profileError = await SupabaseAuthHelper.upsertProfile(
       email: updated.email,
       name: updated.name,
       accountType: updated.accountType,
       role: updated.role,
-      avatarUrl: avatarUrl,
+      avatarUrl: avatarUpload.url,
     );
+    if (avatarUpload.error != null) {
+      return 'Profile photo saved on this device, but cloud upload failed: ${avatarUpload.error}';
+    }
+    if (profileError != null) {
+      return 'Profile photo saved on this device, but cloud profile sync failed: $profileError';
+    }
     return null;
   }
 
@@ -821,6 +841,13 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     }
     return SupabaseAuthHelper.resetPasswordForEmail(trimmed);
   }
+}
+
+class _AvatarUploadResult {
+  const _AvatarUploadResult({this.url, this.error});
+
+  final String? url;
+  final String? error;
 }
 
 String? _profileString(Map<String, dynamic>? profile, String key) {
@@ -876,9 +903,13 @@ Future<String> _persistImage(String sourcePath, String prefix) async {
   if (!await imagesDir.exists()) {
     await imagesDir.create(recursive: true);
   }
-  final ext = p.extension(sourcePath);
+  final source = File(sourcePath);
+  if (!await source.exists()) {
+    throw StateError('Selected image is no longer available.');
+  }
+  final ext = p.extension(sourcePath).isNotEmpty ? p.extension(sourcePath) : '.jpg';
   final dest = p.join(imagesDir.path, '${prefix}_${DateTime.now().millisecondsSinceEpoch}$ext');
-  await File(sourcePath).copy(dest);
+  await File(dest).writeAsBytes(await source.readAsBytes(), flush: true);
   return dest;
 }
 
