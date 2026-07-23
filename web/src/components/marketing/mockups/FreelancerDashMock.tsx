@@ -1,4 +1,11 @@
 import Link from "next/link";
+import {
+  Briefcase,
+  DollarSign,
+  FolderKanban,
+  MessageSquare,
+  TrendingUp,
+} from "lucide-react";
 
 function EarningsChart() {
   const points = [
@@ -9,13 +16,15 @@ function EarningsChart() {
     { month: "May", y: 18, label: "5.4k" },
     { month: "Jun", y: 10, label: "6.2k" },
   ];
-  const xs = points.map((_, i) => 14 + i * 28);
+  // Align plot points to month-label centers (6 equal columns in 176-wide viewBox).
+  const xs = points.map((_, i) => Math.round(((i + 0.5) / points.length) * 176));
+  const baseline = 52;
   const line = points.map((p, i) => `${xs[i]},${p.y}`).join(" ");
-  const area = `${line} ${xs[xs.length - 1]},58 ${xs[0]},58`;
+  const area = `${line} ${xs[xs.length - 1]},${baseline} ${xs[0]},${baseline}`;
 
   return (
     <div className="flex h-full min-h-[72px] flex-col">
-      <svg viewBox="0 0 176 64" className="h-full w-full flex-1" aria-hidden>
+      <svg viewBox="0 0 176 68" className="h-full w-full flex-1" aria-hidden>
         <defs>
           <linearGradient id="earnFillV2" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#0D9488" stopOpacity="0.28" />
@@ -23,7 +32,7 @@ function EarningsChart() {
           </linearGradient>
         </defs>
         {[16, 32, 48].map((y) => (
-          <line key={y} x1="8" x2="168" y1={y} y2={y} stroke="#E2E8F0" strokeDasharray="2 3" />
+          <line key={y} x1="4" x2="172" y1={y} y2={y} stroke="#E2E8F0" strokeDasharray="2 3" />
         ))}
         <polygon fill="url(#earnFillV2)" points={area} />
         <polyline
@@ -48,27 +57,39 @@ function EarningsChart() {
                 ${p.label}
               </text>
             )}
+            <text
+              x={xs[i]}
+              y={64}
+              textAnchor="middle"
+              className="fill-slate-500"
+              style={{ fontSize: 7, fontWeight: 600 }}
+            >
+              {p.month}
+            </text>
           </g>
         ))}
       </svg>
-      <div className="mt-0.5 flex border-t border-slate-200 pt-1">
-        {points.map((p) => (
-          <span
-            key={p.month}
-            className="min-w-0 flex-1 text-center text-[7px] font-semibold uppercase tracking-wide text-slate-500"
-          >
-            {p.month}
-          </span>
-        ))}
-      </div>
     </div>
   );
 }
 
-function Stat({ label, value, trend }: { label: string; value: string; trend?: string }) {
+function Stat({
+  label,
+  value,
+  trend,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  trend?: string;
+  icon: typeof DollarSign;
+}) {
   return (
     <div className="rounded-lg border border-slate-200/80 bg-white px-2 py-1.5">
-      <p className="truncate text-[8px] font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+      <div className="flex items-center gap-1">
+        <Icon className="h-2.5 w-2.5 shrink-0 text-teal-700" aria-hidden />
+        <p className="truncate text-[8px] font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+      </div>
       <p className="mt-0.5 font-display text-xs font-bold tabular-nums text-[#0F172A]">{value}</p>
       {trend && <p className="mt-0.5 text-[8px] font-bold text-emerald-600">{trend}</p>}
     </div>
@@ -153,18 +174,21 @@ export function FreelancerDashMock({ compact = false }: { compact?: boolean }) {
           <p className="text-[9px] text-slate-500">Freelance overview · synced web + Android</p>
 
           <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-            <Stat label="Earnings" value="$24,560" trend={compact ? undefined : "+12.4%"} />
-            <Stat label="Projects" value="6" />
-            <Stat label="Proposals" value="5" />
-            <Stat label="Messages" value="4" />
+            <Stat label="Earnings" value="$24,560" trend={compact ? undefined : "+12.4%"} icon={DollarSign} />
+            <Stat label="Projects" value="6" icon={FolderKanban} />
+            <Stat label="Proposals" value="5" icon={Briefcase} />
+            <Stat label="Messages" value="4" icon={MessageSquare} />
           </div>
 
           <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-5">
             <div className="rounded-lg border border-slate-200/80 bg-white p-2 sm:col-span-3">
               <div className="flex items-baseline justify-between gap-2">
-                <div>
-                  <p className="text-[9px] font-bold text-[#0F172A]">Earnings</p>
-                  <p className="text-[8px] text-slate-500">Last six months</p>
+                <div className="flex items-center gap-1">
+                  <TrendingUp className="h-3 w-3 text-teal-700" aria-hidden />
+                  <div>
+                    <p className="text-[9px] font-bold text-[#0F172A]">Earnings</p>
+                    <p className="text-[8px] text-slate-500">Last six months</p>
+                  </div>
                 </div>
                 <span className="text-[8px] font-semibold tabular-nums text-teal-700">$6.2k Jun</span>
               </div>
@@ -199,13 +223,8 @@ export function FreelancerDashMock({ compact = false }: { compact?: boolean }) {
             <ul className="mt-1.5 divide-y divide-slate-100">
               {clients.map((c) => (
                 <li key={c.name} className="flex items-center justify-between gap-2 py-1.5 first:pt-0 last:pb-0">
-                  <div className="flex min-w-0 items-center gap-1.5">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-800 text-[7px] font-bold text-white">
-                      {c.name[0]}
-                    </span>
-                    <span className="truncate text-[8px] font-medium text-slate-700">{c.name}</span>
-                  </div>
-                  <span className="shrink-0 text-[8px] font-bold tabular-nums text-[#0F172A]">{c.spend}</span>
+                  <span className="truncate text-[8px] font-medium text-slate-700">{c.name}</span>
+                  <span className="shrink-0 text-[8px] font-bold tabular-nums text-teal-700">{c.spend}</span>
                 </li>
               ))}
             </ul>

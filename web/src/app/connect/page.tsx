@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import {
   listMyConnectRequests,
   listPublicConnectNeeds,
@@ -25,14 +26,32 @@ export const metadata: Metadata = {
     "Hire freelancers and find clients on CLIVORA Connect. Private contact until mutual accept, then continue in the same CRM. Browse free.",
 };
 
-export default async function ConnectPage() {
+export default async function ConnectPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ tab?: string }>;
+}) {
   const profile = await getProfile();
   if (profile && isBlocked(profile)) redirect("/blocked");
-  const [profiles, needs, requests] = await Promise.all([
-    listPublicConnectProfiles(),
-    listPublicConnectNeeds(),
-    listMyConnectRequests(),
-  ]);
+  const sp = searchParams ? await searchParams : undefined;
+  const tabParam = String(sp?.tab ?? "").toLowerCase();
+  const defaultTab =
+    tabParam === "jobs" || tabParam === "talent" || tabParam === "inbox"
+      ? (tabParam as "jobs" | "talent" | "inbox")
+      : "talent";
+  let profiles: Awaited<ReturnType<typeof listPublicConnectProfiles>> = [];
+  let needs: Awaited<ReturnType<typeof listPublicConnectNeeds>> = [];
+  let requests: Awaited<ReturnType<typeof listMyConnectRequests>> = [];
+  let loadError: string | null = null;
+  try {
+    [profiles, needs, requests] = await Promise.all([
+      listPublicConnectProfiles(),
+      listPublicConnectNeeds(),
+      listMyConnectRequests(),
+    ]);
+  } catch {
+    loadError = "Could not load Connect right now. Refresh to try again.";
+  }
   const signedIn = !!profile;
   const plus = isProPlus(profile);
   const client = isClientAccount(profile);
@@ -62,6 +81,8 @@ export default async function ConnectPage() {
             isRestricted={restricted}
             myUserId={profile?.id}
             accent={client ? "slate" : "teal"}
+            defaultTab={defaultTab}
+            loadError={loadError}
           />
         </div>
 
