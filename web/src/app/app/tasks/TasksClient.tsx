@@ -15,6 +15,13 @@ export type TaskRow = {
   project_share_id?: string | null;
 };
 
+export type TaskPeer = {
+  id: string;
+  label: string;
+  peerUid: string;
+  projectShareId?: string | null;
+};
+
 const STATUSES = [
   { value: "open", label: "Open" },
   { value: "in_progress", label: "In progress" },
@@ -53,17 +60,18 @@ export function TasksClient({
   initial,
   isClient = false,
   canCreate = false,
-  peerUid = null,
+  peers = [],
 }: {
   initial: TaskRow[];
   isClient?: boolean;
   canCreate?: boolean;
-  peerUid?: string | null;
+  peers?: TaskPeer[];
 }) {
   const router = useRouter();
   const [rows, setRows] = useState(initial);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
+  const [selectedPeerId, setSelectedPeerId] = useState(peers[0]?.id ?? "");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [createBusy, setCreateBusy] = useState(false);
@@ -74,6 +82,7 @@ export function TasksClient({
   const activeRing = isClient
     ? "ring-2 ring-client-accent"
     : "ring-2 ring-primary";
+  const selectedPeer = peers.find((p) => p.id === selectedPeerId) ?? peers[0] ?? null;
 
   const filtered = useMemo(() => {
     return rows.filter((r) => {
@@ -151,7 +160,7 @@ export function TasksClient({
 
   async function onCreate(e: FormEvent) {
     e.preventDefault();
-    if (!canCreate || !peerUid || !title.trim()) return;
+    if (!canCreate || !selectedPeer || !title.trim()) return;
     setCreateBusy(true);
     setCreateError(null);
     try {
@@ -163,14 +172,16 @@ export function TasksClient({
       const payload = isClient
         ? {
             client_uid: user.id,
-            freelancer_uid: peerUid,
+            freelancer_uid: selectedPeer.peerUid,
+            project_share_id: selectedPeer.projectShareId ?? null,
             title: title.trim(),
             description: description.trim(),
             status: "open",
           }
         : {
-            client_uid: peerUid,
+            client_uid: selectedPeer.peerUid,
             freelancer_uid: user.id,
+            project_share_id: selectedPeer.projectShareId ?? null,
             title: title.trim(),
             description: description.trim(),
             status: "open",
@@ -194,12 +205,26 @@ export function TasksClient({
 
   return (
     <div className="space-y-4">
-      {canCreate && peerUid && (
+      {canCreate && peers.length > 0 && (
         <form
           onSubmit={onCreate}
           className="space-y-3 rounded-2xl border border-border bg-surface p-4 shadow-sm"
         >
           <p className="text-sm font-bold text-navy">Add task</p>
+          <label className="block text-xs font-semibold text-text-secondary">
+            Peer / project
+            <select
+              value={selectedPeer?.id ?? ""}
+              onChange={(e) => setSelectedPeerId(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-border px-3 py-2 text-sm"
+            >
+              {peers.map((peer) => (
+                <option key={peer.id} value={peer.id}>
+                  {peer.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <input
             required
             value={title}
