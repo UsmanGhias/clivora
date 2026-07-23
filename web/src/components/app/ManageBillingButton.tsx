@@ -3,52 +3,21 @@
 import { useState } from "react";
 import Link from "next/link";
 import { BankPayoutSettings } from "@/components/app/BankPayoutSettings";
+import { PRO_PLUS_PRICE_USD } from "@/lib/pricing";
 
-/** Opens Stripe Customer Portal when configured; also surfaces bank details + policy. */
+/** Links to plan management and surfaces bank details + policy. */
 export function ManageBillingButton({ showBankForm }: { showBankForm?: boolean }) {
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
   const [openBank, setOpenBank] = useState(!!showBankForm);
-
-  async function openPortal() {
-    setBusy(true);
-    setMsg(null);
-    try {
-      const res = await fetch("/api/stripe/portal", { method: "POST" });
-      const json = (await res.json()) as {
-        url?: string;
-        error?: string;
-        hint?: string;
-      };
-      if (json.url) {
-        window.location.href = json.url;
-        return;
-      }
-      setMsg(
-        json.hint ||
-          json.error ||
-          "Stripe portal unavailable. Manage bank details below, or use /pro for JazzCash.",
-      );
-      setOpenBank(true);
-    } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Could not open billing");
-      setOpenBank(true);
-    } finally {
-      setBusy(false);
-    }
-  }
 
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          disabled={busy}
-          onClick={openPortal}
+        <Link
+          href="/pro"
           className="inline-flex rounded-full border border-navy/20 px-4 py-2 text-sm font-semibold text-navy disabled:opacity-60"
         >
-          {busy ? "Opening…" : "Manage plan (Stripe)"}
-        </button>
+          Manage plan
+        </Link>
         <button
           type="button"
           onClick={() => setOpenBank((v) => !v)}
@@ -64,10 +33,9 @@ export function ManageBillingButton({ showBankForm }: { showBankForm?: boolean }
         </Link>
       </div>
       <p className="text-xs text-text-secondary">
-        CLIVORA charges <strong>$20/mo</strong> for Pro Plus. Invoice amounts go from client to you
-        directly - keep all work on platform.
+        CLIVORA charges <strong>${PRO_PLUS_PRICE_USD}/mo</strong> for Pro Plus. Invoice amounts go
+        from client to you directly - keep all work on platform.
       </p>
-      {msg && <p className="text-xs text-text-secondary">{msg}</p>}
       {openBank && <BankPayoutSettings compact />}
     </div>
   );

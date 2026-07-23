@@ -12,7 +12,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!profile) redirect("/login");
   if (isBlocked(profile)) redirect("/blocked");
 
-  const counts = await getPortalNavCounts(profile.id, isClientAccount(profile));
+  const counts = await getPortalNavCounts(profile.id, isClientAccount(profile), profile.email);
 
   return (
     <AppShell profile={profile} isClient={isClientAccount(profile)} counts={counts}>

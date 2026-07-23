@@ -32,6 +32,7 @@ import { ManageBillingButton } from "@/components/app/ManageBillingButton";
 import { ProfileEditForm } from "@/components/freelancer/ProfileEditForm";
 import { DeleteAccountPanel } from "@/components/settings/DeleteAccountPanel";
 import { createClient } from "@/lib/supabase/client";
+import { PRO_PLUS_PRICE_USD } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/profile-types";
 
@@ -284,8 +285,8 @@ function AccountTab({
               </div>
             </div>
             <p className="mt-3 text-xs text-text-secondary">
-              CLIVORA charges <strong>$20/mo</strong> for Pro Plus. Invoice amounts go client → you
-              directly - keep work on platform.
+              CLIVORA charges <strong>${PRO_PLUS_PRICE_USD}/mo</strong> for Pro Plus. Invoice
+              amounts go client → you directly - keep work on platform.
             </p>
           </div>
         </div>

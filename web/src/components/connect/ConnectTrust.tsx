@@ -400,7 +400,7 @@ function ProposalsInbox({
 
       // Auto-create first milestone for the engagement (free - tracking only)
       if (requestId) {
-        await supabase.from("connect_milestones").insert({
+        const { error: milestoneErr } = await supabase.from("connect_milestones").insert({
           engagement_request_id: requestId,
           client_user_id: clientUserId,
           freelancer_user_id: freelancerUserId || fromUserId,
@@ -409,6 +409,9 @@ function ProposalsInbox({
           currency: "USD",
           status: "pending",
         });
+        if (milestoneErr) {
+          setError(`Proposal accepted, but kickoff milestone was not created: ${milestoneErr.message}`);
+        }
       }
       await load();
     } catch (e) {
@@ -460,7 +463,7 @@ function ProposalsInbox({
                   onClick={() => accept(p.id, p.from_user_id, p.amount)}
                   className="rounded-lg bg-primary px-2 py-1 text-xs font-bold text-white"
                 >
-                  Accept → milestone
+                  {requestId ? "Accept → milestone" : "Accept proposal"}
                 </button>
                 <button
                   type="button"
@@ -489,7 +492,7 @@ export function ConnectTrust({
   existingReviews,
   mode,
 }: {
-  requestId: string;
+  requestId?: string;
   myUserId: string;
   peerId: string;
   needId?: string | null;
@@ -521,7 +524,7 @@ export function ConnectTrust({
           )}
           {showReviewForm && !reviewDone && (
             <ReviewForm
-              requestId={requestId}
+              requestId={requestId || ""}
               revieweeId={peerId}
               onDone={() => {
                 setReviewDone(true);
@@ -542,7 +545,7 @@ export function ConnectTrust({
             />
           )}
           <MilestonesPanel
-            requestId={requestId}
+            requestId={requestId || ""}
             clientUserId={resolvedClient}
             freelancerUserId={resolvedFreelancer}
           />

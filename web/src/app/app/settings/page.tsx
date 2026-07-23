@@ -26,6 +26,12 @@ export default async function SettingsPage({
     let invoices = 0;
     let totalSpent = 0;
     try {
+      const projectFilter = profile.email
+        ? `client_uid.eq.${uid},client_email.eq.${profile.email}`
+        : `client_uid.eq.${uid}`;
+      const invoiceFilter = profile.email
+        ? `client_uid.eq.${uid},client_email.eq.${profile.email}`
+        : `client_uid.eq.${uid}`;
       const [jobs, projects, inv] = await Promise.all([
         supabase
           .from("connect_need_posts")
@@ -34,11 +40,11 @@ export default async function SettingsPage({
         supabase
           .from("project_shares")
           .select("share_id", { count: "exact", head: true })
-          .eq("client_uid", uid),
+          .or(projectFilter),
         supabase
           .from("invoice_shares")
           .select("share_id, total")
-          .eq("client_uid", uid)
+          .or(invoiceFilter)
           .limit(200),
       ]);
       jobsPosted = jobs.count ?? 0;

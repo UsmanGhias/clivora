@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -187,18 +188,51 @@ class CloudInvoiceRepository {
   }
 
   Stream<List<CloudInvoiceShare>> watchForClient({required String email, String? uid}) {
-    if (uid != null && uid.isNotEmpty) {
+    final normalized = email.trim().toLowerCase();
+    if (uid == null || uid.isEmpty) {
       return _db
           .from('invoice_shares')
           .stream(primaryKey: ['share_id'])
-          .eq('client_uid', uid)
+          .eq('client_email', normalized)
           .map((rows) => _visibleToClient(rows.map(CloudInvoiceShare.fromRow).toList()));
     }
-    return _db
+
+    var byUid = <CloudInvoiceShare>[];
+    var byEmail = <CloudInvoiceShare>[];
+    final controller = StreamController<List<CloudInvoiceShare>>();
+
+    void emit() {
+      final merged = <String, CloudInvoiceShare>{};
+      for (final row in [...byUid, ...byEmail]) {
+        merged[row.shareId] = row;
+      }
+      if (!controller.isClosed) {
+        controller.add(_visibleToClient(merged.values.toList()));
+      }
+    }
+
+    final uidSub = _db
         .from('invoice_shares')
         .stream(primaryKey: ['share_id'])
-        .eq('client_email', email.trim().toLowerCase())
-        .map((rows) => _visibleToClient(rows.map(CloudInvoiceShare.fromRow).toList()));
+        .eq('client_uid', uid)
+        .listen((rows) {
+      byUid = rows.map(CloudInvoiceShare.fromRow).toList();
+      emit();
+    }, onError: controller.addError);
+    final emailSub = _db
+        .from('invoice_shares')
+        .stream(primaryKey: ['share_id'])
+        .eq('client_email', normalized)
+        .listen((rows) {
+      byEmail = rows.map(CloudInvoiceShare.fromRow).toList();
+      emit();
+    }, onError: controller.addError);
+
+    controller.onCancel = () {
+      uidSub.cancel();
+      emailSub.cancel();
+    };
+    return controller.stream;
   }
 
   List<CloudInvoiceShare> _visibleToClient(List<CloudInvoiceShare> list) {

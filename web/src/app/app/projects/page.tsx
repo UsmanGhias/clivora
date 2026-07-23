@@ -88,10 +88,13 @@ export default async function ProjectsPage() {
       updated_at?: string | null;
     }> = [];
     try {
+      const clientFilter = profile?.email
+        ? `client_uid.eq.${profile.id},client_email.eq.${profile.email}`
+        : `client_uid.eq.${profile?.id ?? ""}`;
       const { data } = await supabase
         .from("project_shares")
         .select("share_id, project_name, freelancer_email, status, budget, currency, updated_at")
-        .eq("client_uid", profile?.id ?? "")
+        .or(clientFilter)
         .order("updated_at", { ascending: false })
         .limit(50);
       if (data) rows = data;
