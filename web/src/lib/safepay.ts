@@ -54,7 +54,9 @@ export async function loadSafepayConfig(): Promise<{
   configured: boolean;
   missing: string[];
 }> {
-  let safepayEnv = process.env.SAFEPAY_ENV?.trim() || null;
+  // Prefer DB env so sandbox/production can be flipped without a Vercel redeploy.
+  let safepayEnv = await readDbSecret("SAFEPAY_ENV");
+  if (!safepayEnv) safepayEnv = process.env.SAFEPAY_ENV?.trim() || null;
   let secretKey = process.env.SAFEPAY_SECRET_KEY?.trim() || null;
   let apiKey =
     process.env.SAFEPAY_API_KEY?.trim() ||
@@ -63,12 +65,11 @@ export async function loadSafepayConfig(): Promise<{
     null;
   let webhookSecret = process.env.SAFEPAY_WEBHOOK_SECRET?.trim() || null;
 
-  if (!safepayEnv) safepayEnv = await readDbSecret("SAFEPAY_ENV");
   if (!secretKey) secretKey = await readDbSecret("SAFEPAY_SECRET_KEY");
   if (!apiKey) apiKey = await readDbSecret("SAFEPAY_API_KEY");
   if (!apiKey) apiKey = await readDbSecret("SAFEPAY_PUBLIC_KEY");
   if (!webhookSecret) webhookSecret = await readDbSecret("SAFEPAY_WEBHOOK_SECRET");
-  const env = envName(safepayEnv);
+  const env = envName(safepayEnv || "sandbox");
 
   if (!apiKey && secretKey?.startsWith("sec_")) {
     apiKey = secretKey;

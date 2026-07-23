@@ -13,7 +13,7 @@ Add for **Production** (and Preview):
 | **Public key** | `SAFEPAY_API_KEY` | `sec_` + UUID with hyphens, e.g. `sec_edeade52-46aa-483b-b87d-009d3ce41554` |
 | **Secret key** | `SAFEPAY_SECRET_KEY` | long hex string |
 | Same secret key (or Endpoints webhook secret) | `SAFEPAY_WEBHOOK_SECRET` | same hex, or the secret shown when you create the webhook |
-| — | `SAFEPAY_ENV` | `production` |
+| — | `SAFEPAY_ENV` | **`sandbox` for now** (DB preferred). Switch to `production` when live. |
 | — | `SAFEPAY_CURRENCY` | `USD` (or `PKR`) |
 
 Also required (already should exist):

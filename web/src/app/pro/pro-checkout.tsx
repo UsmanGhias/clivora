@@ -33,9 +33,8 @@ const PAYMENT_METHODS: Array<{
   { value: "manual", label: "Manual", detail: "Share details for team review" },
   {
     value: "safepay",
-    label: "SafePay (card)",
-    detail: "Unavailable until SafePay merchant is activated",
-    disabled: true,
+    label: "SafePay (sandbox)",
+    detail: "Card checkout via SafePay sandbox",
   },
 ];
 
