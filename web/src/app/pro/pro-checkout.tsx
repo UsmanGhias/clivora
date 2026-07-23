@@ -77,7 +77,38 @@ export default function ProCheckout() {
   useEffect(() => {
     const sp = params.get("safepay");
     if (sp === "success" || sp === "cancel") setSafepayStatus(sp);
-  }, [params]);
+    if (sp !== "success") return;
+    const tracker = params.get("tracker");
+    const order = params.get("order");
+    if (!tracker && !order) return;
+    void (async () => {
+      try {
+        const res = await fetch("/api/safepay/confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tracker, orderId: order }),
+        });
+        const json = (await res.json()) as { paid?: boolean };
+        if (json.paid) {
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+          if (user) {
+            const { data } = await supabase
+              .from("profiles")
+              .select("subscription_plan")
+              .eq("id", user.id)
+              .maybeSingle();
+            if (data?.subscription_plan) {
+              setCurrentPlan(String(data.subscription_plan).toLowerCase());
+            }
+          }
+        }
+      } catch {
+        /* webhook may still settle */
+      }
+    })();
+  }, [params, supabase]);
 
   useEffect(() => {
     (async () => {
