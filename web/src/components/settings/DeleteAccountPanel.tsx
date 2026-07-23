@@ -31,7 +31,7 @@ export function DeleteAccountPanel({ email }: { email: string }) {
   }
 
   return (
-    <div className="rounded-2xl border border-rose-200 bg-rose-50/60 p-5">
+    <div id="delete-account" className="rounded-2xl border border-rose-200 bg-rose-50/60 p-5">
       <h3 className="font-display text-lg font-bold text-rose-900">Delete account</h3>
       <p className="mt-2 text-sm leading-relaxed text-rose-900/80">
         This requests cloud account deletion, restricts access, and signs you out. Full

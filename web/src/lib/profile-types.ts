@@ -11,4 +11,6 @@ export type Profile = {
   is_restricted?: boolean | null;
   block_reason?: string | null;
   avatar_url?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 };

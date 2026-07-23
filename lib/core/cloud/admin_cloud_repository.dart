@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../constants/admin_config.dart';
 import 'supabase_auth_helper.dart';
 
 final adminCloudRepositoryProvider = Provider<AdminCloudRepository>((ref) {
@@ -147,7 +148,10 @@ class AdminCloudRepository {
     final normalized = email.trim().toLowerCase();
     if (!normalized.contains('@')) return 'Invalid email';
     try {
-      await _db.auth.resetPasswordForEmail(normalized);
+      await _db.auth.resetPasswordForEmail(
+        normalized,
+        redirectTo: kPasswordResetRedirectUrl,
+      );
       return null;
     } catch (e) {
       return 'Reset email failed: $e';
