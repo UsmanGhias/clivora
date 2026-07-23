@@ -234,7 +234,9 @@ function AccountTab({
     <>
       <FreelancerCard
         title="Account information"
-        action={<OutlineButton href="/app/account?edit=1">Edit profile</OutlineButton>}
+        action={
+          <OutlineButton onClick={() => onGoto("profile")}>Edit photo & name</OutlineButton>
+        }
       >
         <div className="space-y-5">
           <div className="flex min-w-0 items-start gap-4">

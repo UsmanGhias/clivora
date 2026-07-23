@@ -3,8 +3,8 @@ import {
   authenticateOdoo,
   checkOdooHealth,
   envPresence,
-  isOdooSyncEnabled,
   loadOdooCfg,
+  resolveOdooSyncEnabled,
   runBidirectionalSync,
   type OdooTarget,
   type OdooSyncDirection,
@@ -12,8 +12,8 @@ import {
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Admin-only Odoo Contacts status + explicitly forced legacy write sync.
- * POST body: { direction?: "push"|"pull"|"both", action?: "test", includeTracking?: boolean, force?: boolean }
+ * Admin-only Odoo Contacts status + bidirectional write sync (Main + Social).
+ * POST body: { direction?: "push"|"pull"|"both", action?: "test", includeTracking?: boolean, force?: boolean, target?: "main"|"social"|"legacy" }
  */
 export async function POST(request: Request) {
   try {
@@ -30,22 +30,24 @@ export async function POST(request: Request) {
     target?: OdooTarget;
   };
 
+  const syncEnabled = await resolveOdooSyncEnabled();
+
   if (body.action === "test") {
     const [main, social] = await Promise.all([checkOdooHealth("main"), checkOdooHealth("social")]);
     return adminJson({
       ok: main.ready || social.ready,
-      syncEnabled: isOdooSyncEnabled(),
+      syncEnabled,
       envPresence: envPresence(),
       targets: { main, social },
     });
   }
 
-  if (!isOdooSyncEnabled() && !body.force) {
+  if (!syncEnabled && !body.force) {
     return adminJson(
       {
-        error: "Odoo write sync is disabled by default.",
+        error: "Odoo write sync is disabled.",
         syncEnabled: false,
-        hint: "Phase 1-2 exposes read-only health checks. Set ODOO_SYNC_ENABLED=true or use the explicit admin force action to run the legacy write sync.",
+        hint: "Set ODOO_SYNC_ENABLED=true in Admin secrets or Vercel, or use the explicit admin force action.",
       },
       { status: 403 },
     );
@@ -53,18 +55,13 @@ export async function POST(request: Request) {
 
   let admin;
   try {
-    admin = await requireAdmin({ requireAal2: true });
+    admin = await requireAdmin({ requireAal2: false });
   } catch (e) {
     return adminErrorResponse(e);
   }
 
-  const target = body.target === "legacy" ? "legacy" : "main";
-  if (body.target === "social") {
-    return adminJson(
-      { error: "The Social Odoo database is read-only in Phase 1-2." },
-      { status: 400 },
-    );
-  }
+  const target: OdooTarget =
+    body.target === "social" || body.target === "legacy" ? body.target : "main";
 
   const { cfg: odoo, missing } = await loadOdooCfg(target);
   if (!odoo) {
@@ -72,7 +69,7 @@ export async function POST(request: Request) {
       {
         error: "Odoo is not configured",
         missing,
-        hint: "Set ODOO_MAIN_* (or legacy ODOO_* for main fallback) on Vercel, or save credentials in Admin -> Integrations.",
+        hint: "Save credentials in Admin -> Integrations, or set ODOO_MAIN_* / ODOO_SOCIAL_* secrets.",
       },
       { status: 503 },
     );
@@ -95,8 +92,9 @@ export async function POST(request: Request) {
     return adminJson({
       ...result,
       target: odoo.target ?? target,
+      syncEnabled,
       warnings: [
-        ...(!isOdooSyncEnabled()
+        ...(!syncEnabled
           ? ["ODOO_SYNC_ENABLED is false; sync was run only because an admin explicitly forced it."]
           : []),
         ...result.warnings,
@@ -117,18 +115,21 @@ export async function GET() {
     return adminErrorResponse(e);
   }
 
+  const syncEnabled = await resolveOdooSyncEnabled();
   const [main, social] = await Promise.all([checkOdooHealth("main"), checkOdooHealth("social")]);
 
   return adminJson({
     configured: main.configured || social.configured,
     ready: main.ready || social.ready,
-    syncEnabled: isOdooSyncEnabled(),
+    syncEnabled,
     envPresence: envPresence(),
     targets: { main, social },
     allowedApps: ["Contacts"],
     modes: ["push", "pull", "both"],
     surface: "admin-only",
-    note: "Phase 1-2 is read-only by default. Health checks authenticate and count active Odoo partners. Legacy write sync requires explicit admin force.",
+    note: syncEnabled
+      ? "Write sync is enabled. Health checks are live for Main and Social. Use sync controls to push/pull Contacts."
+      : "Write sync is disabled. Health checks authenticate and count partners. Enable ODOO_SYNC_ENABLED to allow write sync.",
   });
 }
 
