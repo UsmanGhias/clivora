@@ -82,6 +82,7 @@ export function TasksClient({
   const activeRing = isClient
     ? "ring-2 ring-client-accent"
     : "ring-2 ring-primary";
+  const canCreateTask = isClient && canCreate;
   const selectedPeer = peers.find((p) => p.id === selectedPeerId) ?? peers[0] ?? null;
 
   const filtered = useMemo(() => {
@@ -160,7 +161,7 @@ export function TasksClient({
 
   async function onCreate(e: FormEvent) {
     e.preventDefault();
-    if (!canCreate || !selectedPeer || !title.trim()) return;
+    if (!canCreateTask || !selectedPeer || !title.trim()) return;
     setCreateBusy(true);
     setCreateError(null);
     try {
@@ -205,7 +206,7 @@ export function TasksClient({
 
   return (
     <div className="space-y-4">
-      {canCreate && peers.length > 0 && (
+      {canCreateTask && peers.length > 0 && (
         <form
           onSubmit={onCreate}
           className="space-y-3 rounded-2xl border border-border bg-surface p-4 shadow-sm"

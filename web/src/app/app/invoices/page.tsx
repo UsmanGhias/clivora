@@ -25,6 +25,9 @@ type InvoiceShareRow = {
   total?: number | null;
   currency?: string | null;
   status?: string | null;
+  freelancer_uid?: string | null;
+  freelancer_email?: string | null;
+  client_uid?: string | null;
   client_email?: string | null;
   public_token?: string | null;
   due_date?: string | null;
@@ -58,7 +61,7 @@ export default async function InvoicesPage() {
       const { data, error } = await supabase
         .from("invoice_shares")
         .select(
-          "share_id, invoice_number, total, currency, status, client_email, freelancer_uid, client_uid, public_token, due_date, updated_at",
+          "share_id, invoice_number, total, currency, status, freelancer_uid, freelancer_email, client_uid, client_email, public_token, due_date, updated_at",
         )
         .or(`client_uid.eq.${uid},client_email.eq.${profile?.email ?? ""}`)
         .order("updated_at", { ascending: false })
@@ -67,14 +70,28 @@ export default async function InvoicesPage() {
     } catch {
       rows = [];
     }
+    const freelancerIds = [...new Set(rows.map((r) => r.freelancer_uid).filter(Boolean))] as string[];
+    const { data: freelancerProfiles } = freelancerIds.length
+      ? await supabase.from("profiles").select("id, email, name").in("id", freelancerIds)
+      : { data: [] };
+    const freelancerMap = new Map((freelancerProfiles ?? []).map((p) => [p.id, p]));
+    const clientEmail = (profile?.email ?? "").toLowerCase();
+
     const { ClientInvoicesPanel } = await import("@/components/client/ClientInvoicesPanel");
     return (
       <ClientInvoicesPanel
-        rows={rows.map((r) => ({
-          ...r,
-          freelancer_email: r.client_email,
-          issue_date: r.updated_at,
-        }))}
+        rows={rows.map((r) => {
+          const freelancer = r.freelancer_uid ? freelancerMap.get(r.freelancer_uid) : null;
+          const freelancerEmail = r.freelancer_email || freelancer?.email || null;
+          const safeFreelancerEmail =
+            freelancerEmail && freelancerEmail.toLowerCase() !== clientEmail ? freelancerEmail : null;
+          return {
+            ...r,
+            freelancer_email: safeFreelancerEmail,
+            freelancer_name: freelancer?.name ?? null,
+            issue_date: r.updated_at,
+          };
+        })}
       />
     );
   }
