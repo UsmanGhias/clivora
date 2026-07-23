@@ -35,8 +35,13 @@ export type PlatformSnapshot = {
   customers: Array<Record<string, unknown>>;
   events: Array<Record<string, unknown>>;
   tickets: number;
+  ticketRows: Array<Record<string, unknown>>;
   disputes: number;
   flags: Array<Record<string, unknown>>;
+  settings?: {
+    connect_auto_approve_profiles: boolean;
+    connect_auto_approve_needs: boolean;
+  };
   meta?: {
     customerCount?: number;
     exportedAt?: string;

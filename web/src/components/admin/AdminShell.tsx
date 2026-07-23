@@ -94,6 +94,7 @@ export function AdminShell({
   const [dark, setDark] = useState(false);
   const [search, setSearch] = useState("");
   const [cmdOpen, setCmdOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -101,11 +102,24 @@ export function AdminShell({
         e.preventDefault();
         setCmdOpen(true);
       }
-      if (e.key === "Escape") setCmdOpen(false);
+      if (e.key === "Escape") {
+        setCmdOpen(false);
+        setProfileOpen(false);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  useEffect(() => {
+    if (!profileOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      const el = document.getElementById("admin-profile-menu");
+      if (el && !el.contains(e.target as Node)) setProfileOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [profileOpen]);
 
   const signOut = useCallback(async () => {
     const supabase = createClient();
@@ -130,8 +144,13 @@ export function AdminShell({
         )}
       >
         <div className="flex items-center gap-3 border-b border-white/5 px-4 py-5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-500/20 text-sm font-black text-teal-300">
-            C
+          <div className="relative h-9 w-9 overflow-hidden rounded-xl bg-teal-500/10">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brand/clivora-navbar-mark.png"
+              alt="CLIVORA"
+              className="h-full w-full object-contain p-1"
+            />
           </div>
           {!collapsed && (
             <div>
@@ -237,13 +256,17 @@ export function AdminShell({
 
           <button
             type="button"
+            onClick={() => router.push("/admin/support")}
             className="relative rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50 dark:border-slate-700"
-            aria-label="Notifications"
+            aria-label="Support tickets"
+            title="Support tickets"
           >
             <LifeBuoy className="h-4 w-4" />
-            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-teal-500 px-1 text-[9px] font-bold text-white">
-              12
-            </span>
+            {badges.tickets != null && Number(badges.tickets) > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-teal-500 px-1 text-[9px] font-bold text-white">
+                {badges.tickets}
+              </span>
+            )}
           </button>
 
           <button
@@ -256,17 +279,69 @@ export function AdminShell({
             <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
           </button>
 
-          <div className="flex items-center gap-2 rounded-xl border border-slate-200 py-1 pl-1 pr-3 dark:border-slate-700">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-teal-400 to-slate-800 text-xs font-bold text-white">
-              {adminName.slice(0, 1).toUpperCase()}
-            </div>
-            <div className="hidden sm:block">
-              <div className="text-xs font-bold leading-tight">{adminName}</div>
-              <div className="text-[10px] text-slate-500">{adminEmail}</div>
-            </div>
-            <button type="button" onClick={signOut} className="text-slate-400 hover:text-slate-700" title="Sign out">
-              <ChevronDown className="h-3.5 w-3.5" />
+          <div id="admin-profile-menu" className="relative">
+            <button
+              type="button"
+              onClick={() => setProfileOpen((v) => !v)}
+              className="flex items-center gap-2 rounded-xl border border-slate-200 py-1 pl-1 pr-3 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
+              aria-expanded={profileOpen}
+              aria-haspopup="menu"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-teal-400 to-slate-800 text-xs font-bold text-white">
+                {adminName.slice(0, 1).toUpperCase()}
+              </div>
+              <div className="hidden text-left sm:block">
+                <div className="text-xs font-bold leading-tight">{adminName}</div>
+                <div className="text-[10px] text-slate-500">{adminEmail}</div>
+              </div>
+              <ChevronDown className={cn("h-3.5 w-3.5 text-slate-400 transition", profileOpen && "rotate-180")} />
             </button>
+            {profileOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 z-40 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900"
+              >
+                <div className="border-b border-slate-100 px-3 py-2 dark:border-slate-800">
+                  <p className="truncate text-xs font-bold text-slate-900 dark:text-white">{adminName}</p>
+                  <p className="truncate text-[11px] text-slate-500">{adminEmail}</p>
+                </div>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800"
+                  onClick={() => {
+                    setProfileOpen(false);
+                    router.push("/admin/settings");
+                  }}
+                >
+                  <Settings className="h-4 w-4 text-teal-600" />
+                  System settings
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800"
+                  onClick={() => {
+                    setProfileOpen(false);
+                    router.push("/admin/support");
+                  }}
+                >
+                  <LifeBuoy className="h-4 w-4 text-teal-600" />
+                  Support tickets
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="flex w-full items-center gap-2 border-t border-slate-100 px-3 py-2.5 text-left text-sm text-rose-600 hover:bg-rose-50 dark:border-slate-800 dark:hover:bg-rose-950/40"
+                  onClick={() => {
+                    setProfileOpen(false);
+                    void signOut();
+                  }}
+                >
+                  Sign out
+                </button>
+              </div>
+            )}
           </div>
         </header>
 

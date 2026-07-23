@@ -200,6 +200,6 @@ export async function PUT(request: Request) {
     url,
     db,
     username,
-    note: `Secrets stored in admin_integration_secrets as ${prefix}_*. Prefer Vercel env for production env-first loads.`,
+    note: `Secrets stored in admin_integration_secrets as ${prefix}_*. Runtime prefers DB secrets over env so rotated keys apply immediately.`,
   });
 }

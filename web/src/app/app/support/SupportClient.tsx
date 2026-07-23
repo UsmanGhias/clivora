@@ -51,11 +51,11 @@ export function SupportClient({
       const { data, error: err } = await supabase
         .from("support_tickets")
         .insert({
-          user_uid: userUid,
-          user_email: userEmail,
+          user_id: userUid,
           subject: subject.trim(),
           body: body.trim(),
           status: "open",
+          priority: "normal",
         })
         .select()
         .single();

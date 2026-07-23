@@ -4,7 +4,7 @@ import { SupportClient } from "./SupportClient";
 
 export type SupportTicket = {
   id: string;
-  user_uid: string;
+  user_id: string;
   subject: string | null;
   body: string | null;
   status: string | null;
@@ -20,8 +20,8 @@ export default async function SupportPage() {
   try {
     const { data } = await supabase
       .from("support_tickets")
-      .select("id, user_uid, subject, body, status, created_at")
-      .eq("user_uid", uid)
+      .select("id, user_id, subject, body, status, created_at")
+      .eq("user_id", uid)
       .order("created_at", { ascending: false })
       .limit(30);
     tickets = (data ?? []) as SupportTicket[];

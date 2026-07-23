@@ -152,19 +152,20 @@ export async function loadOdooCfg(target: OdooTarget = "main"): Promise<{
 }> {
   const normalizedTarget = normalizeOdooTarget(target);
   const attempts = targetAttempts(normalizedTarget);
-  for (const attempt of attempts) {
-    const cfg = readEnvConfig(attempt);
-    if (cfg) return { cfg, source: "env", missing: [] };
-  }
 
+  // Prefer DB secrets so rotated API keys apply without a Vercel redeploy.
   try {
     for (const attempt of attempts) {
       const cfg = await readSecretConfig(attempt);
       if (cfg) return { cfg, source: "db", missing: [] };
     }
   } catch {
-    // Fall through to a concise missing-key report. Admin routes should not leak
-    // lower-level secret-store errors to the browser.
+    // Fall through to env.
+  }
+
+  for (const attempt of attempts) {
+    const cfg = readEnvConfig(attempt);
+    if (cfg) return { cfg, source: "env", missing: [] };
   }
 
   return {
