@@ -21,10 +21,13 @@ export default async function TransactionsPage() {
   }> = [];
 
   try {
+    const invoiceFilter = profile.email
+      ? `client_uid.eq.${profile.id},client_email.eq.${profile.email}`
+      : `client_uid.eq.${profile.id}`;
     const { data } = await supabase
       .from("invoice_shares")
       .select("share_id, invoice_number, total, status, updated_at")
-      .eq("client_uid", profile.id)
+      .or(invoiceFilter)
       .order("updated_at", { ascending: false })
       .limit(40);
     if (data) rows = data;

@@ -38,12 +38,17 @@ export default async function TasksPage() {
 
   if (profile?.id) {
     try {
-      const { data: shareRows } = await supabase
+      let shareQuery = supabase
         .from("project_shares")
         .select("share_id, project_name, freelancer_uid, freelancer_email, client_uid, client_email")
-        .eq(client ? "client_uid" : "freelancer_uid", profile.id)
         .order("updated_at", { ascending: false })
         .limit(100);
+      shareQuery = client
+        ? profile.email
+          ? shareQuery.or(`client_uid.eq.${profile.id},client_email.eq.${profile.email}`)
+          : shareQuery.eq("client_uid", profile.id)
+        : shareQuery.eq("freelancer_uid", profile.id);
+      const { data: shareRows } = await shareQuery;
       peers = (shareRows ?? [])
         .flatMap((share, index) => {
           const peerUid = client ? share.freelancer_uid : share.client_uid;
@@ -73,7 +78,7 @@ export default async function TasksPage() {
       <TasksClient
         initial={rows}
         isClient={!!client}
-        canCreate={peers.length > 0}
+        canCreate={!!client && peers.length > 0}
         peers={peers}
       />
     </div>

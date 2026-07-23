@@ -10,6 +10,7 @@ export type PortalNavCounts = {
 export async function getPortalNavCounts(
   uid: string,
   isClient: boolean,
+  email?: string | null,
 ): Promise<PortalNavCounts> {
   const supabase = await createClient();
   const counts: PortalNavCounts = { proposals: 0, messages: 0, notifications: 0, projects: 0 };
@@ -31,7 +32,11 @@ export async function getPortalNavCounts(
       supabase
         .from("project_shares")
         .select("share_id", { count: "exact", head: true })
-        .eq(isClient ? "client_uid" : "freelancer_uid", uid),
+        .or(
+          isClient && email
+            ? `client_uid.eq.${uid},client_email.eq.${email.trim().toLowerCase()}`
+            : `${isClient ? "client_uid" : "freelancer_uid"}.eq.${uid}`,
+        ),
     ]);
     counts.proposals = proposals.count ?? 0;
     counts.notifications = notifications.count ?? 0;

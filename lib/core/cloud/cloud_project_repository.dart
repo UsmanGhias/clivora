@@ -133,18 +133,52 @@ class CloudProjectRepository {
 
   Stream<List<CloudSharedProject>> watchForClient({required String email, String? uid}) {
     final normalized = email.trim().toLowerCase();
-    if (uid != null && uid.isNotEmpty) {
+    if (uid == null || uid.isEmpty) {
       return _db
           .from('project_shares')
           .stream(primaryKey: ['share_id'])
-          .eq('client_uid', uid)
+          .eq('client_email', normalized)
           .map((rows) => rows.map(CloudSharedProject.fromRow).toList());
     }
-    return _db
+
+    var byUid = <CloudSharedProject>[];
+    var byEmail = <CloudSharedProject>[];
+    final controller = StreamController<List<CloudSharedProject>>();
+
+    void emit() {
+      final merged = <String, CloudSharedProject>{};
+      for (final row in [...byUid, ...byEmail]) {
+        merged[row.shareId] = row;
+      }
+      final list = merged.values.toList()
+        ..sort((a, b) => (b.updatedAt ?? DateTime(2000)).compareTo(a.updatedAt ?? DateTime(2000)));
+      if (!controller.isClosed) {
+        controller.add(list);
+      }
+    }
+
+    final uidSub = _db
+        .from('project_shares')
+        .stream(primaryKey: ['share_id'])
+        .eq('client_uid', uid)
+        .listen((rows) {
+      byUid = rows.map(CloudSharedProject.fromRow).toList();
+      emit();
+    }, onError: controller.addError);
+    final emailSub = _db
         .from('project_shares')
         .stream(primaryKey: ['share_id'])
         .eq('client_email', normalized)
-        .map((rows) => rows.map(CloudSharedProject.fromRow).toList());
+        .listen((rows) {
+      byEmail = rows.map(CloudSharedProject.fromRow).toList();
+      emit();
+    }, onError: controller.addError);
+
+    controller.onCancel = () {
+      uidSub.cancel();
+      emailSub.cancel();
+    };
+    return controller.stream;
   }
 
   Future<void> shareHybrid({

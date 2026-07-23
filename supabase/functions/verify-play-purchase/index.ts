@@ -13,10 +13,19 @@ interface ServiceAccount {
   token_uri?: string;
 }
 
+/** JWT / OAuth requires Base64URL (no +, /, or = padding). */
+function base64UrlEncode(bytes: Uint8Array | string): string {
+  const raw =
+    typeof bytes === "string"
+      ? btoa(bytes)
+      : btoa(String.fromCharCode(...bytes));
+  return raw.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
 async function getGoogleAccessToken(sa: ServiceAccount): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
-  const header = btoa(JSON.stringify({ alg: "RS256", typ: "JWT" }));
-  const claim = btoa(
+  const header = base64UrlEncode(JSON.stringify({ alg: "RS256", typ: "JWT" }));
+  const claim = base64UrlEncode(
     JSON.stringify({
       iss: sa.client_email,
       scope: "https://www.googleapis.com/auth/androidpublisher",
@@ -38,7 +47,7 @@ async function getGoogleAccessToken(sa: ServiceAccount): Promise<string> {
     key,
     new TextEncoder().encode(unsigned),
   );
-  const jwt = `${unsigned}.${btoa(String.fromCharCode(...new Uint8Array(sig)))}`;
+  const jwt = `${unsigned}.${base64UrlEncode(new Uint8Array(sig))}`;
   const res = await fetch(sa.token_uri ?? "https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },

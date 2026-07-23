@@ -38,6 +38,13 @@ export default async function AppHomePage() {
   const client = isClientAccount(profile);
   const supabase = await createClient();
   const uid = profile.id;
+  const clientEmail = profile.email?.trim().toLowerCase();
+  const clientProjectFilter = clientEmail
+    ? `client_uid.eq.${uid},client_email.eq.${clientEmail}`
+    : `client_uid.eq.${uid}`;
+  const clientInvoiceFilter = clientEmail
+    ? `client_uid.eq.${uid},client_email.eq.${clientEmail}`
+    : `client_uid.eq.${uid}`;
 
   let home: HomeSummary = {};
   let credits: ConnectCreditSummary | null = null;
@@ -93,7 +100,7 @@ export default async function AppHomePage() {
         ? supabase
             .from("invoice_shares")
             .select("share_id, total, status, currency, created_at, updated_at")
-            .eq("client_uid", uid)
+            .or(clientInvoiceFilter)
             .limit(200)
         : supabase
             .from("crm_invoices")
@@ -121,7 +128,7 @@ export default async function AppHomePage() {
         .select(
           "share_id, project_name, status, budget, freelancer_email, client_email, updated_at",
         )
-        .eq(client ? "client_uid" : "freelancer_uid", uid)
+        .or(client ? clientProjectFilter : `freelancer_uid.eq.${uid}`)
         .order("updated_at", { ascending: false })
         .limit(8),
       supabase
@@ -278,7 +285,7 @@ export default async function AppHomePage() {
       const { count } = await supabase
         .from("project_shares")
         .select("share_id", { count: "exact", head: true })
-        .eq(client ? "client_uid" : "freelancer_uid", uid);
+        .or(client ? clientProjectFilter : `freelancer_uid.eq.${uid}`);
       projectCount = count ?? 0;
     }
 

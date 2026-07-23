@@ -32,10 +32,13 @@ export default async function PaymentsOverviewPage() {
   let count = 0;
 
   try {
+    const invoiceFilter = profile.email
+      ? `client_uid.eq.${profile.id},client_email.eq.${profile.email}`
+      : `client_uid.eq.${profile.id}`;
     const { data } = await supabase
       .from("invoice_shares")
       .select("total, status")
-      .eq("client_uid", profile.id)
+      .or(invoiceFilter)
       .limit(200);
     if (data) {
       count = data.length;

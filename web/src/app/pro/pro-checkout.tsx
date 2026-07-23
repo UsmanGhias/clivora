@@ -18,13 +18,14 @@ import { cn } from "@/lib/utils";
 
 type Plan = "pro" | "pro_plus";
 type AccountType = "freelancer" | "client";
-type PaymentMethod = "jazzcash" | "easypaisa" | "bank" | "manual";
+type PaymentMethod = "safepay" | "jazzcash" | "easypaisa" | "bank" | "manual";
 
 const PAYMENT_METHODS: Array<{
   value: PaymentMethod;
   label: string;
   detail: string;
 }> = [
+  { value: "safepay", label: "SafePay (card / bank)", detail: "Instant hosted checkout — recommended on web" },
   { value: "jazzcash", label: "JazzCash", detail: "Mobile wallet transfer" },
   { value: "easypaisa", label: "Easypaisa", detail: "Mobile wallet transfer" },
   { value: "bank", label: "Bank transfer", detail: "Local or wire transfer" },
@@ -56,13 +57,14 @@ export default function ProCheckout() {
   );
   const [loggedIn, setLoggedIn] = useState(false);
   const [country, setCountry] = useState("PK");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("jazzcash");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("safepay");
   const [paymentReference, setPaymentReference] = useState("");
   const [notes, setNotes] = useState("");
   const [promoCode, setPromoCode] = useState(params.get("promo") ?? params.get("ref") ?? "");
   const [promoNote, setPromoNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+  const [safepayStatus, setSafepayStatus] = useState<"success" | "cancel" | null>(null);
   const [error, setError] = useState("");
   const [comparisonOpen, setComparisonOpen] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<string | null>(null);
@@ -71,6 +73,11 @@ export default function ProCheckout() {
   const amount = plan === "pro_plus" ? PRO_PLUS_PRICE_USD : PRO_PRICE_USD;
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const isClient = accountType === "client";
+
+  useEffect(() => {
+    const sp = params.get("safepay");
+    if (sp === "success" || sp === "cancel") setSafepayStatus(sp);
+  }, [params]);
 
   useEffect(() => {
     (async () => {
@@ -114,34 +121,27 @@ export default function ProCheckout() {
     discountType: string;
     discountValue: number;
     note: string;
+    finalAmountUsd: number;
   } | null> {
     const code = codeRaw.trim().toUpperCase();
     if (!code) return null;
-    const { data } = await supabase
-      .from("promo_codes")
-      .select("code, discount_type, discount_value, applies_to, max_uses, used_count, expires_at, is_active")
-      .eq("code", code)
-      .maybeSingle();
-    if (!data || !data.is_active) throw new Error("Promo code is invalid or inactive");
-    if (data.expires_at && new Date(data.expires_at) < new Date()) {
-      throw new Error("Promo code expired");
-    }
-    if (data.max_uses != null && Number(data.used_count ?? 0) >= Number(data.max_uses)) {
-      throw new Error("Promo code usage limit reached");
-    }
-    if (data.applies_to !== "any" && data.applies_to !== plan) {
-      throw new Error(`Promo applies to ${data.applies_to} only`);
-    }
-    const note =
-      data.discount_type === "percent"
-        ? `${data.discount_value}% off ${plan === "pro_plus" ? "Pro Plus" : "Pro"}`
-        : `$${data.discount_value} off`;
-    return {
-      code: data.code,
-      discountType: data.discount_type,
-      discountValue: Number(data.discount_value),
-      note,
+    const res = await fetch("/api/promo/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, plan, amountUsd: amount }),
+    });
+    const json = (await res.json().catch(() => ({}))) as {
+      promo?: {
+        code: string;
+        discountType: string;
+        discountValue: number;
+        note: string;
+        finalAmountUsd: number;
+      } | null;
+      error?: string;
     };
+    if (!res.ok) throw new Error(json.error || "Promo validation failed");
+    return json.promo ?? null;
   }
 
   async function onSubmit(e: FormEvent) {
@@ -159,6 +159,29 @@ export default function ProCheckout() {
         promoMeta = await validatePromo(promoCode);
         if (promoMeta) setPromoNote(promoMeta.note);
       }
+      const amountDue = promoMeta?.finalAmountUsd ?? amount;
+
+      if (paymentMethod === "safepay") {
+        const res = await fetch("/api/safepay/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            plan,
+            accountType,
+            fullName: fullName.trim(),
+            email: email.trim().toLowerCase(),
+            promoCode: promoMeta?.code ?? (promoCode.trim() || undefined),
+            amountUsd: amount,
+          }),
+        });
+        const json = (await res.json()) as { checkoutUrl?: string; error?: string };
+        if (!res.ok || !json.checkoutUrl) {
+          throw new Error(json.error || "Could not start SafePay checkout");
+        }
+        window.location.href = json.checkoutUrl;
+        return;
+      }
+
       const noteParts = [notes.trim()];
       if (promoMeta) noteParts.push(`Promo: ${promoMeta.code} (${promoMeta.note})`);
       const { error: insertError } = await supabase.from("pro_payment_requests").insert({
@@ -166,7 +189,7 @@ export default function ProCheckout() {
         full_name: fullName.trim(),
         account_type: accountType,
         plan,
-        amount_usd: amount,
+        amount_usd: amountDue,
         currency: "USD",
         country,
         payment_method: paymentMethod,
@@ -257,6 +280,28 @@ export default function ProCheckout() {
                 Back to app
               </Link>
             </div>
+          </div>
+        )}
+
+        {safepayStatus === "success" && !done && (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+            <h2 className="text-lg font-extrabold text-navy">SafePay payment received</h2>
+            <p className="mt-1 text-sm text-text-secondary">
+              Thanks — we&apos;re confirming your payment now. Refresh in a minute or open the app;
+              Pro unlocks automatically after the webhook settles.
+            </p>
+            <Link href="/app" className="mt-3 inline-flex rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white">
+              Back to app
+            </Link>
+          </div>
+        )}
+
+        {safepayStatus === "cancel" && !done && (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+            <h2 className="text-lg font-extrabold text-navy">Checkout cancelled</h2>
+            <p className="mt-1 text-sm text-text-secondary">
+              No charge was completed. Choose SafePay again below, or use JazzCash / bank transfer.
+            </p>
           </div>
         )}
 
@@ -503,33 +548,45 @@ export default function ProCheckout() {
                   ))}
                 </div>
               </fieldset>
-              <label htmlFor="payment-reference" className="block text-sm font-semibold text-navy">
-                Payment reference
-                <input
-                  id="payment-reference"
-                  required
-                  value={paymentReference}
-                  onChange={(e) => setPaymentReference(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-border px-3 py-2.5 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="Txn ID, receipt number, or manual reference"
-                />
-              </label>
-              <label htmlFor="payment-notes" className="block text-sm font-semibold text-navy">
-                Notes
-                <textarea
-                  id="payment-notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-border px-3 py-2.5 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  rows={3}
-                  placeholder="Add sender account, payment time, or approval notes."
-                />
-              </label>
-              <div className="rounded-2xl border border-teal-100 bg-teal-50 px-3 py-3 text-xs text-text-secondary">
-                Amount due: <strong className="text-navy">${amount} USD</strong>
-                {plan === "pro_plus" && " · Pro Plus includes all Pro features"}. Email {OFFICIAL_EMAIL}{" "}
-                if approval is delayed.
-              </div>
+              {paymentMethod !== "safepay" && (
+                <label htmlFor="payment-reference" className="block text-sm font-semibold text-navy">
+                  Payment reference
+                  <input
+                    id="payment-reference"
+                    required
+                    value={paymentReference}
+                    onChange={(e) => setPaymentReference(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-border px-3 py-2.5 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    placeholder="Txn ID, receipt number, or manual reference"
+                  />
+                </label>
+              )}
+              {paymentMethod === "safepay" ? (
+                <div className="rounded-2xl border border-teal-100 bg-teal-50 px-3 py-3 text-xs text-text-secondary">
+                  You&apos;ll be redirected to <strong className="text-navy">SafePay</strong> to pay{" "}
+                  <strong className="text-navy">${amount} USD</strong> securely. Plan unlocks after
+                  payment confirmation.
+                </div>
+              ) : (
+                <label htmlFor="payment-notes" className="block text-sm font-semibold text-navy">
+                  Notes
+                  <textarea
+                    id="payment-notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-border px-3 py-2.5 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    rows={3}
+                    placeholder="Add sender account, payment time, or approval notes."
+                  />
+                </label>
+              )}
+              {paymentMethod !== "safepay" && (
+                <div className="rounded-2xl border border-teal-100 bg-teal-50 px-3 py-3 text-xs text-text-secondary">
+                  Amount due: <strong className="text-navy">${amount} USD</strong>
+                  {plan === "pro_plus" && " · Pro Plus includes all Pro features"}. Email {OFFICIAL_EMAIL}{" "}
+                  if approval is delayed.
+                </div>
+              )}
               {error && <p className="rounded-lg bg-error/10 px-3 py-2 text-sm text-error">{error}</p>}
               <button
                 type="submit"
@@ -537,8 +594,12 @@ export default function ProCheckout() {
                 className="w-full rounded-xl bg-primary py-3 text-sm font-bold text-white shadow-sm hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-60"
               >
                 {busy
-                  ? "Submitting..."
-                  : `Submit ${plan === "pro_plus" ? "Pro Plus" : "Pro"} request`}
+                  ? paymentMethod === "safepay"
+                    ? "Opening SafePay..."
+                    : "Submitting..."
+                  : paymentMethod === "safepay"
+                    ? `Pay $${amount} with SafePay`
+                    : `Submit ${plan === "pro_plus" ? "Pro Plus" : "Pro"} request`}
               </button>
             </form>
             <OrderSummary
@@ -646,22 +707,43 @@ function OrderSummary({
           <div className="rounded-2xl bg-teal-50 p-4 text-sm text-text-secondary">
             <p className="font-bold text-navy">What happens next</p>
             <ul className="mt-3 space-y-2">
-              <li className="flex gap-2">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                Submit this request to the CLIVORA team.
-              </li>
-              <li className="flex gap-2">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                We verify the payment reference and apply your plan.
-              </li>
-              <li className="flex gap-2">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                Android users may subscribe in-app with Google Play instead.
-              </li>
+              {paymentMethod === "safepay" ? (
+                <>
+                  <li className="flex gap-2">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                    Pay securely on SafePay hosted checkout.
+                  </li>
+                  <li className="flex gap-2">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                    Webhook confirms payment and unlocks your plan automatically.
+                  </li>
+                  <li className="flex gap-2">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                    Android users should subscribe in-app with Google Play Billing.
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li className="flex gap-2">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                    Submit this request to the CLIVORA team.
+                  </li>
+                  <li className="flex gap-2">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                    We verify the payment reference and apply your plan.
+                  </li>
+                  <li className="flex gap-2">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                    Android users may subscribe in-app with Google Play instead.
+                  </li>
+                </>
+              )}
             </ul>
           </div>
           <p className="text-xs leading-relaxed text-text-muted">
-            Keep your transfer proof available in case support asks for it at {OFFICIAL_EMAIL}.
+            {paymentMethod === "safepay"
+              ? `Questions about card checkout? Email ${OFFICIAL_EMAIL}.`
+              : `Keep your transfer proof available in case support asks for it at ${OFFICIAL_EMAIL}.`}
           </p>
         </div>
       </div>

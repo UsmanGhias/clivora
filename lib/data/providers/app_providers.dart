@@ -410,6 +410,8 @@ final isProProvider = Provider<bool>((ref) {
   final user = ref.watch(authStateProvider).valueOrNull;
   if (isAdminUser(user)) return true;
   final serverSub = ref.watch(serverSubscriptionProvider).valueOrNull;
+  // Explicit false = expired/inactive Play or SafePay row — do not trust a stale profile plan.
+  if (serverSub == false) return false;
   if (serverSub == true) return true;
   final cloudPlan = ref.watch(cloudSubscriptionPlanProvider).valueOrNull;
   if (cloudPlan == PlanLimits.proPlan || cloudPlan == PlanLimits.proPlusPlan) return true;
@@ -421,6 +423,8 @@ final isProProvider = Provider<bool>((ref) {
 final isProPlusProvider = Provider<bool>((ref) {
   final user = ref.watch(authStateProvider).valueOrNull;
   if (isAdminUser(user)) return true;
+  final serverSub = ref.watch(serverSubscriptionProvider).valueOrNull;
+  if (serverSub == false) return false;
   final cloudPlan = ref.watch(cloudSubscriptionPlanProvider).valueOrNull;
   if (cloudPlan == PlanLimits.proPlusPlan) return true;
   final plan = ref.watch(subscriptionPlanProvider).valueOrNull;
@@ -435,25 +439,30 @@ final cloudSubscriptionPlanProvider = FutureProvider<String?>((ref) async {
 });
 
 /// Server-verified subscription from Supabase (when online).
-final serverSubscriptionProvider = FutureProvider<bool>((ref) async {
+/// `true` = active, `false` = expired/inactive row exists, `null` = no row / offline.
+final serverSubscriptionProvider = FutureProvider<bool?>((ref) async {
   final uid = SupabaseAuthHelper.currentUid;
-  if (uid == null) return false;
+  if (uid == null) return null;
   try {
-    final row = await SupabaseAuthHelper.client
+    final rows = await SupabaseAuthHelper.client
         .from('subscriptions')
         .select('status, expires_at')
         .eq('user_id', uid)
-        .eq('status', 'active')
         .order('expires_at', ascending: false)
-        .limit(1)
-        .maybeSingle();
-    if (row == null) return false;
-    final expires = row['expires_at'] as String?;
-    if (expires == null) return true;
-    final exp = DateTime.tryParse(expires);
-    return exp != null && exp.isAfter(DateTime.now());
-  } catch (_) {
+        .limit(5);
+    final list = (rows as List?) ?? const [];
+    if (list.isEmpty) return null;
+    for (final row in list) {
+      final map = Map<String, dynamic>.from(row as Map);
+      final status = (map['status'] as String?)?.toLowerCase();
+      final expires = map['expires_at'] as String?;
+      final exp = expires == null ? null : DateTime.tryParse(expires);
+      final notExpired = exp == null || exp.isAfter(DateTime.now());
+      if (status == 'active' && notExpired) return true;
+    }
     return false;
+  } catch (_) {
+    return null;
   }
 });
 
