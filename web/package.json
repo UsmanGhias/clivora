@@ -1,6 +1,6 @@
 {
   "name": "clivora-web",
-  "version": "2.20.0",
+  "version": "4.1.7",
   "private": true,
   "engines": {
     "node": ">=20.0.0"
