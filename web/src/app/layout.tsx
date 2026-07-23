@@ -30,19 +30,31 @@ export const metadata: Metadata = {
     siteName: site.name,
     type: "website",
     locale: "en_US",
+    images: [
+      {
+        url: "/brand/clivora-og-share-1200x630.png",
+        width: 1200,
+        height: 630,
+        alt: "CLIVORA",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: `${site.name} | ${site.tagline}`,
     description: site.shortDescription,
+    images: ["/brand/clivora-og-share-1200x630.png"],
   },
   robots: {
     index: true,
     follow: true,
   },
   icons: {
-    icon: "/clivora_logo.png",
-    apple: "/app-icon.png",
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: "/apple-touch-icon.png",
   },
 };
 
