@@ -12,10 +12,10 @@ interface LogoProps {
 }
 
 const sizes = {
-  sm: { img: 32, text: "text-base", gap: "gap-2" },
-  md: { img: 40, text: "text-xl", gap: "gap-2.5" },
-  lg: { img: 56, text: "text-2xl", gap: "gap-3" },
-  xl: { img: 72, text: "text-3xl", gap: "gap-4" },
+  sm: { mark: 32, wordmark: { width: 128, height: 32 } },
+  md: { mark: 40, wordmark: { width: 160, height: 40 } },
+  lg: { mark: 56, wordmark: { width: 224, height: 56 } },
+  xl: { mark: 72, wordmark: { width: 288, height: 72 } },
 };
 
 /** Canonical CLIVORA mark + wordmark, use everywhere (app, Connect, Pro, admin). */
@@ -26,32 +26,34 @@ export function Logo({
   className,
 }: LogoProps) {
   const s = sizes[size];
+  const wordmarkSrc =
+    variant === "onDark" ? "/brand/clivora-logo-on-dark.png" : "/brand/clivora-logo-on-light.png";
 
   return (
-    <div className={cn("flex items-center", s.gap, className)}>
-      <div
-        className="relative shrink-0 overflow-hidden rounded-xl shadow-md shadow-black/20"
-        style={{ width: s.img, height: s.img }}
-      >
+    <div className={cn("flex items-center", className)}>
+      {showText ? (
         <Image
-          src="/clivora_logo.png"
+          src={wordmarkSrc}
           alt="CLIVORA"
-          width={s.img}
-          height={s.img}
-          className="h-full w-full object-cover"
+          width={s.wordmark.width}
+          height={s.wordmark.height}
+          className="h-auto w-auto"
           priority
         />
-      </div>
-      {showText && (
-        <span
-          className={cn(
-            "font-extrabold tracking-[0.12em]",
-            s.text,
-            variant === "onDark" ? "text-white" : "text-navy",
-          )}
+      ) : (
+        <div
+          className="relative shrink-0 overflow-hidden rounded-xl shadow-md shadow-black/20"
+          style={{ width: s.mark, height: s.mark }}
         >
-          CLIVORA
-        </span>
+          <Image
+            src="/brand/clivora-navbar-mark.png"
+            alt="CLIVORA"
+            width={s.mark}
+            height={s.mark}
+            className="h-full w-full object-contain"
+            priority
+          />
+        </div>
       )}
     </div>
   );

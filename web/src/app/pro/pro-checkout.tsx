@@ -10,6 +10,7 @@ import {
   PRO_PLUS_PRICE_USD,
   PRO_PRICE_USD,
 } from "@/lib/pricing";
+import { getCompanyPaymentAccount, type CompanyPaymentAccount } from "@/lib/company-payments";
 import { site } from "@/lib/site";
 import { SubPageChrome } from "@/components/app/SubPageChrome";
 import { Logo } from "@/components/ui/Logo";
@@ -24,12 +25,18 @@ const PAYMENT_METHODS: Array<{
   value: PaymentMethod;
   label: string;
   detail: string;
+  disabled?: boolean;
 }> = [
-  { value: "safepay", label: "SafePay (card / bank)", detail: "Instant hosted checkout — recommended on web" },
-  { value: "jazzcash", label: "JazzCash", detail: "Mobile wallet transfer" },
-  { value: "easypaisa", label: "Easypaisa", detail: "Mobile wallet transfer" },
-  { value: "bank", label: "Bank transfer", detail: "Local or wire transfer" },
+  { value: "jazzcash", label: "JazzCash", detail: "Pay to 03067917467 — recommended" },
+  { value: "easypaisa", label: "Easypaisa", detail: "Pay to 03126912440" },
+  { value: "bank", label: "Bank transfer", detail: "MCB or Bank Islami — details below" },
   { value: "manual", label: "Manual", detail: "Share details for team review" },
+  {
+    value: "safepay",
+    label: "SafePay (card)",
+    detail: "Unavailable until SafePay merchant is activated",
+    disabled: true,
+  },
 ];
 
 const FEATURES = [
@@ -57,7 +64,7 @@ export default function ProCheckout() {
   );
   const [loggedIn, setLoggedIn] = useState(false);
   const [country, setCountry] = useState("PK");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("safepay");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("jazzcash");
   const [paymentReference, setPaymentReference] = useState("");
   const [notes, setNotes] = useState("");
   const [promoCode, setPromoCode] = useState(params.get("promo") ?? params.get("ref") ?? "");
@@ -146,6 +153,7 @@ export default function ProCheckout() {
     currentPlan === "pro_plus" || currentPlan === "plus" || currentPlan === "proplus";
   const alreadyPro = currentPlan === "pro" || alreadyProPlus;
   const wantsSameOrLower = alreadyProPlus || (alreadyPro && plan === "pro");
+  const selectedPaymentAccount = getCompanyPaymentAccount(paymentMethod);
 
   async function validatePromo(codeRaw: string): Promise<{
     code: string;
@@ -331,7 +339,7 @@ export default function ProCheckout() {
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
             <h2 className="text-lg font-extrabold text-navy">Checkout cancelled</h2>
             <p className="mt-1 text-sm text-text-secondary">
-              No charge was completed. Choose SafePay again below, or use JazzCash / bank transfer.
+              No charge was completed. Use JazzCash, Easypaisa, or bank transfer below.
             </p>
           </div>
         )}
@@ -560,12 +568,16 @@ export default function ProCheckout() {
                       key={method.value}
                       type="button"
                       aria-pressed={paymentMethod === method.value}
-                      onClick={() => setPaymentMethod(method.value)}
+                      disabled={method.disabled}
+                      onClick={() => {
+                        if (!method.disabled) setPaymentMethod(method.value);
+                      }}
                       className={cn(
                         "rounded-2xl border p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
                         paymentMethod === method.value
                           ? "border-primary bg-primary/5 shadow-sm"
                           : "border-border bg-white hover:border-primary/40",
+                        method.disabled && "cursor-not-allowed opacity-55 hover:border-border",
                       )}
                     >
                       <span className="flex items-center justify-between gap-3">
@@ -579,6 +591,7 @@ export default function ProCheckout() {
                   ))}
                 </div>
               </fieldset>
+              {selectedPaymentAccount && <PayToDetails account={selectedPaymentAccount} />}
               {paymentMethod !== "safepay" && (
                 <label htmlFor="payment-reference" className="block text-sm font-semibold text-navy">
                   Payment reference
@@ -639,6 +652,7 @@ export default function ProCheckout() {
               paymentMethod={paymentMethod}
               plan={plan}
               promoCode={promoCode}
+              paymentAccount={selectedPaymentAccount}
             />
           </div>
         )}
@@ -653,6 +667,32 @@ export default function ProCheckout() {
         )}
       </div>
     </SubPageChrome>
+  );
+}
+
+function PayToDetails({ account }: { account: CompanyPaymentAccount }) {
+  return (
+    <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-sm">
+      <p className="font-extrabold text-navy">Pay to {account.label}</p>
+      <div className="mt-3 space-y-3">
+        {account.groups.map((group) => (
+          <div key={group.label} className="rounded-xl border border-white/70 bg-white p-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-text-muted">{group.label}</p>
+            <dl className="mt-2 space-y-1.5">
+              {group.fields.map((field) => (
+                <div key={`${group.label}-${field.label}`} className="grid gap-1 sm:grid-cols-[140px,1fr]">
+                  <dt className="text-xs font-semibold text-text-secondary">{field.label}</dt>
+                  <dd className="font-mono text-sm font-bold text-navy">{field.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-xs text-text-secondary">
+        Send the transfer, then enter your transaction ID or receipt number below.
+      </p>
+    </div>
   );
 }
 
@@ -705,12 +745,14 @@ function OrderSummary({
   paymentMethod,
   plan,
   promoCode,
+  paymentAccount,
 }: {
   accountType: AccountType;
   amount: number;
   paymentMethod: PaymentMethod;
   plan: Plan;
   promoCode: string;
+  paymentAccount: CompanyPaymentAccount | null;
 }) {
   const method = PAYMENT_METHODS.find((item) => item.value === paymentMethod);
   const planName = plan === "pro_plus" ? "Pro Plus" : "Pro";
@@ -735,6 +777,26 @@ function OrderSummary({
         <div className="space-y-4 bg-white p-5 text-navy">
           <SummaryRow label="Payment" value={method?.label ?? "Manual"} />
           <SummaryRow label="Promo" value={promoCode.trim() ? promoCode.trim().toUpperCase() : "Optional"} />
+          {paymentAccount && (
+            <div className="rounded-2xl border border-primary/15 bg-primary/5 p-4 text-sm">
+              <p className="font-bold text-navy">Pay-to details</p>
+              <div className="mt-3 space-y-3">
+                {paymentAccount.groups.map((group) => (
+                  <div key={group.label}>
+                    <p className="text-xs font-bold uppercase tracking-wide text-text-muted">{group.label}</p>
+                    <dl className="mt-1 space-y-1">
+                      {group.fields.map((field) => (
+                        <div key={`${group.label}-${field.label}`} className="text-xs">
+                          <dt className="font-semibold text-text-secondary">{field.label}</dt>
+                          <dd className="font-mono font-bold text-navy">{field.value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="rounded-2xl bg-teal-50 p-4 text-sm text-text-secondary">
             <p className="font-bold text-navy">What happens next</p>
             <ul className="mt-3 space-y-2">
