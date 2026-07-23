@@ -4,11 +4,13 @@ import {
   listPublicConnectProfiles,
 } from "@/lib/connect";
 import { getProfile, isClientAccount, isProPlus, isRestricted } from "@/lib/profile";
+import { createClient } from "@/lib/supabase/server";
 import { ConnectBoard } from "@/components/connect/ConnectBoard";
 import { ConnectCreditsWidget } from "@/components/connect/ConnectCreditsWidget";
 import { ClientCard } from "@/components/client/ui";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Suspense } from "react";
 import { CheckCircle2, Headphones, Shield, Sparkles, Zap } from "lucide-react";
 
 export const metadata = { title: "Marketplace / Connect" };
@@ -34,6 +36,19 @@ export default async function AppConnectPage({
     listPublicConnectNeeds(),
     listMyConnectRequests(),
   ]);
+  let savedBookmarkIds: string[] = [];
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("freelancer_bookmarks")
+      .select("target_id")
+      .eq("user_id", profile.id)
+      .in("target_type", ["freelancer", "job"])
+      .limit(500);
+    savedBookmarkIds = (data ?? []).map((row) => String(row.target_id));
+  } catch {
+    savedBookmarkIds = [];
+  }
 
   return (
     <div className="space-y-6 pb-10">
@@ -51,19 +66,22 @@ export default async function AppConnectPage({
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_280px]">
-        <ConnectBoard
-          profiles={profiles}
-          needs={needs}
-          requests={requests}
-          signedIn
-          isProPlus={isProPlus(profile)}
-          isClient={client}
-          isRestricted={isRestricted(profile)}
-          myUserId={profile.id}
-          portalMode
-          accent={client ? "slate" : "teal"}
-          defaultTab={defaultTab}
-        />
+        <Suspense fallback={<div className="rounded-2xl border border-border bg-surface p-8 text-sm text-text-secondary">Loading Connect…</div>}>
+          <ConnectBoard
+            profiles={profiles}
+            needs={needs}
+            requests={requests}
+            signedIn
+            isProPlus={isProPlus(profile)}
+            isClient={client}
+            isRestricted={isRestricted(profile)}
+            myUserId={profile.id}
+            portalMode
+            accent={client ? "slate" : "teal"}
+            defaultTab={defaultTab}
+            savedBookmarkIds={savedBookmarkIds}
+          />
+        </Suspense>
         <div className="hidden xl:block">
           <div className="sticky top-24 space-y-4">
             <ConnectCreditsWidget signedIn isClient={client} />

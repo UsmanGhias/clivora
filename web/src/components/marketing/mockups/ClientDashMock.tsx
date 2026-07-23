@@ -1,4 +1,12 @@
 import Link from "next/link";
+import {
+  Briefcase,
+  FolderKanban,
+  MessageSquare,
+  Receipt,
+  TrendingDown,
+  Wallet,
+} from "lucide-react";
 
 function SpendChart() {
   const bars = [
@@ -10,54 +18,74 @@ function SpendChart() {
     { month: "Jun", amount: 2.1, h: 62 },
   ];
   const peak = Math.max(...bars.map((b) => b.h));
+  const chartH = 52;
+  const labelY = 64;
+  const colW = 176 / bars.length;
 
   return (
     <div className="flex h-full min-h-[72px] flex-col">
-      <div className="relative flex flex-1 items-end gap-[6px] px-0.5 pb-0.5">
-        <div className="pointer-events-none absolute inset-x-0 top-0 bottom-4 flex flex-col justify-between" aria-hidden>
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="border-t border-dashed border-slate-200/90" />
-          ))}
-        </div>
-        {bars.map((b) => {
+      <svg viewBox="0 0 176 68" className="h-full w-full flex-1" aria-hidden>
+        {[12, 28, 44].map((y) => (
+          <line key={y} x1="4" x2="172" y1={y} y2={y} stroke="#E2E8F0" strokeDasharray="2 3" />
+        ))}
+        {bars.map((b, i) => {
           const active = b.h === peak;
+          const barH = (b.h / 76) * chartH;
+          const x = i * colW + colW / 2 - 7;
+          const y = chartH - barH + 4;
           return (
-            <div key={b.month} className="relative z-[1] flex h-full min-w-0 flex-1 flex-col items-center justify-end">
+            <g key={b.month}>
               {active && (
-                <span className="mb-0.5 text-[7px] font-bold tabular-nums text-teal-700">
+                <text
+                  x={i * colW + colW / 2}
+                  y={Math.max(8, y - 4)}
+                  textAnchor="middle"
+                  className="fill-teal-700"
+                  style={{ fontSize: 7, fontWeight: 700 }}
+                >
                   ${b.amount.toFixed(1)}k
-                </span>
+                </text>
               )}
-              <div
-                className={`w-full max-w-[14px] rounded-t-[3px] ${
-                  active
-                    ? "bg-gradient-to-t from-teal-700 to-teal-400 shadow-[0_0_0_1px_rgba(13,148,136,0.25)]"
-                    : "bg-slate-200"
-                }`}
-                style={{ height: `${(b.h / 76) * 100}%`, minHeight: 8 }}
+              <rect
+                x={x}
+                y={y}
+                width={14}
+                height={Math.max(8, barH)}
+                rx={2}
+                fill={active ? "#0D9488" : "#E2E8F0"}
               />
-            </div>
+              <text
+                x={i * colW + colW / 2}
+                y={labelY}
+                textAnchor="middle"
+                className="fill-slate-500"
+                style={{ fontSize: 7, fontWeight: 600 }}
+              >
+                {b.month}
+              </text>
+            </g>
           );
         })}
-      </div>
-      <div className="mt-1 flex gap-[6px] border-t border-slate-200 pt-1">
-        {bars.map((b) => (
-          <span
-            key={b.month}
-            className="min-w-0 flex-1 text-center text-[7px] font-semibold uppercase tracking-wide text-slate-500"
-          >
-            {b.month}
-          </span>
-        ))}
-      </div>
+      </svg>
     </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  icon: typeof Wallet;
+}) {
   return (
     <div className="rounded-lg border border-slate-200/80 bg-white px-2 py-1.5">
-      <p className="truncate text-[8px] font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+      <div className="flex items-center gap-1">
+        <Icon className="h-2.5 w-2.5 shrink-0 text-teal-700" aria-hidden />
+        <p className="truncate text-[8px] font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+      </div>
       <p className="mt-0.5 font-display text-xs font-bold tabular-nums text-[#0F172A]">{value}</p>
     </div>
   );
@@ -136,21 +164,24 @@ export function ClientDashMock({ compact = false }: { compact?: boolean }) {
           <p className="text-[9px] text-slate-500">Hiring workspace · live invoice totals</p>
 
           <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-5">
-            <Stat label="Open jobs" value="3" />
-            <Stat label="Projects" value="6" />
-            <Stat label="Proposals" value="5" />
-            <Stat label="Messages" value="4" />
-            <Stat label="Spent" value="$6,420" />
+            <Stat label="Open jobs" value="3" icon={Briefcase} />
+            <Stat label="Projects" value="6" icon={FolderKanban} />
+            <Stat label="Proposals" value="5" icon={Receipt} />
+            <Stat label="Messages" value="4" icon={MessageSquare} />
+            <Stat label="Spent" value="$6,420" icon={Wallet} />
           </div>
 
           <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-5">
             <div className="rounded-lg border border-slate-200/80 bg-white p-2 sm:col-span-3">
               <div className="flex items-baseline justify-between gap-2">
-                <div>
-                  <p className="text-[9px] font-bold text-[#0F172A]">Spending</p>
-                  <p className="text-[8px] text-slate-500">Invoice totals by month</p>
+                <div className="flex items-center gap-1">
+                  <TrendingDown className="h-3 w-3 text-teal-700" aria-hidden />
+                  <div>
+                    <p className="text-[9px] font-bold text-[#0F172A]">Spending</p>
+                    <p className="text-[8px] text-slate-500">Invoice totals by month</p>
+                  </div>
                 </div>
-                <span className="text-[8px] font-semibold tabular-nums text-teal-700">Peak $2.4k</span>
+                <span className="text-[8px] font-semibold tabular-nums text-teal-700">Peak $2.4k Apr</span>
               </div>
               <div className="mt-1.5 h-[78px]">
                 <SpendChart />

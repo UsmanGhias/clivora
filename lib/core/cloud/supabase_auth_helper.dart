@@ -67,7 +67,7 @@ class SupabaseAuthHelper {
       return await client
           .from('profiles')
           .select(
-            'id, email, name, account_type, account_type_locked, role, subscription_plan, is_blocked, is_restricted, block_reason',
+            'id, email, name, avatar_url, account_type, account_type_locked, role, subscription_plan, is_blocked, is_restricted, block_reason, updated_at',
           )
           .eq('id', uid)
           .maybeSingle();
@@ -105,6 +105,7 @@ class SupabaseAuthHelper {
     required String accountType,
     required String role,
     bool forceLock = false,
+    String? avatarUrl,
   }) async {
     final uid = currentUid;
     if (uid == null) return;
@@ -122,6 +123,7 @@ class SupabaseAuthHelper {
         'id': uid,
         'email': email.trim().toLowerCase(),
         'name': name,
+        if (avatarUrl != null && avatarUrl.trim().isNotEmpty) 'avatar_url': avatarUrl.trim(),
         'account_type': accountType,
         'role': role,
         'account_type_locked': forceLock || locked,

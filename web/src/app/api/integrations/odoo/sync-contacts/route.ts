@@ -1,22 +1,23 @@
 import { adminErrorResponse, adminJson, requireAdmin } from "@/lib/admin-auth";
 import {
   authenticateOdoo,
+  checkOdooHealth,
   envPresence,
+  isOdooSyncEnabled,
   loadOdooCfg,
-  odooJsonRpc,
   runBidirectionalSync,
+  type OdooTarget,
   type OdooSyncDirection,
 } from "@/lib/odoo-sync";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Admin-only two-way Odoo Contacts sync (existing free Contacts app only).
- * POST body: { direction?: "push"|"pull"|"both", action?: "test", includeTracking?: boolean }
+ * Admin-only Odoo Contacts status + explicitly forced legacy write sync.
+ * POST body: { direction?: "push"|"pull"|"both", action?: "test", includeTracking?: boolean, force?: boolean }
  */
 export async function POST(request: Request) {
-  let admin;
   try {
-    admin = await requireAdmin({ requireAal2: false });
+    await requireAdmin({ requireAal2: false });
   } catch (e) {
     return adminErrorResponse(e);
   }
@@ -25,57 +26,53 @@ export async function POST(request: Request) {
     action?: string;
     direction?: OdooSyncDirection;
     includeTracking?: boolean;
+    force?: boolean;
+    target?: OdooTarget;
   };
 
   if (body.action === "test") {
-    const { cfg: odoo, source, missing } = await loadOdooCfg();
-    if (!odoo) {
-      return adminJson(
-        { ok: false, configured: false, missing, error: "Odoo is not configured" },
-        { status: 503 },
-      );
-    }
-    try {
-      const uid = await authenticateOdoo(odoo);
-      const partnerCount = (await odooJsonRpc(odoo.url, "object", "execute_kw", [
-        odoo.db,
-        uid,
-        odoo.apiKey,
-        "res.partner",
-        "search_count",
-        [[["active", "=", true]]],
-      ])) as number;
-      return adminJson({
-        ok: true,
-        configured: true,
-        source,
-        url: odoo.url,
-        db: odoo.db,
-        username: odoo.username,
-        uid,
-        partnerCount,
-      });
-    } catch (e) {
-      return adminJson(
-        {
-          ok: false,
-          configured: true,
-          source,
-          url: odoo.url,
-          error: e instanceof Error ? e.message : "Odoo test failed",
-        },
-        { status: 502 },
-      );
-    }
+    const [main, social] = await Promise.all([checkOdooHealth("main"), checkOdooHealth("social")]);
+    return adminJson({
+      ok: main.ready || social.ready,
+      syncEnabled: isOdooSyncEnabled(),
+      envPresence: envPresence(),
+      targets: { main, social },
+    });
   }
 
-  const { cfg: odoo, missing } = await loadOdooCfg();
+  if (!isOdooSyncEnabled() && !body.force) {
+    return adminJson(
+      {
+        error: "Odoo write sync is disabled by default.",
+        syncEnabled: false,
+        hint: "Phase 1-2 exposes read-only health checks. Set ODOO_SYNC_ENABLED=true or use the explicit admin force action to run the legacy write sync.",
+      },
+      { status: 403 },
+    );
+  }
+
+  let admin;
+  try {
+    admin = await requireAdmin({ requireAal2: true });
+  } catch (e) {
+    return adminErrorResponse(e);
+  }
+
+  const target = body.target === "legacy" ? "legacy" : "main";
+  if (body.target === "social") {
+    return adminJson(
+      { error: "The Social Odoo database is read-only in Phase 1-2." },
+      { status: 400 },
+    );
+  }
+
+  const { cfg: odoo, missing } = await loadOdooCfg(target);
   if (!odoo) {
     return adminJson(
       {
         error: "Odoo is not configured",
         missing,
-        hint: "Set ODOO_URL, ODOO_DB, ODOO_USERNAME, ODOO_API_KEY on Vercel and redeploy, or save them in Admin → Integrations.",
+        hint: "Set ODOO_MAIN_* (or legacy ODOO_* for main fallback) on Vercel, or save credentials in Admin -> Integrations.",
       },
       { status: 503 },
     );
@@ -95,7 +92,16 @@ export async function POST(request: Request) {
       direction,
       includeTracking: body.includeTracking !== false,
     });
-    return adminJson(result);
+    return adminJson({
+      ...result,
+      target: odoo.target ?? target,
+      warnings: [
+        ...(!isOdooSyncEnabled()
+          ? ["ODOO_SYNC_ENABLED is false; sync was run only because an admin explicitly forced it."]
+          : []),
+        ...result.warnings,
+      ],
+    });
   } catch (e) {
     return adminJson(
       { error: e instanceof Error ? e.message : "Odoo sync failed" },
@@ -111,44 +117,18 @@ export async function GET() {
     return adminErrorResponse(e);
   }
 
-  const { cfg: odoo, source, missing } = await loadOdooCfg();
-  let authOk: boolean | null = null;
-  let authError: string | null = null;
-  let partnerCount: number | null = null;
-  if (odoo) {
-    try {
-      const uid = await authenticateOdoo(odoo);
-      authOk = true;
-      partnerCount = (await odooJsonRpc(odoo.url, "object", "execute_kw", [
-        odoo.db,
-        uid,
-        odoo.apiKey,
-        "res.partner",
-        "search_count",
-        [[["active", "=", true]]],
-      ])) as number;
-    } catch (e) {
-      authOk = false;
-      authError = e instanceof Error ? e.message : "Odoo auth failed";
-    }
-  }
+  const [main, social] = await Promise.all([checkOdooHealth("main"), checkOdooHealth("social")]);
 
   return adminJson({
-    configured: !!odoo,
-    ready: !!odoo && authOk === true,
-    source,
-    missing,
+    configured: main.configured || social.configured,
+    ready: main.ready || social.ready,
+    syncEnabled: isOdooSyncEnabled(),
     envPresence: envPresence(),
-    url: odoo?.url ?? null,
-    db: odoo?.db ?? null,
-    username: odoo?.username ?? null,
-    authOk,
-    authError,
-    partnerCount,
+    targets: { main, social },
     allowedApps: ["Contacts"],
     modes: ["push", "pull", "both"],
     surface: "admin-only",
-    note: "Two-way Contacts sync. Projects/invoices are written into Odoo partner Internal Notes for tracking - no new Odoo modules.",
+    note: "Phase 1-2 is read-only by default. Health checks authenticate and count active Odoo partners. Legacy write sync requires explicit admin force.",
   });
 }
 
@@ -165,19 +145,22 @@ export async function PUT(request: Request) {
     db?: string;
     username?: string;
     apiKey?: string;
+    target?: OdooTarget;
   };
 
-  const url = (body.url ?? "https://clivora.odoo.com").trim().replace(/\/$/, "");
-  const db = (body.db ?? "clivora").trim();
+  const target: OdooTarget =
+    body.target === "social" || body.target === "legacy" ? body.target : "main";
+  const url = (body.url ?? "").trim().replace(/\/$/, "");
+  const db = (body.db ?? "").trim();
   const username = (body.username ?? "").trim();
   const apiKey = (body.apiKey ?? "").trim();
 
-  if (!username || !apiKey) {
-    return adminJson({ error: "username and apiKey are required" }, { status: 400 });
+  if (!url || !db || !username || !apiKey) {
+    return adminJson({ error: "url, db, username, and apiKey are required" }, { status: 400 });
   }
 
   try {
-    await authenticateOdoo({ url, db, username, apiKey });
+    await authenticateOdoo({ url, db, username, apiKey, target });
   } catch (e) {
     return adminJson(
       {
@@ -189,11 +172,13 @@ export async function PUT(request: Request) {
   }
 
   const supabase = await createClient();
+  const prefix =
+    target === "social" ? "ODOO_SOCIAL" : target === "legacy" ? "ODOO" : "ODOO_MAIN";
   const pairs: Array<[string, string]> = [
-    ["ODOO_URL", url],
-    ["ODOO_DB", db],
-    ["ODOO_USERNAME", username],
-    ["ODOO_API_KEY", apiKey],
+    [`${prefix}_URL`, url],
+    [`${prefix}_DB`, db],
+    [`${prefix}_USERNAME`, username],
+    [`${prefix}_API_KEY`, apiKey],
   ];
   for (const [key, value] of pairs) {
     const { error } = await supabase.rpc("admin_upsert_integration_secret", {
@@ -211,9 +196,10 @@ export async function PUT(request: Request) {
   return adminJson({
     ok: true,
     saved: true,
+    target,
     url,
     db,
     username,
-    note: "Secrets stored in admin_integration_secrets. Prefer also setting the same ODOO_* keys on Vercel for env-first loads.",
+    note: `Secrets stored in admin_integration_secrets as ${prefix}_*. Prefer Vercel env for production env-first loads.`,
   });
 }

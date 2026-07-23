@@ -10,14 +10,14 @@ function nameOf(u: AdminUserRow) {
   return String(u.full_name || u.name || u.display_name || u.email || "-");
 }
 
-async function adminApi(body: Record<string, unknown>) {
+async function adminApi(path: string, body: Record<string, unknown>) {
   const supabase = createClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
   const token = session?.access_token;
   if (!token) throw new Error("Sign in again to moderate users.");
-  const res = await fetch("/api/admin/moderation", {
+  const res = await fetch(path, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -26,11 +26,12 @@ async function adminApi(body: Record<string, unknown>) {
     body: JSON.stringify(body),
   });
   const json = (await res.json().catch(() => ({}))) as { error?: string };
-  if (!res.ok) throw new Error(json.error || "Moderation failed");
+  if (!res.ok) throw new Error(json.error || "Request failed");
+  return json;
 }
 
 async function moderate(userId: string, action: "block" | "unblock") {
-  await adminApi({
+  await adminApi("/api/admin/moderation", {
     action,
     userId,
     reason: action === "block" ? "Blocked by admin" : undefined,
@@ -69,12 +70,20 @@ export function AdminUserActions({
   );
 
   async function saveEdit() {
-    await adminApi({
+    const email = String(user.email || "").trim().toLowerCase();
+    await adminApi("/api/admin/moderation", {
       action: "update_user",
       userId,
       name: name.trim(),
       subscription_plan: plan,
     });
+    if (email && ["free", "pro", "pro_plus"].includes(plan)) {
+      await adminApi("/api/admin/grant-pro", {
+        email,
+        plan: plan === "free" ? "pro" : plan,
+        revoke: plan === "free",
+      });
+    }
     setModal(null);
     setMsg("Saved.");
     onRefresh?.();

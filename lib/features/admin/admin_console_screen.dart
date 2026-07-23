@@ -148,36 +148,53 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> with Si
             proEmailCtrl: _proEmailCtrl,
             resetEmailCtrl: _resetEmailCtrl,
             onGrantAdmin: () async {
+              final messenger = ScaffoldMessenger.of(context);
               final err = await ref.read(adminManagementServiceProvider).grantAdminByEmail(_adminEmailCtrl.text);
               if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err ?? 'Admin granted (account type preserved)')));
+              messenger.showSnackBar(SnackBar(content: Text(err ?? 'Admin granted (account type preserved)')));
               if (err == null) {
                 _adminEmailCtrl.clear();
                 await _refresh();
               }
             },
             onGrantPro: () async {
+              final messenger = ScaffoldMessenger.of(context);
               final err = await ref.read(adminManagementServiceProvider).grantProByEmail(_proEmailCtrl.text);
               if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err ?? 'Pro granted (freelancer or client)')));
+              messenger.showSnackBar(SnackBar(content: Text(err ?? 'Pro granted (freelancer or client)')));
+              if (err == null) {
+                _proEmailCtrl.clear();
+                await _refresh();
+              }
+            },
+            onGrantProPlus: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              final err = await ref.read(adminManagementServiceProvider).grantProByEmail(
+                    _proEmailCtrl.text,
+                    plan: PlanLimits.proPlusPlan,
+                  );
+              if (!mounted) return;
+              messenger.showSnackBar(SnackBar(content: Text(err ?? 'Pro Plus granted (freelancer or client)')));
               if (err == null) {
                 _proEmailCtrl.clear();
                 await _refresh();
               }
             },
             onRevokePro: () async {
+              final messenger = ScaffoldMessenger.of(context);
               final err = await ref.read(adminManagementServiceProvider).grantProByEmail(
                     _proEmailCtrl.text,
                     revoke: true,
                   );
               if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err ?? 'Pro revoked')));
+              messenger.showSnackBar(SnackBar(content: Text(err ?? 'Pro revoked')));
               if (err == null) {
                 _proEmailCtrl.clear();
                 await _refresh();
               }
             },
             onResetPassword: () async {
+              final messenger = ScaffoldMessenger.of(context);
               final email = _resetEmailCtrl.text.trim();
               var err = await ref.read(adminCloudRepositoryProvider).sendPasswordReset(email);
               if (err != null) {
@@ -189,15 +206,16 @@ class _AdminConsoleScreenState extends ConsumerState<AdminConsoleScreen> with Si
                 await ref.read(clivoraEmailServiceProvider).sendPasswordResetNotice(email);
               }
               if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
+              messenger.showSnackBar(
                 SnackBar(content: Text(err ?? 'Reset email sent (check inbox and spam)')),
               );
               if (err == null) _resetEmailCtrl.clear();
             },
             onSync: () async {
+              final messenger = ScaffoldMessenger.of(context);
               await ref.read(adminSyncServiceProvider).syncPendingEvents();
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Synced to web admin')));
+                messenger.showSnackBar(const SnackBar(content: Text('Synced to web admin')));
               }
             },
           ),
@@ -506,6 +524,7 @@ class _ControlsTab extends StatelessWidget {
     required this.resetEmailCtrl,
     required this.onGrantAdmin,
     required this.onGrantPro,
+    required this.onGrantProPlus,
     required this.onRevokePro,
     required this.onResetPassword,
     required this.onSync,
@@ -516,6 +535,7 @@ class _ControlsTab extends StatelessWidget {
   final TextEditingController resetEmailCtrl;
   final VoidCallback onGrantAdmin;
   final VoidCallback onGrantPro;
+  final VoidCallback onGrantProPlus;
   final VoidCallback onRevokePro;
   final VoidCallback onResetPassword;
   final VoidCallback onSync;
@@ -571,6 +591,12 @@ class _ControlsTab extends StatelessWidget {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 10),
+        ElevatedButton.icon(
+          onPressed: onGrantProPlus,
+          icon: const Icon(Icons.workspace_premium_outlined),
+          label: const Text('Grant Pro Plus'),
         ),
         const SizedBox(height: 24),
         const Text('Password reset', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),

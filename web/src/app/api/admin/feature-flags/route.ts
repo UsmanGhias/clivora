@@ -53,11 +53,17 @@ export async function POST(req: NextRequest) {
       if (!key?.trim()) {
         return NextResponse.json({ error: "key is required" }, { status: 400 });
       }
+      const enabled =
+        typeof value === "boolean"
+          ? value
+          : value && typeof value === "object" && "enabled" in (value as object)
+            ? Boolean((value as { enabled?: boolean }).enabled)
+            : Boolean(value);
       const payload = {
         key: key.trim(),
-        value: value ?? null,
-        description: description ?? null,
+        enabled,
         updated_at: new Date().toISOString(),
+        ...(description != null ? {} : {}),
       };
       const res = await fetch(`${SUPABASE_URL}/rest/v1/app_feature_flags`, {
         method: "POST",
@@ -68,7 +74,7 @@ export async function POST(req: NextRequest) {
         const err = await res.text();
         throw new Error(err || "Upsert failed");
       }
-      return NextResponse.json({ ok: true });
+      return NextResponse.json({ ok: true, key: key.trim(), enabled });
     }
 
     if (action === "delete") {
