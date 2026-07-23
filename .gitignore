@@ -65,6 +65,7 @@ app.*.map.json
 *.jks
 *.keystore
 key.properties
+android/.signing/
 
 .tmp_secrets/
 
