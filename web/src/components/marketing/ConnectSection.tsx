@@ -4,12 +4,21 @@ import Link from "next/link";
 import {
   ArrowRight,
   Briefcase,
+  Clapperboard,
+  Code2,
   DollarSign,
   FileText,
   Globe2,
+  Megaphone,
+  Palette,
+  PenLine,
+  Settings2,
   ShieldCheck,
+  Smartphone,
+  Sparkles,
   Star,
   Zap,
+  type LucideIcon,
 } from "lucide-react";
 import { marketing } from "@/lib/marketing";
 import { cn } from "@/lib/utils";
@@ -21,6 +30,17 @@ const toneCard: Record<string, string> = {
   violet: "bg-violet-50 text-violet-600",
   orange: "bg-orange-50 text-orange-600",
   blue: "bg-sky-50 text-sky-600",
+};
+
+const categoryIcons: Record<string, LucideIcon> = {
+  "Web Development": Code2,
+  "Mobile Apps": Smartphone,
+  "Design & Creative": Palette,
+  "AI & Automation": Sparkles,
+  "Writing & Content": PenLine,
+  Marketing: Megaphone,
+  Video: Clapperboard,
+  "Business ops": Settings2,
 };
 
 function UsersIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -118,23 +138,26 @@ export function ConnectSection() {
               </Link>
             </div>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {c.categories.map((cat) => (
-                <div
-                  key={cat.title}
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm"
-                >
-                  <span
-                    className={cn(
-                      "inline-flex rounded-md px-1.5 py-0.5 text-[10px] font-bold",
-                      toneCard[cat.tone],
-                    )}
+              {c.categories.map((cat) => {
+                const Icon = categoryIcons[cat.title] ?? Briefcase;
+                return (
+                  <div
+                    key={cat.title}
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm"
                   >
-                    •
-                  </span>
-                  <p className="mt-1 text-xs font-bold text-navy">{cat.title}</p>
-                  <p className="text-[10px] text-slate-500">{cat.jobs}</p>
-                </div>
-              ))}
+                    <span
+                      className={cn(
+                        "inline-flex h-7 w-7 items-center justify-center rounded-md",
+                        toneCard[cat.tone],
+                      )}
+                    >
+                      <Icon className="h-3.5 w-3.5" aria-hidden />
+                    </span>
+                    <p className="mt-1.5 text-xs font-bold text-navy">{cat.title}</p>
+                    <p className="text-[10px] text-slate-500">{cat.jobs}</p>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

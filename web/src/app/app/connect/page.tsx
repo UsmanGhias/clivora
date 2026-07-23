@@ -51,19 +51,21 @@ export default async function AppConnectPage({
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_280px]">
-        <ConnectBoard
-          profiles={profiles}
-          needs={needs}
-          requests={requests}
-          signedIn
-          isProPlus={isProPlus(profile)}
-          isClient={client}
-          isRestricted={isRestricted(profile)}
-          myUserId={profile.id}
-          portalMode
-          accent={client ? "slate" : "teal"}
-          defaultTab={defaultTab}
-        />
+        <Suspense fallback={<div className="rounded-2xl border border-border bg-surface p-8 text-sm text-text-secondary">Loading Connect…</div>}>
+          <ConnectBoard
+            profiles={profiles}
+            needs={needs}
+            requests={requests}
+            signedIn
+            isProPlus={isProPlus(profile)}
+            isClient={client}
+            isRestricted={isRestricted(profile)}
+            myUserId={profile.id}
+            portalMode
+            accent={client ? "slate" : "teal"}
+            defaultTab={defaultTab}
+          />
+        </Suspense>
         <div className="hidden xl:block">
           <div className="sticky top-24 space-y-4">
             <ConnectCreditsWidget signedIn isClient={client} />
