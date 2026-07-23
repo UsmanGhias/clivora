@@ -12,8 +12,10 @@ export type OdooCfg = {
   db: string;
   username: string;
   apiKey: string;
+  target?: OdooTarget;
 };
 
+export type OdooTarget = "main" | "social" | "legacy";
 export type OdooSyncDirection = "push" | "pull" | "both";
 
 export type CrmCustomerRow = {
@@ -51,67 +53,125 @@ type OdooPartner = {
 
 type ServiceCfg = { url: string; serviceRoleKey: string };
 
+type OdooConfigSource = "env" | "db";
+type OdooKeySuffix = "URL" | "DB" | "USERNAME" | "API_KEY";
+
+const ODOO_KEY_SUFFIXES: OdooKeySuffix[] = ["URL", "DB", "USERNAME", "API_KEY"];
+const ODOO_PREFIX_BY_TARGET = {
+  main: "ODOO_MAIN",
+  social: "ODOO_SOCIAL",
+  legacy: "ODOO",
+} satisfies Record<OdooTarget, string>;
+
+function envKey(target: OdooTarget, suffix: OdooKeySuffix) {
+  return `${ODOO_PREFIX_BY_TARGET[target]}_${suffix}`;
+}
+
+function readEnvConfig(target: OdooTarget): OdooCfg | null {
+  const url = process.env[envKey(target, "URL")]?.trim().replace(/\/$/, "");
+  const db = process.env[envKey(target, "DB")]?.trim();
+  const username = process.env[envKey(target, "USERNAME")]?.trim();
+  const apiKey = process.env[envKey(target, "API_KEY")]?.trim();
+  if (!url || !db || !username || !apiKey) return null;
+  return { url, db, username, apiKey, target };
+}
+
+function missingEnvKeys(target: OdooTarget) {
+  return ODOO_KEY_SUFFIXES.map((suffix) => envKey(target, suffix)).filter(
+    (key) => !process.env[key]?.trim(),
+  );
+}
+
+function normalizeOdooTarget(value: unknown): OdooTarget {
+  return value === "social" || value === "legacy" ? value : "main";
+}
+
+export function isOdooSyncEnabled() {
+  const raw = process.env.ODOO_SYNC_ENABLED?.trim().toLowerCase();
+  return raw === "1" || raw === "true" || raw === "yes";
+}
+
+function targetAttempts(target: OdooTarget): OdooTarget[] {
+  return target === "main" ? ["main", "legacy"] : [target];
+}
+
+async function readSecretConfig(target: OdooTarget): Promise<OdooCfg | null> {
+  const supabase = await createClient();
+  const values: Partial<Record<OdooKeySuffix, string>> = {};
+  for (const suffix of ODOO_KEY_SUFFIXES) {
+    const { data, error } = await supabase.rpc("admin_get_integration_secret", {
+      p_key: envKey(target, suffix),
+    });
+    if (error || data == null || String(data).trim() === "") {
+      return null;
+    }
+    values[suffix] = String(data).trim();
+  }
+
+  const url = values.URL?.replace(/\/$/, "");
+  if (!url || !values.DB || !values.USERNAME || !values.API_KEY) return null;
+  return {
+    url,
+    db: values.DB,
+    username: values.USERNAME,
+    apiKey: values.API_KEY,
+    target,
+  };
+}
+
 function envPresence() {
   return {
-    ODOO_URL: Boolean(process.env.ODOO_URL?.trim()),
-    ODOO_DB: Boolean(process.env.ODOO_DB?.trim()),
-    ODOO_USERNAME: Boolean(process.env.ODOO_USERNAME?.trim()),
-    ODOO_API_KEY: Boolean(process.env.ODOO_API_KEY?.trim()),
+    ODOO_SYNC_ENABLED: isOdooSyncEnabled(),
+    main: {
+      ODOO_MAIN_URL: Boolean(process.env.ODOO_MAIN_URL?.trim()),
+      ODOO_MAIN_DB: Boolean(process.env.ODOO_MAIN_DB?.trim()),
+      ODOO_MAIN_USERNAME: Boolean(process.env.ODOO_MAIN_USERNAME?.trim()),
+      ODOO_MAIN_API_KEY: Boolean(process.env.ODOO_MAIN_API_KEY?.trim()),
+    },
+    social: {
+      ODOO_SOCIAL_URL: Boolean(process.env.ODOO_SOCIAL_URL?.trim()),
+      ODOO_SOCIAL_DB: Boolean(process.env.ODOO_SOCIAL_DB?.trim()),
+      ODOO_SOCIAL_USERNAME: Boolean(process.env.ODOO_SOCIAL_USERNAME?.trim()),
+      ODOO_SOCIAL_API_KEY: Boolean(process.env.ODOO_SOCIAL_API_KEY?.trim()),
+    },
+    legacy: {
+      ODOO_URL: Boolean(process.env.ODOO_URL?.trim()),
+      ODOO_DB: Boolean(process.env.ODOO_DB?.trim()),
+      ODOO_USERNAME: Boolean(process.env.ODOO_USERNAME?.trim()),
+      ODOO_API_KEY: Boolean(process.env.ODOO_API_KEY?.trim()),
+    },
   };
 }
 
 export { envPresence };
 
-export async function loadOdooCfg(): Promise<{
+export async function loadOdooCfg(target: OdooTarget = "main"): Promise<{
   cfg: OdooCfg | null;
-  source: "env" | "db" | null;
+  source: OdooConfigSource | null;
   missing: string[];
 }> {
-  const presence = envPresence();
-  const missingEnv = Object.entries(presence)
-    .filter(([, ok]) => !ok)
-    .map(([k]) => k);
-
-  const url = process.env.ODOO_URL?.trim().replace(/\/$/, "");
-  const db = process.env.ODOO_DB?.trim();
-  const username = process.env.ODOO_USERNAME?.trim();
-  const apiKey = process.env.ODOO_API_KEY?.trim();
-  if (url && db && username && apiKey) {
-    return { cfg: { url, db, username, apiKey }, source: "env", missing: [] };
+  const normalizedTarget = normalizeOdooTarget(target);
+  const attempts = targetAttempts(normalizedTarget);
+  for (const attempt of attempts) {
+    const cfg = readEnvConfig(attempt);
+    if (cfg) return { cfg, source: "env", missing: [] };
   }
 
   try {
-    const supabase = await createClient();
-    const keys = ["ODOO_URL", "ODOO_DB", "ODOO_USERNAME", "ODOO_API_KEY"] as const;
-    const values: Partial<Record<(typeof keys)[number], string>> = {};
-    const missingDb: string[] = [];
-    for (const key of keys) {
-      const { data, error } = await supabase.rpc("admin_get_integration_secret", {
-        p_key: key,
-      });
-      if (error || data == null || String(data).trim() === "") {
-        missingDb.push(key);
-        continue;
-      }
-      values[key] = String(data).trim();
+    for (const attempt of attempts) {
+      const cfg = await readSecretConfig(attempt);
+      if (cfg) return { cfg, source: "db", missing: [] };
     }
-    const dbUrl = values.ODOO_URL?.replace(/\/$/, "");
-    if (dbUrl && values.ODOO_DB && values.ODOO_USERNAME && values.ODOO_API_KEY) {
-      return {
-        cfg: {
-          url: dbUrl,
-          db: values.ODOO_DB,
-          username: values.ODOO_USERNAME,
-          apiKey: values.ODOO_API_KEY,
-        },
-        source: "db",
-        missing: [],
-      };
-    }
-    return { cfg: null, source: null, missing: missingEnv.length ? missingEnv : missingDb };
   } catch {
-    return { cfg: null, source: null, missing: missingEnv };
+    // Fall through to a concise missing-key report. Admin routes should not leak
+    // lower-level secret-store errors to the browser.
   }
+
+  return {
+    cfg: null,
+    source: null,
+    missing: attempts.flatMap((attempt) => missingEnvKeys(attempt)),
+  };
 }
 
 export async function odooJsonRpc(
@@ -155,6 +215,109 @@ export async function authenticateOdoo(cfg: OdooCfg): Promise<number> {
     );
   }
   return uid;
+}
+
+export async function countOdooPartners(cfg: OdooCfg, uid: number) {
+  return (await odooJsonRpc(cfg.url, "object", "execute_kw", [
+    cfg.db,
+    uid,
+    cfg.apiKey,
+    "res.partner",
+    "search_count",
+    [[["active", "=", true]]],
+  ])) as number;
+}
+
+export async function readOdooPartners(options: {
+  cfg: OdooCfg;
+  uid: number;
+  limit?: number;
+}) {
+  const { cfg, uid, limit = 50 } = options;
+  const fields = ["id", "name", "email", "phone", "mobile", "write_date"];
+  return (await odooJsonRpc(cfg.url, "object", "execute_kw", [
+    cfg.db,
+    uid,
+    cfg.apiKey,
+    "res.partner",
+    "search_read",
+    [[["active", "=", true]]],
+    { fields, limit: Math.min(Math.max(limit, 1), 200), order: "write_date desc" },
+  ])) as Pick<OdooPartner, "id" | "name" | "email" | "phone" | "mobile" | "write_date">[];
+}
+
+export type OdooHealth = {
+  target: OdooTarget;
+  configTarget: OdooTarget | null;
+  configured: boolean;
+  ready: boolean;
+  source: OdooConfigSource | null;
+  missing: string[];
+  url: string | null;
+  db: string | null;
+  username: string | null;
+  uid: number | null;
+  authOk: boolean | null;
+  authError: string | null;
+  partnerCount: number | null;
+};
+
+export async function checkOdooHealth(target: OdooTarget = "main"): Promise<OdooHealth> {
+  const normalizedTarget = normalizeOdooTarget(target);
+  const { cfg, source, missing } = await loadOdooCfg(normalizedTarget);
+  if (!cfg) {
+    return {
+      target: normalizedTarget,
+      configTarget: null,
+      configured: false,
+      ready: false,
+      source,
+      missing,
+      url: null,
+      db: null,
+      username: null,
+      uid: null,
+      authOk: null,
+      authError: null,
+      partnerCount: null,
+    };
+  }
+
+  try {
+    const uid = await authenticateOdoo(cfg);
+    const partnerCount = await countOdooPartners(cfg, uid);
+    return {
+      target: normalizedTarget,
+      configTarget: cfg.target ?? normalizedTarget,
+      configured: true,
+      ready: true,
+      source,
+      missing: [],
+      url: cfg.url,
+      db: cfg.db,
+      username: cfg.username,
+      uid,
+      authOk: true,
+      authError: null,
+      partnerCount,
+    };
+  } catch (error) {
+    return {
+      target: normalizedTarget,
+      configTarget: cfg.target ?? normalizedTarget,
+      configured: true,
+      ready: false,
+      source,
+      missing: [],
+      url: cfg.url,
+      db: cfg.db,
+      username: cfg.username,
+      uid: null,
+      authOk: false,
+      authError: error instanceof Error ? error.message : "Odoo health check failed",
+      partnerCount: null,
+    };
+  }
 }
 
 function serviceCfgOrNull(): ServiceCfg | null {
