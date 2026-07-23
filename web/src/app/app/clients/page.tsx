@@ -34,10 +34,13 @@ export default async function ClientsPage() {
     const supabase = await createClient();
     let sharedWork: SharedWorkRow[] = [];
     try {
+      const clientFilter = profile?.email
+        ? `client_uid.eq.${profile.id},client_email.eq.${profile.email}`
+        : `client_uid.eq.${profile?.id ?? ""}`;
       const { data } = await supabase
         .from("project_shares")
         .select("share_id, freelancer_email, project_name, status, updated_at")
-        .eq("client_uid", profile?.id ?? "")
+        .or(clientFilter)
         .order("updated_at", { ascending: false })
         .limit(20);
       if (data) sharedWork = data;

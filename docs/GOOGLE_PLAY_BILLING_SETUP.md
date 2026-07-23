@@ -15,21 +15,20 @@ Complete these steps in [Google Play Console](https://play.google.com/console), 
 
 ## 3. Create subscriptions (required)
 
-Create **two separate monthly subscriptions**:
+Create **four monthly subscriptions** (account type × plan):
 
-| Product ID | Name | Price (PKR) | Notes |
-|------------|------|-------------|--------|
-| `clivora_pro_freelancer_monthly` | Freelancer Pro | **2,000** | List UI shows ~~2,800~~ offer |
-| `clivora_pro_client_monthly` | Client Pro | **2,000** | Separate purchase for clients |
+| Product ID | Name |
+|------------|------|
+| `clivora_pro_freelancer_monthly` | Freelancer Pro |
+| `clivora_pro_client_monthly` | Client Pro |
+| `clivora_pro_plus_freelancer_monthly` | Freelancer Pro Plus |
+| `clivora_pro_plus_client_monthly` | Client Pro Plus |
 
-### In Play Console
+Website Pro uses **SafePay** (`docs/SAFEPAY_SETUP.md`). Do not deep-link web checkout from the Play-distributed APK.
 
-1. **Monetize** → **Products** → **Subscriptions** → **Create subscription**.
-2. Set **Product ID** exactly as in the table (cannot change later).
-3. Add a **base plan** — monthly, auto-renewing.
-4. Set price **PKR 2,000.00** (or your target market; app shows local Play price).
-5. Optional: create a **promotional offer** or **introductory price** at 2,000 if list price is 2,800 in marketing.
-6. Activate both subscriptions.
+### Server JWT note
+
+`verify-play-purchase` signs Google OAuth JWTs with **Base64URL** (required). Redeploy the edge function after pulling this fix.
 
 ## 4. License testers
 
@@ -76,6 +75,8 @@ Reply with:
 // lib/core/constants/billing_products.dart
 clivora_pro_freelancer_monthly
 clivora_pro_client_monthly
+clivora_pro_plus_freelancer_monthly
+clivora_pro_plus_client_monthly
 ```
 
 ## 8. Testing on device

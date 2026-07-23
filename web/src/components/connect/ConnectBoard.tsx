@@ -1189,7 +1189,6 @@ export function ConnectBoard({
                     myUserId &&
                     n.client_user_id === myUserId && (
                     <ConnectTrust
-                      requestId={n.id}
                       myUserId={myUserId}
                       peerId={n.client_user_id}
                       needId={n.id}
