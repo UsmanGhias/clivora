@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/ui/Logo";
-import { createBrowserSupabaseClient } from "@/lib/supabase-browser";
+import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
 /** Admin login gate - authenticated admins are sent to the panel overview. */
@@ -16,7 +16,7 @@ export default function AdminLoginPage() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    const supabase = createBrowserSupabaseClient();
+    const supabase = createClient();
     void supabase.auth.getSession().then(({ data }) => {
       if (data.session) {
         router.replace("/admin/overview");
@@ -31,13 +31,14 @@ export default function AdminLoginPage() {
     setBusy(true);
     setError("");
     try {
-      const supabase = createBrowserSupabaseClient();
+      const supabase = createClient();
       const { error: authError } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
       });
       if (authError) throw authError;
       router.replace("/admin/overview");
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign-in failed");
     } finally {

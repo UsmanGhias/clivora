@@ -33,7 +33,7 @@ import {
   FolderKanban,
   Send,
 } from "lucide-react";
-import { createBrowserSupabaseClient } from "@/lib/supabase-browser";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 import { site } from "@/lib/site";
@@ -108,9 +108,10 @@ export function AdminShell({
   }, []);
 
   const signOut = useCallback(async () => {
-    const supabase = createBrowserSupabaseClient();
+    const supabase = createClient();
     await supabase.auth.signOut();
     router.replace("/admin");
+    router.refresh();
   }, [router]);
 
   const filteredNav = useMemo(() => {
