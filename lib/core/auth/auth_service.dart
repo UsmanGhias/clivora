@@ -104,6 +104,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         await _db.updateUser(user.copyWith(googleId: Value(cloudUid)));
         user = await _db.safeGetUser(user.id);
       }
+      if (cloudUid != null && user != null) {
+        user = await _applyCloudProfileToLocal(user, await SupabaseAuthHelper.fetchOwnProfile());
+      }
 
       state = AsyncValue.data(user);
       setAuthSession(user);
@@ -245,6 +248,8 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       final isAdmin = kAdminEmails.contains(trimmedEmail);
       final cloudProfile = await SupabaseAuthHelper.fetchOwnProfile();
       final cloudType = cloudProfile?['account_type'] as String?;
+      final cloudName = _profileString(cloudProfile, 'name');
+      final cloudAvatarUrl = _profileString(cloudProfile, 'avatar_url');
       final type = isAdmin
           ? kAccountAdmin
           : AccountTypeGuard.normalizedAccountType(
@@ -259,12 +264,13 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         }
       }
       return _createLocalAccount(
-        name: trimmedEmail.split('@').first,
+        name: cloudName ?? trimmedEmail.split('@').first,
         email: trimmedEmail,
         password: password,
         accountType: type,
         isAdmin: isAdmin,
         cloudUid: cloudUid,
+        profilePhotoPath: cloudAvatarUrl,
         finalizeCloudRole: true,
       );
     }
@@ -346,6 +352,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       final ownProfile = await SupabaseAuthHelper.fetchOwnProfile();
       final cloudType = ownProfile?['account_type'] as String?;
       final cloudLocked = ownProfile?['account_type_locked'] as bool? ?? false;
+      final cloudName = _profileString(ownProfile, 'name');
+      final cloudAvatarUrl = _profileString(ownProfile, 'avatar_url');
+      final initialName = cloudName ?? displayName;
 
       var user = await _db.safeGetUserByEmail(email);
       user ??= await _db.recoverUserByEmail(email);
@@ -364,17 +373,18 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         } else {
           await SupabaseAuthHelper.finalizeAccountType(
             accountType: type,
-            name: displayName,
+            name: initialName,
           );
         }
 
         return _createLocalAccount(
-          name: displayName,
+          name: initialName,
           email: email,
           password: '',
           accountType: type,
           isAdmin: isAdmin,
           cloudUid: cloudUid,
+          profilePhotoPath: cloudAvatarUrl,
           trackSignup: true,
           finalizeCloudRole: true,
         );
@@ -383,15 +393,15 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       final roleErr = AccountTypeGuard.validateSignInRole(user: user, loginAsType: accountType);
       if (roleErr != null) return roleErr;
 
-      final cloudName = (ownProfile?['name'] as String?)?.trim();
-      final syncName = (cloudName != null && cloudName.isNotEmpty) ? cloudName : displayName;
-
-      if (user.googleId != cloudUid || user.name != syncName) {
+      if (user.googleId != cloudUid) {
         await _db.updateUser(user.copyWith(
           googleId: Value(cloudUid),
-          name: syncName,
         ));
+        final linkedUser = await _db.safeGetUser(user.id);
+        if (linkedUser == null) return 'Could not load your profile. Try again.';
+        user = linkedUser;
       }
+      user = await _applyCloudProfileToLocal(user, ownProfile);
 
       if (isAdmin) {
         await _db.updateUser(user.copyWith(role: 'admin'));
@@ -429,6 +439,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     bool trackSignup = false,
     bool skipCloudSync = false,
     bool finalizeCloudRole = false,
+    String? profilePhotoPath,
   }) async {
     try {
       await _db.repairAllDatabaseNulls();
@@ -454,6 +465,16 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       }
 
       await _db.safeSeedUserDefaults(userId, name: name, email: email);
+      if (profilePhotoPath != null && profilePhotoPath.trim().isNotEmpty) {
+        final linkedProfile = await _db.safeGetUser(userId);
+        if (linkedProfile != null) {
+          await _db.updateUser(linkedProfile.copyWith(profilePhotoPath: Value(profilePhotoPath.trim())));
+          await _db.saveBusinessProfileForUser(
+            userId,
+            BusinessProfilesCompanion(ownerPhotoPath: Value(profilePhotoPath.trim())),
+          );
+        }
+      }
 
       if (isAdmin) {
         try {
@@ -556,6 +577,65 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     }
   }
 
+  Future<User> _applyCloudProfileToLocal(User user, Map<String, dynamic>? cloudProfile) async {
+    if (cloudProfile == null) return user;
+
+    final cloudUpdatedAt = _profileUpdatedAt(cloudProfile);
+    final cloudIsNewer = cloudUpdatedAt != null && cloudUpdatedAt.isAfter(user.createdAt.toUtc());
+    final cloudName = _profileString(cloudProfile, 'name');
+    final cloudAvatarUrl = _profileString(cloudProfile, 'avatar_url');
+    final localAvatar = user.profilePhotoPath?.trim();
+
+    final shouldUseCloudName = cloudName != null && (cloudIsNewer || user.name.trim().isEmpty);
+    final shouldUseCloudAvatar = cloudAvatarUrl != null &&
+        (cloudIsNewer || localAvatar == null || localAvatar.isEmpty || _isRemoteUrl(localAvatar));
+
+    if (!shouldUseCloudName && !shouldUseCloudAvatar) return user;
+
+    final localUpdate = user.copyWith(
+      name: shouldUseCloudName ? cloudName : null,
+      profilePhotoPath: shouldUseCloudAvatar ? Value(cloudAvatarUrl) : const Value.absent(),
+    );
+    await _db.updateUser(localUpdate);
+    await _db.saveBusinessProfileForUser(
+      user.id,
+      BusinessProfilesCompanion(
+        ownerName: shouldUseCloudName ? Value(cloudName) : const Value.absent(),
+        ownerPhotoPath: shouldUseCloudAvatar ? Value(cloudAvatarUrl) : const Value.absent(),
+      ),
+    );
+
+    final updated = await _db.safeGetUser(user.id) ?? localUpdate;
+    state = AsyncValue.data(updated);
+    setAuthSession(updated);
+    return updated;
+  }
+
+  Future<String?> _profilePhotoCloudUrl(String? photoPath) async {
+    final path = photoPath?.trim();
+    if (path == null || path.isEmpty) return null;
+    if (_isRemoteUrl(path)) return path;
+
+    final uid = SupabaseAuthHelper.currentUid;
+    if (uid == null || uid.isEmpty) return null;
+
+    try {
+      final file = File(path);
+      if (!await file.exists()) return null;
+      final ext = _avatarExtension(path);
+      final storagePath = '$uid/avatar.$ext';
+      await SupabaseAuthHelper.client.storage.from('avatars').uploadBinary(
+            storagePath,
+            await file.readAsBytes(),
+            fileOptions: FileOptions(contentType: _avatarContentType(ext), upsert: true),
+          );
+      return SupabaseAuthHelper.client.storage.from('avatars').getPublicUrl(storagePath);
+    } catch (e) {
+      debugPrint('Profile avatar upload: $e');
+      return null;
+    }
+  }
+
   void _invalidateUserData() {
     ref.invalidate(customersProvider);
     ref.invalidate(projectsProvider);
@@ -583,10 +663,11 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
 
   Future<void> _setSession(int userId, {bool skipCloudSync = false, bool finalizeCloudRole = false}) async {
     await _db.repairUserDefaultsNulls(userId);
-    final user = await _db.safeGetUser(userId);
-    if (user == null) {
+    final loadedUser = await _db.safeGetUser(userId);
+    if (loadedUser == null) {
       throw StateError('Session error: user record missing (id $userId)');
     }
+    var user = loadedUser;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_sessionUserIdKey, userId);
     state = AsyncValue.data(user);
@@ -600,7 +681,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
           user.email.toLowerCase().endsWith('@clivora.local');
       if (confirmed && !user.emailVerified) {
         await _db.updateUser(user.copyWith(emailVerified: true));
-        final refreshed = await _db.getUser(user.id);
+        final refreshed = await _db.safeGetUser(user.id);
+        if (refreshed == null) return;
+        user = refreshed;
         state = AsyncValue.data(refreshed);
         setAuthSession(refreshed);
       }
@@ -609,6 +692,11 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     }
     if (!skipCloudSync) {
       try {
+        final cloudProfile = await SupabaseAuthHelper.fetchOwnProfile();
+        user = await _applyCloudProfileToLocal(user, cloudProfile);
+        final avatarUrl = await _profilePhotoCloudUrl(user.profilePhotoPath) ??
+            _profileString(cloudProfile, 'avatar_url');
+
         if (finalizeCloudRole) {
           await SupabaseAuthHelper.finalizeAccountType(
             accountType: user.accountType,
@@ -621,6 +709,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
           accountType: user.accountType,
           role: user.role,
           forceLock: finalizeCloudRole,
+          avatarUrl: avatarUrl,
         );
       } catch (e) {
         debugPrint('Cloud profile sync on session: $e');
@@ -671,8 +760,18 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       BusinessProfilesCompanion(ownerPhotoPath: Value(savedPath)),
     );
 
-    final updated = await _db.getUser(user.id);
+    final updated = await _db.safeGetUser(user.id);
+    if (updated == null) return 'Could not reload your profile photo.';
     state = AsyncValue.data(updated);
+    setAuthSession(updated);
+    final avatarUrl = await _profilePhotoCloudUrl(savedPath);
+    await SupabaseAuthHelper.upsertProfile(
+      email: updated.email,
+      name: updated.name,
+      accountType: updated.accountType,
+      role: updated.role,
+      avatarUrl: avatarUrl,
+    );
     return null;
   }
 
@@ -700,14 +799,17 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         businessEmail: Value(newEmail),
       ),
     );
-    final updated = await _db.getUser(user.id);
+    final updated = await _db.safeGetUser(user.id);
+    if (updated == null) return 'Could not reload your profile.';
     state = AsyncValue.data(updated);
+    setAuthSession(updated);
+    final avatarUrl = await _profilePhotoCloudUrl(updated.profilePhotoPath);
     await SupabaseAuthHelper.upsertProfile(
       email: newEmail,
       name: name.trim(),
       accountType: user.accountType,
       role: user.role,
-
+      avatarUrl: avatarUrl,
     );
     return null;
   }
@@ -718,6 +820,53 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       return 'Enter a valid email address';
     }
     return SupabaseAuthHelper.resetPasswordForEmail(trimmed);
+  }
+}
+
+String? _profileString(Map<String, dynamic>? profile, String key) {
+  final value = profile?[key];
+  if (value is! String) return null;
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
+}
+
+DateTime? _profileUpdatedAt(Map<String, dynamic>? profile) {
+  final value = profile?['updated_at'];
+  if (value is DateTime) return value.toUtc();
+  if (value is String) return DateTime.tryParse(value)?.toUtc();
+  return null;
+}
+
+bool _isRemoteUrl(String value) {
+  final uri = Uri.tryParse(value);
+  return uri != null && (uri.isScheme('http') || uri.isScheme('https'));
+}
+
+String _avatarExtension(String sourcePath) {
+  final ext = p.extension(sourcePath).toLowerCase().replaceFirst('.', '');
+  switch (ext) {
+    case 'png':
+    case 'webp':
+    case 'gif':
+      return ext;
+    case 'jpeg':
+    case 'jpg':
+      return 'jpg';
+    default:
+      return 'jpg';
+  }
+}
+
+String _avatarContentType(String ext) {
+  switch (ext) {
+    case 'png':
+      return 'image/png';
+    case 'webp':
+      return 'image/webp';
+    case 'gif':
+      return 'image/gif';
+    default:
+      return 'image/jpeg';
   }
 }
 

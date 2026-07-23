@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/clivora_colors.dart';
@@ -62,10 +63,19 @@ class ProfileAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget avatar;
-    if (photoPath != null && photoPath!.isNotEmpty && File(photoPath!).existsSync()) {
+    final path = photoPath?.trim();
+    final isRemote = path != null &&
+        path.isNotEmpty &&
+        (Uri.tryParse(path)?.isScheme('http') == true || Uri.tryParse(path)?.isScheme('https') == true);
+    if (isRemote) {
       avatar = CircleAvatar(
         radius: radius,
-        backgroundImage: FileImage(File(photoPath!)),
+        backgroundImage: CachedNetworkImageProvider(path),
+      );
+    } else if (path != null && path.isNotEmpty && File(path).existsSync()) {
+      avatar = CircleAvatar(
+        radius: radius,
+        backgroundImage: FileImage(File(path)),
       );
     } else {
       avatar = CircleAvatar(
