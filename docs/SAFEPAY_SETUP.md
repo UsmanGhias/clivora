@@ -1,44 +1,59 @@
 # SafePay (website Pro checkout)
 
-Website `/pro` uses **SafePay hosted checkout** for card/bank payments. Android stays on **Google Play Billing** for monthly subscriptions.
+Website `/pro` uses **SafePay hosted checkout**. Android stays on **Google Play Billing**.
 
-## Keys (never commit)
+## Exact mapping from SafePay dashboard → Vercel
 
-| Env / DB secret | Purpose |
-|-----------------|--------|
-| `SAFEPAY_SECRET_KEY` | Server Bearer token for SafePay API |
-| `SAFEPAY_API_KEY` (or `SAFEPAY_PUBLIC_KEY`) | `merchant_api_key` on payment session create |
-| `SAFEPAY_WEBHOOK_SECRET` | HMAC secret from SafePay webhook endpoint |
-| `SAFEPAY_ENV` | `production` (default) or `sandbox` |
-| `SAFEPAY_CURRENCY` | Default `USD` (minor units: cents) |
+Open [Vercel → clivora → Settings → Environment Variables](https://vercel.com/usmanghias-projects/clivora/settings/environment-variables).
 
-Store the same values in:
+Add for **Production** (and Preview):
 
-1. **Vercel** project env (Production + Preview) — required for checkout + webhook.
-2. Optionally **Supabase** `admin_integration_secrets` for admin health checks.
+| SafePay dashboard label | Vercel name | Example format |
+|-------------------------|-------------|----------------|
+| **Public key** | `SAFEPAY_API_KEY` | `sec_` + UUID with hyphens, e.g. `sec_edeade52-46aa-483b-b87d-009d3ce41554` |
+| **Secret key** | `SAFEPAY_SECRET_KEY` | long hex string |
+| Same secret key (or Endpoints webhook secret) | `SAFEPAY_WEBHOOK_SECRET` | same hex, or the secret shown when you create the webhook |
+| — | `SAFEPAY_ENV` | `production` |
+| — | `SAFEPAY_CURRENCY` | `USD` (or `PKR`) |
 
-If only a `sec_…` merchant key is available, checkout may reuse it as `merchant_api_key`, but you should still set a dedicated secret key + webhook secret from the SafePay dashboard.
+Also required (already should exist):
 
-## Webhook
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_URL`
 
-Register in SafePay dashboard → Endpoints / Webhooks:
+After saving env vars, **Redeploy** production.
 
-- URL: `https://clivora.codcrafters.org/api/safepay/webhook`
-- Events: `payment.succeeded` (and failed if you want logging)
+### Public key format (critical)
 
-Verification accepts classic SafePay **HMAC-SHA512(raw body)** via `X-SFPY-SIGNATURE`, plus timestamped SHA-256 variants.
+SafePay rejects keys that are not:
+
+```text
+sec_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+```
+
+If your Public key looks like `sec_ddd46226iu8ogftuf488b608` (no UUID hyphens), copy it again from the SafePay **API** tab — do not type it by hand.
+
+### Webhook
+
+In SafePay → **Endpoints**:
+
+1. Add URL: `https://clivora.codcrafters.org/api/safepay/webhook`
+2. Events: `payment.succeeded` (and optionally `payment.failed`)
+3. Copy the webhook signing secret into `SAFEPAY_WEBHOOK_SECRET` (if SafePay shows a separate one)
+
+Health check: `GET https://clivora.codcrafters.org/api/safepay/webhook` → `{ ok: true }`
+
+Unsigned POSTs correctly return `401` — that means the route is live.
+
+### Fallback unlock
+
+After checkout redirect, `/pro?safepay=success&tracker=...` also calls `/api/safepay/confirm`, which polls SafePay and unlocks Pro even if the webhook is delayed.
 
 ## Flow
 
-1. User chooses **SafePay** on `/pro` → `POST /api/safepay/checkout`
-2. Server creates `pro_payment_requests` row + SafePay tracker + hosted URL
-3. User pays on SafePay → redirect ` /pro?safepay=success`
-4. Webhook marks request **approved**, sets `profiles.subscription_plan`, inserts `subscriptions` row (`safepay_pro` / `safepay_pro_plus`, ~31 days)
+1. `/pro` → SafePay → hosted pay
+2. Redirect back + webhook/confirm unlocks plan (~31 days)
 
-## Manual checklist
+## Rotate keys
 
-- [ ] Paste `SAFEPAY_SECRET_KEY`, `SAFEPAY_API_KEY`, `SAFEPAY_WEBHOOK_SECRET` into Vercel
-- [ ] Ensure `SUPABASE_SERVICE_ROLE_KEY` is set on Vercel (webhook + tracker update)
-- [ ] Register webhook URL above
-- [ ] Smoke-test sandbox then production
-- [ ] Rotate any key that was pasted into chat or tickets
+Any key pasted into chat should be rotated in the SafePay dashboard after live checkout works.

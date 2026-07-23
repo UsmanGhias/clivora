@@ -68,8 +68,6 @@ export async function loadSafepayConfig(): Promise<{
   if (!apiKey) apiKey = await readDbSecret("SAFEPAY_PUBLIC_KEY");
   if (!webhookSecret) webhookSecret = await readDbSecret("SAFEPAY_WEBHOOK_SECRET");
 
-  // SafePay dashboard labels vary: merchant API keys often use the `sec_` prefix.
-  // When only one key is configured, reuse it for merchant_api_key so checkout can boot.
   if (!apiKey && secretKey?.startsWith("sec_")) {
     apiKey = secretKey;
   }
@@ -77,13 +75,22 @@ export async function loadSafepayConfig(): Promise<{
   const missing: string[] = [];
   if (!secretKey) missing.push("SAFEPAY_SECRET_KEY");
   if (!apiKey) missing.push("SAFEPAY_API_KEY");
+  else if (!/^sec_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(apiKey)) {
+    missing.push("SAFEPAY_API_KEY(must look like sec_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)");
+  }
 
   return {
     secretKey,
     apiKey,
     webhookSecret,
     env,
-    configured: Boolean(secretKey && apiKey),
+    configured: Boolean(
+      secretKey &&
+        apiKey &&
+        /^sec_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+          apiKey,
+        ),
+    ),
     missing,
   };
 }
@@ -92,14 +99,15 @@ async function safepayFetch(
   path: string,
   opts: { secretKey: string; env: SafepayEnv; method?: string; body?: unknown },
 ) {
+  const method = opts.method ?? "POST";
   const res = await fetch(`${apiHost(opts.env)}${path}`, {
-    method: opts.method ?? "POST",
+    method,
     headers: {
       Authorization: `Bearer ${opts.secretKey}`,
       "Content-Type": "application/json",
       Accept: "application/json",
     },
-    body: opts.body == null ? undefined : JSON.stringify(opts.body),
+    body: method === "GET" || opts.body == null ? undefined : JSON.stringify(opts.body),
     cache: "no-store",
   });
   const text = await res.text();
@@ -144,9 +152,9 @@ export async function createSafepayCheckout(input: {
   cancelUrl: string;
 }): Promise<{ checkoutUrl: string; tracker: string; env: SafepayEnv }> {
   const cfg = await loadSafepayConfig();
-  if (!cfg.secretKey || !cfg.apiKey) {
+  if (!cfg.configured || !cfg.secretKey || !cfg.apiKey) {
     throw new Error(
-      `Safepay is not configured. Missing: ${cfg.missing.join(", ") || "keys"}`,
+      `Safepay is not configured. Missing/invalid: ${cfg.missing.join(", ") || "keys"}. Public key must be exactly sec_ + UUID (with hyphens).`,
     );
   }
 
@@ -207,6 +215,34 @@ export async function createSafepayCheckout(input: {
     tracker,
     env: cfg.env,
   };
+}
+
+/** Poll Safepay reporter API for tracker state (redirect success + webhook backup). */
+export async function fetchSafepayTracker(tracker: string): Promise<{
+  state: string | null;
+  paid: boolean;
+  raw: Record<string, unknown>;
+}> {
+  const cfg = await loadSafepayConfig();
+  if (!cfg.secretKey) throw new Error("Safepay secret key missing");
+  const token = tracker.trim();
+  if (!token) throw new Error("Missing tracker");
+
+  const payload = await safepayFetch(`/reporter/api/v1/payments/${encodeURIComponent(token)}`, {
+    secretKey: cfg.secretKey,
+    env: cfg.env,
+    method: "GET",
+  });
+  const data = (payload.data ?? payload) as Record<string, unknown>;
+  const trackerObj = (data.tracker ?? data) as Record<string, unknown>;
+  const state = String(trackerObj.state ?? trackerObj.status ?? "").toUpperCase();
+  const paid =
+    state.includes("ENDED") ||
+    state.includes("PAID") ||
+    state.includes("SUCCESS") ||
+    state.includes("CAPTURED") ||
+    trackerObj.success === true;
+  return { state: state || null, paid, raw: payload };
 }
 
 async function hmacHex(

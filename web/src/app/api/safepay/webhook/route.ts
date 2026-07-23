@@ -21,6 +21,15 @@ function digString(obj: Record<string, unknown>, keys: string[]): string | null 
   return null;
 }
 
+/** SafePay dashboard URL ping / health. */
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    endpoint: "/api/safepay/webhook",
+    expects: ["X-SFPY-SIGNATURE", "payment.succeeded"],
+  });
+}
+
 export async function POST(req: NextRequest) {
   const raw = await req.text();
   const signature =
