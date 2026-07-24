@@ -22,7 +22,7 @@ export default async function TransactionsPage() {
 
   try {
     const invoiceFilter = profile.email
-      ? `client_uid.eq.${profile.id},client_email.eq.${profile.email}`
+      ? `client_uid.eq.${profile.id},client_email.eq.${(profile.email ?? '').toLowerCase()}`
       : `client_uid.eq.${profile.id}`;
     const { data } = await supabase
       .from("invoice_shares")

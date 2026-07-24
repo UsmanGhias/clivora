@@ -296,6 +296,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     }
 
     await _syncCloudSubscriptionPlan(user.id);
+    await _syncCloudAvatar(user.id);
     await _setSession(user.id);
     _invalidateUserData();
 
@@ -559,6 +560,28 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     }
   }
 
+  /// Prefer cloud avatar_url (http) so web uploads show on mobile.
+  Future<void> _syncCloudAvatar(int userId) async {
+    try {
+      final profile = await SupabaseAuthHelper.fetchOwnProfile();
+      final url = (profile?['avatar_url'] as String?)?.trim();
+      if (url == null || !url.startsWith('http')) return;
+      final user = await _db.safeGetUser(userId);
+      if (user == null) return;
+      final local = user.profilePhotoPath;
+      if (local == url) return;
+      // Prefer cloud URL when local is empty, already a remote URL, or a data URL.
+      final shouldApply = local == null ||
+          local.isEmpty ||
+          local.startsWith('http') ||
+          local.startsWith('data:');
+      if (!shouldApply) return;
+      await _db.updateUser(user.copyWith(profilePhotoPath: Value(url)));
+    } catch (e) {
+      debugPrint('Cloud avatar sync: $e');
+    }
+  }
+
   void _invalidateUserData() {
     ref.invalidate(customersProvider);
     ref.invalidate(projectsProvider);
@@ -629,6 +652,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         debugPrint('Cloud profile sync on session: $e');
       }
       await _syncCloudSubscriptionPlan(userId);
+      await _syncCloudAvatar(userId);
       try {
         await ref.read(supabaseSyncServiceProvider).onUserSignedIn(user);
       } catch (e) {

@@ -79,7 +79,9 @@ export async function POST(req: NextRequest) {
         patch.block_reason = String(body.reason ?? "Blocked by admin");
         patch.blocked_at = new Date().toISOString();
       } else if (action === "unblock") {
+        // Clear both flags so admin "Unblock" restores full access (UI treats either as suspended).
         patch.is_blocked = false;
+        patch.is_restricted = false;
         patch.block_reason = "";
         patch.blocked_at = null;
         patch.blocked_by = null;
