@@ -118,8 +118,10 @@ class MoreScreen extends ConsumerWidget {
       title: 'Command Center',
       subtitle: 'All tools and resources in one place',
       showMessagesButton: true,
+      // Narrower than default so Hub tiles use more of the screen width.
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+        padding: const EdgeInsets.fromLTRB(0, 4, 0, 32),
         children: [
           // Profile card kept compact — full settings live under Menu tab
           profileAsync.when(
@@ -281,136 +283,14 @@ class MoreScreen extends ConsumerWidget {
             ),
           ],
           const SizedBox(height: 24),
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: 1),
-            duration: const Duration(milliseconds: 450),
-            curve: Curves.easeOutCubic,
-            builder: (context, t, child) => Opacity(
-              opacity: t,
-              child: Transform.translate(offset: Offset(0, 8 * (1 - t)), child: child),
-            ),
-            child: const SectionHeader(title: 'Insights & ops'),
-          ),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.55,
-            children: [
-              ToolGridTile(
-                icon: Icons.bar_chart_outlined,
-                label: 'Reports',
-                description: 'View detailed reports and insights',
-                iconBackground: ClivoraColors.iconBlue,
-                iconColor: Colors.blue,
-                onTap: () => context.push('/reports'),
-              ),
-              ToolGridTile(
-                icon: Icons.insights_outlined,
-                label: 'Analytics',
-                description: 'Track performance and trends',
-                iconBackground: ClivoraColors.iconTeal,
-                iconColor: ClivoraColors.primary,
-                onTap: () => context.push('/analytics'),
-              ),
-              ToolGridTile(
-                icon: Icons.cloud_upload_outlined,
-                label: 'Backup',
-                description: 'Secure your data and restore anytime',
-                iconBackground: ClivoraColors.iconGreen,
-                iconColor: ClivoraColors.successGreen,
-                onTap: () => context.push('/backup'),
-              ),
-              ToolGridTile(
-                icon: Icons.ios_share_outlined,
-                label: 'Export',
-                description: 'Export your data in multiple formats',
-                iconBackground: ClivoraColors.iconGreen,
-                iconColor: ClivoraColors.successGreen,
-                onTap: () async {
-                  if (!PlanFeatures.dataExport(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'Data export')) {
-                    return;
-                  }
-                  try {
-                    await ref.read(analyticsExportServiceProvider).exportAndShare();
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Export failed: $e')));
-                    }
-                  }
-                },
-              ),
-              ToolGridTile(
-                icon: Icons.receipt_outlined,
-                label: 'Expenses',
-                description: 'Manage and track your expenses',
-                iconBackground: ClivoraColors.iconRed,
-                iconColor: ClivoraColors.errorRed,
-                onTap: () => context.push('/expenses'),
-              ),
-              ToolGridTile(
-                icon: Icons.forum_outlined,
-                label: 'Templates',
-                description: 'Use templates to save time and effort',
-                iconBackground: ClivoraColors.iconTeal,
-                iconColor: Colors.teal,
-                onTap: () => context.push('/templates'),
-              ),
-              ToolGridTile(
-                icon: Icons.auto_awesome_outlined,
-                label: 'CLIVORA AI',
-                description: 'AI tools to boost your productivity',
-                iconBackground: ClivoraColors.iconTeal,
-                iconColor: ClivoraColors.primary,
-                onTap: () async {
-                  if (!PlanFeatures.aiAssistant(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'CLIVORA AI')) {
-                    return;
-                  }
-                  if (context.mounted) context.push('/ai-assistant');
-                },
-              ),
-              ToolGridTile(
-                icon: Icons.description_outlined,
-                label: 'Contracts',
-                description: 'Create, manage and track contracts',
-                iconBackground: ClivoraColors.iconTeal,
-                iconColor: ClivoraColors.primary,
-                onTap: () => context.push('/contracts'),
-              ),
-              ToolGridTile(
-                icon: Icons.bolt_outlined,
-                label: 'Workflows',
-                description: 'Automate tasks and streamline work',
-                iconBackground: ClivoraColors.iconYellow,
-                iconColor: Colors.amber,
-                onTap: () async {
-                  if (!PlanFeatures.automations(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'Workflows')) {
-                    return;
-                  }
-                  if (context.mounted) context.push('/automations');
-                },
-              ),
-              ToolGridTile(
-                icon: Icons.request_quote_outlined,
-                label: 'Quotes',
-                description: 'Send quotes and convert to invoices',
-                iconBackground: ClivoraColors.iconTeal,
-                iconColor: ClivoraColors.primary,
-                onTap: () => context.push('/quotes'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
           const SectionHeader(title: 'Work & collaboration'),
           GridView.count(
             crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.55,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 2.35,
             children: [
               ToolGridTile(
                 icon: Icons.task_alt_outlined,
@@ -530,9 +410,9 @@ class MoreScreen extends ConsumerWidget {
             crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.55,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 2.35,
             children: [
               ToolGridTile(
                 icon: Icons.inventory_2_outlined,
@@ -577,13 +457,129 @@ class MoreScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 24),
-          const SectionHeader(title: 'Workspace settings'),
-          _SettingsTile(
-            icon: Icons.sync_outlined,
-            label: 'Sync Center',
-            subtitle: 'Pending changes, conflicts, last sync time',
-            onTap: () => context.push('/sync-center'),
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: 1),
+            duration: const Duration(milliseconds: 450),
+            curve: Curves.easeOutCubic,
+            builder: (context, t, child) => Opacity(
+              opacity: t,
+              child: Transform.translate(offset: Offset(0, 8 * (1 - t)), child: child),
+            ),
+            child: const SectionHeader(title: 'Insights & ops'),
           ),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 2.35,
+            children: [
+              ToolGridTile(
+                icon: Icons.bar_chart_outlined,
+                label: 'Reports',
+                description: 'View detailed reports and insights',
+                iconBackground: ClivoraColors.iconBlue,
+                iconColor: Colors.blue,
+                onTap: () => context.push('/reports'),
+              ),
+              ToolGridTile(
+                icon: Icons.insights_outlined,
+                label: 'Analytics',
+                description: 'Track performance and trends',
+                iconBackground: ClivoraColors.iconTeal,
+                iconColor: ClivoraColors.primary,
+                onTap: () => context.push('/analytics'),
+              ),
+              ToolGridTile(
+                icon: Icons.cloud_upload_outlined,
+                label: 'Backup',
+                description: 'Secure your data and restore anytime',
+                iconBackground: ClivoraColors.iconGreen,
+                iconColor: ClivoraColors.successGreen,
+                onTap: () => context.push('/backup'),
+              ),
+              ToolGridTile(
+                icon: Icons.ios_share_outlined,
+                label: 'Export',
+                description: 'Export your data in multiple formats',
+                iconBackground: ClivoraColors.iconGreen,
+                iconColor: ClivoraColors.successGreen,
+                onTap: () async {
+                  if (!PlanFeatures.dataExport(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'Data export')) {
+                    return;
+                  }
+                  try {
+                    await ref.read(analyticsExportServiceProvider).exportAndShare();
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Export failed: $e')));
+                    }
+                  }
+                },
+              ),
+              ToolGridTile(
+                icon: Icons.receipt_outlined,
+                label: 'Expenses',
+                description: 'Manage and track your expenses',
+                iconBackground: ClivoraColors.iconRed,
+                iconColor: ClivoraColors.errorRed,
+                onTap: () => context.push('/expenses'),
+              ),
+              ToolGridTile(
+                icon: Icons.forum_outlined,
+                label: 'Templates',
+                description: 'Use templates to save time and effort',
+                iconBackground: ClivoraColors.iconTeal,
+                iconColor: Colors.teal,
+                onTap: () => context.push('/templates'),
+              ),
+              ToolGridTile(
+                icon: Icons.auto_awesome_outlined,
+                label: 'CLIVORA AI',
+                description: 'AI tools to boost your productivity',
+                iconBackground: ClivoraColors.iconTeal,
+                iconColor: ClivoraColors.primary,
+                onTap: () async {
+                  if (!PlanFeatures.aiAssistant(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'CLIVORA AI')) {
+                    return;
+                  }
+                  if (context.mounted) context.push('/ai-assistant');
+                },
+              ),
+              ToolGridTile(
+                icon: Icons.description_outlined,
+                label: 'Contracts',
+                description: 'Create, manage and track contracts',
+                iconBackground: ClivoraColors.iconTeal,
+                iconColor: ClivoraColors.primary,
+                onTap: () => context.push('/contracts'),
+              ),
+              ToolGridTile(
+                icon: Icons.bolt_outlined,
+                label: 'Workflows',
+                description: 'Automate tasks and streamline work',
+                iconBackground: ClivoraColors.iconYellow,
+                iconColor: Colors.amber,
+                onTap: () async {
+                  if (!PlanFeatures.automations(plan) && !await requireProFeature(context, isPro: isPro, featureName: 'Workflows')) {
+                    return;
+                  }
+                  if (context.mounted) context.push('/automations');
+                },
+              ),
+              ToolGridTile(
+                icon: Icons.request_quote_outlined,
+                label: 'Quotes',
+                description: 'Send quotes and convert to invoices',
+                iconBackground: ClivoraColors.iconTeal,
+                iconColor: ClivoraColors.primary,
+                onTap: () => context.push('/quotes'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          const SectionHeader(title: 'Workspace settings'),
           _SettingsTile(
             icon: Icons.person_outline,
             label: 'My Profile',
@@ -1017,9 +1013,7 @@ class _StatsBar extends StatelessWidget {
           _StatDivider(),
           _StatCol('${stats.activeProjects}', 'Active'),
           _StatDivider(),
-          _StatCol(formatCurrency(stats.outstanding), 'Due'),
-          _StatDivider(),
-          _StatCol(formatCurrency(stats.revenue), 'Earned'),
+          _StatCol(formatCurrency(stats.outstanding > 0 ? stats.outstanding : stats.revenue), stats.outstanding > 0 ? 'Due' : 'Earned'),
         ],
       ),
     );

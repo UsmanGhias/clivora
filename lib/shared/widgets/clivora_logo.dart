@@ -1,12 +1,8 @@
 import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/clivora_colors.dart';
-
-const _primaryClivoraLogoAsset = 'assets/images/clivora_app_icon_1024.png';
-const _fallbackClivoraLogoAsset = 'assets/images/clivora_logo.png';
 
 class ClivoraLogo extends StatelessWidget {
   const ClivoraLogo({super.key, this.size = 48, this.borderRadius = 14});
@@ -19,32 +15,26 @@ class ClivoraLogo extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
       child: Image.asset(
-        _primaryClivoraLogoAsset,
+        'assets/images/clivora_logo.png',
         width: size,
         height: size,
         fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => Image.asset(
-          _fallbackClivoraLogoAsset,
+        errorBuilder: (_, _, _) => Container(
           width: size,
           height: size,
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [ClivoraColors.primaryPurple, const Color(0xFF4F46E5)],
-              ),
-              borderRadius: BorderRadius.circular(borderRadius),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [ClivoraColors.primaryPurple, const Color(0xFF4F46E5)],
             ),
-            alignment: Alignment.center,
-            child: Text(
-              'C',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: size * 0.45,
-                fontWeight: FontWeight.w800,
-              ),
+            borderRadius: BorderRadius.circular(borderRadius),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            'C',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: size * 0.45,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ),
@@ -71,46 +61,25 @@ class ProfileAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget fallbackAvatar() => CircleAvatar(
-      radius: radius,
-      backgroundColor: ClivoraColors.primaryPurple.withValues(alpha: 0.2),
-      child: Text(
-        (name != null && name!.isNotEmpty) ? name![0].toUpperCase() : '?',
-        style: TextStyle(
-          color: ClivoraColors.primaryPurple,
-          fontWeight: FontWeight.w700,
-          fontSize: radius * 0.7,
-        ),
-      ),
-    );
-
     Widget avatar;
-    final path = photoPath?.trim();
-    final isRemote =
-        path != null &&
-        path.isNotEmpty &&
-        (Uri.tryParse(path)?.isScheme('http') == true ||
-            Uri.tryParse(path)?.isScheme('https') == true);
-    if (isRemote) {
-      avatar = CachedNetworkImage(
-        imageUrl: path,
-        imageBuilder: (context, imageProvider) =>
-            CircleAvatar(radius: radius, backgroundImage: imageProvider),
-        placeholder: (context, url) => fallbackAvatar(),
-        errorWidget: (context, url, error) => fallbackAvatar(),
-      );
-    } else if (path != null && path.isNotEmpty && File(path).existsSync()) {
-      avatar = ClipOval(
-        child: Image.file(
-          File(path),
-          width: radius * 2,
-          height: radius * 2,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => fallbackAvatar(),
-        ),
+    if (photoPath != null && photoPath!.isNotEmpty && File(photoPath!).existsSync()) {
+      avatar = CircleAvatar(
+        radius: radius,
+        backgroundImage: FileImage(File(photoPath!)),
       );
     } else {
-      avatar = fallbackAvatar();
+      avatar = CircleAvatar(
+        radius: radius,
+        backgroundColor: ClivoraColors.primaryPurple.withValues(alpha: 0.2),
+        child: Text(
+          (name != null && name!.isNotEmpty) ? name![0].toUpperCase() : '?',
+          style: TextStyle(
+            color: ClivoraColors.primaryPurple,
+            fontWeight: FontWeight.w700,
+            fontSize: radius * 0.7,
+          ),
+        ),
+      );
     }
 
     if (showVerified) {
@@ -127,11 +96,7 @@ class ProfileAvatar extends StatelessWidget {
                 color: Theme.of(context).cardColor,
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.verified,
-                size: radius * 0.55,
-                color: ClivoraColors.primary,
-              ),
+              child: Icon(Icons.verified, size: radius * 0.55, color: ClivoraColors.primary),
             ),
           ),
         ],

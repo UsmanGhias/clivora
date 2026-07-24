@@ -94,7 +94,7 @@ export default async function TimesheetsPage() {
     let entries: TimeEntry[] = [];
     try {
       const clientFilter = profile.email
-        ? `client_uid.eq.${uid},client_email.eq.${profile.email}`
+        ? `client_uid.eq.${uid},client_email.eq.${(profile.email ?? '').toLowerCase()}`
         : `client_uid.eq.${uid}`;
       const { data: shareRows } = await supabase
         .from("project_shares")

@@ -45,7 +45,7 @@ export default async function TasksPage() {
         .limit(100);
       shareQuery = client
         ? profile.email
-          ? shareQuery.or(`client_uid.eq.${profile.id},client_email.eq.${profile.email}`)
+          ? shareQuery.or(`client_uid.eq.${profile.id},client_email.eq.${(profile.email ?? '').toLowerCase()}`)
           : shareQuery.eq("client_uid", profile.id)
         : shareQuery.eq("freelancer_uid", profile.id);
       const { data: shareRows } = await shareQuery;
