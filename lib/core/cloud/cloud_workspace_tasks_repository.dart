@@ -2,9 +2,9 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/database/database.dart';
 import '../../data/providers/app_providers.dart';
 import '../../data/database/user_scoped_queries.dart';
-import '../auth/auth_service.dart';
 import 'supabase_auth_helper.dart';
 
 final cloudWorkspaceTasksRepositoryProvider =
@@ -115,22 +115,60 @@ class CloudWorkspaceTasksRepository {
       final localId = (map['local_id'] as num?)?.toInt();
       final cloudUpdated =
           DateTime.tryParse(map['updated_at'] as String? ?? '')?.toLocal() ?? DateTime.now();
-      if (localId == null || localId <= 0) continue;
-      final existing = await db.getTaskForUser(ownerUserId, localId);
-      if (existing == null || !cloudUpdated.isAfter(existing.updatedAt)) continue;
       final dueRaw = map['due_at'] as String?;
       final due = dueRaw != null ? DateTime.tryParse(dueRaw)?.toLocal() : null;
-      await db.updateTask(
-        existing.copyWith(
-          title: map['title'] as String? ?? existing.title,
-          description: map['description'] as String? ?? existing.description,
-          priority: map['priority'] as String? ?? existing.priority,
-          status: map['status'] as String? ?? existing.status,
-          completed: map['completed'] as bool? ?? existing.completed,
-          dueDate: Value(due ?? existing.dueDate),
-          updatedAt: cloudUpdated,
+
+      // Existing local row → update when cloud is newer.
+      if (localId != null && localId > 0) {
+        final existing = await db.getTaskForUser(ownerUserId, localId);
+        if (existing != null) {
+          if (cloudUpdated.isAfter(existing.updatedAt)) {
+            await db.updateTask(
+              existing.copyWith(
+                title: map['title'] as String? ?? existing.title,
+                description: map['description'] as String? ?? existing.description,
+                priority: map['priority'] as String? ?? existing.priority,
+                status: map['status'] as String? ?? existing.status,
+                completed: map['completed'] as bool? ?? existing.completed,
+                dueDate: Value(due ?? existing.dueDate),
+                updatedAt: cloudUpdated,
+              ),
+            );
+          }
+          continue;
+        }
+        // local_id points at a row that no longer exists locally → fall through
+        // and recreate it so cloud and device converge (owner-scoped).
+      }
+
+      // Cloud-only task (no local_id, or local row missing): insert into this
+      // user's Drift database, then stamp local_id back to the cloud row so the
+      // pair reconciles without duplicating on the next pull. (APP-006)
+      final cloudId = map['id'] as String?;
+      final newLocalId = await db.insertTask(
+        TasksCompanion.insert(
+          ownerUserId: ownerUserId,
+          title: (map['title'] as String?)?.trim().isNotEmpty == true
+              ? map['title'] as String
+              : 'Task',
+          description: Value(map['description'] as String? ?? ''),
+          priority: Value(map['priority'] as String? ?? 'medium'),
+          status: Value(map['status'] as String? ?? 'pending'),
+          completed: Value(map['completed'] as bool? ?? false),
+          dueDate: Value(due),
+          updatedAt: Value(cloudUpdated),
         ),
       );
+      if (cloudId != null) {
+        try {
+          await SupabaseAuthHelper.client
+              .from('workspace_tasks')
+              .update({'local_id': newLocalId})
+              .eq('id', cloudId);
+        } catch (e) {
+          debugPrint('stamp workspace_tasks local_id: $e');
+        }
+      }
     }
   }
 }

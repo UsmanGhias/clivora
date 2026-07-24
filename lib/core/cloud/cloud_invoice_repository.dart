@@ -166,6 +166,8 @@ class CloudInvoiceRepository {
         'invoice_number': invoice.invoiceNumber,
         'status': invoice.status,
         'total': invoice.total,
+        // Money dual-write (WEB-005): canonical minor units alongside numeric total.
+        'total_minor': (invoice.total * 100).round(),
         'currency': invoice.currency,
         if (invoice.dueDate != null) 'due_date': invoice.dueDate!.toUtc().toIso8601String(),
         'public_token': publicToken,

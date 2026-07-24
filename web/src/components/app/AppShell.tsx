@@ -33,6 +33,7 @@ import {
   ListTodo,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { isFeatureEnabledClient } from "@/lib/feature-flags-client";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/profile-types";
 import { isPro, isProPlus, planLabel } from "@/lib/plan";
@@ -48,6 +49,8 @@ type NavItem = {
   icon: React.ComponentType<{ className?: string }>;
   badge?: number;
   cta?: boolean;
+  /** Any of these feature-flag keys must be enabled for the item to show. */
+  flags?: string[];
 };
 
 type NavGroup = {
@@ -121,6 +124,8 @@ export function AppShell({
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  /** WEB-006: flag-gated nav items stay hidden until any listed key is enabled. */
+  const [enabledFlags, setEnabledFlags] = useState<Record<string, boolean>>({});
 
   const freelancerNav: NavItem[] = [
     { href: "/app", label: "Dashboard", icon: LayoutDashboard },
@@ -131,12 +136,42 @@ export function AppShell({
     { href: "/app/contracts", label: "Contracts", icon: ScrollText },
     { href: "/app/invoices", label: "Invoices", icon: Receipt },
     { href: "/app/tasks", label: "Tasks", icon: ListTodo },
-    { href: "/app/workspace-tasks", label: "Workspace tasks", icon: ListTodo },
-    { href: "/app/calendar", label: "Calendar", icon: Clock },
-    { href: "/app/campaigns", label: "Campaigns", icon: Sparkles },
-    { href: "/app/automation", label: "Automation", icon: Network },
-    { href: "/app/ai-suggestions", label: "AI suggestions", icon: Sparkles },
-    { href: "/app/conflicts", label: "CRM conflicts", icon: ScrollText },
+    {
+      href: "/app/workspace-tasks",
+      label: "Workspace tasks",
+      icon: ListTodo,
+      flags: ["workspace_tasks", "phase2_workspace_tasks"],
+    },
+    {
+      href: "/app/calendar",
+      label: "Calendar",
+      icon: Clock,
+      flags: ["calendar_events", "phase3_calendar_events"],
+    },
+    {
+      href: "/app/campaigns",
+      label: "Campaigns",
+      icon: Sparkles,
+      flags: ["campaigns", "phase6_campaigns"],
+    },
+    {
+      href: "/app/automation",
+      label: "Automation",
+      icon: Network,
+      flags: ["automation_builder", "phase7_automation_builder"],
+    },
+    {
+      href: "/app/ai-suggestions",
+      label: "AI suggestions",
+      icon: Sparkles,
+      flags: ["ai_structured", "phase8_ai_structured"],
+    },
+    {
+      href: "/app/conflicts",
+      label: "CRM conflicts",
+      icon: ScrollText,
+      flags: ["crm_conflict_ui", "phase4_crm_conflicts"],
+    },
     { href: "/app/messages", label: "Messages", icon: MessageSquare, badge: counts?.messages },
     { href: "/app/earnings", label: "Earnings", icon: Wallet },
     { href: "/app/timesheets", label: "Time tracking", icon: Clock },
@@ -183,6 +218,35 @@ export function AppShell({
   ];
 
   const nav = isClient ? clientTop : freelancerNav;
+
+  useEffect(() => {
+    const keys = Array.from(
+      new Set(
+        freelancerNav.flatMap((item) => item.flags ?? []).filter(Boolean),
+      ),
+    );
+    if (keys.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      const entries = await Promise.all(
+        keys.map(async (key) => [key, await isFeatureEnabledClient(key)] as const),
+      );
+      if (cancelled) return;
+      setEnabledFlags(Object.fromEntries(entries));
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- static flag keys on nav items
+  }, []);
+
+  function isFlagAllowed(item: NavItem): boolean {
+    if (!item.flags?.length) return true;
+    // Hide until at least one listed flag resolves true (fail closed).
+    return item.flags.some((key) => enabledFlags[key] === true);
+  }
+
+  const visibleNav = nav.filter(isFlagAllowed);
 
   const paymentsOpenDefault =
     isClient &&
@@ -416,7 +480,7 @@ export function AppShell({
         </div>
 
         <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
-          {nav.map((item, i) => (
+          {visibleNav.map((item, i) => (
             <NavLink
               key={`${item.href}-${item.label}-${i}`}
               item={item}

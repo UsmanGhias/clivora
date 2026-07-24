@@ -5,12 +5,28 @@ type Row = Record<string, unknown>;
 export function OpsClient({
   initialQueue,
   initialAudits,
+  errors = [],
 }: {
   initialQueue: Row[];
   initialAudits: Row[];
+  errors?: string[];
 }) {
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="space-y-4">
+      {errors.length > 0 ? (
+        <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-800">
+          <p className="font-semibold">Some ops data could not be loaded</p>
+          <ul className="mt-1 list-disc pl-5">
+            {errors.map((e, i) => (
+              <li key={i}>{e}</li>
+            ))}
+          </ul>
+          <p className="mt-2 text-xs text-red-700">
+            This is an error, not an empty queue. Check RLS/admin session and retry.
+          </p>
+        </div>
+      ) : null}
+      <div className="grid gap-6 lg:grid-cols-2">
       <section className="rounded-xl border border-slate-200 bg-white p-4">
         <h2 className="font-bold">Automation queue</h2>
         <ul className="mt-3 space-y-2 text-sm">
@@ -44,6 +60,7 @@ export function OpsClient({
           )}
         </ul>
       </section>
+      </div>
     </div>
   );
 }
