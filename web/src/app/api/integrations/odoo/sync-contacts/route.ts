@@ -16,12 +16,7 @@ import { createClient } from "@/lib/supabase/server";
  * POST body: { direction?: "push"|"pull"|"both", action?: "test", includeTracking?: boolean, force?: boolean, target?: "main"|"social"|"legacy" }
  */
 export async function POST(request: Request) {
-  try {
-    await requireAdmin({ requireAal2: false });
-  } catch (e) {
-    return adminErrorResponse(e);
-  }
-
+  // Sensitive writes (force sync / contact write) require AAL2; health "test" allows AAL1.
   const body = (await request.json().catch(() => ({}))) as {
     action?: string;
     direction?: OdooSyncDirection;
@@ -30,9 +25,16 @@ export async function POST(request: Request) {
     target?: OdooTarget;
   };
 
+  const isReadProbe = body.action === "test";
+  try {
+    await requireAdmin({ requireAal2: !isReadProbe });
+  } catch (e) {
+    return adminErrorResponse(e);
+  }
+
   const syncEnabled = await resolveOdooSyncEnabled();
 
-  if (body.action === "test") {
+  if (isReadProbe) {
     const [main, social] = await Promise.all([checkOdooHealth("main"), checkOdooHealth("social")]);
     return adminJson({
       ok: main.ready || social.ready,
@@ -55,7 +57,7 @@ export async function POST(request: Request) {
 
   let admin;
   try {
-    admin = await requireAdmin({ requireAal2: false });
+    admin = await requireAdmin({ requireAal2: true });
   } catch (e) {
     return adminErrorResponse(e);
   }
@@ -136,7 +138,7 @@ export async function GET() {
 /** Save / refresh Odoo secrets into admin_integration_secrets (admin session). */
 export async function PUT(request: Request) {
   try {
-    await requireAdmin({ requireAal2: false });
+    await requireAdmin({ requireAal2: true });
   } catch (e) {
     return adminErrorResponse(e);
   }
