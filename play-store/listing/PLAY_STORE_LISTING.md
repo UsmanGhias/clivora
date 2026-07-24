@@ -1,7 +1,9 @@
-# CLIVORA — Google Play Store Listing
+# CLIVORA — Google Play Store Listing (production)
 
 **Package name:** `org.codcrafters.clivora`  
-**Version:** 1.5.1 (7)
+**Version name:** `4.2.3`  
+**Version code:** `104`  
+**Upload signing SHA-1:** `96:93:81:80:EE:59:27:D2:46:B2:BD:FC:6C:96:C6:93:2E:1A:1D:36`
 
 ---
 
@@ -14,93 +16,112 @@ CLIVORA
 ## Short description (80 characters max)
 
 ```
-CRM for freelancers — clients, projects, invoices & revenue in one app.
+CRM for freelancers — clients, projects, invoices & Connect in one app.
 ```
 
 ## Full description
 
 ```
-CLIVORA is your all-in-one Business Operating System built for freelancers, consultants, and small agencies. Manage clients, track projects, send invoices, and monitor revenue — all from your phone.
+CLIVORA is your business OS for freelancers, consultants, and small agencies. Manage clients, projects, invoices, and payments — and grow with CLIVORA Connect.
 
 WHY CLIVORA?
-• Simple, modern interface designed for busy professionals
-• Everything in one place — no switching between spreadsheets and apps
-• Works offline — your data stays on your device
-• Fast setup — sign up and start in minutes
+• Modern workspace built for busy freelancers and clients
+• Works online with secure cloud sync (Supabase)
+• Google Sign-In and email accounts
+• Free plan to start; Pro / Pro Plus via Google Play Billing
 
-CUSTOMER MANAGEMENT
-• Add and organize clients with contact details
-• Edit or delete customers anytime
-• Quick search across your client list
+CLIENTS & PROJECTS
+• Organize clients and contacts
+• Track projects, tasks, milestones, and timelines
+• Notes, file vault, and collaboration tools
 
-PROJECT TRACKING
-• Create projects linked to customers
-• Track status with timeline history
-• See active projects on your dashboard
+INVOICING & MONEY
+• Create and send professional invoices
+• Quotes, credits, recurring invoices, expenses
+• Payment tracking and reports
 
-INVOICING & REVENUE
-• Create professional invoices with tax and discounts
-• Export & share branded PDF invoices
-• Filter by draft, sent, paid, outstanding, or overdue
-• Dashboard shows paid revenue and outstanding amounts
+CLIVORA CONNECT (Pro Plus)
+• Discover and connect with freelancers and clients
+• Listings, requests, and marketplace tools
 
-TASKS, EXPENSES & NOTES
-• Manage daily tasks and to-dos
-• Log business expenses
-• Keep project notes organized
+SECURITY & ACCOUNT CONTROL
+• Biometric device lock (optional)
+• In-app Privacy Policy and Terms
+• Delete account from Security & Privacy
+• No ads; we do not use the advertising ID
 
-REPORTS & INSIGHTS
-• View business stats at a glance
-• Follow-up notifications for overdue items
-• Calendar view for deadlines
+FREE PLAN
+• Limited clients, projects, and invoices
 
-PROFILE & SECURITY
-• Secure local sign-up and sign-in
-• Profile photo from camera or gallery
-• Light and dark theme support
+Upgrade to Pro or Pro Plus with Google Play subscriptions (restore purchases supported).
 
-FREE PLAN INCLUDES
-• Up to 3 clients
-• Up to 5 projects
-• Up to 10 invoices per month
-
-Upgrade to Pro for unlimited access, AI assistant, templates, and more.
-
-CLIVORA — built by CodCrafters. Run your business smarter.
-Website: https://codcrafters.org
+Website: https://clivora.codcrafters.org
+Privacy: https://clivora.codcrafters.org/privacy
+Terms: https://clivora.codcrafters.org/terms
+Delete account (web): https://clivora.codcrafters.org/delete-account
+Built by CodCrafters.
 ```
 
 ---
 
-## Store assets checklist
+## Categorization suggestions
 
-| Asset | Path |
-|-------|------|
-| App icon 512 | `play-store/graphics/app-icon-512.png` |
-| Feature graphic | `play-store/graphics/feature-graphic-1024x500.png` |
-| Screenshots | `play-store/screenshots/screenshot-01..04.png` |
-| App logo (in-app) | `assets/images/clivora_logo.png` |
-| Privacy policy | `play-store/listing/privacy-policy.html` |
-
----
-
-## Release notes (v1.5.1)
-
-```
-• Restored full in-app admin dashboard (admin accounts only)
-• App syncs analytics to codcrafters.org web admin panel
-• Fixed create client, project, and invoice flows
-• Invoice PDF export with branding
-• Status tracking for invoices and projects
-• Free plan: 3 clients, 5 projects, 10 invoices/month
-• Auth protection — must sign in to use the app
-```
+| Field | Value |
+|-------|--------|
+| App category | Business |
+| Tags | CRM, invoicing, freelancer, productivity |
+| Target audience | 18+ (not designed for children) |
+| Ads | No |
+| In-app purchases | Yes (Play Billing subscriptions) |
 
 ---
 
-## Upload files
+## Data safety (declare accurately in Play Console)
 
-| File | Path |
-|------|------|
-| APK (testing) | `releases/clivora-v1.5.1-release.apk` |
-| AAB (Play Store) | `releases/clivora-v1.5.1-release.aab` |
+Collect / share as applicable to your live backend:
+
+- Account info (email, name, profile photo)
+- App activity / diagnostics (crash, performance) if enabled
+- Financial info only as invoice metadata you store for the user (not card numbers via CLIVORA if clients pay externally)
+- Photos (optional — profile / attachments) via camera or picker
+
+Security practices:
+
+- Data encrypted in transit (HTTPS / TLS)
+- Users can request deletion (in-app + web)
+- Not for children / not directed to children
+
+Advertising ID: **Not used** (manifest removes `AD_ID`).
+
+---
+
+## Privacy policy URL (required)
+
+```
+https://clivora.codcrafters.org/privacy
+```
+
+## Release notes (4.2.3)
+
+```
+• Production build with Play upload signing
+• Command Center / Hub restored to the 3.9.6 layout
+• Connect logo (travel_explore) on freelancer and client
+• Hub network icon on navigation
+• Native Google Sign-In
+• Play Billing for Pro / Pro Plus
+• Account deletion and privacy links
+• Policy-friendly permissions (no advertising ID)
+```
+
+---
+
+## Upload artifacts
+
+| File | Path / URL |
+|------|------------|
+| AAB (Play) | `releases/clivora-4.2.3.aab` |
+| APK (sideload QA only) | `releases/clivora-4.2.3.apk` |
+| GitHub release | `v4.2.3-playstore` |
+
+Upload **only** the AAB signed with SHA-1 `96:93:81:80:...` to Play Console.

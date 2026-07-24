@@ -63,4 +63,4 @@ Do not use for Play:
 - `v2.21.0-preview` (preview keystore — Google Sign-In breaks)
 - `v4.1.7-sideload` (preview keystore)
 
-Good baseline: `v3.9.6-playstore`. Production target: `v4.2.1-playstore`.
+Good baseline: `v3.9.6-playstore`. Production target: `v4.2.3-playstore`.

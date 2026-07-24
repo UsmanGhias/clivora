@@ -142,7 +142,11 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
       if (mounted) {
         context.go('/login');
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Account data removed from this device')),
+          const SnackBar(
+            content: Text(
+              'Account deletion requested. Local data cleared and you have been signed out.',
+            ),
+          ),
         );
       }
     } catch (e) {

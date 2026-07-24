@@ -7,7 +7,7 @@ Last verified: 2026-07-24 — Cloud agent run for **4.2.1** restore from **v3.9.
 | Item | Value |
 |------|--------|
 | Good Play baseline | Git tag `v3.9.6-playstore` → `3.9.6+96` |
-| Target production | `4.2.1+102` |
+| Target production | `4.2.3+104` |
 | Live web | https://clivora.codcrafters.org (mirror `UsmanGhias/clivora-web`) |
 | Android package | `org.codcrafters.clivora` |
 | Firebase project | `clivora533` |
@@ -15,7 +15,7 @@ Last verified: 2026-07-24 — Cloud agent run for **4.2.1** restore from **v3.9.
 
 ## Do NOT ship / ignore these releases
 
-These were preview/wrong-signing or version-regression builds. Prefer `v3.9.6-playstore` or `v4.2.1-playstore` once published:
+These were preview/wrong-signing or version-regression builds. Prefer `v3.9.6-playstore` or **`v4.2.3-playstore`** once published:
 
 - `v2.20.0-playstore` (version regression)
 - `v2.21.0-preview` (preview keystore — breaks Google Sign-In)
