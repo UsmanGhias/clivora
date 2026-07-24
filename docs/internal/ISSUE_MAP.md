@@ -20,13 +20,13 @@ Flags: all SMEMaster domain flags are **ON** in production `app_feature_flags`.
 | APP-3 | P0 | Missing `user_scoped_queries` import | Import added |
 | APP-4 | P1 | Task complete/delete skipped outbox | Enqueue `workspace_task` (+ tombstone delete) |
 | APP-5 | P2 | Client milestones / menu / admin-ops allowlist | Auth route helper updated |
+| APP-7 | P1 | Calendar FAB does not enqueue outbox | Enqueue `calendar_event` |
 
 ## Remaining (track next)
 
 | ID | Severity | Issue | Suggested fix |
 |----|----------|-------|---------------|
 | APP-6 | P1 | Workspace pull does not create Drift rows for cloud-only tasks | Mirror CRM customer pull insert |
-| APP-7 | P1 | Calendar FAB does not enqueue outbox | Enqueue `calendar_event` |
 | WEB-5 | P1 | `invoice_shares.total_minor` rarely dual-written | Write on share create/update |
 | WEB-6 | P2 | AppShell does not hide nav when flags off | `isFeatureEnabledClient` filter |
 | OPS-1 | P2 | Admin ops silent empty on audit errors | Surface PostgREST errors |
