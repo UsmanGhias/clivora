@@ -797,8 +797,13 @@ export function ConnectBoard({
                   key={p.id}
                   className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-client-accent/30 lg:flex-row lg:items-center"
                 >
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xl font-bold text-primary">
-                    {(p.display_title || "F").charAt(0)}
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-xl font-bold text-primary">
+                    {p.avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      (p.display_title || "F").charAt(0)
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
@@ -897,7 +902,16 @@ export function ConnectBoard({
                   className="flex flex-col rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-primary/40"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div>
+                    <div className="flex min-w-0 items-start gap-3">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-lg font-bold text-primary">
+                        {p.avatar_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          (p.display_title || "F").charAt(0)
+                        )}
+                      </div>
+                      <div className="min-w-0">
                       <h3 className="font-bold text-navy">{p.display_title || "Freelancer"}</h3>
                       {p.location_label && (
                         <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-text-muted">
@@ -905,6 +919,7 @@ export function ConnectBoard({
                           {p.location_label}
                         </p>
                       )}
+                      </div>
                     </div>
                     <div className="flex flex-col items-end gap-1">
                       {p.is_verified && (

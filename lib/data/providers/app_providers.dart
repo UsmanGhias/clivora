@@ -411,8 +411,11 @@ final isProProvider = Provider<bool>((ref) {
   if (isAdminUser(user)) return true;
   final serverSub = ref.watch(serverSubscriptionProvider).valueOrNull;
   if (serverSub == true) return true;
+  // Expired Play/SafePay rows must not wipe an active admin/profile grant.
   final cloudPlan = ref.watch(cloudSubscriptionPlanProvider).valueOrNull;
-  if (cloudPlan == PlanLimits.proPlan || cloudPlan == PlanLimits.proPlusPlan) return true;
+  if (cloudPlan == PlanLimits.proPlan || cloudPlan == PlanLimits.proPlusPlan) {
+    return true;
+  }
   final plan = ref.watch(subscriptionPlanProvider).valueOrNull;
   return PlanFeatures.isPro(plan);
 });
@@ -435,17 +438,17 @@ final cloudSubscriptionPlanProvider = FutureProvider<String?>((ref) async {
 });
 
 /// Server-verified subscription from Supabase (when online).
-/// `true` = active, `false` = expired/inactive row exists, `null` = no row / offline.
+/// `true` = active row, `false` = only expired/inactive rows, `null` = no rows / offline.
 final serverSubscriptionProvider = FutureProvider<bool?>((ref) async {
   final uid = SupabaseAuthHelper.currentUid;
   if (uid == null) return null;
   try {
     final rows = await SupabaseAuthHelper.client
         .from('subscriptions')
-        .select('status, expires_at')
+        .select('status, expires_at, product_id')
         .eq('user_id', uid)
         .order('expires_at', ascending: false)
-        .limit(5);
+        .limit(8);
     final list = (rows as List?) ?? const [];
     if (list.isEmpty) return null;
     for (final row in list) {

@@ -20,7 +20,21 @@ export async function listPublicConnectProfiles(search?: string) {
     q = q.or(`display_title.ilike.${s},headline.ilike.${s},bio.ilike.${s},location_label.ilike.${s}`);
   }
   const { data } = await q;
-  return (data ?? []) as ConnectProfile[];
+  const rows = (data ?? []) as ConnectProfile[];
+  const userIds = [...new Set(rows.map((r) => r.user_id).filter(Boolean))];
+  if (userIds.length === 0) return rows;
+
+  const { data: avatars } = await supabase
+    .from("profiles")
+    .select("id, avatar_url")
+    .in("id", userIds);
+  const byId = new Map(
+    (avatars ?? []).map((a) => [String((a as { id: string }).id), (a as { avatar_url?: string | null }).avatar_url ?? null]),
+  );
+  return rows.map((r) => ({
+    ...r,
+    avatar_url: byId.get(r.user_id) ?? null,
+  }));
 }
 
 export async function listPublicConnectNeeds(search?: string) {

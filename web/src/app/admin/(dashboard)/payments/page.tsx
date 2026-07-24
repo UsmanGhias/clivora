@@ -70,9 +70,19 @@ export default function AdminPaymentsPage() {
     setActionError(null);
     try {
       const plan = String(p.plan || "pro").toLowerCase().includes("plus") ? "pro_plus" : "pro";
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Sign in again to approve payments.");
       const res = await fetch("/api/admin/grant-pro", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           email,
           plan,
@@ -80,7 +90,13 @@ export default function AdminPaymentsPage() {
         }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json.error || "Approve failed");
+      if (!res.ok) {
+        const err = String(json.error || "Approve failed");
+        if (json.code === "MFA_REQUIRED" || /two-factor|mfa|aal2/i.test(err)) {
+          throw new Error("Complete admin 2FA (MFA) first, then retry Approve.");
+        }
+        throw new Error(err);
+      }
       await refresh();
     } catch (e) {
       setActionError(e instanceof Error ? e.message : "Approve failed");
@@ -94,9 +110,19 @@ export default function AdminPaymentsPage() {
     setBusyId(id);
     setActionError(null);
     try {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Sign in again to reject payments.");
       const res = await fetch("/api/admin/payment-requests", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ id, status: "rejected" }),
       });
       const json = await res.json().catch(() => ({}));

@@ -19,6 +19,8 @@ export type ConnectProfile = {
   completion_rate?: number | null;
   reputation_score?: number | null;
   profile_completeness?: number | null;
+  /** Joined from profiles.avatar_url for talent cards */
+  avatar_url?: string | null;
 };
 
 export type ConnectNeed = {
