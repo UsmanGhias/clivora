@@ -18,6 +18,7 @@ const freelancerShellRoutes = {
   '/projects',
   '/invoices',
   '/more',
+  '/menu',
   '/connect',
 };
 
@@ -79,6 +80,7 @@ const clientShellRoutes = {
   '/client-credits',
   '/client-recurring',
   '/client-files',
+  '/client-milestones',
   '/notifications',
   '/profile',
   '/upgrade',
@@ -152,7 +154,8 @@ String? authRedirect({required String location, required User? user, required bo
 
   // Shared routes (e.g. /notifications) are in both lists, do not redirect clients away.
   if (isClientUser(user) && isFreelancerRoute(path) && !isClientRoute(path)) {
-    if (isAdminUser(user) && (path == '/admin-console' || path == '/admin')) {
+    if (isAdminUser(user) &&
+        (path == '/admin-console' || path == '/admin' || path == '/admin-ops')) {
       return null;
     }
     return '/client-portal';

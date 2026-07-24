@@ -5,6 +5,11 @@ import { createClient } from "@/lib/supabase/client";
 
 type Row = Record<string, unknown>;
 
+function asRecord(v: unknown): Record<string, unknown> {
+  if (v && typeof v === "object" && !Array.isArray(v)) return v as Record<string, unknown>;
+  return {};
+}
+
 export function ConflictsClient({ initial }: { initial: Row[] }) {
   const [rows, setRows] = useState(initial);
   const [busy, setBusy] = useState<string | null>(null);
@@ -15,6 +20,48 @@ export function ConflictsClient({ initial }: { initial: Row[] }) {
     setError(null);
     try {
       const supabase = createClient();
+      const row = rows.find((r) => String(r.id) === id);
+      if (!row) throw new Error("Conflict not found");
+
+      const entityType = String(row.entity_type || "");
+      const entityId = row.entity_id ? String(row.entity_id) : null;
+      const localSnap = asRecord(row.local_snapshot);
+      const cloudSnap = asRecord(row.cloud_snapshot);
+
+      if (entityType === "customer" && entityId) {
+        if (resolution === "keep_local") {
+          const patch: Record<string, unknown> = {
+            updated_at: new Date().toISOString(),
+          };
+          if (typeof localSnap.contact_person === "string") {
+            patch.contact_person = localSnap.contact_person;
+          }
+          if (typeof localSnap.company === "string") {
+            patch.company = localSnap.company;
+          }
+          const { error: upErr } = await supabase
+            .from("crm_customers")
+            .update(patch)
+            .eq("id", entityId);
+          if (upErr) throw upErr;
+        } else if (resolution === "take_cloud") {
+          const patch: Record<string, unknown> = {
+            updated_at: new Date().toISOString(),
+          };
+          if (typeof cloudSnap.contact_person === "string") {
+            patch.contact_person = cloudSnap.contact_person;
+          }
+          if (typeof cloudSnap.company === "string") {
+            patch.company = cloudSnap.company;
+          }
+          const { error: upErr } = await supabase
+            .from("crm_customers")
+            .update(patch)
+            .eq("id", entityId);
+          if (upErr) throw upErr;
+        }
+      }
+
       const { error: err } = await supabase
         .from("crm_sync_conflicts")
         .update({

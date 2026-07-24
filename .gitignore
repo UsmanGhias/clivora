@@ -73,3 +73,6 @@ supabase/.temp/
 .tmp_secrets/
 
 android/.signing/
+
+# Graphify analysis output
+graphify-out/

@@ -135,6 +135,7 @@ export function AppShell({
     { href: "/app/calendar", label: "Calendar", icon: Clock },
     { href: "/app/campaigns", label: "Campaigns", icon: Sparkles },
     { href: "/app/automation", label: "Automation", icon: Network },
+    { href: "/app/ai-suggestions", label: "AI suggestions", icon: Sparkles },
     { href: "/app/conflicts", label: "CRM conflicts", icon: ScrollText },
     { href: "/app/messages", label: "Messages", icon: MessageSquare, badge: counts?.messages },
     { href: "/app/earnings", label: "Earnings", icon: Wallet },

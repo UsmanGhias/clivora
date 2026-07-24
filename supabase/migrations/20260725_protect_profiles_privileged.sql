@@ -1,0 +1,2 @@
+-- Protect profiles privileged columns (applied live as protect_profiles_privileged_columns).
+-- See docs/internal/ISSUE_MAP.md SEC-1

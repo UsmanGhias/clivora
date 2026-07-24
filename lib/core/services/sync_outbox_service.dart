@@ -716,6 +716,21 @@ class SyncOutboxService {
         final user = ref.read(authStateProvider).valueOrNull;
         final localId = (item.payload['localId'] as num?)?.toInt();
         if (user == null || localId == null) return _ExecResult.transientFailure;
+        if (item.isTombstone) {
+          final uid = SupabaseAuthHelper.currentUid;
+          if (uid != null) {
+            try {
+              await SupabaseAuthHelper.client
+                  .from('workspace_tasks')
+                  .delete()
+                  .eq('owner_uid', uid)
+                  .eq('local_id', localId);
+            } catch (e) {
+              debugPrint('workspace_task tombstone: $e');
+            }
+          }
+          return _ExecResult.success;
+        }
         await ref.read(cloudWorkspaceTasksRepositoryProvider).pushTask(
               ownerUserId: user.id,
               localId: localId,

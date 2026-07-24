@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isFeatureEnabled } from "@/lib/feature-flags";
+import { randomBytes } from "crypto";
 
 function randomToken(length = 32): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
+  return randomBytes(Math.ceil(length * 0.75))
+    .toString("base64url")
+    .slice(0, length);
 }
 
 export async function POST(req: NextRequest) {
   try {
+    const vaultOn =
+      (await isFeatureEnabled("vault_cloud")) || (await isFeatureEnabled("phase5_vault_cloud"));
+    if (!vaultOn) {
+      return NextResponse.json({ error: "Vault cloud sharing is not enabled" }, { status: 503 });
+    }
+
     const supabase = await createClient();
     const {
       data: { user },
@@ -31,7 +36,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "file_path or file_id required" }, { status: 400 });
     }
 
-    const token = randomToken();
+    const token = randomToken(40);
     const expiresAt = new Date(Date.now() + expires_in_hours * 3600 * 1000).toISOString();
 
     const { data, error } = await supabase
@@ -64,7 +69,12 @@ export async function POST(req: NextRequest) {
     const origin = req.headers.get("origin") ?? "https://clivora.codcrafters.org";
     const shareUrl = `${origin}/vault/s/${token}`;
 
-    return NextResponse.json({ id: data.id, token: data.token, expires_at: data.expires_at, url: shareUrl });
+    return NextResponse.json({
+      id: data.id,
+      token: data.token,
+      expires_at: data.expires_at,
+      url: shareUrl,
+    });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Share failed" },
