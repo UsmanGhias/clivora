@@ -43,7 +43,7 @@ export default async function ContractsPage() {
   const isClient = isClientAccount(profile);
   const supabase = await createClient();
   const uid = profile.id;
-  const email = (profile.email || "").trim();
+  const email = (profile.email || "").trim().toLowerCase();
 
   let contracts: ContractRow[] = [];
   try {

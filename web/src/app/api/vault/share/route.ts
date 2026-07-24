@@ -46,7 +46,18 @@ export async function POST(req: NextRequest) {
       .select("id, token, expires_at")
       .single();
 
-    if (error) throw error;
+    if (error) {
+      const missing =
+        /schema cache|does not exist|Could not find the table/i.test(error.message || "");
+      return NextResponse.json(
+        {
+          error: missing
+            ? "Vault share links are not enabled on this project yet"
+            : error.message,
+        },
+        { status: missing ? 503 : 400 },
+      );
+    }
 
     const origin = req.headers.get("origin") ?? "https://clivora.codcrafters.org";
     const shareUrl = `${origin}/vault/s/${token}`;
