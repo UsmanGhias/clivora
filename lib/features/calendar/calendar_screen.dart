@@ -7,6 +7,7 @@ import '../../core/utils/navigation_helper.dart';
 import '../../core/theme/clivora_colors.dart';
 import '../../core/cloud/cloud_calendar_events_repository.dart';
 import '../../core/services/feature_flags_service.dart';
+import '../../core/services/sync_outbox_service.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 
@@ -69,20 +70,27 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     if (ok != true || titleCtrl.text.trim().isEmpty) return;
     final starts = _effectiveSelected;
     try {
-      await ref.read(cloudCalendarEventsRepositoryProvider).upsertEvent(
-            title: titleCtrl.text.trim(),
-            startsAt: starts,
+      await ref.read(syncOutboxServiceProvider).enqueue(
+            SyncOutboxItem(
+              kind: 'calendar_event',
+              payload: {
+                'title': titleCtrl.text.trim(),
+                'startsAt': starts.toUtc().toIso8601String(),
+              },
+            ),
           );
       await _loadCloud();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cloud event saved (syncs with web)')),
+          const SnackBar(content: Text('Cloud event queued (syncs with web)')),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
       }
+    } finally {
+      titleCtrl.dispose();
     }
   }
 
