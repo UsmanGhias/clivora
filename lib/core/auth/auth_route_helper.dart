@@ -23,6 +23,8 @@ const freelancerShellRoutes = {
 
 const freelancerExtraRoutes = {
   '/tasks',
+  '/workspace-tasks',
+  '/shared-tasks',
   '/expenses',
   '/notes',
   '/reports',
@@ -35,11 +37,17 @@ const freelancerExtraRoutes = {
   '/profile',
   '/upgrade',
   '/ai-assistant',
+  '/ai-suggestions',
   '/templates',
   '/contracts',
   '/automations',
+  '/automation-builder',
+  '/campaigns',
+  '/crm-conflicts',
+  '/sync-center',
   '/admin',
   '/admin-console',
+  '/admin-ops',
   '/team',
   '/team-invites',
   '/storage',
@@ -109,7 +117,8 @@ bool isClientRoute(String location) {
 bool isRouteAllowedForUser(User? user, String location) {
   if (user == null) return isPublicRoute(location);
   if (isPublicRoute(location)) return true;
-  if (isAdminUser(user) && (location == '/admin-console' || location == '/admin')) {
+  if (isAdminUser(user) &&
+      (location == '/admin-console' || location == '/admin' || location == '/admin-ops')) {
     return true;
   }
   if (isClientUser(user)) return isClientRoute(location);
@@ -137,7 +146,7 @@ String? authRedirect({required String location, required User? user, required bo
     return '/login';
   }
 
-  if ((path == '/admin-console' || path == '/admin') && !isAdminUser(user)) {
+  if ((path == '/admin-console' || path == '/admin' || path == '/admin-ops') && !isAdminUser(user)) {
     return homeRouteForUser(user);
   }
 

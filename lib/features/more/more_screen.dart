@@ -301,6 +301,14 @@ class MoreScreen extends ConsumerWidget {
                 onTap: () => context.push('/tasks'),
               ),
               ToolGridTile(
+                icon: Icons.cloud_sync_outlined,
+                label: 'Workspace tasks',
+                description: 'Cloud tasks synced with web',
+                iconBackground: ClivoraColors.iconBlue,
+                iconColor: Colors.blue,
+                onTap: () => context.push('/workspace-tasks'),
+              ),
+              ToolGridTile(
                 icon: Icons.calendar_today_outlined,
                 label: 'Calendar',
                 description: 'Schedule and manage your events',
@@ -312,6 +320,46 @@ class MoreScreen extends ConsumerWidget {
                   }
                   if (context.mounted) context.push('/calendar');
                 },
+              ),
+              ToolGridTile(
+                icon: Icons.campaign_outlined,
+                label: 'Campaigns',
+                description: 'Draft → publish content (web parity)',
+                iconBackground: ClivoraColors.iconTeal,
+                iconColor: ClivoraColors.primary,
+                onTap: () => context.push('/campaigns'),
+              ),
+              ToolGridTile(
+                icon: Icons.account_tree_outlined,
+                label: 'Automation builder',
+                description: 'Cloud rules + durable jobs',
+                iconBackground: ClivoraColors.iconOrange,
+                iconColor: ClivoraColors.warningOrange,
+                onTap: () => context.push('/automation-builder'),
+              ),
+              ToolGridTile(
+                icon: Icons.psychology_outlined,
+                label: 'AI suggestions',
+                description: 'Review structured AI (human gate)',
+                iconBackground: ClivoraColors.iconBlue,
+                iconColor: Colors.indigo,
+                onTap: () => context.push('/ai-suggestions'),
+              ),
+              ToolGridTile(
+                icon: Icons.merge_type_outlined,
+                label: 'CRM conflicts',
+                description: 'Keep local / Take cloud',
+                iconBackground: ClivoraColors.iconRed,
+                iconColor: Colors.redAccent,
+                onTap: () => context.push('/crm-conflicts'),
+              ),
+              ToolGridTile(
+                icon: Icons.sync_outlined,
+                label: 'Sync Center',
+                description: 'Outbox queue and retries',
+                iconBackground: ClivoraColors.iconGreen,
+                iconColor: ClivoraColors.successGreen,
+                onTap: () => context.push('/sync-center'),
               ),
               ToolGridTile(
                 icon: Icons.people_outline,

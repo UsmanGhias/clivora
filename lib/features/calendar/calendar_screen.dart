@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 
 import '../../core/utils/navigation_helper.dart';
 import '../../core/theme/clivora_colors.dart';
+import '../../core/cloud/cloud_calendar_events_repository.dart';
+import '../../core/services/feature_flags_service.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 
@@ -19,6 +21,8 @@ class CalendarScreen extends ConsumerStatefulWidget {
 class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   late DateTime _focusedMonth;
   DateTime? _selectedDay;
+  List<Map<String, dynamic>> _cloudEvents = [];
+  bool _cloudEnabled = false;
 
   @override
   void initState() {
@@ -26,7 +30,60 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final now = DateTime.now();
     _focusedMonth = DateTime(now.year, now.month);
     _selectedDay = DateTime(now.year, now.month, now.day);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _guardPro());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _guardPro();
+      _loadCloud();
+    });
+  }
+
+  Future<void> _loadCloud() async {
+    final on = await ref.read(featureFlagsServiceProvider).calendarEvents();
+    if (!mounted) return;
+    setState(() => _cloudEnabled = on);
+    if (!on) return;
+    try {
+      final rows = await ref.read(cloudCalendarEventsRepositoryProvider).listEvents();
+      if (!mounted) return;
+      setState(() => _cloudEvents = rows);
+    } catch (_) {}
+  }
+
+  Future<void> _addCloudEvent() async {
+    if (!_cloudEnabled) return;
+    final titleCtrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cloud calendar event'),
+        content: TextField(
+          controller: titleCtrl,
+          decoration: const InputDecoration(labelText: 'Title'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Save')),
+        ],
+      ),
+    );
+    if (ok != true || titleCtrl.text.trim().isEmpty) return;
+    final starts = _effectiveSelected;
+    try {
+      await ref.read(cloudCalendarEventsRepositoryProvider).upsertEvent(
+            title: titleCtrl.text.trim(),
+            startsAt: starts,
+          );
+      await _loadCloud();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cloud event saved (syncs with web)')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      }
+    }
   }
 
   Future<void> _guardPro() async {
@@ -66,12 +123,28 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     return ClivoraScaffold(
       title: 'Calendar',
       showBackButton: true,
+      floatingActionButton: _cloudEnabled
+          ? FloatingActionButton.extended(
+              onPressed: _addCloudEvent,
+              icon: const Icon(Icons.cloud_upload_outlined),
+              label: const Text('Cloud event'),
+            )
+          : null,
       body: eventsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (events) {
           final reminders = remindersAsync.valueOrNull ?? [];
-          final allEvents = [...events, ...reminders];
+          final cloudAsLocal = _cloudEvents.map((m) {
+            final starts = DateTime.tryParse('${m['starts_at']}')?.toLocal() ?? DateTime.now();
+            return CalendarEvent(
+              title: '${m['title']} (cloud)',
+              date: starts,
+              type: 'cloud',
+              color: ClivoraColors.primary,
+            );
+          });
+          final allEvents = [...events, ...reminders, ...cloudAsLocal];
           final selected = _effectiveSelected;
           final dayEvents = allEvents.where((e) =>
               e.date.year == selected.year && e.date.month == selected.month && e.date.day == selected.day);
@@ -79,6 +152,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              if (_cloudEnabled)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    'Cloud events enabled — syncs with web /app/calendar',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: ClivoraColors.textSecondary),
+                  ),
+                ),
               _MonthHeader(
                 month: _focusedMonth,
                 onPrev: () => _changeMonth(-1),

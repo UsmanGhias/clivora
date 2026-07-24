@@ -1,0 +1,4 @@
+-- CLIVORA Phases 2–9 (additive). Applied live via MCP as phases_2_9_smemaster_program.
+-- workspace_tasks, calendar_events, crm_sync_conflicts, campaigns(+blocks/templates),
+-- automation_rules, ai_suggestions, crm_find_duplicate_customers().
+-- All phase* product flags default OFF. See docs/internal/PHASES_2_9.md

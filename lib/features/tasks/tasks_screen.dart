@@ -9,6 +9,7 @@ import '../../core/theme/clivora_colors.dart';
 import '../../core/constants/plan_limits.dart';
 import '../../core/utils/plan_limit_dialog.dart';
 import '../../core/services/email_verification_service.dart';
+import '../../core/services/sync_outbox_service.dart';
 import '../../core/services/task_reminder_service.dart';
 import '../../core/services/tracking_service.dart';
 import '../../data/database/database.dart';
@@ -39,6 +40,12 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
 
     return ClivoraScaffold(
       title: 'Tasks',
+      subtitle: 'Local tasks sync to cloud workspace_tasks when flag on · see Workspace tasks',
+      action: IconButton(
+        tooltip: 'Workspace tasks (web parity)',
+        icon: const Icon(Icons.cloud_outlined),
+        onPressed: () => context.push('/workspace-tasks'),
+      ),
       showBackButton: true,
       action: ClivoraIconButton(
         icon: Icons.add,
@@ -224,6 +231,9 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
         );
         await db.updateTask(updated);
         await ref.read(taskReminderServiceProvider).scheduleForTask(updated);
+        await ref.read(syncOutboxServiceProvider).enqueue(
+              SyncOutboxItem(kind: 'workspace_task', payload: {'localId': widget.taskId}),
+            );
       }
     } else {
       if (!await requireEmailVerified(context, ref, actionLabel: 'create tasks')) {
@@ -253,6 +263,9 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
       if (task != null) {
         await ref.read(taskReminderServiceProvider).scheduleForTask(task);
       }
+      await ref.read(syncOutboxServiceProvider).enqueue(
+            SyncOutboxItem(kind: 'workspace_task', payload: {'localId': id}),
+          );
     }
     if (mounted) context.pop();
   }

@@ -58,10 +58,16 @@ import '../features/profile/profile_screen.dart';
 import '../features/splash/splash_screen.dart';
 import '../features/admin/admin_console_screen.dart';
 import '../features/admin/admin_dashboard_screen.dart';
+import '../features/admin/admin_ops_screen.dart';
+import '../features/ai/ai_suggestions_screen.dart';
+import '../features/automation/automation_builder_screen.dart';
+import '../features/campaigns/campaigns_screen.dart';
 import '../features/pro/pro_screens.dart';
 import '../features/subscription/upgrade_screen.dart';
 import '../features/subscription/referral_screen.dart';
 import '../features/tasks/tasks_screen.dart';
+import '../features/tasks/workspace_tasks_screen.dart';
+import '../features/sync/crm_conflicts_screen.dart';
 import '../features/products/products_screen.dart';
 import '../features/quotes/quotes_screen.dart';
 import '../features/invoices/recurring_invoices_screen.dart';
@@ -341,6 +347,36 @@ final appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/calendar',
       builder: (context, state) => const CalendarScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/workspace-tasks',
+      builder: (context, state) => const WorkspaceTasksScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/campaigns',
+      builder: (context, state) => const CampaignsScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/automation-builder',
+      builder: (context, state) => const AutomationBuilderScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/ai-suggestions',
+      builder: (context, state) => const AiSuggestionsScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/crm-conflicts',
+      builder: (context, state) => const CrmConflictsScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/admin-ops',
+      builder: (context, state) => const AdminOpsScreen(),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,

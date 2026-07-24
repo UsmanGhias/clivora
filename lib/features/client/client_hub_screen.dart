@@ -133,7 +133,7 @@ class ClientHubScreen extends ConsumerWidget {
               ),
               ToolGridTile(
                 icon: Icons.add_task_outlined,
-                label: 'Tasks',
+                label: 'Shared tasks',
                 iconBackground: ClivoraColors.iconOrange,
                 iconColor: ClivoraColors.warningOrange,
                 onTap: () => context.push('/client-tasks'),

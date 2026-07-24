@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { invoiceMinorFields } from "@/lib/money";
 
 export type CrmCustomer = {
   id: string;
@@ -17,6 +18,11 @@ export type CrmCustomer = {
   status: string;
   updated_at: string;
   custom_fields?: Record<string, string> | null;
+  company_id?: string | null;
+  lead_score?: number | null;
+  next_action?: string | null;
+  next_action_at?: string | null;
+  duplicate_of?: string | null;
 };
 
 export type CrmProject = {
@@ -154,18 +160,21 @@ export async function upsertInvoiceClient(input: {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Sign in required");
+  const total = input.total ?? 0;
+  const minors = invoiceMinorFields({ subtotal: total, total, amountPaid: 0 });
   const row = {
     owner_uid: user.id,
     invoice_number: input.invoice_number.trim(),
     customer_id: input.customer_id || null,
     project_id: input.project_id || null,
     status: input.status ?? "draft",
-    total: input.total ?? 0,
-    subtotal: input.total ?? 0,
+    total,
+    subtotal: total,
     currency: input.currency ?? "USD",
     line_items: input.line_items ?? [],
     due_date: input.due_date || null,
     updated_at: new Date().toISOString(),
+    ...minors,
   };
   if (input.id) {
     const { error } = await supabase.from("crm_invoices").update(row).eq("id", input.id);

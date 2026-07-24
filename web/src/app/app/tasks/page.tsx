@@ -73,6 +73,15 @@ export default async function TasksPage() {
         <h1 className="text-2xl font-extrabold">Tasks</h1>
         <p className="text-sm text-text-secondary">
           Shared client tasks from your freelancer/client workspace.
+          {!client ? (
+            <>
+              {" "}
+              Freelancer workspace tasks (cloud sync):{" "}
+              <a className="font-semibold text-primary underline" href="/app/workspace-tasks">
+                /app/workspace-tasks
+              </a>
+            </>
+          ) : null}
         </p>
       </div>
       <TasksClient

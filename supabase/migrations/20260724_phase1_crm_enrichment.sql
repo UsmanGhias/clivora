@@ -1,0 +1,4 @@
+-- CLIVORA Phase 1 CRM enrichment (additive). Applied live via MCP as phase1_crm_enrichment.
+-- Companies, tags, groups, activities, segments; customer lead_score/next_action/duplicate_of;
+-- crm_recompute_lead_score(); flag crm_enrichment remains OFF until gates.
+-- See docs/internal/PHASE1_CRM_ENRICHMENT.md
