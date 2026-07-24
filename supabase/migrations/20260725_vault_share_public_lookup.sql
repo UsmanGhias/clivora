@@ -1,0 +1,1 @@
+-- Public vault share lookup RPC (applied live as vault_share_public_lookup).

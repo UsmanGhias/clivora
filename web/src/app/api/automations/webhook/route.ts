@@ -7,8 +7,8 @@ const SUPABASE_URL =
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 async function insertToQueue(payload: unknown, source: string) {
-  if (!SUPABASE_SERVICE_ROLE_KEY) return;
-  await fetch(`${SUPABASE_URL}/rest/v1/automation_webhook_queue`, {
+  if (!SUPABASE_SERVICE_ROLE_KEY) return false;
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/automation_webhook_queue`, {
     method: "POST",
     headers: {
       apikey: SUPABASE_SERVICE_ROLE_KEY,
@@ -17,12 +17,20 @@ async function insertToQueue(payload: unknown, source: string) {
       Prefer: "return=minimal",
     },
     body: JSON.stringify({
-      payload,
-      source,
-      received_at: new Date().toISOString(),
+      event_type: typeof source === "string" && source ? source : "api",
+      payload: {
+        source,
+        data: payload,
+      },
       status: "pending",
+      next_attempt_at: new Date().toISOString(),
     }),
   });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`queue insert failed: ${res.status} ${text}`);
+  }
+  return true;
 }
 
 async function forwardToN8n(payload: unknown) {
@@ -56,11 +64,16 @@ export async function POST(req: NextRequest) {
   const source =
     req.headers.get("x-webhook-source") ?? req.nextUrl.searchParams.get("source") ?? "api";
 
-  // Insert into queue (best-effort)
-  await insertToQueue(payload, source).catch(() => {});
+  // Insert into queue (best-effort but report truth)
+  let queued = false;
+  try {
+    queued = (await insertToQueue(payload, source)) === true;
+  } catch (e) {
+    console.error("automation webhook queue insert failed", e);
+  }
 
   // Forward to n8n if configured (best-effort)
   await forwardToN8n(payload).catch(() => {});
 
-  return NextResponse.json({ received: true, source, queued: !!SUPABASE_SERVICE_ROLE_KEY });
+  return NextResponse.json({ received: true, source, queued });
 }

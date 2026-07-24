@@ -41,15 +41,20 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     return ClivoraScaffold(
       title: 'Tasks',
       subtitle: 'Local tasks sync to cloud workspace_tasks when flag on · see Workspace tasks',
-      action: IconButton(
-        tooltip: 'Workspace tasks (web parity)',
-        icon: const Icon(Icons.cloud_outlined),
-        onPressed: () => context.push('/workspace-tasks'),
-      ),
       showBackButton: true,
-      action: ClivoraIconButton(
-        icon: Icons.add,
-        onPressed: _openNewTask,
+      action: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            tooltip: 'Workspace tasks (web parity)',
+            icon: const Icon(Icons.cloud_outlined),
+            onPressed: () => context.push('/workspace-tasks'),
+          ),
+          ClivoraIconButton(
+            icon: Icons.add,
+            onPressed: _openNewTask,
+          ),
+        ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,7 +105,16 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                             ) ??
                             false;
                       },
-                      onDismissed: (_) => ref.read(databaseProvider).deleteTask(task.id),
+                      onDismissed: (_) async {
+                        await ref.read(databaseProvider).deleteTask(task.id);
+                        await ref.read(syncOutboxServiceProvider).enqueue(
+                              SyncOutboxItem(
+                                kind: 'workspace_task',
+                                payload: {'localId': task.id},
+                                isTombstone: true,
+                              ),
+                            );
+                      },
                       child: ListTile(
                         onTap: () => context.push('/tasks/${task.id}/edit'),
                         tileColor: Theme.of(context).cardColor,
@@ -119,6 +133,12 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
                               updatedAt: DateTime.now(),
                             );
                             await ref.read(databaseProvider).updateTask(updated);
+                            await ref.read(syncOutboxServiceProvider).enqueue(
+                                  SyncOutboxItem(
+                                    kind: 'workspace_task',
+                                    payload: {'localId': task.id},
+                                  ),
+                                );
                             if (completed) {
                               await ref.read(trackingServiceProvider).notifyTaskCompleted(updated);
                             }
