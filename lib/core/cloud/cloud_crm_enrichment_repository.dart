@@ -76,14 +76,15 @@ class CloudCrmEnrichmentRepository {
   Future<List<Map<String, dynamic>>> listActivities({String? customerId}) async {
     final uid = SupabaseAuthHelper.currentUid;
     if (uid == null) return [];
+    // Apply filters before order/limit so the builder stays a PostgrestFilterBuilder.
     var q = SupabaseAuthHelper.client
         .from('crm_activities')
         .select()
-        .eq('owner_uid', uid)
-        .order('occurred_at', ascending: false)
-        .limit(100);
-    if (customerId != null) q = q.eq('customer_id', customerId);
-    final rows = await q;
+        .eq('owner_uid', uid);
+    if (customerId != null) {
+      q = q.eq('customer_id', customerId);
+    }
+    final rows = await q.order('occurred_at', ascending: false).limit(100);
     return List<Map<String, dynamic>>.from(rows as List);
   }
 

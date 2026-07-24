@@ -2,8 +2,8 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/database/user_scoped_queries.dart';
 import '../../data/providers/app_providers.dart';
-import '../auth/auth_service.dart';
 import 'supabase_auth_helper.dart';
 
 final cloudWorkspaceTasksRepositoryProvider =

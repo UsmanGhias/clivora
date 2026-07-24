@@ -41,15 +41,21 @@ class _TasksScreenState extends ConsumerState<TasksScreen> {
     return ClivoraScaffold(
       title: 'Tasks',
       subtitle: 'Local tasks sync to cloud workspace_tasks when flag on · see Workspace tasks',
-      action: IconButton(
-        tooltip: 'Workspace tasks (web parity)',
-        icon: const Icon(Icons.cloud_outlined),
-        onPressed: () => context.push('/workspace-tasks'),
-      ),
       showBackButton: true,
-      action: ClivoraIconButton(
-        icon: Icons.add,
-        onPressed: _openNewTask,
+      action: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            tooltip: 'Workspace tasks (web parity)',
+            icon: const Icon(Icons.cloud_outlined),
+            onPressed: () => context.push('/workspace-tasks'),
+          ),
+          IconButton(
+            tooltip: 'New task',
+            icon: const Icon(Icons.add),
+            onPressed: _openNewTask,
+          ),
+        ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
