@@ -99,7 +99,7 @@ export default async function AppHomePage() {
       client
         ? supabase
             .from("invoice_shares")
-            .select("share_id, total, status, currency, created_at, updated_at")
+            .select("share_id, total, status, currency, updated_at, due_date, client_paid_at")
             .or(clientInvoiceFilter)
             .limit(200)
         : supabase

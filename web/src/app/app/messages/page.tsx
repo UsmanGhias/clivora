@@ -31,7 +31,7 @@ export default async function MessagesPage({
   const prefillToUid = params.to?.trim() || null;
 
   try {
-    const email = (profile?.email || "").trim();
+    const email = (profile?.email || "").trim().toLowerCase();
     let q = supabase
       .from("client_messages")
       .select(

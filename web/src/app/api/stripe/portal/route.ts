@@ -29,14 +29,20 @@ export async function POST(req: NextRequest) {
   const origin = req.headers.get("origin") ?? "https://clivora.codcrafters.org";
   const returnUrl = `${origin}/app/account`;
 
-  // Prefer existing stripe_customers row if present
-  const { data: sc } = await supabase
-    .from("stripe_customers")
-    .select("stripe_customer_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  let customerId = sc?.stripe_customer_id as string | undefined;
+  // Prefer existing stripe_customers row if present (table may be absent in some envs).
+  let customerId: string | undefined;
+  try {
+    const { data: sc, error: scErr } = await supabase
+      .from("stripe_customers")
+      .select("stripe_customer_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!scErr && sc?.stripe_customer_id) {
+      customerId = String(sc.stripe_customer_id);
+    }
+  } catch {
+    /* table optional */
+  }
 
   try {
     if (!customerId) {

@@ -34,6 +34,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Checkout email must match the signed-in account" }, { status: 403 });
   }
   const priceId = STRIPE_PRICE_IDS[plan];
+  if (!priceId || priceId.startsWith("price_placeholder")) {
+    return NextResponse.json(
+      {
+        error: "Stripe price IDs not configured",
+        hint: "Set STRIPE_PRICE_PRO / STRIPE_PRICE_PRO_PLUS, or use SafePay / Play billing.",
+      },
+      { status: 503 },
+    );
+  }
 
   const origin = "https://clivora.codcrafters.org";
   const success = `${origin}/app?checkout=success`;
@@ -42,7 +51,7 @@ export async function POST(req: NextRequest) {
   try {
     const params = new URLSearchParams({
       mode: "subscription",
-      "line_items[0][price]": priceId || "price_placeholder",
+      "line_items[0][price]": priceId,
       "line_items[0][quantity]": "1",
       success_url: success,
       cancel_url: cancel,

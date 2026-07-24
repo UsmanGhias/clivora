@@ -107,7 +107,7 @@ export default function AdminSubscriptionsPage() {
                         <StatusPill status={u.is_blocked ? "suspended" : "active"} />
                       </td>
                       <td className="px-3 py-3 text-sm text-slate-600">
-                        {fmtDate(String(u.created_at ?? ""))}
+                        {fmtDate(String(u.updated_at ?? u.created_at ?? ""))}
                         <span className="ml-1 text-xs text-slate-400">{relative(String(u.updated_at ?? ""))}</span>
                       </td>
                       <td className="px-3 py-3">
