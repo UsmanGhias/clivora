@@ -65,6 +65,7 @@ const NAV: NavItem[] = [
   { href: "/admin/transactions", label: "Transactions", icon: Activity },
   { href: "/admin/reports", label: "Reports", icon: FileText, section: "Reports" },
   { href: "/admin/audit", label: "Audit Logs", icon: ScrollText },
+  { href: "/admin/ops", label: "Ops queue", icon: Activity },
   { href: "/admin/events", label: "Events", icon: Flag },
   { href: "/admin/disputes", label: "Disputes", icon: AlertTriangle, badgeKey: "disputes" },
   { href: "/admin/support", label: "Support Tickets", icon: Ticket, badgeKey: "tickets" },

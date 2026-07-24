@@ -21,6 +21,7 @@ import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/country_picker_field.dart';
 import '../../shared/widgets/entity_activity_timeline.dart';
 import '../../shared/widgets/step_progress_card.dart';
+import 'crm_enrichment_panel.dart';
 
 class CustomerFormScreen extends ConsumerStatefulWidget {
   const CustomerFormScreen({super.key, this.customerId});
@@ -342,6 +343,7 @@ class _CustomerFormScreenState extends ConsumerState<CustomerFormScreen> {
                             entityId: widget.customerId!,
                             title: 'Client activity',
                           ),
+                          CrmEnrichmentPanel(localCustomerId: widget.customerId),
                         ],
                       ],
                     ),

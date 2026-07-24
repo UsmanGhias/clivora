@@ -10,6 +10,7 @@ import '../../data/database/user_scoped_queries.dart';
 import '../../data/models/invoice_line_item.dart';
 import '../../data/providers/app_providers.dart';
 import '../auth/auth_service.dart';
+import 'cloud_crm_conflicts_repository.dart';
 import 'supabase_auth_helper.dart';
 
 final cloudCrmRepositoryProvider = Provider<CloudCrmRepository>((ref) {
@@ -145,6 +146,11 @@ class CloudCrmRepository {
         'discount': row.discount,
         'total': row.total,
         'amount_paid': row.amountPaid,
+        'subtotal_minor': (row.subtotal * 100).round(),
+        'tax_minor': ((row.subtotal * row.taxRate / 100) * 100).round(),
+        'discount_minor': (row.discount * 100).round(),
+        'total_minor': (row.total * 100).round(),
+        'amount_paid_minor': (row.amountPaid * 100).round(),
         'currency': row.currency,
         'line_items': lineItems,
         'issue_date': row.issueDate.toUtc().toIso8601String(),
@@ -206,6 +212,12 @@ class CloudCrmRepository {
       if (localId != null && localId > 0) {
         final existing = await db.getCustomerForUser(ownerUserId, localId);
         if (existing != null) {
+          final cloudPerson = map['contact_person'] as String? ?? '';
+          final cloudCompany = map['company'] as String? ?? '';
+          final fieldsDiffer = cloudPerson != existing.contactPerson ||
+              cloudCompany != existing.company ||
+              emails != existing.emails ||
+              phones != existing.phones;
           if (cloudUpdated.isAfter(existing.updatedAt)) {
             await db.updateCustomer(
               existing.copyWith(
@@ -224,6 +236,27 @@ class CloudCrmRepository {
                 updatedAt: cloudUpdated,
               ),
             );
+          } else if (existing.updatedAt.isAfter(cloudUpdated) && fieldsDiffer) {
+            // Local is ahead of cloud with divergent fields — surface for Keep/Take UI.
+            try {
+              await ref.read(cloudCrmConflictsRepositoryProvider).reportConflict(
+                    entityType: 'customer',
+                    entityId: map['id'] as String?,
+                    localId: localId,
+                    localSnapshot: {
+                      'contact_person': existing.contactPerson,
+                      'company': existing.company,
+                      'updated_at': existing.updatedAt.toUtc().toIso8601String(),
+                    },
+                    cloudSnapshot: {
+                      'contact_person': cloudPerson,
+                      'company': cloudCompany,
+                      'updated_at': cloudUpdated.toUtc().toIso8601String(),
+                    },
+                  );
+            } catch (e) {
+              debugPrint('crm conflict report: $e');
+            }
           }
           continue;
         }

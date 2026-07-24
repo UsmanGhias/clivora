@@ -3,6 +3,7 @@ import { getProfile, isClientAccount } from "@/lib/profile";
 import { listCustomersServer } from "@/lib/crm/server";
 import { canCreateCustomer } from "@/lib/plan-gates";
 import { CustomersCrmPanel } from "@/components/crm/CrmPanels";
+import { CrmEnrichmentPanel } from "@/components/crm/CrmEnrichmentPanel";
 import { createClient } from "@/lib/supabase/server";
 
 type SharedWorkRow = {
@@ -209,6 +210,7 @@ export default async function ClientsPage() {
           </div>
         </aside>
       </div>
+      <CrmEnrichmentPanel customerId={customers[0]?.id ?? null} />
     </div>
   );
 }

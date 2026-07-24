@@ -40,6 +40,8 @@ export async function POST(req: NextRequest) {
         owner_uid: user.id,
         file_path: file_path ?? null,
         file_id: file_id ?? null,
+        storage_path: file_path ?? file_id ?? "",
+        file_name: (file_path || file_id || "file").split("/").pop() || "file",
         token,
         expires_at: expiresAt,
       })

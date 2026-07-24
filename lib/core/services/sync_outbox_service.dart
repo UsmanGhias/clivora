@@ -7,10 +7,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
+import '../cloud/cloud_calendar_events_repository.dart';
+import '../cloud/cloud_crm_enrichment_repository.dart';
 import '../cloud/cloud_crm_repository.dart';
 import '../cloud/cloud_invoice_repository.dart';
 import '../cloud/cloud_notification_repository.dart';
 import '../cloud/cloud_project_repository.dart';
+import '../cloud/cloud_workspace_tasks_repository.dart';
 import '../cloud/supabase_auth_helper.dart';
 import '../auth/auth_service.dart';
 import '../../core/utils/crm_refresh.dart';
@@ -701,6 +704,35 @@ class SyncOutboxService {
         return _ExecResult.success;
       case 'crm_sync_all':
         await ref.read(cloudCrmRepositoryProvider).syncAllForSignedInUser();
+        await ref.read(cloudCrmEnrichmentRepositoryProvider).syncPullSafe();
+        final taskUser = ref.read(authStateProvider).valueOrNull;
+        if (taskUser != null) {
+          await ref.read(cloudWorkspaceTasksRepositoryProvider).pullTasks(
+                ownerUserId: taskUser.id,
+              );
+        }
+        return _ExecResult.success;
+      case 'workspace_task':
+        final user = ref.read(authStateProvider).valueOrNull;
+        final localId = (item.payload['localId'] as num?)?.toInt();
+        if (user == null || localId == null) return _ExecResult.transientFailure;
+        await ref.read(cloudWorkspaceTasksRepositoryProvider).pushTask(
+              ownerUserId: user.id,
+              localId: localId,
+            );
+        return _ExecResult.success;
+      case 'calendar_event':
+        // Payload: title + startsAt ISO; cloud calendar when flag on.
+        final title = item.payload['title'] as String?;
+        final startsAtRaw = item.payload['startsAt'] as String?;
+        if (title == null || startsAtRaw == null) return _ExecResult.permanentFailure;
+        final startsAt = DateTime.tryParse(startsAtRaw);
+        if (startsAt == null) return _ExecResult.permanentFailure;
+        await ref.read(cloudCalendarEventsRepositoryProvider).upsertEvent(
+              title: title,
+              startsAt: startsAt,
+              localId: (item.payload['localId'] as num?)?.toInt(),
+            );
         return _ExecResult.success;
       case 'crm_customer_delete':
       case 'crm_project_delete':

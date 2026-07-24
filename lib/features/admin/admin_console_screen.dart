@@ -621,6 +621,13 @@ class _ControlsTab extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         ListTile(
+          leading: const Icon(Icons.health_and_safety_outlined, color: Colors.white70),
+          title: const Text('Ops queue', style: TextStyle(color: Colors.white)),
+          subtitle: const Text('Webhook queue + audit_events', style: TextStyle(color: Colors.white54, fontSize: 12)),
+          trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+          onTap: () => context.push('/admin-ops'),
+        ),
+        ListTile(
           leading: const Icon(Icons.people_outline, color: Colors.white70),
           title: const Text('Cloud users tab', style: TextStyle(color: Colors.white)),
           subtitle: const Text('Live Supabase profiles', style: TextStyle(color: Colors.white54, fontSize: 12)),
