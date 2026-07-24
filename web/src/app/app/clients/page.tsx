@@ -35,7 +35,7 @@ export default async function ClientsPage() {
     let sharedWork: SharedWorkRow[] = [];
     try {
       const clientFilter = profile?.email
-        ? `client_uid.eq.${profile.id},client_email.eq.${profile.email}`
+        ? `client_uid.eq.${profile.id},client_email.eq.${(profile.email ?? '').toLowerCase()}`
         : `client_uid.eq.${profile?.id ?? ""}`;
       const { data } = await supabase
         .from("project_shares")

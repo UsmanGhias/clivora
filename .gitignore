@@ -72,3 +72,4 @@ key.properties
 supabase/.temp/
 .tmp_secrets/
 
+android/.signing/

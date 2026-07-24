@@ -129,9 +129,10 @@ class ConnectMarketplaceService {
             : base.order('reputation_score', ascending: false);
     final rows = await ordered.limit(50);
     final list = (rows as List).cast<Map<String, dynamic>>();
-    if (skill == null || skill.trim().isEmpty) return list;
+    final enriched = await _attachAvatarUrls(list);
+    if (skill == null || skill.trim().isEmpty) return enriched;
     final needle = skill.trim().toLowerCase();
-    return list.where((r) {
+    return enriched.where((r) {
       final skills = (r['skills'] as List?)?.map((e) => e.toString().toLowerCase()) ?? [];
       final title = (r['display_title'] as String? ?? '').toLowerCase();
       final headline = (r['headline'] as String? ?? '').toLowerCase();
@@ -139,6 +140,34 @@ class ConnectMarketplaceService {
           title.contains(needle) ||
           headline.contains(needle);
     }).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> _attachAvatarUrls(List<Map<String, dynamic>> rows) async {
+    final c = client;
+    if (c == null || rows.isEmpty) return rows;
+    final ids = rows
+        .map((r) => r['user_id']?.toString())
+        .whereType<String>()
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+    if (ids.isEmpty) return rows;
+    try {
+      final avatars = await c.from('profiles').select('id, avatar_url').inFilter('id', ids);
+      final map = <String, String?>{};
+      for (final row in (avatars as List)) {
+        final m = Map<String, dynamic>.from(row as Map);
+        map[m['id'].toString()] = m['avatar_url'] as String?;
+      }
+      return rows
+          .map((r) => {
+                ...r,
+                'avatar_url': map[r['user_id']?.toString()] ?? r['avatar_url'],
+              })
+          .toList();
+    } catch (_) {
+      return rows;
+    }
   }
 
   Future<List<Map<String, dynamic>>> browseNeeds() async {

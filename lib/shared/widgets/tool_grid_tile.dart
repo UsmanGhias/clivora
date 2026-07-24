@@ -36,9 +36,9 @@ class ToolGridTile extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
         child: Container(
-          padding: EdgeInsets.fromLTRB(14, hasDesc ? 14 : 14, 12, hasDesc ? 14 : 12),
+          padding: EdgeInsets.fromLTRB(12, hasDesc ? 12 : 12, 10, hasDesc ? 12 : 10),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isDark ? ClivoraColors.darkBorder : ClivoraColors.borderLight,
             ),
@@ -48,7 +48,7 @@ class ToolGridTile extends StatelessWidget {
             children: [
               if (hasDesc)
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Container(
                       width: 40,
@@ -64,24 +64,26 @@ class ToolGridTile extends StatelessWidget {
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
                             label,
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                   fontWeight: FontWeight.w800,
                                   color: scheme.onSurface,
-                                  height: 1.2,
+                                  height: 1.15,
+                                  fontSize: 14,
                                 ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 3),
                           Text(
                             description!,
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                   color: ClivoraColors.textSecondary,
-                                  height: 1.3,
-                                  fontSize: 11,
+                                  height: 1.25,
+                                  fontSize: 12,
                                 ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -89,7 +91,7 @@ class ToolGridTile extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 2),
                     Icon(Icons.chevron_right, size: 18, color: ClivoraColors.labelGray.withValues(alpha: 0.8)),
                   ],
                 )

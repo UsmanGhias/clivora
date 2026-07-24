@@ -167,14 +167,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
               ],
               const SizedBox(height: 16),
+              // Command center: agenda + Connect queue first (research: trust & retention)
+              const FreelancerPriorityStrip(),
+              const SizedBox(height: 8),
+              const TodayOverdueCard(),
+              const SizedBox(height: 12),
               statsAsync.when(
                 loading: () => const StatsGridSkeleton(),
                 error: (_, __) => const SizedBox.shrink(),
                 data: (stats) => _ProfileCompletenessCard(stats: stats, profile: profileAsync.valueOrNull),
               ),
               const SizedBox(height: 14),
-              const FreelancerPriorityStrip(),
-              const SizedBox(height: 4),
               statsAsync.when(
                 loading: () => const StatsGridSkeleton(),
                 error: (_, __) => const StatsGridSkeleton(),
@@ -193,14 +196,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 12),
               const _EarningsOverviewCard(),
               const SizedBox(height: 12),
-              statsAsync.when(
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-                data: (stats) => _SecondaryStatsRow(stats: stats, onNavigate: context.go),
-              ),
-              const SizedBox(height: 14),
-              const TodayOverdueCard(),
-              const SizedBox(height: 8),
+              // Secondary 2x2 removed — KPI grid above already covers earnings / projects / customers
               _QuickActions(ref: ref, l10n: l10n),
               const SizedBox(height: 14),
               _SearchBar(onTap: () => openFormRoute(context, '/search')),
@@ -502,66 +498,47 @@ class _KpiGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final earnings = stats.revenue > 0 ? stats.revenue : stats.totalInvoiced;
-    return Column(
+    return Row(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _KpiCard(
-                title: 'Total Earnings',
-                value: formatCurrency(earnings),
-                subtitle: stats.revenue > 0 ? 'Paid this period' : 'Total invoiced',
-                icon: Icons.work_outline,
-                iconBg: ClivoraColors.iconGreen,
-                iconColor: ClivoraColors.successGreen,
-                sparkColor: ClivoraColors.primary,
-                onTap: () => onNavigate('/invoices'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _KpiCard(
-                title: 'Active Projects',
-                value: '${stats.activeProjects}',
-                subtitle: stats.activeProjects > 0 ? 'In progress' : 'None yet',
-                icon: Icons.rocket_launch_outlined,
-                iconBg: ClivoraColors.iconIndigo,
-                iconColor: Colors.indigo,
-                sparkColor: Colors.indigo,
-                onTap: () => onNavigate('/projects'),
-              ),
-            ),
-          ],
+        Expanded(
+          child: _KpiCard(
+            title: 'Invoiced',
+            value: formatCurrency(earnings),
+            subtitle: stats.outstanding > 0
+                ? '${formatCurrency(stats.outstanding)} due'
+                : (stats.revenue > 0 ? 'Paid' : 'Total billed'),
+            icon: Icons.account_balance_wallet_outlined,
+            iconBg: ClivoraColors.iconGreen,
+            iconColor: ClivoraColors.successGreen,
+            sparkColor: ClivoraColors.primary,
+            onTap: () => onNavigate('/invoices'),
+          ),
         ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _KpiCard(
-                title: 'Customers',
-                value: '${stats.customers}',
-                subtitle: 'In your CRM',
-                icon: Icons.description_outlined,
-                iconBg: ClivoraColors.iconOrange,
-                iconColor: ClivoraColors.warningOrange,
-                sparkColor: ClivoraColors.warningOrange,
-                onTap: () => onNavigate('/customers'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _KpiCard(
-                title: 'Unread Messages',
-                value: '$unread',
-                subtitle: 'From clients',
-                icon: Icons.chat_bubble_outline,
-                iconBg: ClivoraColors.iconBlue,
-                iconColor: Colors.blue,
-                sparkColor: Colors.blue,
-                onTap: () => onNavigate('/freelancer-messages'),
-              ),
-            ),
-          ],
+        const SizedBox(width: 10),
+        Expanded(
+          child: _KpiCard(
+            title: 'Customers',
+            value: '${stats.customers}',
+            subtitle: '${stats.activeProjects} active',
+            icon: Icons.people_outline,
+            iconBg: ClivoraColors.iconOrange,
+            iconColor: ClivoraColors.warningOrange,
+            sparkColor: ClivoraColors.warningOrange,
+            onTap: () => onNavigate('/customers'),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _KpiCard(
+            title: 'Messages',
+            value: '$unread',
+            subtitle: 'Unread',
+            icon: Icons.chat_bubble_outline,
+            iconBg: ClivoraColors.iconBlue,
+            iconColor: Colors.blue,
+            sparkColor: Colors.blue,
+            onTap: () => onNavigate('/freelancer-messages'),
+          ),
         ),
       ],
     );
@@ -908,138 +885,6 @@ class _EarningsChartPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _EarningsChartPainter oldDelegate) =>
       oldDelegate.series != series || oldDelegate.maxY != maxY;
-}
-
-class _SecondaryStatsRow extends StatelessWidget {
-  const _SecondaryStatsRow({required this.stats, required this.onNavigate});
-
-  final DashboardStats stats;
-  final void Function(String) onNavigate;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _StatCard(
-                title: formatCurrency(stats.revenue > 0 ? stats.revenue : stats.totalInvoiced),
-                subtitle: stats.revenue > 0 ? 'Paid Revenue' : 'Total Invoiced',
-                background: ClivoraColors.navyDark,
-                foreground: Colors.white,
-                icon: Icons.account_balance_wallet_outlined,
-                onTap: () => onNavigate(stats.revenue > 0 ? '/invoices?filter=paid' : '/invoices'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _StatCard(
-                title: formatCurrency(stats.outstanding),
-                subtitle: stats.outstanding > 0 ? 'Outstanding' : 'No pending payments',
-                background: ClivoraColors.outstandingPink,
-                foreground: ClivoraColors.errorRed,
-                icon: Icons.error_outline,
-                onTap: () => onNavigate('/invoices?filter=outstanding'),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _StatCard(
-                title: '${stats.customers}',
-                subtitle: 'Customers',
-                background: Theme.of(context).cardColor,
-                foreground: Theme.of(context).colorScheme.onSurface,
-                icon: Icons.people_outline,
-                iconColor: ClivoraColors.primary,
-                bordered: true,
-                onTap: () => onNavigate('/customers'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _StatCard(
-                title: '${stats.activeProjects}',
-                subtitle: 'Active Projects',
-                background: Theme.of(context).cardColor,
-                foreground: Theme.of(context).colorScheme.onSurface,
-                icon: Icons.work_outline,
-                iconColor: ClivoraColors.warningOrange,
-                bordered: true,
-                onTap: () => onNavigate('/projects'),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.title,
-    required this.subtitle,
-    required this.background,
-    required this.foreground,
-    required this.icon,
-    required this.onTap,
-    this.iconColor,
-    this.bordered = false,
-  });
-
-  final String title;
-  final String subtitle;
-  final Color background;
-  final Color foreground;
-  final IconData icon;
-  final Color? iconColor;
-  final bool bordered;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: background,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: bordered
-                ? Border.all(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? ClivoraColors.darkBorder
-                        : ClivoraColors.borderLight,
-                  )
-                : null,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(icon, color: iconColor ?? foreground.withValues(alpha: 0.8), size: 20),
-                  const Spacer(),
-                  Icon(Icons.chevron_right, color: foreground.withValues(alpha: 0.5), size: 20),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(title, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: foreground)),
-              Text(subtitle, style: TextStyle(fontSize: 13, color: foreground.withValues(alpha: 0.7))),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _QuickActions extends ConsumerWidget {

@@ -25,8 +25,14 @@ async function adminApi(path: string, body: Record<string, unknown>) {
     },
     body: JSON.stringify(body),
   });
-  const json = (await res.json().catch(() => ({}))) as { error?: string };
-  if (!res.ok) throw new Error(json.error || "Request failed");
+  const json = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
+  if (!res.ok) {
+    const err = json.error || "Request failed";
+    if (json.code === "MFA_REQUIRED" || /two-factor|mfa|aal2/i.test(err)) {
+      throw new Error("Complete admin 2FA (MFA) first, then retry this action.");
+    }
+    throw new Error(err);
+  }
   return json;
 }
 

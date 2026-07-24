@@ -551,15 +551,15 @@ export function AppShell({
                 )}
               </Link>
               <Link
-                href={plus ? "/app/settings?tab=billing" : "/pro?plan=pro_plus"}
+                href={pro ? "/app/settings?tab=billing" : "/pro?plan=pro_plus"}
                 className={cn(
                   "hidden items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-white sm:inline-flex",
                   isClient ? "bg-navy" : "bg-primary",
                 )}
-                title={plus ? `You're on ${plan}` : "Upgrade to Pro Plus"}
+                title={pro ? `You're on ${plan}` : "Upgrade to Pro Plus"}
               >
                 <Sparkles className="h-3.5 w-3.5" />
-                {plus ? `${plan} Enjoy` : "Pro Plus"}
+                {plus ? plan : pro ? plan : "Pro Plus"}
               </Link>
               <Link href={profileHref} className="block shrink-0">
                 <UserAvatar

@@ -13,7 +13,7 @@ import {
   Clock,
 } from "lucide-react";
 import { getProfile, isClientAccount, planLabel } from "@/lib/profile";
-import { isProPlus } from "@/lib/plan";
+import { isPro, isProPlus } from "@/lib/plan";
 import { createClient } from "@/lib/supabase/server";
 import { loadFreelancerFinance } from "@/lib/freelancer-finance";
 import { ManageBillingButton } from "@/components/app/ManageBillingButton";
@@ -28,6 +28,7 @@ import {
   StatusPill,
   money,
 } from "@/components/freelancer/ui";
+import { skillsList } from "@/lib/connect-types";
 
 export const metadata = { title: "My Profile" };
 
@@ -118,6 +119,7 @@ export default async function AccountPage({
   }
 
   const plus = isProPlus(profile);
+  const pro = isPro(profile);
   const plan = planLabel(profile);
   const fin = await loadFreelancerFinance(profile.id);
   const supabase = await createClient();
@@ -128,12 +130,15 @@ export default async function AccountPage({
   let completeness = 0;
   let headline = profile.name ? `${profile.name}` : "Freelancer profile";
   let hasConnectProfile = false;
+  let skillsCount = 0;
+  let hasConnectHeadline = false;
+  let isListed = false;
 
   try {
     const { data: cp } = await supabase
       .from("connect_profiles")
       .select(
-        "location_label, avg_rating, review_count, profile_completeness, headline, display_title",
+        "location_label, avg_rating, review_count, profile_completeness, headline, display_title, skills, is_listed",
       )
       .eq("user_id", profile.id)
       .maybeSingle();
@@ -144,14 +149,35 @@ export default async function AccountPage({
       reviewCount = Number(cp.review_count || 0);
       completeness = Math.round(Number(cp.profile_completeness ?? 0));
       headline = cp.headline || cp.display_title || headline;
+      skillsCount = skillsList(cp.skills).length;
+      hasConnectHeadline = Boolean(String(cp.headline || cp.display_title || "").trim());
+      isListed = Boolean(cp.is_listed);
     }
   } catch {
     /* ignore */
   }
 
+  const checklist = [
+    { label: "Photo", done: Boolean(profile.avatar_url), href: "/app/account?edit=1" },
+    { label: "Skills", done: skillsCount > 0, href: "/app/connect/manage" },
+    { label: "Headline", done: hasConnectHeadline, href: "/app/connect/manage" },
+    { label: "Connect listing", done: isListed, href: "/app/connect/manage" },
+    { label: "Verified email", done: Boolean(profile.email), href: "/app/settings" },
+  ] as const;
+  const derivedCompleteness = Math.round(
+    (checklist.filter((i) => i.done).length / checklist.length) * 100,
+  );
+  if (!completeness) completeness = derivedCompleteness;
+
   const r = 40;
   const c = 2 * Math.PI * r;
   const offset = c - (Math.min(100, completeness) / 100) * c;
+
+  const publicProfileHref = hasConnectProfile
+    ? isListed
+      ? `/app/connect?tab=talent&q=${encodeURIComponent(profile.name || "")}`
+      : "/app/connect/manage"
+    : "/app/connect/manage";
 
   return (
     <div className="space-y-6 pb-10">
@@ -193,13 +219,13 @@ export default async function AccountPage({
                 <h2 className="font-display text-lg font-extrabold text-navy sm:text-xl">
                   {profile.name || "Freelancer"}
                 </h2>
-                {plus && (
+                {pro && (
                   <span
                     className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700"
-                    title="Pro Plus verified"
+                    title={plus ? "Pro Plus" : "Pro"}
                   >
                     <BadgeCheck className="h-4 w-4" />
-                    Verified
+                    {plan}
                   </span>
                 )}
               </div>
@@ -211,20 +237,27 @@ export default async function AccountPage({
               <div className="mt-4 flex flex-wrap gap-2">
                 <PrimaryButton href="/app/account?edit=1">Edit Profile</PrimaryButton>
                 <OutlineButton href="/app/connect/manage">Connect listing</OutlineButton>
-                <OutlineButton href="/app/connect">View Public Profile</OutlineButton>
+                <OutlineButton href={publicProfileHref}>
+                  {isListed ? "View in Connect" : "Set up public listing"}
+                </OutlineButton>
               </div>
             </div>
           </div>
         </FreelancerCard>
 
         <FreelancerCard title={`${plan} Plan`}>
-          <StatusPill tone={plus ? "green" : "teal"}>{plus ? "Active" : plan}</StatusPill>
+          <StatusPill tone={plus ? "green" : pro ? "teal" : "amber"}>{plan}</StatusPill>
           <ul className="mt-3 space-y-1 text-sm text-text-secondary">
             {plus ? (
               <>
                 <li>• Unlimited proposals</li>
                 <li>• Connect credits monthly</li>
                 <li>• MFA + 50GB vault</li>
+              </>
+            ) : pro ? (
+              <>
+                <li>• Full CRM tools unlocked</li>
+                <li>• Upgrade to Pro Plus for Connect + MFA</li>
               </>
             ) : (
               <>
@@ -269,8 +302,8 @@ export default async function AccountPage({
         />
         <FreelancerStatCard
           label="Response Time"
-          value={hasConnectProfile ? "Based on activity" : "-"}
-          sub={hasConnectProfile ? "From recent messages" : "Unavailable until Connect is set up"}
+          value="—"
+          sub="Shown when message activity is available"
           icon={Clock}
           iconTone="bg-orange-100 text-orange-700"
         />
@@ -283,7 +316,7 @@ export default async function AccountPage({
               ["Name", profile.name || "-", "/app/account?edit=1"],
               ["Email", profile.email || "-", "/app/settings"],
               ["Role", "Freelancer", "/app/settings"],
-              ["Plan", plan, "/pro?plan=pro_plus"],
+              ["Plan", plan, pro ? "/app/settings?tab=billing" : "/pro?plan=pro_plus"],
             ].map(([k, v, href]) => (
               <li key={k} className="flex items-center justify-between gap-2 border-b border-border/70 pb-2">
                 <div>
@@ -291,7 +324,7 @@ export default async function AccountPage({
                   <p className="font-semibold text-navy">{v}</p>
                 </div>
                 <Link href={href} className="text-xs font-semibold text-primary">
-                  {k === "Plan" && !plus ? "Upgrade" : "Edit"}
+                  {k === "Plan" && !pro ? "Upgrade" : "Edit"}
                 </Link>
               </li>
             ))}
@@ -342,9 +375,19 @@ export default async function AccountPage({
               </div>
             </div>
             <ul className="mt-4 w-full space-y-2 text-sm">
-              {["Photo", "Skills", "Headline", "Portfolio", "Verified email"].map((item) => (
-                <li key={item} className="flex items-center gap-2 text-navy">
-                  <span className="text-success">✓</span> {item}
+              {checklist.map((item) => (
+                <li key={item.label} className="flex items-center justify-between gap-2 text-navy">
+                  <span className="inline-flex items-center gap-2">
+                    <span className={item.done ? "text-success" : "text-text-muted"}>
+                      {item.done ? "✓" : "○"}
+                    </span>
+                    {item.label}
+                  </span>
+                  {!item.done && (
+                    <Link href={item.href} className="text-xs font-semibold text-primary">
+                      Fix
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>

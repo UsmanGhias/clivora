@@ -1021,7 +1021,11 @@ class _ProfileFeedRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(
             children: [
-              _InitialDot(text: title, fallback: browseClients ? 'C' : 'F'),
+              _AvatarDot(
+                text: title,
+                fallback: browseClients ? 'C' : 'F',
+                avatarUrl: row['avatar_url'] as String?,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -1505,13 +1509,30 @@ class _InboxFeedRow extends StatelessWidget {
 }
 
 class _InitialDot extends StatelessWidget {
-  const _InitialDot({required this.text, required this.fallback});
+  const _InitialDot({required this.text, required this.fallback, this.avatarUrl});
 
   final String text;
   final String fallback;
+  final String? avatarUrl;
 
   @override
   Widget build(BuildContext context) {
+    final url = avatarUrl?.trim();
+    if (url != null && url.startsWith('http')) {
+      return ClipOval(
+        child: Image.network(
+          url,
+          width: 34,
+          height: 34,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _letter(context),
+        ),
+      );
+    }
+    return _letter(context);
+  }
+
+  Widget _letter(BuildContext context) {
     final initial = _initialFor(text, fallback);
     return Container(
       width: 34,
@@ -1532,6 +1553,8 @@ class _InitialDot extends StatelessWidget {
     );
   }
 }
+
+typedef _AvatarDot = _InitialDot;
 
 class _CompactEmpty extends StatelessWidget {
   const _CompactEmpty({required this.icon, required this.text});

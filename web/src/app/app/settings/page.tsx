@@ -27,10 +27,10 @@ export default async function SettingsPage({
     let totalSpent = 0;
     try {
       const projectFilter = profile.email
-        ? `client_uid.eq.${uid},client_email.eq.${profile.email}`
+        ? `client_uid.eq.${uid},client_email.eq.${(profile.email ?? '').toLowerCase()}`
         : `client_uid.eq.${uid}`;
       const invoiceFilter = profile.email
-        ? `client_uid.eq.${uid},client_email.eq.${profile.email}`
+        ? `client_uid.eq.${uid},client_email.eq.${(profile.email ?? '').toLowerCase()}`
         : `client_uid.eq.${uid}`;
       const [jobs, projects, inv] = await Promise.all([
         supabase
