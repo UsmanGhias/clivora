@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -38,15 +37,6 @@ const _sessionUserIdKey = 'clivora_user_id';
 
 const kGoogleWebClientId =
     '976757530869-ap3ea6t2noq56o46tfokgdp6haj6ioqj.apps.googleusercontent.com';
-
-/// Deep link must also be listed in Supabase Auth → Redirect URLs.
-const kGoogleOAuthRedirect = 'org.codcrafters.clivora://login-callback';
-
-/// Sideloaded preview APK SHA-1 (not Play upload). Add in Firebase if native Google fails.
-const kPreviewApkSha1 = '7F:6B:CA:0D:63:D2:3C:AD:48:26:D5:C8:83:24:3B:2C:91:0D:A2:05';
-
-/// Play upload key SHA-1 (required for Store AAB / Google Sign-In on Play builds).
-const kPlayUploadSha1 = '96:93:81:80:EE:59:27:D2:46:B2:BD:FC:6C:96:C6:93:2E:1A:1D:36';
 
 /// Salted SHA-256 password hash. Format: `v2:<saltHex>:<hashHex>`.
 /// Legacy unsalted hex hashes are still accepted and upgraded on next successful login.
@@ -114,9 +104,6 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         await _db.updateUser(user.copyWith(googleId: Value(cloudUid)));
         user = await _db.safeGetUser(user.id);
       }
-      if (cloudUid != null && user != null) {
-        user = await _applyCloudProfileToLocal(user, await SupabaseAuthHelper.fetchOwnProfile());
-      }
 
       state = AsyncValue.data(user);
       setAuthSession(user);
@@ -126,6 +113,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
           await ref.read(pushNotificationServiceProvider).onUserSignedIn();
         } catch (e) {
           debugPrint('Push on restore: $e');
+        }
+        try {
+          await ref.read(syncOutboxServiceProvider).processQueue();
+          await ref.read(syncOutboxServiceProvider).reconcileInvoiceShares();
+        } catch (e) {
+          debugPrint('Outbox drain on restore: $e');
         }
       }
     } catch (e) {
@@ -258,8 +251,6 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       final isAdmin = kAdminEmails.contains(trimmedEmail);
       final cloudProfile = await SupabaseAuthHelper.fetchOwnProfile();
       final cloudType = cloudProfile?['account_type'] as String?;
-      final cloudName = _profileString(cloudProfile, 'name');
-      final cloudAvatarUrl = _profileString(cloudProfile, 'avatar_url');
       final type = isAdmin
           ? kAccountAdmin
           : AccountTypeGuard.normalizedAccountType(
@@ -274,13 +265,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         }
       }
       return _createLocalAccount(
-        name: cloudName ?? trimmedEmail.split('@').first,
+        name: trimmedEmail.split('@').first,
         email: trimmedEmail,
         password: password,
         accountType: type,
         isAdmin: isAdmin,
         cloudUid: cloudUid,
-        profilePhotoPath: cloudAvatarUrl,
         finalizeCloudRole: true,
       );
     }
@@ -337,7 +327,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
 
       final googleAuth = await googleUser.authentication;
       if (googleAuth.idToken == null) {
-        return _signInWithGoogleOAuthBrowser(accountType: accountType);
+        return 'Google sign-in failed: no ID token. Add this APK signing SHA-1 in Firebase Console.';
       }
 
       try {
@@ -349,161 +339,90 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         return supabaseAuthErrorMessage(e);
       }
 
-      return _finalizeGoogleCloudSession(
-        accountType: accountType,
-        displayNameFallback: googleUser.displayName,
+      final cloudUid = SupabaseAuthHelper.currentUid;
+      if (cloudUid == null) return 'Google sign-in failed: no Supabase session.';
+
+      final isAdmin = kAdminEmails.contains(email);
+      final displayName = googleUser.displayName ?? email.split('@').first;
+      final requestedType = AccountTypeGuard.normalizedAccountType(
+        isAdmin ? kAccountAdmin : (accountType ?? kAccountFreelancer),
+        email: email,
       );
-    } catch (e, st) {
-      debugPrint('Google sign-in error: $e\n$st');
-      final msg = e.toString();
-      if (msg.contains('ApiException: 10') ||
-          msg.contains('sign_in_failed') ||
-          msg.contains('DEVELOPER_ERROR')) {
-        final oauthErr = await _signInWithGoogleOAuthBrowser(accountType: accountType);
-        if (oauthErr == null) return null;
-        return 'Google sign-in needs the Play-signed app (SHA $kPlayUploadSha1) '
-            'or add this APK SHA to Firebase: $kPreviewApkSha1. '
-            'Browser fallback: $oauthErr';
-      }
-      return 'Google sign-in failed. Try again or use email sign-in.';
-    }
-  }
 
-  /// Browser Google OAuth via Supabase — works even when Android SHA is missing from Firebase.
-  Future<String?> _signInWithGoogleOAuthBrowser({String? accountType}) async {
-    try {
-      final auth = Supabase.instance.client.auth;
-      if (auth.currentSession != null) {
-        return _finalizeGoogleCloudSession(accountType: accountType);
-      }
+      final ownProfile = await SupabaseAuthHelper.fetchOwnProfile();
+      final cloudType = ownProfile?['account_type'] as String?;
+      final cloudLocked = ownProfile?['account_type_locked'] as bool? ?? false;
 
-      late final StreamSubscription<AuthState> sub;
-      final done = Completer<AuthState>();
-      sub = auth.onAuthStateChange.listen((event) {
-        if (event.session != null && !done.isCompleted) {
-          done.complete(event);
-        }
-      });
+      var user = await _db.safeGetUserByEmail(email);
+      user ??= await _db.recoverUserByEmail(email);
 
-      final launched = await auth.signInWithOAuth(
-        OAuthProvider.google,
-        redirectTo: kGoogleOAuthRedirect,
-        authScreenLaunchMode: LaunchMode.externalApplication,
-      );
-      if (!launched) {
-        await sub.cancel();
-        return 'Could not open Google sign-in.';
-      }
-
-      try {
-        await done.future.timeout(const Duration(minutes: 3));
-      } on TimeoutException {
-        await sub.cancel();
-        return 'Google sign-in timed out. Return to the app after approving Google.';
-      } finally {
-        await sub.cancel();
-      }
-
-      if (auth.currentSession == null) {
-        return 'Google sign-in did not complete. Ensure Supabase Redirect URLs include $kGoogleOAuthRedirect.';
-      }
-      return _finalizeGoogleCloudSession(accountType: accountType);
-    } catch (e, st) {
-      debugPrint('Google OAuth browser error: $e\n$st');
-      return 'Google browser sign-in failed. Use email sign-in or install from Play Store.';
-    }
-  }
-
-  Future<String?> _finalizeGoogleCloudSession({
-    String? accountType,
-    String? displayNameFallback,
-  }) async {
-    final cloudUid = SupabaseAuthHelper.currentUid;
-    if (cloudUid == null) return 'Google sign-in failed: no Supabase session.';
-
-    final email = (SupabaseAuthHelper.currentEmail ?? '').trim().toLowerCase();
-    if (email.isEmpty) return 'Google account has no email address.';
-
-    final isAdmin = kAdminEmails.contains(email);
-    final metaName = Supabase.instance.client.auth.currentUser?.userMetadata?['full_name'] ??
-        Supabase.instance.client.auth.currentUser?.userMetadata?['name'];
-    final displayName =
-        (displayNameFallback ?? metaName?.toString() ?? email.split('@').first).trim();
-    final requestedType = AccountTypeGuard.normalizedAccountType(
-      isAdmin ? kAccountAdmin : (accountType ?? kAccountFreelancer),
-      email: email,
-    );
-
-    final ownProfile = await SupabaseAuthHelper.fetchOwnProfile();
-    final cloudType = ownProfile?['account_type'] as String?;
-    final cloudLocked = ownProfile?['account_type_locked'] as bool? ?? false;
-    final cloudName = _profileString(ownProfile, 'name');
-    final cloudAvatarUrl = _profileString(ownProfile, 'avatar_url');
-    final initialName = cloudName ?? displayName;
-
-    var user = await _db.safeGetUserByEmail(email);
-    user ??= await _db.recoverUserByEmail(email);
-
-    if (user == null) {
-      String type = requestedType;
-      if (cloudLocked && cloudType != null && cloudType.isNotEmpty && !isAdmin) {
-        type = cloudType == kAccountClient ? kAccountClient : kAccountFreelancer;
-        if (accountType != null) {
-          final wantsClient = accountType == kAccountClient;
-          final isClient = type == kAccountClient;
-          if (wantsClient != isClient) {
-            return 'This email is registered as ${isClient ? 'Client' : 'Freelancer'}. Use the correct sign-in option.';
+      if (user == null) {
+        String type = requestedType;
+        if (cloudLocked && cloudType != null && cloudType.isNotEmpty && !isAdmin) {
+          type = cloudType == kAccountClient ? kAccountClient : kAccountFreelancer;
+          if (accountType != null) {
+            final wantsClient = accountType == kAccountClient;
+            final isClient = type == kAccountClient;
+            if (wantsClient != isClient) {
+              return 'This email is registered as ${isClient ? 'Client' : 'Freelancer'}. Use the correct sign-in option.';
+            }
           }
+        } else {
+          await SupabaseAuthHelper.finalizeAccountType(
+            accountType: type,
+            name: displayName,
+          );
         }
-      } else {
-        await SupabaseAuthHelper.finalizeAccountType(
+
+        return _createLocalAccount(
+          name: displayName,
+          email: email,
+          password: '',
           accountType: type,
-          name: initialName,
+          isAdmin: isAdmin,
+          cloudUid: cloudUid,
+          trackSignup: true,
+          finalizeCloudRole: true,
         );
       }
 
-      return _createLocalAccount(
-        name: initialName,
-        email: email,
-        password: '',
-        accountType: type,
-        isAdmin: isAdmin,
-        cloudUid: cloudUid,
-        profilePhotoPath: cloudAvatarUrl,
-        trackSignup: true,
-        finalizeCloudRole: true,
-      );
+      final roleErr = AccountTypeGuard.validateSignInRole(user: user, loginAsType: accountType);
+      if (roleErr != null) return roleErr;
+
+      final cloudName = (ownProfile?['name'] as String?)?.trim();
+      final syncName = (cloudName != null && cloudName.isNotEmpty) ? cloudName : displayName;
+
+      if (user.googleId != cloudUid || user.name != syncName) {
+        await _db.updateUser(user.copyWith(
+          googleId: Value(cloudUid),
+          name: syncName,
+        ));
+      }
+
+      if (isAdmin) {
+        await _db.updateUser(user.copyWith(role: 'admin'));
+      }
+
+      final sessionUser = await _db.safeGetUser(user.id);
+      if (sessionUser == null) return 'Could not load your profile. Try again.';
+      await _syncCloudSubscriptionPlan(sessionUser.id);
+      await _setSession(sessionUser.id);
+      _invalidateUserData();
+
+      if (isAdmin) {
+        try {
+          await ref.read(planLimitServiceProvider).setPlan(PlanLimits.proPlusPlan);
+        } catch (_) {}
+      }
+      return null;
+    } catch (e, st) {
+      debugPrint('Google sign-in error: $e\n$st');
+      final msg = e.toString();
+      if (msg.contains('ApiException: 10') || msg.contains('sign_in_failed')) {
+        return 'Google sign-in failed. Register this APK SHA-1 in Firebase, then retry.';
+      }
+      return 'Google sign-in failed. Try again or use email sign-in.';
     }
-
-    final roleErr = AccountTypeGuard.validateSignInRole(user: user, loginAsType: accountType);
-    if (roleErr != null) return roleErr;
-
-    if (user.googleId != cloudUid) {
-      await _db.updateUser(user.copyWith(
-        googleId: Value(cloudUid),
-      ));
-      final linkedUser = await _db.safeGetUser(user.id);
-      if (linkedUser == null) return 'Could not load your profile. Try again.';
-      user = linkedUser;
-    }
-    user = await _applyCloudProfileToLocal(user, ownProfile);
-
-    if (isAdmin) {
-      await _db.updateUser(user.copyWith(role: 'admin'));
-    }
-
-    final sessionUser = await _db.safeGetUser(user.id);
-    if (sessionUser == null) return 'Could not load your profile. Try again.';
-    await _syncCloudSubscriptionPlan(sessionUser.id);
-    await _setSession(sessionUser.id);
-    _invalidateUserData();
-
-    if (isAdmin) {
-      try {
-        await ref.read(planLimitServiceProvider).setPlan(PlanLimits.proPlusPlan);
-      } catch (_) {}
-    }
-    return null;
   }
 
   Future<String?> _createLocalAccount({
@@ -516,7 +435,6 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     bool trackSignup = false,
     bool skipCloudSync = false,
     bool finalizeCloudRole = false,
-    String? profilePhotoPath,
   }) async {
     try {
       await _db.repairAllDatabaseNulls();
@@ -542,16 +460,6 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       }
 
       await _db.safeSeedUserDefaults(userId, name: name, email: email);
-      if (profilePhotoPath != null && profilePhotoPath.trim().isNotEmpty) {
-        final linkedProfile = await _db.safeGetUser(userId);
-        if (linkedProfile != null) {
-          await _db.updateUser(linkedProfile.copyWith(profilePhotoPath: Value(profilePhotoPath.trim())));
-          await _db.saveBusinessProfileForUser(
-            userId,
-            BusinessProfilesCompanion(ownerPhotoPath: Value(profilePhotoPath.trim())),
-          );
-        }
-      }
 
       if (isAdmin) {
         try {
@@ -627,9 +535,6 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
 
   Future<void> signOut() async {
     try {
-      await ref.read(syncOutboxServiceProvider).clearForCurrentUser();
-    } catch (_) {}
-    try {
       await GoogleSignIn(serverClientId: kGoogleWebClientId).signOut();
       await SupabaseAuthHelper.signOut();
     } catch (_) {}
@@ -651,75 +556,6 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       }
     } catch (e) {
       debugPrint('Cloud subscription sync: $e');
-    }
-  }
-
-  Future<User> _applyCloudProfileToLocal(User user, Map<String, dynamic>? cloudProfile) async {
-    if (cloudProfile == null) return user;
-
-    final cloudUpdatedAt = _profileUpdatedAt(cloudProfile);
-    final cloudIsNewer = cloudUpdatedAt != null && cloudUpdatedAt.isAfter(user.createdAt.toUtc());
-    final cloudName = _profileString(cloudProfile, 'name');
-    final cloudAvatarUrl = _profileString(cloudProfile, 'avatar_url');
-    final localAvatar = user.profilePhotoPath?.trim();
-
-    final shouldUseCloudName = cloudName != null && (cloudIsNewer || user.name.trim().isEmpty);
-    final shouldUseCloudAvatar = cloudAvatarUrl != null &&
-        (cloudIsNewer || localAvatar == null || localAvatar.isEmpty || _isRemoteUrl(localAvatar));
-
-    if (!shouldUseCloudName && !shouldUseCloudAvatar) return user;
-
-    final localUpdate = user.copyWith(
-      name: shouldUseCloudName ? cloudName : null,
-      profilePhotoPath: shouldUseCloudAvatar ? Value(cloudAvatarUrl) : const Value.absent(),
-    );
-    await _db.updateUser(localUpdate);
-    await _db.saveBusinessProfileForUser(
-      user.id,
-      BusinessProfilesCompanion(
-        ownerName: shouldUseCloudName ? Value(cloudName) : const Value.absent(),
-        ownerPhotoPath: shouldUseCloudAvatar ? Value(cloudAvatarUrl) : const Value.absent(),
-      ),
-    );
-
-    final updated = await _db.safeGetUser(user.id) ?? localUpdate;
-    state = AsyncValue.data(updated);
-    setAuthSession(updated);
-    return updated;
-  }
-
-  Future<String?> _profilePhotoCloudUrl(String? photoPath) async {
-    return (await _profilePhotoCloudUpload(photoPath)).url;
-  }
-
-  Future<_AvatarUploadResult> _profilePhotoCloudUpload(String? photoPath) async {
-    final path = photoPath?.trim();
-    if (path == null || path.isEmpty) return const _AvatarUploadResult();
-    if (_isRemoteUrl(path)) return _AvatarUploadResult(url: path);
-
-    final uid = SupabaseAuthHelper.currentUid;
-    if (uid == null || uid.isEmpty) return const _AvatarUploadResult();
-
-    try {
-      final file = File(path);
-      if (!await file.exists()) {
-        return const _AvatarUploadResult(error: 'Selected profile photo is no longer available on this device.');
-      }
-      final ext = _avatarExtension(path);
-      final storagePath = '$uid/avatar.$ext';
-      await SupabaseAuthHelper.client.storage.from('avatars').uploadBinary(
-            storagePath,
-            await file.readAsBytes(),
-            fileOptions: FileOptions(contentType: _avatarContentType(ext), upsert: true),
-          );
-      final publicUrl = SupabaseAuthHelper.client.storage.from('avatars').getPublicUrl(storagePath);
-      final bust = DateTime.now().millisecondsSinceEpoch;
-      return _AvatarUploadResult(
-        url: publicUrl.contains('?') ? '$publicUrl&v=$bust' : '$publicUrl?v=$bust',
-      );
-    } catch (e) {
-      debugPrint('Profile avatar upload: $e');
-      return _AvatarUploadResult(error: '$e');
     }
   }
 
@@ -750,11 +586,10 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
 
   Future<void> _setSession(int userId, {bool skipCloudSync = false, bool finalizeCloudRole = false}) async {
     await _db.repairUserDefaultsNulls(userId);
-    final loadedUser = await _db.safeGetUser(userId);
-    if (loadedUser == null) {
+    final user = await _db.safeGetUser(userId);
+    if (user == null) {
       throw StateError('Session error: user record missing (id $userId)');
     }
-    var user = loadedUser;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_sessionUserIdKey, userId);
     state = AsyncValue.data(user);
@@ -768,9 +603,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
           user.email.toLowerCase().endsWith('@clivora.local');
       if (confirmed && !user.emailVerified) {
         await _db.updateUser(user.copyWith(emailVerified: true));
-        final refreshed = await _db.safeGetUser(user.id);
-        if (refreshed == null) return;
-        user = refreshed;
+        final refreshed = await _db.getUser(user.id);
         state = AsyncValue.data(refreshed);
         setAuthSession(refreshed);
       }
@@ -779,11 +612,6 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     }
     if (!skipCloudSync) {
       try {
-        final cloudProfile = await SupabaseAuthHelper.fetchOwnProfile();
-        user = await _applyCloudProfileToLocal(user, cloudProfile);
-        final avatarUrl = await _profilePhotoCloudUrl(user.profilePhotoPath) ??
-            _profileString(cloudProfile, 'avatar_url');
-
         if (finalizeCloudRole) {
           await SupabaseAuthHelper.finalizeAccountType(
             accountType: user.accountType,
@@ -796,7 +624,6 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
           accountType: user.accountType,
           role: user.role,
           forceLock: finalizeCloudRole,
-          avatarUrl: avatarUrl,
         );
       } catch (e) {
         debugPrint('Cloud profile sync on session: $e');
@@ -811,6 +638,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         await ref.read(pushNotificationServiceProvider).onUserSignedIn();
       } catch (e) {
         debugPrint('Push on session: $e');
+      }
+      try {
+        await ref.read(syncOutboxServiceProvider).processQueue();
+        await ref.read(syncOutboxServiceProvider).reconcileInvoiceShares();
+      } catch (e) {
+        debugPrint('Outbox drain on session: $e');
       }
       try {
         await ref.read(referralServiceProvider).syncCodeToCloud();
@@ -840,37 +673,31 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     final user = state.valueOrNull;
     if (user == null) return 'Not signed in';
 
-    late final String savedPath;
-    try {
-      savedPath = await _persistImage(sourcePath, 'profile_${user.id}');
-    } catch (e) {
-      debugPrint('Persist profile photo: $e');
-      return 'Could not save profile photo on this device: $e';
-    }
+    final savedPath = await _persistImage(sourcePath, 'profile_${user.id}');
     await _db.updateUser(user.copyWith(profilePhotoPath: Value(savedPath)));
     await _db.saveBusinessProfileForUser(
       user.id,
       BusinessProfilesCompanion(ownerPhotoPath: Value(savedPath)),
     );
 
-    final updated = await _db.safeGetUser(user.id);
-    if (updated == null) return 'Could not reload your profile photo.';
+    // Sync avatar to cloud so web + mobile share the same image.
+    try {
+      final url = await SupabaseAuthHelper.uploadAvatarFromPath(savedPath);
+      if (url != null) {
+        await SupabaseAuthHelper.upsertProfile(
+          email: user.email,
+          name: user.name,
+          accountType: user.accountType,
+          role: user.role,
+          avatarUrl: url,
+        );
+      }
+    } catch (e) {
+      debugPrint('Cloud avatar sync: $e');
+    }
+
+    final updated = await _db.getUser(user.id);
     state = AsyncValue.data(updated);
-    setAuthSession(updated);
-    final avatarUpload = await _profilePhotoCloudUpload(savedPath);
-    final profileError = await SupabaseAuthHelper.upsertProfile(
-      email: updated.email,
-      name: updated.name,
-      accountType: updated.accountType,
-      role: updated.role,
-      avatarUrl: avatarUpload.url,
-    );
-    if (avatarUpload.error != null) {
-      return 'Profile photo saved on this device, but cloud upload failed: ${avatarUpload.error}';
-    }
-    if (profileError != null) {
-      return 'Profile photo saved on this device, but cloud profile sync failed: $profileError';
-    }
     return null;
   }
 
@@ -898,17 +725,14 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         businessEmail: Value(newEmail),
       ),
     );
-    final updated = await _db.safeGetUser(user.id);
-    if (updated == null) return 'Could not reload your profile.';
+    final updated = await _db.getUser(user.id);
     state = AsyncValue.data(updated);
-    setAuthSession(updated);
-    final avatarUrl = await _profilePhotoCloudUrl(updated.profilePhotoPath);
     await SupabaseAuthHelper.upsertProfile(
       email: newEmail,
       name: name.trim(),
       accountType: user.accountType,
       role: user.role,
-      avatarUrl: avatarUrl,
+
     );
     return null;
   }
@@ -922,73 +746,15 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
   }
 }
 
-class _AvatarUploadResult {
-  const _AvatarUploadResult({this.url, this.error});
-
-  final String? url;
-  final String? error;
-}
-
-String? _profileString(Map<String, dynamic>? profile, String key) {
-  final value = profile?[key];
-  if (value is! String) return null;
-  final trimmed = value.trim();
-  return trimmed.isEmpty ? null : trimmed;
-}
-
-DateTime? _profileUpdatedAt(Map<String, dynamic>? profile) {
-  final value = profile?['updated_at'];
-  if (value is DateTime) return value.toUtc();
-  if (value is String) return DateTime.tryParse(value)?.toUtc();
-  return null;
-}
-
-bool _isRemoteUrl(String value) {
-  final uri = Uri.tryParse(value);
-  return uri != null && (uri.isScheme('http') || uri.isScheme('https'));
-}
-
-String _avatarExtension(String sourcePath) {
-  final ext = p.extension(sourcePath).toLowerCase().replaceFirst('.', '');
-  switch (ext) {
-    case 'png':
-    case 'webp':
-    case 'gif':
-      return ext;
-    case 'jpeg':
-    case 'jpg':
-      return 'jpg';
-    default:
-      return 'jpg';
-  }
-}
-
-String _avatarContentType(String ext) {
-  switch (ext) {
-    case 'png':
-      return 'image/png';
-    case 'webp':
-      return 'image/webp';
-    case 'gif':
-      return 'image/gif';
-    default:
-      return 'image/jpeg';
-  }
-}
-
 Future<String> _persistImage(String sourcePath, String prefix) async {
   final dir = await getApplicationDocumentsDirectory();
   final imagesDir = Directory(p.join(dir.path, 'images'));
   if (!await imagesDir.exists()) {
     await imagesDir.create(recursive: true);
   }
-  final source = File(sourcePath);
-  if (!await source.exists()) {
-    throw StateError('Selected image is no longer available.');
-  }
-  final ext = p.extension(sourcePath).isNotEmpty ? p.extension(sourcePath) : '.jpg';
+  final ext = p.extension(sourcePath);
   final dest = p.join(imagesDir.path, '${prefix}_${DateTime.now().millisecondsSinceEpoch}$ext');
-  await File(dest).writeAsBytes(await source.readAsBytes(), flush: true);
+  await File(sourcePath).copy(dest);
   return dest;
 }
 
