@@ -46,17 +46,19 @@ export async function updateSession(request: NextRequest) {
       .select("role, account_type, is_blocked, is_restricted")
       .eq("id", user.id)
       .maybeSingle();
-    if (
-      error ||
-      (profile?.role !== "admin" && profile?.account_type !== "admin") ||
-      profile?.is_blocked === true ||
-      profile?.is_restricted === true
-    ) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/app";
-      url.search = "";
-      url.searchParams.set("error", "admin_required");
-      return NextResponse.redirect(url);
+    // Only bounce on definitive non-admin / blocked — not on transient query errors.
+    if (!error) {
+      if (
+        (profile?.role !== "admin" && profile?.account_type !== "admin") ||
+        profile?.is_blocked === true ||
+        profile?.is_restricted === true
+      ) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/app";
+        url.search = "";
+        url.searchParams.set("error", "admin_required");
+        return NextResponse.redirect(url);
+      }
     }
   }
 

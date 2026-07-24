@@ -66,12 +66,12 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
   const [editingProfile, setEditingProfile] = useState(false);
 
   const memberSince = useMemo(() => {
-    const raw = profile.created_at;
+    const raw = profile.updated_at || profile.created_at;
     if (!raw) return null;
     const d = new Date(raw);
     if (Number.isNaN(d.getTime())) return null;
     return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-  }, [profile.created_at]);
+  }, [profile.updated_at, profile.created_at]);
 
   async function saveProfile() {
     setSavingProfile(true);

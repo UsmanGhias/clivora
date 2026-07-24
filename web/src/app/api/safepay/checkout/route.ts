@@ -45,6 +45,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Valid email required" }, { status: 400 });
     }
 
+    const cfg = await loadSafepayConfig();
+    if (!cfg.configured) {
+      return NextResponse.json(
+        {
+          error: "SafePay is not configured",
+          missing: cfg.missing,
+          hint: "Set SAFEPAY_SECRET_KEY and SAFEPAY_API_KEY (sec_… UUID) in Vercel or admin_integration_secrets.",
+        },
+        { status: 503 },
+      );
+    }
+
     const baseAmount = plan === "pro_plus" ? PRO_PLUS_PRICE_USD : PRO_PRICE_USD;
     const promo = body.promoCode
       ? await validatePromoCode({
