@@ -83,7 +83,9 @@ CLIVORA_UPLOAD_KEY_PASSWORD='<SECRET>' ./scripts/import-play-upload-export.sh
 
 **Adopted from later good work (keep):**
 
-- Connect bottom-nav icon parity: **handshake** for both client and freelancer Pro Plus (`lib/routing/app_shell.dart`)
+- Connect bottom-nav icon: **travel_explore** (3.9.6 connected logo) for both client and freelancer Pro Plus
+- Hub bottom-nav icon: **Icons.hub** (network hub) for freelancer tabs
+- Command Center / Hub screen: restored from `v3.9.6-playstore` (`more_screen.dart`, `tool_grid_tile.dart`), with Work & collaboration shown first
 - Web/admin/Odoo and other mainline product fixes already on `main` (not the preview APK line)
 - Play signing fail-closed scripts + upload cert docs
 
