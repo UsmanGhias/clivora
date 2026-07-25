@@ -1,17 +1,15 @@
-# Play production launch checklist (CLIVORA 4.2.10)
+# Play production launch checklist (CLIVORA 5.3.8)
 
 Direct **Production** track launch — **do not** create Open testing / Closed testing tracks unless you want them later.
 
 ## Build / signing (repo)
 
-- [x] Version `4.2.10+111`
+- [x] Version `5.3.8+538`
 - [x] Signed with Play **upload** key (`SHA1 96:93:81:80:EE:59:27:D2:46:B2:BD:FC:6C:96:C6:93:2E:1A:1D:36`)
 - [x] Native Google Sign-In
-- [x] In-app upgrades use **Google Play Billing** only (no web checkout deep-link from APK)
-- [x] In-app account deletion
-- [x] Privacy / Terms in app + `https://clivora.codcrafters.org/privacy`
-- [x] Connect auto-approve on publish (admin settings default ON)
-- [x] Hub pending-sync banner removed (conflicts/failures only in shell)
+- [x] In-app upgrades use **Google Play Billing** only
+- [x] Connect cloud session refresh before save/browse (fixes false “Sign in required”)
+- [x] Hub restored to prior Command Center layout; pending-sync strip removed
 
 ## Cloud AI / CI build (APK + AAB)
 
@@ -21,45 +19,19 @@ git checkout main && git pull
 # Needs upload keystore: android/clivora-upload-keystore.jks + android/key.properties
 # OR env: ANDROID_KEYSTORE_BASE64, ANDROID_STORE_PASSWORD, ANDROID_KEY_PASSWORD, ANDROID_KEY_ALIAS
 bash build-android.sh
-# Expect: releases/clivora-4.2.10.apk + releases/clivora-4.2.10.aab
+# Expect: releases/clivora-5.3.8.apk + releases/clivora-5.3.8.aab
+# SHA-1: 96:93:81:80:EE:59:27:D2:46:B2:BD:FC:6C:96:C6:93:2E:1A:1D:36
 ```
 
-Full detail: [`docs/releases/CLOUD_BUILD.md`](releases/CLOUD_BUILD.md)
+## Play Console — Production only
 
-## Play Console — Production only (owner)
+1. Activate the 4 subscription product IDs (see `docs/GOOGLE_PLAY_BILLING_SETUP.md`)
+2. Upload `releases/clivora-5.3.8.aab` to **Production** (skip Open testing)
+3. Start rollout → wait for Google review → Active
 
-1. **Monetise → Subscriptions** — create/activate all four product IDs (see `docs/GOOGLE_PLAY_BILLING_SETUP.md`):
-   - `clivora_pro_freelancer_monthly`
-   - `clivora_pro_client_monthly`
-   - `clivora_pro_plus_freelancer_monthly`
-   - `clivora_pro_plus_client_monthly`
-2. Supabase secret `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` set for `verify-play-purchase`
-3. **Test and release → Production → Create new release**
-4. Upload **`releases/clivora-4.2.10.aab`** (not APK)
-5. Release notes from `play-store/listing/PLAY_STORE_LISTING.md`
-6. Confirm App content: privacy, Data safety, 18+, Ads = No
-7. Countries / pricing
-8. **Start rollout to Production** at 100% (or staged % if you prefer) — **skip Open testing**
-9. Wait for Google review → Production becomes **Active**
+## Post-install smoke
 
-## Do not upload
-
-- Preview/sideload AABs (wrong signing SHA)
-- Older builds superseded by `4.2.10+111`
-
-## Policy reminders
-
-- Digital subscriptions in-app → Play Billing only
-- Account deletion reachable without support email
-- Honest Data safety declarations
-- CAMERA only for profile/attachments
-
-## Post-publish smoke
-
-- [ ] Install from Play Production
-- [ ] Email + Google Sign-In
-- [ ] Freelancer home Work queue metrics fill the card evenly
-- [ ] Hub tiles readable (no truncated titles); no orange “sync pending” strip
-- [ ] Connect: publish listing → appears for other role (auto-approved)
-- [ ] Upgrade → Play Billing sheet; Restore purchases
-- [ ] Delete account flow
+- Sign out + sign in again once (refreshes cloud JWT)
+- Connect → Save listing (no Sign in required)
+- Open jobs tab shows approved needs
+- Hub looks like prior Command Center (2.35 tiles + descriptions)

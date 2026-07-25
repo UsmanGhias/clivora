@@ -15,7 +15,7 @@ Confirm version:
 
 ```bash
 grep '^version:' pubspec.yaml
-# expect: 4.2.10+111 (or newer on main)
+# expect: 5.3.8+538 (or newer on main)
 ```
 
 ## 2. Tooling
@@ -42,8 +42,8 @@ bash build-android.sh
 
 Outputs:
 
-- `releases/clivora-4.2.10.apk`
-- `releases/clivora-4.2.10.aab`
+- `releases/clivora-5.3.8.apk`
+- `releases/clivora-5.3.8.aab`
 - `releases/SHA256SUMS.txt`
 
 ## 4. Verify certificate

@@ -206,7 +206,7 @@ class _ConnectListingScreenState extends ConsumerState<ConnectListingScreen> {
       await ref.read(connectMarketplaceServiceProvider).logConnectEvent('connect_listing_saved');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Listing saved. Pending moderation unless admin.')),
+          const SnackBar(content: Text('Listing saved.')),
         );
         context.pop();
       }

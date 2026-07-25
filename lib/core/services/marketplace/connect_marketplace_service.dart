@@ -5,6 +5,7 @@ import 'package:drift/drift.dart' show Value;
 
 import '../../auth/auth_service.dart';
 import '../../auth/user_roles.dart';
+import '../../cloud/supabase_auth_helper.dart';
 import '../../constants/plan_features.dart';
 import '../../../data/database/database.dart';
 import '../../../data/database/user_scoped_queries.dart';
@@ -29,7 +30,27 @@ class ConnectMarketplaceService {
     }
   }
 
-  String? get currentUserId => client?.auth.currentUser?.id;
+  String? get currentUserId => client?.auth.currentUser?.id ?? client?.auth.currentSession?.user.id;
+
+  /// Ensures Supabase is ready and the JWT session is valid (refresh if needed).
+  Future<({SupabaseClient client, String uid})> _requireAuthedClient() async {
+    final c = client;
+    if (c == null) {
+      throw StateError('Cloud not ready. Close and reopen the app, then try again.');
+    }
+    final ok = await SupabaseAuthHelper.ensureCloudSession();
+    var uid = c.auth.currentUser?.id ?? c.auth.currentSession?.user.id;
+    if (!ok || uid == null) {
+      final local = ref.read(authStateProvider).valueOrNull;
+      if (local != null) {
+        throw StateError(
+          'Your cloud session expired. Sign out and sign in again to use Connect.',
+        );
+      }
+      throw StateError('Sign in required');
+    }
+    return (client: c, uid: uid);
+  }
 
   bool get hasConnectAccess {
     return ref.read(isProPlusProvider) ||
@@ -55,9 +76,9 @@ class ConnectMarketplaceService {
   }
 
   Future<ConnectCreditSummary?> creditSummary() async {
-    final c = client;
-    if (c == null || c.auth.currentUser == null) return null;
     try {
+      final auth = await _requireAuthedClient();
+      final c = auth.client;
       final rows = await c.rpc('connect_credit_summary');
       final list = (rows as List?) ?? const [];
       if (list.isEmpty) return null;
@@ -65,14 +86,16 @@ class ConnectMarketplaceService {
     } catch (e) {
       // Fall back to account row when eligibility blocks summary RPC.
       try {
-        final row = await c
+        final auth = await _requireAuthedClient();
+        final row = await auth.client
             .from('connect_credit_accounts')
             .select()
-            .eq('user_id', c.auth.currentUser!.id)
+            .eq('user_id', auth.uid)
             .maybeSingle();
         if (row == null) return null;
         return ConnectCreditSummary.fromRow(Map<String, dynamic>.from(row));
       } catch (_) {
+        if (e is StateError) return null;
         throw mapConnectRpcError(e);
       }
     }
@@ -85,9 +108,8 @@ class ConnectMarketplaceService {
     String? requestId,
     double amount = 0,
   }) async {
-    final c = client;
-    final uid = c?.auth.currentUser?.id;
-    if (c == null || uid == null) throw StateError('Sign in required');
+    final auth = await _requireAuthedClient();
+    final c = auth.client;
     try {
       await c.rpc('connect_accept_proposal', params: {'p_proposal_id': proposalId});
     } catch (e) {
@@ -115,6 +137,9 @@ class ConnectMarketplaceService {
   }) async {
     final c = client;
     if (c == null) return [];
+    try {
+      await SupabaseAuthHelper.refreshSessionIfNeeded();
+    } catch (_) {}
     final base = c
         .from('connect_profiles')
         .select(
@@ -174,21 +199,35 @@ class ConnectMarketplaceService {
   Future<List<Map<String, dynamic>>> browseNeeds() async {
     final c = client;
     if (c == null) return [];
-    final rows = await c
-        .from('connect_need_posts')
-        .select('id,client_user_id,title,summary,skills,budget_band,created_at')
-        .eq('is_open', true)
-        .eq('moderation_status', 'approved')
-        .order('created_at', ascending: false)
-        .limit(50);
-    return (rows as List).cast<Map<String, dynamic>>();
+    try {
+      await SupabaseAuthHelper.refreshSessionIfNeeded();
+    } catch (_) {}
+    try {
+      final rows = await c
+          .from('connect_need_posts')
+          .select('id,client_user_id,title,summary,skills,budget_band,created_at,moderation_status,is_open')
+          .eq('is_open', true)
+          .eq('moderation_status', 'approved')
+          .order('created_at', ascending: false)
+          .limit(50);
+      return (rows as List).cast<Map<String, dynamic>>();
+    } catch (e) {
+      debugPrint('browseNeeds failed: $e');
+      return [];
+    }
   }
 
   Future<Map<String, dynamic>?> myListing() async {
-    final c = client;
-    final uid = c?.auth.currentUser?.id;
-    if (c == null || uid == null) return null;
-    return await c.from('connect_profiles').select().eq('user_id', uid).maybeSingle();
+    try {
+      final auth = await _requireAuthedClient();
+      return await auth.client
+          .from('connect_profiles')
+          .select()
+          .eq('user_id', auth.uid)
+          .maybeSingle();
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> upsertListing({
@@ -201,9 +240,9 @@ class ConnectMarketplaceService {
     required String locationLabel,
     required bool isListed,
   }) async {
-    final c = client;
-    final uid = c?.auth.currentUser?.id;
-    if (c == null || uid == null) throw StateError('Sign in required');
+    final auth = await _requireAuthedClient();
+    final c = auth.client;
+    final uid = auth.uid;
     if (!hasConnectAccess) {
       throw StateError('CLIVORA Connect requires Pro Plus');
     }
@@ -251,14 +290,12 @@ class ConnectMarketplaceService {
     required List<String> skills,
     required String budgetBand,
   }) async {
-    final c = client;
-    final uid = c?.auth.currentUser?.id;
-    if (c == null || uid == null) throw StateError('Sign in required');
+    final auth = await _requireAuthedClient();
     if (!hasConnectAccess) {
       throw StateError('CLIVORA Connect requires Pro Plus');
     }
     try {
-      await c.rpc('connect_publish_need', params: {
+      await auth.client.rpc('connect_publish_need', params: {
         'p_title': title.trim(),
         'p_summary': summary.trim(),
         'p_skills': skills,
@@ -275,15 +312,14 @@ class ConnectMarketplaceService {
     String? targetNeedId,
     required String message,
   }) async {
-    final c = client;
-    final uid = c?.auth.currentUser?.id;
-    if (c == null || uid == null) throw StateError('Sign in required');
+    final auth = await _requireAuthedClient();
+    final uid = auth.uid;
     if (!hasConnectAccess) {
       throw StateError('CLIVORA Connect requires Pro Plus');
     }
     if (toUserId == uid) throw StateError('Cannot contact yourself');
     try {
-      await c.rpc('connect_send_request', params: {
+      await auth.client.rpc('connect_send_request', params: {
         'p_to_user_id': toUserId,
         'p_target_profile_id': targetProfileId,
         'p_target_need_id': targetNeedId,
@@ -295,25 +331,26 @@ class ConnectMarketplaceService {
   }
 
   Future<List<Map<String, dynamic>>> myRequests() async {
-    final c = client;
-    final uid = c?.auth.currentUser?.id;
-    if (c == null || uid == null) return [];
-    final rows = await c
-        .from('connect_request_details')
-        .select()
-        .or('from_user_id.eq.$uid,to_user_id.eq.$uid')
-        .order('created_at', ascending: false)
-        .limit(100);
-    return (rows as List).cast<Map<String, dynamic>>();
+    try {
+      final auth = await _requireAuthedClient();
+      final uid = auth.uid;
+      final rows = await auth.client
+          .from('connect_request_details')
+          .select()
+          .or('from_user_id.eq.$uid,to_user_id.eq.$uid')
+          .order('created_at', ascending: false)
+          .limit(100);
+      return (rows as List).cast<Map<String, dynamic>>();
+    } catch (_) {
+      return [];
+    }
   }
 
   Future<void> respondToRequest(String requestId, {required bool accept}) async {
-    final c = client;
-    final uid = c?.auth.currentUser?.id;
-    if (c == null || uid == null) throw StateError('Sign in required');
+    final auth = await _requireAuthedClient();
 
     try {
-      await c.rpc('connect_respond_request', params: {
+      await auth.client.rpc('connect_respond_request', params: {
         'p_request_id': requestId,
         'p_accept': accept,
       });
@@ -332,15 +369,13 @@ class ConnectMarketplaceService {
     String body = '',
     String? requestId,
   }) async {
-    final c = client;
-    final uid = c?.auth.currentUser?.id;
-    if (c == null || uid == null) throw StateError('Sign in required');
+    final auth = await _requireAuthedClient();
     if (rating < 1 || rating > 5) throw StateError('Rating must be 1–5');
     if (requestId == null || requestId.isEmpty) {
       throw StateError('A released milestone engagement is required to leave a review');
     }
     try {
-      await c.rpc('connect_submit_review', params: {
+      await auth.client.rpc('connect_submit_review', params: {
         'p_to_user_id': toUserId,
         'p_request_id': requestId,
         'p_rating': rating,
@@ -360,12 +395,10 @@ class ConnectMarketplaceService {
     int? timelineDays,
     String currency = 'USD',
   }) async {
-    final c = client;
-    final uid = c?.auth.currentUser?.id;
-    if (c == null || uid == null) throw StateError('Sign in required');
+    final auth = await _requireAuthedClient();
     if (!hasConnectAccess) throw StateError('CLIVORA Connect requires Pro Plus');
     try {
-      await c.rpc('connect_submit_proposal', params: {
+      await auth.client.rpc('connect_submit_proposal', params: {
         'p_to_user_id': toUserId,
         'p_need_id': needId,
         'p_amount': amount,
@@ -397,10 +430,8 @@ class ConnectMarketplaceService {
     required double amount,
     String currency = 'USD',
   }) async {
-    final c = client;
-    final uid = c?.auth.currentUser?.id;
-    if (c == null || uid == null) throw StateError('Sign in required');
-    await c.from('connect_milestones').insert({
+    final auth = await _requireAuthedClient();
+    await auth.client.from('connect_milestones').insert({
       'engagement_request_id': requestId,
       'client_user_id': clientUserId,
       'freelancer_user_id': freelancerUserId,
@@ -412,10 +443,9 @@ class ConnectMarketplaceService {
   }
 
   Future<void> updateMilestoneStatus(String milestoneId, String status) async {
-    final c = client;
-    if (c == null) throw StateError('Offline');
+    final auth = await _requireAuthedClient();
     try {
-      await c.rpc('connect_transition_milestone', params: {
+      await auth.client.rpc('connect_transition_milestone', params: {
         'p_milestone_id': milestoneId,
         'p_status': status,
       });
@@ -425,24 +455,23 @@ class ConnectMarketplaceService {
   }
 
   Future<Map<String, dynamic>> homeSummary({required bool client}) async {
-    final c = this.client;
-    if (c == null || c.auth.currentUser == null) return {};
     try {
-      final data = await c.rpc(client ? 'client_home_summary' : 'freelancer_home_summary');
+      final auth = await _requireAuthedClient();
+      final data = await auth.client.rpc(client ? 'client_home_summary' : 'freelancer_home_summary');
       if (data is Map) return Map<String, dynamic>.from(data);
       return {};
     } catch (e) {
+      if (e is StateError) return {};
       throw mapConnectRpcError(e);
     }
   }
 
   Future<String> createMeetingRoom({String title = 'CLIVORA Meeting', String? projectId}) async {
-    final c = client;
-    final uid = c?.auth.currentUser?.id;
-    if (c == null || uid == null) throw StateError('Sign in required');
+    final auth = await _requireAuthedClient();
+    final uid = auth.uid;
     final slug = 'clivora-${DateTime.now().millisecondsSinceEpoch}';
     final url = 'https://meet.jit.si/$slug';
-    await c.from('meeting_links').insert({
+    await auth.client.from('meeting_links').insert({
       'owner_uid': uid,
       'project_id': projectId,
       'title': title,
