@@ -469,17 +469,21 @@ class SyncOutboxService {
     final pending = await pendingCount();
     final failed = await permanentlyFailedCount();
     final conflicts = (await pendingConflicts()).length;
+    // Only surface actionable problems in the shell banner. Routine pending
+    // work is visible in Sync Center — avoids "2 sync in progress" double UI
+    // with OfflineStatusBar / Hub cards.
     if (conflicts > 0) {
       ref.read(syncFailureMessageProvider.notifier).state =
           '$conflicts sync conflict(s). Open Sync Center to resolve.';
     } else if (failed > 0) {
       ref.read(syncFailureMessageProvider.notifier).state =
           '$failed change(s) permanently failed. Open Sync Center.';
-    } else if (pending > 0) {
-      ref.read(syncFailureMessageProvider.notifier).state =
-          '$pending change(s) pending sync…';
     } else {
       ref.read(syncFailureMessageProvider.notifier).state = null;
+    }
+    // Keep pending count available for Sync Center; do not set a pending banner.
+    if (pending > 0 && conflicts == 0 && failed == 0) {
+      debugPrint('Sync outbox pending=$pending (banner suppressed)');
     }
   }
 
@@ -532,6 +536,8 @@ class SyncOutboxService {
       'crm_customer_delete',
       'crm_project_delete',
       'crm_invoice_delete',
+      'workspace_task',
+      'calendar_event',
     };
     return !known.contains(kind);
   }
@@ -752,8 +758,20 @@ class SyncOutboxService {
       case 'crm_customer_delete':
       case 'crm_project_delete':
       case 'crm_invoice_delete':
-        // Tombstone ops: local row already gone; cloud delete is best-effort via push paths.
-        debugPrint('Sync tombstone processed: ${item.kind} ${item.payload}');
+        final localId = (item.payload['localId'] as num?)?.toInt();
+        if (localId == null) return _ExecResult.permanentFailure;
+        try {
+          if (item.kind == 'crm_customer_delete') {
+            await ref.read(cloudCrmRepositoryProvider).deleteCustomerCloud(localId: localId);
+          } else if (item.kind == 'crm_project_delete') {
+            await ref.read(cloudCrmRepositoryProvider).deleteProjectCloud(localId: localId);
+          } else {
+            await ref.read(cloudCrmRepositoryProvider).deleteInvoiceCloud(localId: localId);
+          }
+        } catch (e) {
+          debugPrint('Sync tombstone failed: ${item.kind} $e');
+          return _ExecResult.transientFailure;
+        }
         return _ExecResult.success;
       default:
         debugPrint('Sync outbox permanent error: unknown kind "${item.kind}"');

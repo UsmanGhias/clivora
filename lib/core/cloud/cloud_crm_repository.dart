@@ -10,6 +10,7 @@ import '../../data/database/user_scoped_queries.dart';
 import '../../data/models/invoice_line_item.dart';
 import '../../data/providers/app_providers.dart';
 import '../auth/auth_service.dart';
+import '../auth/user_roles.dart';
 import 'cloud_crm_conflicts_repository.dart';
 import 'supabase_auth_helper.dart';
 
@@ -58,6 +59,24 @@ class CloudCrmRepository {
       debugPrint('crm_customers push failed: $e');
       rethrow;
     }
+  }
+
+  Future<void> deleteCustomerCloud({required int localId}) async {
+    final uid = SupabaseAuthHelper.currentUid;
+    if (uid == null) return;
+    await _db.from('crm_customers').delete().eq('owner_uid', uid).eq('local_id', localId);
+  }
+
+  Future<void> deleteProjectCloud({required int localId}) async {
+    final uid = SupabaseAuthHelper.currentUid;
+    if (uid == null) return;
+    await _db.from('crm_projects').delete().eq('owner_uid', uid).eq('local_id', localId);
+  }
+
+  Future<void> deleteInvoiceCloud({required int localId}) async {
+    final uid = SupabaseAuthHelper.currentUid;
+    if (uid == null) return;
+    await _db.from('crm_invoices').delete().eq('owner_uid', uid).eq('local_id', localId);
   }
 
   Future<void> pushProject({required int ownerUserId, required int localId}) async {
@@ -165,6 +184,8 @@ class CloudCrmRepository {
     final uid = SupabaseAuthHelper.currentUid;
     final user = ref.read(authStateProvider).valueOrNull;
     if (uid == null || user == null) return;
+    // Clients consume shares/portal data — do not push local CRM into freelancer tables.
+    if (isClientUser(user)) return;
     final db = ref.read(databaseProvider);
     final ownerId = user.id;
 

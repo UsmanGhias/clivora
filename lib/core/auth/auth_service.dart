@@ -568,15 +568,26 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       if (url == null || !url.startsWith('http')) return;
       final user = await _db.safeGetUser(userId);
       if (user == null) return;
-      final local = user.profilePhotoPath;
+      final local = user.profilePhotoPath?.trim();
       if (local == url) return;
-      // Prefer cloud URL when local is empty, already a remote URL, or a data URL.
+      // Cloud is SoT for avatars across devices. Apply when local is empty,
+      // already remote, a data URL, or a missing/stale file path.
+      final localMissingFile = local != null &&
+          local.isNotEmpty &&
+          !local.startsWith('http') &&
+          !local.startsWith('data:') &&
+          !(await File(local).exists());
       final shouldApply = local == null ||
           local.isEmpty ||
           local.startsWith('http') ||
-          local.startsWith('data:');
+          local.startsWith('data:') ||
+          localMissingFile;
       if (!shouldApply) return;
       await _db.updateUser(user.copyWith(profilePhotoPath: Value(url)));
+      await _db.saveBusinessProfileForUser(
+        userId,
+        BusinessProfilesCompanion(ownerPhotoPath: Value(url)),
+      );
     } catch (e) {
       debugPrint('Cloud avatar sync: $e');
     }
@@ -705,15 +716,21 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     );
 
     // Sync avatar to cloud so web + mobile share the same image.
+    // Persist the http URL locally so other devices/web can round-trip.
     try {
       final url = await SupabaseAuthHelper.uploadAvatarFromPath(savedPath);
-      if (url != null) {
+      if (url != null && url.startsWith('http')) {
         await SupabaseAuthHelper.upsertProfile(
           email: user.email,
           name: user.name,
           accountType: user.accountType,
           role: user.role,
           avatarUrl: url,
+        );
+        await _db.updateUser(user.copyWith(profilePhotoPath: Value(url)));
+        await _db.saveBusinessProfileForUser(
+          user.id,
+          BusinessProfilesCompanion(ownerPhotoPath: Value(url)),
         );
       }
     } catch (e) {

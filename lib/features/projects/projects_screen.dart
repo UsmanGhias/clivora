@@ -236,8 +236,15 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
                             ) ??
                             false;
                       },
-                      onDismissed: (_) {
-                        ref.read(databaseProvider).deleteProject(p.id);
+                      onDismissed: (_) async {
+                        await ref.read(syncOutboxServiceProvider).enqueue(
+                              SyncOutboxItem(
+                                kind: 'crm_project_delete',
+                                payload: {'localId': p.id},
+                                isTombstone: true,
+                              ),
+                            );
+                        await ref.read(databaseProvider).deleteProject(p.id);
                       },
                       child: ListTile(
                         onTap: () => openFormRoute(context, '/projects/${p.id}/edit'),

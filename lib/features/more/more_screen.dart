@@ -199,33 +199,19 @@ class MoreScreen extends ConsumerWidget {
             builder: (context, snap) {
               final n = snap.data ?? 0;
               if (n <= 0) return const SizedBox.shrink();
+              // Single link into Sync Center — do not duplicate shell banners.
               return Padding(
                 padding: const EdgeInsets.only(top: 16),
-                child: Material(
-                  color: ClivoraColors.warningOrange.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () async {
-                      await ref.read(syncOutboxServiceProvider).processQueue();
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Sync retry started')),
-                        );
-                      }
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.sync_problem_outlined, size: 18, color: ClivoraColors.warningOrange),
-                          const SizedBox(width: 8),
-                          Expanded(child: Text('Sync pending ($n)', style: const TextStyle(fontWeight: FontWeight.w600))),
-                          const Icon(Icons.refresh, size: 16),
-                        ],
-                      ),
-                    ),
-                  ),
+                child: ListTile(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  tileColor: ClivoraColors.warningOrange.withValues(alpha: 0.08),
+                  leading: const Icon(Icons.sync, color: ClivoraColors.warningOrange),
+                  title: Text('$n change(s) waiting in Sync Center'),
+                  subtitle: const Text('Tap to review queue, conflicts, and retries'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    if (context.mounted) context.push('/sync-center');
+                  },
                 ),
               );
             },

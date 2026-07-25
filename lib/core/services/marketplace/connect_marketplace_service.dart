@@ -10,6 +10,7 @@ import '../../../data/database/database.dart';
 import '../../../data/database/user_scoped_queries.dart';
 import '../../../data/models/invoice_line_item.dart';
 import '../../../data/providers/app_providers.dart';
+import '../sync_outbox_service.dart';
 import 'connect_credits.dart';
 
 final connectMarketplaceServiceProvider = Provider<ConnectMarketplaceService>((ref) {
@@ -211,9 +212,26 @@ class ConnectMarketplaceService {
     final accountType = isClientUser(user) ? 'client' : 'freelancer';
     final existing = await myListing();
     final wasListed = existing?['is_listed'] == true;
+    final wantFirstPublish =
+        isListed && !wasListed && accountType == 'freelancer';
 
-    // First publish/relist of a freelancer profile costs credits via RPC.
-    if (isListed && !wasListed && accountType == 'freelancer') {
+    // Upsert content first. For first freelancer publish, keep unlisted until
+    // connect_publish_profile succeeds (avoids PROFILE_INCOMPLETE / spend-before-row).
+    await c.from('connect_profiles').upsert({
+      'user_id': uid,
+      'account_type': accountType,
+      'display_title': displayTitle.trim(),
+      'headline': headline.trim(),
+      'bio': bio.trim(),
+      'skills': skills,
+      'rate_band': rateBand,
+      'availability': availability,
+      'location_label': locationLabel.trim(),
+      'is_listed': wantFirstPublish ? false : isListed,
+      'updated_at': DateTime.now().toIso8601String(),
+    }, onConflict: 'user_id');
+
+    if (wantFirstPublish) {
       try {
         await c.rpc('connect_publish_profile', params: {
           'p_headline': headline.trim().isEmpty ? displayTitle.trim() : headline.trim(),
@@ -225,20 +243,6 @@ class ConnectMarketplaceService {
         throw mapConnectRpcError(e);
       }
     }
-
-    await c.from('connect_profiles').upsert({
-      'user_id': uid,
-      'account_type': accountType,
-      'display_title': displayTitle.trim(),
-      'headline': headline.trim(),
-      'bio': bio.trim(),
-      'skills': skills,
-      'rate_band': rateBand,
-      'availability': availability,
-      'location_label': locationLabel.trim(),
-      'is_listed': isListed,
-      'updated_at': DateTime.now().toIso8601String(),
-    }, onConflict: 'user_id');
   }
 
   Future<void> createNeedPost({
@@ -476,6 +480,20 @@ class ConnectMarketplaceService {
         notes: const Value('Added from CLIVORA Connect after mutual accept.'),
       ),
     );
+    try {
+      await ref.read(syncOutboxServiceProvider).enqueue(
+            SyncOutboxItem(kind: 'crm_customer', payload: {'localId': id}),
+          );
+    } catch (e) {
+      debugPrint('Connect partner CRM enqueue failed: $e');
+    }
+    try {
+      await ref.read(syncOutboxServiceProvider).enqueue(
+            SyncOutboxItem(kind: 'crm_customer', payload: {'localId': id}),
+          );
+    } catch (e) {
+      debugPrint('Connect partner CRM enqueue failed: $e');
+    }
     await logConnectEvent('connect_workspace_linked', payload: {
       'customer_email': email,
       'customer_id': id,
