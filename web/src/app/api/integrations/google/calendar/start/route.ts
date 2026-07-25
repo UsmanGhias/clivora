@@ -1,16 +1,17 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getPublicSiteUrl } from "@/lib/site-url";
 
 function googleConfigured() {
   return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 }
 
 function appOrigin(req: Request) {
-  const env = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL;
-  if (env) {
-    return env.startsWith("http") ? env.replace(/\/$/, "") : `https://${env.replace(/\/$/, "")}`;
+  try {
+    return getPublicSiteUrl();
+  } catch {
+    return new URL(req.url).origin;
   }
-  return new URL(req.url).origin;
 }
 
 export async function GET(req: Request) {
