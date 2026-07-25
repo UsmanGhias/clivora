@@ -25,7 +25,7 @@ export default function AdminSupportPage() {
   const [query, setQuery] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const ticketRows = data?.ticketRows ?? [];
+  const ticketRows = useMemo(() => data?.ticketRows ?? [], [data?.ticketRows]);
   const tickets = data?.tickets ?? ticketRows.length;
 
   const filtered = useMemo(() => {

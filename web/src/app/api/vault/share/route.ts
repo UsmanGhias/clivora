@@ -68,9 +68,9 @@ export async function POST(req: NextRequest) {
         .eq("owner_uid", user.id)
         .maybeSingle();
       if (attErr) return fail("lookup_failed", 400, attErr.message);
-      if (!att) return fail("file_not_found", 404);
-      storagePath = att.storage_path;
-      fileName = att.file_name || storagePath.split("/").pop() || "file";
+      if (!att?.storage_path) return fail("file_not_found", 404);
+      storagePath = att.storage_path as string;
+      fileName = (att.file_name as string | null) || storagePath.split("/").pop() || "file";
     } else if (body.file_path) {
       // Fallback: only allow paths under the caller's own uid prefix.
       const path = body.file_path.replace(/^\/+/, "");
