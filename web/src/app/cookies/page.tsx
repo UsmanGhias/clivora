@@ -28,7 +28,7 @@ export default function CookiesPage() {
       </p>
 
       <h2>2. Cookies We Use</h2>
-      <h3>Website (codcrafters.org)</h3>
+      <h3>Website (clivora.io)</h3>
       <table>
         <thead>
           <tr>

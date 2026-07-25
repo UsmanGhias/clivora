@@ -45,7 +45,7 @@ class InvoicePublicLinkService {
 
   String publicUrlForToken(String token) {
     // Hosted on clivora-web; path handled by Next.js route.
-    return 'https://clivora.codcrafters.org/i/$token';
+    return 'https://clivora.io/i/$token';
   }
 
   Future<CloudInvoiceShare?> fetchByToken(String token) async {

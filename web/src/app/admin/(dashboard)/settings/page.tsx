@@ -145,7 +145,7 @@ export default function AdminSettingsPage() {
                       </div>
                       <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
                         <dt className="text-xs font-semibold text-slate-500">Support email</dt>
-                        <dd className="font-bold text-slate-900">support@clivora.com</dd>
+                        <dd className="font-bold text-slate-900">contact@clivora.io</dd>
                       </div>
                     </dl>
                   </section>

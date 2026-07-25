@@ -1,4 +1,4 @@
-/// Legal copy mirrored from clivora.codcrafters.org (July 2026).
+/// Legal copy mirrored from clivora.io (July 2026).
 abstract final class LegalContent {
   static const privacyTitle = 'Privacy Policy';
   static const privacyUpdated = 'Last updated: July 3, 2026';
@@ -48,7 +48,7 @@ We may update this policy and notify you through the app or email.
 
 10. Contact
 
-privacy@codcrafters.org · https://codcrafters.org · CODCrafters
+contact@clivora.io · https://clivora.io · CODCrafters
 ''';
 
   static const termsTitle = 'Terms of Service';
@@ -91,6 +91,6 @@ We may suspend access for Terms violations. You may stop using the app anytime.
 These Terms are governed by the laws of Pakistan.
 
 12. Contact
-legal@codcrafters.org · https://codcrafters.org
+contact@clivora.io · https://clivora.io
 ''';
 }

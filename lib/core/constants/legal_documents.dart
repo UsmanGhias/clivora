@@ -1,4 +1,4 @@
-/// In-app legal copy (mirrors clivora.codcrafters.org/privacy and /terms).
+/// In-app legal copy (mirrors clivora.io/privacy and /terms).
 abstract final class LegalDocuments {
   static const privacyTitle = 'Privacy Policy';
   static const privacyUpdated = 'Last updated: July 3, 2026';
@@ -40,7 +40,7 @@ CHILDREN'S PRIVACY
 CLIVORA is not intended for users under 13.
 
 CONTACT
-iusmanghias@gmail.com
+contact@clivora.io
 ''';
 
   static const termsTitle = 'Terms of Service';
@@ -77,6 +77,6 @@ CHANGES
 We may update these Terms. Continued use after updates constitutes acceptance.
 
 CONTACT
-iusmanghias@gmail.com
+contact@clivora.io
 ''';
 }

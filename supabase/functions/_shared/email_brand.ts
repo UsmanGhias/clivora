@@ -7,9 +7,9 @@ const BRAND = {
   navy: "#0F172A",
   muted: "#64748B",
   surface: "#F8FAFC",
-  webUrl: "https://clivora.codcrafters.org",
+  webUrl: "https://clivora.io",
   playUrl: "https://play.google.com/store/apps/details?id=org.codcrafters.clivora",
-  supportEmail: "support@codcrafters.org",
+  supportEmail: "contact@clivora.io",
 };
 
 function escapeHtml(s: string): string {
@@ -70,7 +70,7 @@ export function wrapBrandedEmail(opts: {
           <tr>
             <td style="padding:20px 32px 28px;border-top:1px solid #E2E8F0;text-align:center;">
               <p style="margin:0 0 8px;font-size:12px;color:${BRAND.muted};">
-                <a href="${BRAND.webUrl}" style="color:${BRAND.primary};text-decoration:none;">clivora.codcrafters.org</a>
+                <a href="${BRAND.webUrl}" style="color:${BRAND.primary};text-decoration:none;">clivora.io</a>
                 · Developed by CODCrafters
               </p>
               <p style="margin:0;font-size:11px;color:#94A3B8;">
@@ -112,7 +112,7 @@ export function passwordResetNoticeTemplate(): string {
     title: "Password reset requested",
     bodyHtml: `
       <p>We received a request to reset your CLIVORA password.</p>
-      <p>Open the reset link from the official Supabase email, or use Forgot password in the app. The link should open <strong>clivora.codcrafters.org</strong>, not localhost.</p>
+      <p>Open the reset link from the official Supabase email, or use Forgot password in the app. The link should open <strong>clivora.io</strong>, not localhost.</p>
       <p>If you did not request this, ignore this message. Your account stays secure.</p>`,
     ctaLabel: "Open CLIVORA",
     ctaUrl: BRAND.webUrl,

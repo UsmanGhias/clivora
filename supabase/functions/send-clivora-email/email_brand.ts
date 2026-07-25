@@ -9,9 +9,9 @@ const BRAND = {
   muted: "#64748B",
   surface: "#F8FAFC",
   border: "#E2E8F0",
-  webUrl: "https://clivora.codcrafters.org",
+  webUrl: "https://clivora.io",
   playUrl: "https://play.google.com/store/apps/details?id=org.codcrafters.clivora",
-  supportEmail: "support@codcrafters.org",
+  supportEmail: "contact@clivora.io",
   company: "CODCrafters",
 };
 
@@ -97,7 +97,7 @@ export function wrapBrandedEmail(opts: {
           <tr>
             <td style="padding:20px 32px 28px;border-top:1px solid ${BRAND.border};text-align:center;">
               <p style="margin:0 0 8px;font-size:12px;color:${BRAND.muted};">
-                <a href="${BRAND.webUrl}" style="color:${BRAND.primary};text-decoration:none;font-weight:600;">clivora.codcrafters.org</a>
+                <a href="${BRAND.webUrl}" style="color:${BRAND.primary};text-decoration:none;font-weight:600;">clivora.io</a>
                 · Developed by ${BRAND.company}
               </p>
               <p style="margin:0;font-size:11px;color:#94A3B8;">
@@ -129,7 +129,7 @@ export function clientInviteTemplate(freelancerName: string, clientName: string)
       ])}`,
     ctaLabel: "Get CLIVORA on Google Play",
     ctaUrl: BRAND.playUrl,
-    secondaryCtaLabel: "Learn more at clivora.codcrafters.org",
+    secondaryCtaLabel: "Learn more at clivora.io",
     secondaryCtaUrl: BRAND.webUrl,
     footerNote: "If you were not expecting this invite, you can safely ignore this email.",
   });
@@ -176,7 +176,7 @@ export function passwordResetNoticeTemplate(): string {
     title: "Reset your CLIVORA password",
     bodyHtml: `
       <p>We received a request to reset your CLIVORA password.</p>
-      <p>Use the secure link from your official reset email, or tap <strong>Forgot password</strong> in the app. The link should open <strong>clivora.codcrafters.org</strong>, not localhost.</p>
+      <p>Use the secure link from your official reset email, or tap <strong>Forgot password</strong> in the app. The link should open <strong>clivora.io</strong>, not localhost.</p>
       <p>If you did not request this, ignore this message. Your account stays secure.</p>`,
     ctaLabel: "Reset password on web",
     ctaUrl: `${BRAND.webUrl}/auth/reset-password`,
@@ -245,7 +245,7 @@ export function welcomeTemplate(userName: string, accountType: string): string {
       ${tips}`,
     ctaLabel: "Get started in the app",
     ctaUrl: BRAND.playUrl,
-    secondaryCtaLabel: "Visit clivora.codcrafters.org",
+    secondaryCtaLabel: "Visit clivora.io",
     secondaryCtaUrl: BRAND.webUrl,
   });
 }

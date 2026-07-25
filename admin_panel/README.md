@@ -1,6 +1,6 @@
 # CLIVORA Admin Panel
 
-This legacy standalone dashboard is retired. Use `https://clivora.codcrafters.org/admin`, which requires Supabase Auth and MFA.
+This legacy standalone dashboard is retired. Use `https://clivora.io/admin`, which requires Supabase Auth and MFA.
 
 ## Quick start
 

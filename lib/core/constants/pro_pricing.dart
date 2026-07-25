@@ -42,5 +42,5 @@ abstract final class ProPricing {
       'https://play.google.com/store/apps/details?id=$playStorePackage';
 
   /// Web checkout (bank / JazzCash / EasyPaisa / international wire instructions).
-  static const webProCheckoutUrl = 'https://clivora.codcrafters.org/pro';
+  static const webProCheckoutUrl = 'https://clivora.io/pro';
 }

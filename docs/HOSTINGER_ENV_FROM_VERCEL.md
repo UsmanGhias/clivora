@@ -62,7 +62,7 @@ VERCEL_GIT_*
 2. Paste each required name + value from `.env.production.local`  
 3. Add the three `NEXT_PUBLIC_*` rows above  
 4. Redeploy Hostinger  
-5. Keep Vercel / `clivora.codcrafters.org` unchanged until smoke tests pass  
+5. Keep Vercel serving `clivora.codcrafters.org` until the 308 redirect + Hostinger smoke tests pass  
 
 ## Re-pull later
 

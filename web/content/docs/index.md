@@ -2,7 +2,7 @@
 
 Welcome to the official help center for **CLIVORA**, the Freelancer OS for freelancers and clients — Connect marketplace, CRM, projects, timesheets, and invoices with payment-status records in one platform.
 
-**Live app:** [clivora.codcrafters.org](https://clivora.codcrafters.org)  
+**Live app:** [clivora.io](https://clivora.io)  
 **Marketing site:** [Home](/) · [Features](/features) · [Pricing](/pricing) · [For freelancers](/for-freelancers) · [For clients](/for-clients)  
 **Android app:** [Google Play](https://play.google.com/store/apps/details?id=org.codcrafters.clivora)
 
@@ -29,5 +29,5 @@ Welcome to the official help center for **CLIVORA**, the Freelancer OS for freel
 
 ## Support
 
-- Email: [iusmanghias@gmail.com](mailto:iusmanghias@gmail.com)
+- Email: [contact@clivora.io](mailto:contact@clivora.io)
 - [Support page](/support) · [Privacy](/privacy) · [Terms](/terms) · [Data safety](/data-safety)

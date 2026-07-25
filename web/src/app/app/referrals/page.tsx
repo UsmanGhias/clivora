@@ -78,7 +78,7 @@ export default function ReferralsPage() {
 
   async function shareLink() {
     if (!stats?.code) return;
-    const url = `https://clivora.codcrafters.org/pro?ref=${encodeURIComponent(stats.code)}`;
+    const url = `https://clivora.io/pro?ref=${encodeURIComponent(stats.code)}`;
     if (navigator.share) {
       await navigator.share({
         title: "Join CLIVORA",

@@ -14,7 +14,7 @@
 | Package | `org.codcrafters.clivora` |
 | Web deploy source | `UsmanGhias/clivora-web` (canonical Vercel) |
 | Authoring web tree | `UsmanGhias/clivora/web` → sync via `web/push-to-clivora-web.sh` |
-| Live site | `https://clivora.codcrafters.org` |
+| Live site | `https://clivora.io` |
 | Supabase project | `jtzjwgovqczlccyeujhq` |
 
 Commit SHAs are filled at push time (`git rev-parse HEAD` in each repo).

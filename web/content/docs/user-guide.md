@@ -6,7 +6,7 @@ This guide explains how to use CLIVORA in plain language, for freelancers and cl
 
 ## 1. Create your account
 
-1. Go to [clivora.codcrafters.org/signup](https://clivora.codcrafters.org/signup) or install the **Android app**.
+1. Go to [clivora.io/signup](https://clivora.io/signup) or install the **Android app**.
 2. Choose **Freelancer** or **Client** at signup. This choice is locked to your email (you cannot switch later on the same account).
 3. Verify your email when prompted.
 4. Sign in on web or app with the **same account**.
@@ -98,7 +98,7 @@ Clients see a **slate-themed** portal focused on work shared with them.
 | **Pro Plus** | $19/mo | Everything in Pro + **Connect** posting & contact |
 
 - **Android:** Subscribe in app via Google Play.  
-- **Web:** [clivora.codcrafters.org/pro](https://clivora.codcrafters.org/pro), submit payment proof (JazzCash, Easypaisa, bank). Admin approves and unlocks your plan.
+- **Web:** [clivora.io/pro](https://clivora.io/pro), submit payment proof (JazzCash, Easypaisa, bank). Admin approves and unlocks your plan.
 
 **Already on Pro?** The web checkout will not ask you to pay for Pro again, only Pro Plus upgrade if you want Connect.
 
@@ -115,7 +115,7 @@ Admins can set accounts to:
 | **Blocked** | Cannot use the app; redirected to blocked page |
 | **Restricted** | Can browse Connect; cannot post or send contact requests |
 
-Contact support if you believe this is a mistake: [iusmanghias@gmail.com](mailto:iusmanghias@gmail.com).
+Contact support if you believe this is a mistake: [contact@clivora.io](mailto:contact@clivora.io).
 
 ---
 
@@ -138,7 +138,7 @@ Contact support if you believe this is a mistake: [iusmanghias@gmail.com](mailto
 
 ## Quick links
 
-- [Connect marketplace](https://clivora.codcrafters.org/connect)
-- [Sign up](https://clivora.codcrafters.org/signup)
-- [Pro checkout](https://clivora.codcrafters.org/pro)
-- [Support](https://clivora.codcrafters.org/support)
+- [Connect marketplace](https://clivora.io/connect)
+- [Sign up](https://clivora.io/signup)
+- [Pro checkout](https://clivora.io/pro)
+- [Support](https://clivora.io/support)

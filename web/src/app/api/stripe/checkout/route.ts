@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const origin = "https://clivora.codcrafters.org";
+  const origin = "https://clivora.io";
   const success = `${origin}/app?checkout=success`;
   const cancel = `${origin}/pro?checkout=cancelled`;
 

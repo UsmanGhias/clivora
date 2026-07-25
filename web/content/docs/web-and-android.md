@@ -13,7 +13,7 @@ CLIVORA is **one account** on **two platforms**. This page helps you choose the 
 - Client portal when on desktop  
 - Admin panel (authorized emails only)  
 
-**URL:** [clivora.codcrafters.org](https://clivora.codcrafters.org)
+**URL:** [clivora.io](https://clivora.io)
 
 ---
 
