@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isFeatureEnabled } from "@/lib/feature-flags";
-import { site } from "@/lib/site";
+import { getPublicSiteUrl } from "@/lib/site-url";
 import { randomBytes } from "crypto";
 
 // VAULT hardening (VAULT-001..004):
@@ -15,9 +15,7 @@ const MAX_EXPIRY_HOURS = 720; // 30 days
 const DEFAULT_EXPIRY_HOURS = 72;
 
 function trustedBaseUrl(): string {
-  const env = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "");
-  if (env && /^https?:\/\//.test(env)) return env;
-  return site.url;
+  return getPublicSiteUrl();
 }
 
 function randomToken(length = 40): string {

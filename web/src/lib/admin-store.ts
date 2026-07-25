@@ -17,10 +17,9 @@ const LOCAL_FILE = path.join(process.cwd(), "data", "admin-events.json");
 const VERCEL_TMP_FILE = path.join("/tmp", "clivora-admin-events.json");
 
 function dataFiles(): string[] {
-  if (process.env.VERCEL) {
-    return [VERCEL_TMP_FILE, LOCAL_FILE];
-  }
-  return [LOCAL_FILE];
+  // Prefer cwd data/ when writable (Hostinger Node apps); fall back to /tmp
+  // on ephemeral filesystems (Vercel / restricted hosts).
+  return [LOCAL_FILE, VERCEL_TMP_FILE];
 }
 
 function readFileEvents(filePath: string): AdminEvent[] {

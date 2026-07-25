@@ -1,3 +1,5 @@
+import { getPublicSiteUrl } from "@/lib/site-url";
+
 export const site = {
   name: "CLIVORA",
   tagline: "Complete Freelancer OS - Connect, CRM & Invoices",
@@ -5,15 +7,16 @@ export const site = {
     "Complete Freelancer OS: private Connect hiring, CRM, invoices, and timesheets on web and Android - $0 platform fee on your deals.",
   description:
     "CLIVORA is a complete Freelancer OS for freelancers and clients worldwide. Hire and get hired on Connect with private contact until mutual accept, then run clients, projects, invoices, and timesheets on web and Android with one account. Platform fee on negotiated deals stays $0 - clients pay freelancers directly.",
-  url: "https://clivora.codcrafters.org",
+  /** Build-time: set NEXT_PUBLIC_SITE_URL=https://clivora.io on Hostinger production. */
+  url: getPublicSiteUrl(),
   appPackage: "org.codcrafters.clivora",
-  appVersion: "4.2.3",
+  appVersion: "5.3.8",
   company: {
     name: "CODCrafters",
     url: "https://codcrafters.org",
-    email: "iusmanghias@gmail.com",
-    privacyEmail: "iusmanghias@gmail.com",
-    legalEmail: "iusmanghias@gmail.com",
+    email: "contact@clivora.io",
+    privacyEmail: "contact@clivora.io",
+    legalEmail: "contact@clivora.io",
   },
   pricing: {
     proMonthlyUsd: 9,
