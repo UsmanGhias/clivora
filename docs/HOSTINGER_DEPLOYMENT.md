@@ -1,10 +1,13 @@
 # CLIVORA Hostinger production deployment
 
-**Status:** Ready to configure (do not cut DNS until Hostinger preview smoke passes)  
+**Status:** Configure Hostinger + cut DNS only after smoke passes  
 **Production target:** `https://clivora.io` (Hostinger Node.js Web App)  
-**Staging / backup:** `https://clivora.codcrafters.org` (Vercel — leave running)  
+**Legacy / redirect source:** `https://clivora.codcrafters.org` (Vercel until 308 redirect + DNS forwarding)  
 **Repo:** `https://github.com/UsmanGhias/clivora-web` (`main`)  
 **Backend:** Supabase project `jtzjwgovqczlccyeujhq` (unchanged)
+
+Full cutover checklist (Supabase keys, Auth URLs, Play SKUs, email): **`docs/DOMAIN_CUTOVER_CLIVORA_IO.md`**
+
 
 ---
 
@@ -63,13 +66,14 @@ SUPABASE_URL=https://jtzjwgovqczlccyeujhq.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=<same service_role as Vercel — server only>
 ```
 
-### Staging on Vercel (keep as-is)
+### Staging on Vercel (legacy host — redirect to clivora.io)
 
 ```env
-NEXT_PUBLIC_SITE_URL=https://clivora.codcrafters.org
+NEXT_PUBLIC_SITE_URL=https://clivora.io
 ```
 
-(plus the same Supabase keys already configured on Vercel)
+(plus the same Supabase keys already configured on Vercel). Middleware 308-redirects `clivora.codcrafters.org` → `clivora.io`.
+
 
 ### Optional — only if already used on Vercel
 
@@ -114,7 +118,7 @@ ODOO_SYNC_ENABLED=false
 ```text
 https://clivora.io/**
 https://www.clivora.io/**
-https://clivora.codcrafters.org/**
+https://clivora.io/**
 https://*.vercel.app/**
 ```
 
@@ -145,14 +149,14 @@ Verify paths in repo, then update provider consoles:
    - `/app` dashboard after login
    - password reset link domain matches `NEXT_PUBLIC_SITE_URL`
 5. Only then point `clivora.io` / `www` DNS to Hostinger and set `NEXT_PUBLIC_SITE_URL=https://clivora.io` if preview used a temporary host (rebuild after env change).
-6. Leave Vercel + `clivora.codcrafters.org` as staging/backup.
+6. Leave Vercel + `clivora.io` as staging/backup.
 
 ---
 
 ## Rollback
 
-1. Point DNS back to Vercel / `clivora.codcrafters.org`.
-2. Ensure Vercel still has `NEXT_PUBLIC_SITE_URL=https://clivora.codcrafters.org`.
+1. Point DNS back to Vercel / `clivora.io`.
+2. Ensure Vercel still has `NEXT_PUBLIC_SITE_URL=https://clivora.io`.
 3. Do **not** roll back Supabase migrations blindly.
 
 ---

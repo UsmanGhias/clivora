@@ -4,10 +4,16 @@
 
 Sign in with an email listed in `lib/core/constants/admin_config.dart`:
 
-- `admin@codcrafters.org`
+- `iusmanghias@gmail.com` (super admin)
 - `usmanghias1@gmail.com`
+- `usmanghias@clivora.io`
+- `usmanghias@codcrafters.org`
+- `contact@clivora.io`
+- `admin@codcrafters.org`
 
 Admin users automatically receive **Pro** and can open **Hub → CodCrafters Admin**.
+
+Public support address (shown to users): **`contact@clivora.io`**.
 
 ## What the admin dashboard shows
 

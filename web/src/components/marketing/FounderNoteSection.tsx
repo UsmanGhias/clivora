@@ -61,9 +61,9 @@ export function FounderNoteSection() {
               Built for freelancers and clients worldwide. If something feels broken, email{" "}
               <a
                 className="font-semibold text-teal-300 underline decoration-teal-400/50 underline-offset-2 hover:text-teal-200"
-                href="mailto:iusmanghias@gmail.com"
+                href="mailto:contact@clivora.io"
               >
-                iusmanghias@gmail.com
+                contact@clivora.io
               </a>
               {" "}
               - I read those.

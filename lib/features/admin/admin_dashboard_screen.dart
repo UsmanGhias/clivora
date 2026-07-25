@@ -116,7 +116,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                       ref.invalidate(analyticsEventsProvider);
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Synced to clivora.codcrafters.org')),
+                          const SnackBar(content: Text('Synced to clivora.io')),
                         );
                       }
                     },

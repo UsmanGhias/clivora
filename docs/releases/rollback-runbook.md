@@ -4,7 +4,7 @@
 
 1. Open Vercel project linked to `UsmanGhias/clivora-web`.
 2. Deployments → previous known-good → Promote to Production.
-3. Smoke: `https://clivora.codcrafters.org/` + `/login` + one protected `/app` redirect.
+3. Smoke: `https://clivora.io/` + `/login` + one protected `/app` redirect.
 
 ## Android (Play)
 

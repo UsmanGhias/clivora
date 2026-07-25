@@ -1,9 +1,11 @@
 # CLIVORA — Google Play Store Listing (production)
 
 **Package name:** `org.codcrafters.clivora`  
-**Version name:** `4.2.3`  
-**Version code:** `104`  
+**Version name:** `5.3.9`  
+**Version code:** `539`  
 **Upload signing SHA-1:** `96:93:81:80:EE:59:27:D2:46:B2:BD:FC:6C:96:C6:93:2E:1A:1D:36`
+**Support email:** `contact@clivora.io`
+**Website:** `https://clivora.io`
 
 ---
 
@@ -55,10 +57,10 @@ FREE PLAN
 
 Upgrade to Pro or Pro Plus with Google Play subscriptions (restore purchases supported).
 
-Website: https://clivora.codcrafters.org
-Privacy: https://clivora.codcrafters.org/privacy
-Terms: https://clivora.codcrafters.org/terms
-Delete account (web): https://clivora.codcrafters.org/delete-account
+Website: https://clivora.io
+Privacy: https://clivora.io/privacy
+Terms: https://clivora.io/terms
+Delete account (web): https://clivora.io/delete-account
 Built by CodCrafters.
 ```
 
@@ -98,7 +100,7 @@ Advertising ID: **Not used** (manifest removes `AD_ID`).
 ## Privacy policy URL (required)
 
 ```
-https://clivora.codcrafters.org/privacy
+https://clivora.io/privacy
 ```
 
 ## Release notes (4.2.3)

@@ -14,7 +14,7 @@ Never commit these values. Never put them in Flutter, `NEXT_PUBLIC_*`, or chat.
 ## Password reset
 
 - Auth reset emails are sent by **Supabase Auth** (configure Auth SMTP in the dashboard if needed).
-- All clients must use website redirect: `https://clivora.codcrafters.org/auth/reset-password`
+- All clients must use website redirect: `https://clivora.io/auth/reset-password`
   - Web: `web/src/app/(auth)/auth/reset-password/page.tsx`
   - Android: `kPasswordResetRedirectUrl` in `admin_config.dart` / `supabase_auth_helper.dart`
   - Admin console: `AdminCloudRepository.sendPasswordReset` passes the same `redirectTo`

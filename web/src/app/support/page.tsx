@@ -43,7 +43,7 @@ const faqs = [
   },
   {
     q: "Is CLIVORA available on iOS?",
-    a: "Android is available now. iOS is coming soon. Visit codcrafters.org for updates.",
+    a: "Android is available now. iOS is coming soon. Visit clivora.io for updates.",
   },
   {
     q: "How do I contact support?",

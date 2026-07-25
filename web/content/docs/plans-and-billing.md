@@ -77,7 +77,7 @@ The Android app includes a referral program, bonus subscription days when a refe
 ## Cancel anytime
 
 - Google Play: manage subscription in Play Store.  
-- Web manual: contact [iusmanghias@gmail.com](mailto:iusmanghias@gmail.com).
+- Web manual: contact [contact@clivora.io](mailto:contact@clivora.io).
 
 ---
 

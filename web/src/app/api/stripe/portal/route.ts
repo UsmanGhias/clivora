@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   }
 
-  const origin = req.headers.get("origin") ?? "https://clivora.codcrafters.org";
+  const origin = req.headers.get("origin") ?? "https://clivora.io";
   const returnUrl = `${origin}/app/account`;
 
   // Prefer existing stripe_customers row if present (table may be absent in some envs).

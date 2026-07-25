@@ -21,13 +21,14 @@ Supabase MCP cannot change Auth Site URL. Set in **Authentication → URL Config
 
 | Setting | Value |
 |---------|--------|
-| **Site URL** | `https://clivora.codcrafters.org` |
-| **Redirect URLs** | `https://clivora.codcrafters.org/auth/reset-password` |
-| | `https://clivora.codcrafters.org/**` |
+| **Site URL** | `https://clivora.io` |
+| **Redirect URLs** | `https://clivora.io/auth/reset-password` |
+| | `https://clivora.io/**` |
+| | `https://clivora.codcrafters.org/**` *(temporary until DNS redirect)* |
 
-The mobile app sends `redirectTo: https://clivora.codcrafters.org/auth/reset-password` from `supabase_auth_helper.dart`.
+The mobile app sends `redirectTo: https://clivora.io/auth/reset-password` from `supabase_auth_helper.dart`.
 
-The web callback page lives at `web/app/auth/reset-password/page.tsx`.
+The web callback page lives at `web/src/app/(auth)/auth/reset-password/page.tsx` (path may vary by layout).
 
 ## Edge Function secrets
 
@@ -35,14 +36,14 @@ Confirm in **Project Settings → Edge Functions → Secrets** (never commit the
 
 ```
 RESEND_API_KEY=<your-resend-api-key>
-RESEND_FROM=CLIVORA <onboarding@resend.dev>
+RESEND_FROM=CLIVORA <contact@clivora.io>
 ```
 
 **Resend is the preferred sender** for `send-clivora-email`. Optional Gmail SMTP may be configured only in the Supabase Auth dashboard (Authentication → SMTP Settings) for Auth-generated mails such as password reset — never put a Gmail app password in git, Flutter, chat logs, or `NEXT_PUBLIC_*` vars. If a Gmail app password was shared in chat, rotate it in Google Account → Security after dashboard setup.
 
-For production delivery to any recipient, verify your domain in Resend and set `RESEND_FROM` to an address on that domain (e.g. `CLIVORA <noreply@codcrafters.org>`).
+For production delivery to any recipient, verify **clivora.io** in Resend and set `RESEND_FROM` to an address on that domain (e.g. `CLIVORA <noreply@clivora.io>` or `CLIVORA <contact@clivora.io>`).
 
-Password reset redirect (web + Android + admin): `https://clivora.codcrafters.org/auth/reset-password`.
+Password reset redirect (web + Android + admin): `https://clivora.io/auth/reset-password`.
 The branded `password_reset` Edge template is a notice only — the secure token link comes from Supabase Auth.
 
 Optional for Play billing verify:
@@ -68,7 +69,7 @@ Purple `#6C3CE1`, navy header, CODCrafters footer. Redeployed v2 (2026-07-08).
 
 ## Web admin (`web/`)
 
-Monorepo includes Next.js 14 admin matching `clivora.codcrafters.org/admin` (v2.6.6).
+Monorepo includes Next.js admin matching `clivora.io/admin`.
 
 ## Push to standalone repo `UsmanGhias/clivora-web`
 

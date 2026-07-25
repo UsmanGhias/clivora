@@ -1,12 +1,12 @@
 # CLIVORA Admin (clivora-web)
 
-**Live site:** [https://clivora.codcrafters.org](https://clivora.codcrafters.org)  
-**Admin panel:** [https://clivora.codcrafters.org/admin](https://clivora.codcrafters.org/admin)
+**Live site:** [https://clivora.io](https://clivora.io)  
+**Admin panel:** [https://clivora.io/admin](https://clivora.io/admin)
 
 ## Vercel setup
 
 1. Repo: https://github.com/UsmanGhias/clivora-web (linked to Vercel)
-2. Custom domain: `clivora.codcrafters.org`
+2. Custom domain: `clivora.io`
 3. Environment variables (Project → Settings → Environment Variables):
    - `SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
@@ -14,8 +14,8 @@
 
 ## Admin login (web)
 
-- URL: https://clivora.codcrafters.org/admin
-- Emails: `iusmanghias@gmail.com` or `admin@codcrafters.org`
+- URL: https://clivora.io/admin
+- Emails: `contact@clivora.io` or `contact@clivora.io`
 - Sign in with Supabase Auth and complete authenticator-app MFA.
 
 ## Dashboard (v2.7.1)
@@ -32,7 +32,7 @@ Tabs: **Overview** | **Users** | **Payments** | **Audit** | **Events**
 
 The Flutter app points to:
 
-- `kClivoraWebBaseUrl` = `https://clivora.codcrafters.org`
+- `kClivoraWebBaseUrl` = `https://clivora.io`
 - The legacy shared-key sync endpoint is retired. Mobile analytics must use the authenticated product-event RPC.
 
 In-app: Hub → **CodCrafters Admin** → **Sync to Web** or **Open Web Admin Panel**

@@ -1,9 +1,9 @@
 # CLIVORA Web
 
-Marketing site, web app, and user documentation for [CLIVORA](https://clivora.codcrafters.org).
+Marketing site, web app, and user documentation for [CLIVORA](https://clivora.io).
 
-**Live:** [clivora.codcrafters.org](https://clivora.codcrafters.org)  
-**Docs:** [clivora.codcrafters.org/docs](https://clivora.codcrafters.org/docs)
+**Live:** [clivora.io](https://clivora.io)  
+**Docs:** [clivora.io/docs](https://clivora.io/docs)
 
 ## Documentation (public)
 
@@ -36,6 +36,6 @@ npm run dev
 
 ## Deploy
 
-Vercel — import `clivora-web` repo, domain `clivora.codcrafters.org`.
+Vercel — import `clivora-web` repo, domain `clivora.io`.
 
 **CODCrafters** · CLIVORA © 2026

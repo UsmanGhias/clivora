@@ -70,4 +70,4 @@ Basic on free; exports and advanced analytics on Pro (mainly in Android app).
 ## Company
 
 CLIVORA is built by **CODCrafters**.  
-Website: [codcrafters.org](https://codcrafters.org)
+Website: [clivora.io](https://clivora.io)

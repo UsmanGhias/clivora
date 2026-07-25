@@ -113,7 +113,7 @@ serve(async (req) => {
           <p>This is a friendly reminder that invoice <strong>${number}</strong>
           (${amount}) from <strong>${ownerName}</strong> was due on <strong>${due}</strong>.</p>
           <p>Please arrange payment at your earliest convenience. If you already paid, you can ignore this email.</p>
-          <p style="color:#64748b;font-size:12px">Sent via CLIVORA · clivora.codcrafters.org</p>
+          <p style="color:#64748b;font-size:12px">Sent via CLIVORA · clivora.io</p>
         </div>
       `;
 

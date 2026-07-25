@@ -8,7 +8,7 @@ Last verified: 2026-07-24 — Cloud agent run for **4.2.1** restore from **v3.9.
 |------|--------|
 | Good Play baseline | Git tag `v3.9.6-playstore` → `3.9.6+96` |
 | Target production | `4.2.3+104` |
-| Live web | https://clivora.codcrafters.org (mirror `UsmanGhias/clivora-web`) |
+| Live web | https://clivora.io (Hostinger; mirror `UsmanGhias/clivora-web`) |
 | Android package | `org.codcrafters.clivora` |
 | Firebase project | `clivora533` |
 | Supabase project | `jtzjwgovqczlccyeujhq` |

@@ -540,7 +540,7 @@ export const marketing = {
           },
           {
             title: "Web + Android",
-            description: "One account across clivora.codcrafters.org and the Android app - cloud-first sync.",
+            description: "One account across clivora.io and the Android app - cloud-first sync.",
           },
           {
             title: "Team collaboration",
@@ -578,7 +578,7 @@ export const marketing = {
     },
     {
       q: "Does it work on web and Android?",
-      a: "Yes. Use the full web app at clivora.codcrafters.org and the Android app with the same account. Data syncs in the cloud.",
+      a: "Yes. Use the full web app at clivora.io and the Android app with the same account. Data syncs in the cloud.",
     },
     {
       q: "Can clients and freelancers both use CLIVORA?",

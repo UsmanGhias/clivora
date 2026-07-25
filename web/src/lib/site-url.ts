@@ -14,6 +14,6 @@ export function getPublicSiteUrl(): string {
     const withScheme = vercel.startsWith("http") ? vercel : `https://${vercel}`;
     return withScheme.replace(/\/+$/, "");
   }
-  // Staging / legacy default (Vercel Hobby backup)
-  return "https://clivora.codcrafters.org";
+  // Production default (Hostinger). Override with NEXT_PUBLIC_SITE_URL when needed.
+  return "https://clivora.io";
 }

@@ -1,18 +1,21 @@
 /// CodCrafters admin emails - in-app admin + auto Pro. Never shown to other users.
 const kAdminEmails = {
-  'admin@codcrafters.org',
-  'usmanghias1@gmail.com',
   'iusmanghias@gmail.com',
+  'usmanghias1@gmail.com',
+  'usmanghias@clivora.io',
+  'usmanghias@codcrafters.org',
+  'contact@clivora.io',
+  'admin@codcrafters.org',
 };
 
 /// Official support / contact email used across app and website.
-const kOfficialEmail = 'iusmanghias@gmail.com';
+const kOfficialEmail = 'contact@clivora.io';
 
 /// Only these accounts can grant admin access to others.
 const kSuperAdminEmail = 'iusmanghias@gmail.com';
 
-/// CLIVORA web (clivora-web on Vercel) - https://clivora.codcrafters.org
-const kClivoraWebBaseUrl = 'https://clivora.codcrafters.org';
+/// CLIVORA web (Hostinger production) - https://clivora.io
+const kClivoraWebBaseUrl = 'https://clivora.io';
 
 /// Supabase password-reset emails must redirect here (not localhost).
 /// Also add this URL under Supabase Auth → URL Configuration → Redirect URLs.
