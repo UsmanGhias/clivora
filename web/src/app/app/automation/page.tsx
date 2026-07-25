@@ -1,11 +1,11 @@
-import { getProfile, isClientAccount } from "@/lib/profile";
+import { getProfile } from "@/lib/profile";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import { redirect } from "next/navigation";
 import { AutomationClient } from "./AutomationClient";
 
 export default async function AutomationPage() {
   const profile = await getProfile();
-  if (!profile || isClientAccount(profile)) redirect("/app");
+  if (!profile) redirect("/login");
   const enabled =
     (await isFeatureEnabled("automation_builder")) ||
     (await isFeatureEnabled("phase7_automation_builder"));

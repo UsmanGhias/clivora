@@ -1,4 +1,4 @@
-import { getProfile, isClientAccount } from "@/lib/profile";
+import { getProfile } from "@/lib/profile";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import { redirect } from "next/navigation";
 import { WorkspaceTasksClient } from "./WorkspaceTasksClient";
@@ -6,7 +6,6 @@ import { WorkspaceTasksClient } from "./WorkspaceTasksClient";
 export default async function WorkspaceTasksPage() {
   const profile = await getProfile();
   if (!profile) redirect("/login");
-  if (isClientAccount(profile)) redirect("/app/tasks");
   const enabled =
     (await isFeatureEnabled("workspace_tasks")) ||
     (await isFeatureEnabled("phase2_workspace_tasks"));

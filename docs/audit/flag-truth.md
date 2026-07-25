@@ -1,11 +1,11 @@
-# Feature-flag truth (FLAG-001) — captured 2026-07-25
+# Feature-flag truth (FLAG-001) — updated 2026-07-25
 
 ## Decision
 
-Unverified SMEMaster domain flags are **OFF** in production until each domain
-passes its evidence pack (Gates 1–12 / master plan Phase 8). Owner previously
-enabled all flags; they were disabled by audited migration
-`flag_001_disable_unverified_domains`.
+Owner restored **all** SMEMaster domain flags **ON** in production so client,
+freelancer, and admin surfaces that were flag-gated show again. Previous
+`flag_001_disable_unverified_domains` OFF state is superseded by this owner
+restore.
 
 ## Production values (authoritative)
 
@@ -16,25 +16,24 @@ enabled all flags; they were disabled by audited migration
 | `connect_marketplace` | **ON** |
 | `push_notifications` | **ON** |
 | `ai_llm` | **ON** |
-| `crm_enrichment` / `phase1_crm_enrichment` | OFF |
-| `workspace_tasks` / `phase2_workspace_tasks` | OFF |
-| `calendar_events` / `phase3_calendar_events` | OFF |
-| `crm_conflict_ui` / `phase4_crm_conflicts` | OFF |
-| `vault_cloud` / `phase5_vault_cloud` | OFF |
-| `campaigns` / `phase6_campaigns` / `campaigns_ab_testing` | OFF |
-| `automation_builder` / `phase7_automation_builder` | OFF |
-| `ai_structured` / `phase8_ai_structured` | OFF |
-| `admin_ops_dashboard` / `phase9_admin_ops` | OFF |
+| `crm_enrichment` / `phase1_crm_enrichment` | **ON** |
+| `workspace_tasks` / `phase2_workspace_tasks` | **ON** |
+| `calendar_events` / `phase3_calendar_events` | **ON** |
+| `crm_conflict_ui` / `phase4_crm_conflicts` | **ON** |
+| `vault_cloud` / `phase5_vault_cloud` | **ON** |
+| `campaigns` / `phase6_campaigns` / `campaigns_ab_testing` | **ON** |
+| `automation_builder` / `phase7_automation_builder` | **ON** |
+| `ai_structured` / `phase8_ai_structured` | **ON** |
+| `admin_ops_dashboard` / `phase9_admin_ops` | **ON** |
 
 ## Enforcement
 
-- API/page gates return disabled/503 when flags are off (vault, campaigns, etc.).
-- AppShell hides flag-tagged nav items until a listed key resolves true (WEB-006).
-- Direct routes still check flags server-side; DB RLS remains owner-scoped.
+- API/page gates allow when flags are on (vault, campaigns, automation, etc.).
+- AppShell shows flag-tagged nav items when any listed key resolves true.
+- Direct routes still check flags server-side; DB RLS remains owner-scoped
+  (and shared_with for workspace tasks).
 
-## Audited change procedure
+## Rollback
 
-1. Flip **one** domain (both alias keys) at a time.
-2. Record via `write_audit_event('flag_change', ...)`.
-3. Re-enable only after unit + RLS + API + web + Android + feature-off evidence.
-4. Rollback = set `enabled = false` on the same keys.
+Set `enabled = false` on the same keys in `app_feature_flags` (prefer one
+domain / alias pair at a time).

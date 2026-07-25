@@ -1,11 +1,11 @@
-import { getProfile, isClientAccount } from "@/lib/profile";
+import { getProfile } from "@/lib/profile";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import { redirect } from "next/navigation";
 import { CampaignsClient } from "./CampaignsClient";
 
 export default async function CampaignsPage() {
   const profile = await getProfile();
-  if (!profile || isClientAccount(profile)) redirect("/app");
+  if (!profile) redirect("/login");
   const enabled =
     (await isFeatureEnabled("campaigns")) || (await isFeatureEnabled("phase6_campaigns"));
   return (

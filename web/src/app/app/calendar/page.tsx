@@ -1,11 +1,11 @@
-import { getProfile, isClientAccount } from "@/lib/profile";
+import { getProfile } from "@/lib/profile";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import { redirect } from "next/navigation";
 import { CalendarEventsClient } from "./CalendarEventsClient";
 
 export default async function CalendarPage() {
   const profile = await getProfile();
-  if (!profile || isClientAccount(profile)) redirect("/app");
+  if (!profile) redirect("/login");
   const enabled =
     (await isFeatureEnabled("calendar_events")) ||
     (await isFeatureEnabled("phase3_calendar_events"));
