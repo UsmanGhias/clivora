@@ -1,0 +1,122 @@
+/** Shared SMTP sender for CLIVORA Edge Functions (Hostinger mailbox).
+ * Secrets: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
+ * Resend is not used.
+ */
+
+export type SmtpSendInput = {
+  to: string;
+  subject: string;
+  html: string;
+};
+
+function env(name: string, fallback = ""): string {
+  return (Deno.env.get(name) ?? fallback).trim();
+}
+
+export function smtpConfigured(): boolean {
+  return Boolean(env("SMTP_HOST") && env("SMTP_USER") && env("SMTP_PASS"));
+}
+
+export function smtpFromAddress(): string {
+  return env("SMTP_FROM") || `CLIVORA <${env("SMTP_USER") || "contact@clivora.io"}>`;
+}
+
+function encodeBase64(s: string): string {
+  return btoa(s);
+}
+
+function parseFrom(from: string): { email: string; name?: string } {
+  const m = from.match(/^(.*?)\s*<([^>]+)>$/);
+  if (m) return { name: m[1].trim().replace(/^"|"$/g, ""), email: m[2].trim() };
+  return { email: from.trim() };
+}
+
+function dotStuff(body: string): string {
+  return body.replace(/\r\n/g, "\n").split("\n").map((line) => (line.startsWith(".") ? "." + line : line)).join("\r\n");
+}
+
+/** Minimal SMTP over TLS (Hostinger: smtp.hostinger.com:465). */
+export async function sendSmtpEmail(input: SmtpSendInput): Promise<void> {
+  const host = env("SMTP_HOST", "smtp.hostinger.com");
+  const port = Number(env("SMTP_PORT", "465")) || 465;
+  const user = env("SMTP_USER");
+  const pass = env("SMTP_PASS");
+  const fromRaw = smtpFromAddress();
+  if (!host || !user || !pass) {
+    throw new Error("SMTP not configured (need SMTP_HOST, SMTP_USER, SMTP_PASS)");
+  }
+
+  const from = parseFrom(fromRaw);
+  const conn = await Deno.connectTls({ hostname: host, port });
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+  let leftover = "";
+
+  async function readReply(): Promise<{ code: string; text: string }> {
+    while (true) {
+      const chunk = new Uint8Array(4096);
+      const n = await conn.read(chunk);
+      if (n === null) throw new Error("SMTP connection closed");
+      leftover += decoder.decode(chunk.subarray(0, n));
+      const parts = leftover.split(/\r?\n/);
+      leftover = parts.pop() ?? "";
+      const lines = parts.filter((l) => l.length > 0);
+      if (!lines.length) continue;
+      // Find final line of multi-line reply (code + space)
+      for (let i = lines.length - 1; i >= 0; i--) {
+        const m = lines[i].match(/^(\d{3})([\s-])/);
+        if (m && m[2] === " ") {
+          return { code: m[1], text: lines.join("\n") };
+        }
+      }
+    }
+  }
+
+  async function cmd(line: string, expectCode: string): Promise<void> {
+    await conn.write(encoder.encode(line + "\r\n"));
+    const reply = await readReply();
+    if (reply.code !== expectCode) {
+      throw new Error(`SMTP ${expectCode} expected, got ${reply.code}: ${reply.text.slice(0, 180)}`);
+    }
+  }
+
+  try {
+    const greet = await readReply();
+    if (greet.code !== "220") throw new Error(`SMTP greet: ${greet.text}`);
+    await cmd("EHLO clivora.io", "250");
+    await cmd("AUTH LOGIN", "334");
+    await cmd(encodeBase64(user), "334");
+    await cmd(encodeBase64(pass), "235");
+    await cmd(`MAIL FROM:<${from.email}>`, "250");
+    await cmd(`RCPT TO:<${input.to}>`, "250");
+    await cmd("DATA", "354");
+
+    const subjectSafe = input.subject.replace(/[\r\n]+/g, " ");
+    const fromHeader = from.name
+      ? `"${from.name.replace(/"/g, "")}" <${from.email}>`
+      : from.email;
+    const message = [
+      `From: ${fromHeader}`,
+      `To: ${input.to}`,
+      `Subject: ${subjectSafe}`,
+      "MIME-Version: 1.0",
+      "Content-Type: text/html; charset=UTF-8",
+      "Content-Transfer-Encoding: 8bit",
+      "",
+      input.html,
+    ].join("\r\n");
+
+    await conn.write(encoder.encode(dotStuff(message) + "\r\n.\r\n"));
+    const dataReply = await readReply();
+    if (dataReply.code !== "250") {
+      throw new Error(`SMTP DATA failed: ${dataReply.text.slice(0, 180)}`);
+    }
+    await cmd("QUIT", "221").catch(() => undefined);
+  } finally {
+    try {
+      conn.close();
+    } catch {
+      /* ignore */
+    }
+  }
+}

@@ -9,7 +9,7 @@ Project: `jtzjwgovqczlccyeujhq` (Clivora, ap-southeast-2)
 | `subscriptions` + `profiles.subscription_plan` | Applied |
 | `referral_codes` + `referral_redemptions` + `credit_referral_on_purchase` | Applied |
 | `team_invites` + RLS + realtime | Applied |
-| `send-clivora-email` edge function (branded Resend templates) | Deployed ACTIVE |
+| `send-clivora-email` edge function (branded Hostinger SMTP templates) | Deployed ACTIVE |
 | `verify-play-purchase` edge function | Deployed ACTIVE |
 | Referral RPC execute locked to `service_role` | Applied |
 
@@ -35,13 +35,16 @@ The web callback page lives at `web/src/app/(auth)/auth/reset-password/page.tsx`
 Confirm in **Project Settings → Edge Functions → Secrets** (never commit these values):
 
 ```
-RESEND_API_KEY=<your-resend-api-key>
-RESEND_FROM=CLIVORA <contact@clivora.io>
+SMTP_HOST=smtp.hostinger.com
+SMTP_PORT=465
+SMTP_USER=contact@clivora.io
+SMTP_PASS=<Hostinger mailbox password>
+SMTP_FROM=CLIVORA <contact@clivora.io>
 ```
 
-**Resend is the preferred sender** for `send-clivora-email`. Optional Gmail SMTP may be configured only in the Supabase Auth dashboard (Authentication → SMTP Settings) for Auth-generated mails such as password reset — never put a Gmail app password in git, Flutter, chat logs, or `NEXT_PUBLIC_*` vars. If a Gmail app password was shared in chat, rotate it in Google Account → Security after dashboard setup.
+**Hostinger SMTP** is the sender for `send-clivora-email` and invoice reminders. Do **not** set `RESEND_*`. Configure the same SMTP under **Authentication → SMTP Settings** for Auth-generated mails (password reset / confirm).
 
-For production delivery to any recipient, verify **clivora.io** in Resend and set `RESEND_FROM` to an address on that domain (e.g. `CLIVORA <noreply@clivora.io>` or `CLIVORA <contact@clivora.io>`).
+For production delivery, create mailbox `contact@clivora.io` (or `noreply@clivora.io`) in Hostinger Emails.
 
 Password reset redirect (web + Android + admin): `https://clivora.io/auth/reset-password`.
 The branded `password_reset` Edge template is a notice only — the secure token link comes from Supabase Auth.

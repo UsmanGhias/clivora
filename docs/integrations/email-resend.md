@@ -1,31 +1,26 @@
-# CLIVORA email delivery (Resend-first)
+# CLIVORA email delivery (Hostinger SMTP)
 
-Transactional product email uses the Supabase Edge Function `send-clivora-email` with **Resend**.
+Transactional product email uses the Supabase Edge Function `send-clivora-email` with **Hostinger SMTP** (`contact@clivora.io`). Resend is not used.
 
-## Preferred secrets (dashboard only)
+## Secrets (dashboard only)
 
 | Secret | Where | Purpose |
 |--------|--------|---------|
-| `RESEND_API_KEY` | Supabase Edge Function secrets | Send branded HTML mail |
-| `RESEND_FROM` | Supabase Edge Function secrets | From address (verify domain for production) |
+| `SMTP_HOST` | Edge Function secrets | `smtp.hostinger.com` |
+| `SMTP_PORT` | Edge Function secrets | `465` |
+| `SMTP_USER` | Edge Function secrets | `contact@clivora.io` |
+| `SMTP_PASS` | Edge Function secrets | mailbox password |
+| `SMTP_FROM` | Edge Function secrets | `CLIVORA <contact@clivora.io>` |
 
-Never commit these values. Never put them in Flutter, `NEXT_PUBLIC_*`, or chat.
+Never commit these values. Never put them in Flutter or `NEXT_PUBLIC_*`.
 
 ## Password reset
 
-- Auth reset emails are sent by **Supabase Auth** (configure Auth SMTP in the dashboard if needed).
+- Auth reset emails are sent by **Supabase Auth** (configure Auth SMTP with the same Hostinger values).
 - All clients must use website redirect: `https://clivora.io/auth/reset-password`
-  - Web: `web/src/app/(auth)/auth/reset-password/page.tsx`
-  - Android: `kPasswordResetRedirectUrl` in `admin_config.dart` / `supabase_auth_helper.dart`
-  - Admin console: `AdminCloudRepository.sendPasswordReset` passes the same `redirectTo`
-- The Edge `password_reset` purpose is a branded notice only; it does not replace the Auth token email.
-
-## Optional Gmail SMTP
-
-Gmail app passwords are **optional** for Auth SMTP only. Store them exclusively in the Supabase Auth SMTP settings UI. If an app password was exposed in chat, rotate it immediately after setup. Prefer Resend + verified domain for product mail.
 
 ## Related docs
 
+- `docs/integrations/email-hostinger-smtp.md`
+- `docs/HOSTINGER_ENV_EXACT.md`
 - `docs/SUPABASE_CONFIG_v2.6.6.md`
-- `docs/internal/VERCEL_ENV_SETUP.md`
-- `docs/internal/INVOICE_REMINDERS.md`

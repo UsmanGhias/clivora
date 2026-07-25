@@ -76,3 +76,5 @@ android/.signing/
 
 # Graphify analysis output
 graphify-out/
+
+.tmp_deploy/

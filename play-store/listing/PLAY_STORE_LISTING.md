@@ -1,8 +1,8 @@
 # CLIVORA — Google Play Store Listing (production)
 
 **Package name:** `org.codcrafters.clivora`  
-**Version name:** `5.3.9`  
-**Version code:** `539`  
+**Version name:** `5.3.10`  
+**Version code:** `540`  
 **Upload signing SHA-1:** `96:93:81:80:EE:59:27:D2:46:B2:BD:FC:6C:96:C6:93:2E:1A:1D:36`
 **Support email:** `contact@clivora.io`
 **Website:** `https://clivora.io`
