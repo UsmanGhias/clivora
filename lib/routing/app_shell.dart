@@ -52,18 +52,19 @@ class AppShell extends ConsumerWidget {
   ];
 
   /// Free client: keep Account (profile/login) on the bar. Hub lives inside Account.
+  /// Icons aligned with web AppShell (chat≈MessageSquare, travel_explore≈Compass Connect).
   static const _clientBaseTabs = [
     _NavItem('/client-portal', Icons.home_outlined, Icons.home_rounded, 'Home'),
-    _NavItem('/client-messages', Icons.mail_outline, Icons.mail_rounded, 'Messages'),
+    _NavItem('/client-messages', Icons.chat_outlined, Icons.chat_rounded, 'Messages'),
     _NavItem('/client-invoices', Icons.receipt_long_outlined, Icons.receipt_long, 'Invoices'),
     _NavItem('/client-activity', Icons.notifications_outlined, Icons.notifications_rounded, 'Updates', badgeTab: true),
     _NavItem('/client-account', Icons.person_outline, Icons.person, 'Account'),
   ];
 
-  /// Client Pro Plus: same Connect logo as freelancer (travel_explore).
+  /// Client Pro Plus: same Connect logo as freelancer (travel_explore ≈ web Compass).
   static const _clientPlusTabs = [
     _NavItem('/client-portal', Icons.home_outlined, Icons.home_rounded, 'Home'),
-    _NavItem('/client-messages', Icons.mail_outline, Icons.mail_rounded, 'Messages'),
+    _NavItem('/client-messages', Icons.chat_outlined, Icons.chat_rounded, 'Messages'),
     _NavItem('/connect', Icons.travel_explore_outlined, Icons.travel_explore, 'Connect', connectBadge: true),
     _NavItem('/client-invoices', Icons.receipt_long_outlined, Icons.receipt_long, 'Invoices'),
     _NavItem('/client-account', Icons.person_outline, Icons.person, 'Account'),
