@@ -3,10 +3,9 @@
 **Memory graph:** `graphify-out/` (gitignored) · integrity map: `docs/audit/web-android-integrity.md`  
 **Repos:** https://github.com/UsmanGhias/clivora · https://github.com/UsmanGhias/clivora-web  
 
-**Flags:** unverified SMEMaster domains **OFF**. Keep ON: `phase0_foundations`,
-`money_minor_units_dual_write`, `connect_marketplace`, `push_notifications`, `ai_llm`.
+**Flags:** SMEMaster domains **ON** (owner restore 2026-07-25). See `docs/audit/flag-truth.md`.
 
-**App version:** `4.2.7+108`
+**App version:** `4.2.9+110`
 
 ## Fixed 2026-07-25 (integrity batch)
 

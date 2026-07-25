@@ -1,4 +1,4 @@
-import { getProfile, isClientAccount } from "@/lib/profile";
+import { getProfile } from "@/lib/profile";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -6,7 +6,7 @@ import { ConflictsClient } from "./ConflictsClient";
 
 export default async function ConflictsPage() {
   const profile = await getProfile();
-  if (!profile || isClientAccount(profile)) redirect("/app");
+  if (!profile) redirect("/login");
   const enabled =
     (await isFeatureEnabled("crm_conflict_ui")) ||
     (await isFeatureEnabled("phase4_crm_conflicts"));

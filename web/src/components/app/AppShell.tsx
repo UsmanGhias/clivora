@@ -294,6 +294,18 @@ export function AppShell({
           { href: "/app/projects", label: "Projects", icon: FolderKanban, badge: counts?.projects },
           { href: "/app/contracts", label: "Contracts", icon: ScrollText },
           { href: "/app/tasks", label: "Tasks", icon: ListTodo },
+          {
+            href: "/app/workspace-tasks",
+            label: "Workspace tasks",
+            icon: ListTodo,
+            flags: ["workspace_tasks", "phase2_workspace_tasks"],
+          },
+          {
+            href: "/app/calendar",
+            label: "Calendar",
+            icon: Clock,
+            flags: ["calendar_events", "phase3_calendar_events"],
+          },
           { href: "/app/messages", label: "Messages", icon: MessageSquare, badge: counts?.messages },
         ],
       },
@@ -307,6 +319,37 @@ export function AppShell({
           { href: "/app/payments/transactions", label: "Transactions", icon: ArrowLeftRight },
           { href: "/app/payments/payment-methods", label: "Payment methods", icon: CreditCard },
           { href: "/app/payments/payouts", label: "Payouts", icon: Banknote },
+        ],
+      },
+      {
+        id: "growth",
+        label: "Growth & tools",
+        icon: Sparkles,
+        items: [
+          {
+            href: "/app/campaigns",
+            label: "Campaigns",
+            icon: Sparkles,
+            flags: ["campaigns", "phase6_campaigns"],
+          },
+          {
+            href: "/app/automation",
+            label: "Automation",
+            icon: Network,
+            flags: ["automation_builder", "phase7_automation_builder"],
+          },
+          {
+            href: "/app/ai-suggestions",
+            label: "AI suggestions",
+            icon: Sparkles,
+            flags: ["ai_structured", "phase8_ai_structured"],
+          },
+          {
+            href: "/app/conflicts",
+            label: "CRM conflicts",
+            icon: Handshake,
+            flags: ["crm_conflict_ui", "phase4_crm_conflicts"],
+          },
         ],
       },
       {
