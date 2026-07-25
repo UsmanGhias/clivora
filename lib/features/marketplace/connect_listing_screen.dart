@@ -23,7 +23,7 @@ class _ConnectListingScreenState extends ConsumerState<ConnectListingScreen> {
   final _location = TextEditingController();
   String _rate = '\$200–500 / project';
   String _availability = 'available';
-  bool _listed = true;
+  bool _listed = false;
   bool _busy = false;
 
   @override
@@ -43,7 +43,7 @@ class _ConnectListingScreenState extends ConsumerState<ConnectListingScreen> {
     _location.text = row['location_label'] as String? ?? '';
     _rate = row['rate_band'] as String? ?? _rate;
     _availability = row['availability'] as String? ?? _availability;
-    _listed = row['is_listed'] as bool? ?? true;
+    _listed = row['is_listed'] as bool? ?? false;
     setState(() {});
   }
 

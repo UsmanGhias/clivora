@@ -272,12 +272,16 @@ class _ConnectMarketplaceScreenState
                                         content: Text(
                                           id == null
                                               ? 'Could not link partner.'
-                                              : 'Added to Clients.',
+                                              : isClient
+                                                  ? 'Partner linked. Open your portal to continue.'
+                                                  : 'Added to Clients.',
                                         ),
                                       ),
                                     );
-                                    if (id != null) {
+                                    if (id != null && !isClient) {
                                       router.push('/customers');
+                                    } else if (id != null && isClient) {
+                                      router.push('/client-portal');
                                     }
                                   } catch (e) {
                                     if (!mounted) return;

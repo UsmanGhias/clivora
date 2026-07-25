@@ -62,10 +62,26 @@ class ProfileAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget avatar;
-    if (photoPath != null && photoPath!.isNotEmpty && File(photoPath!).existsSync()) {
+    final path = photoPath?.trim();
+    final isRemote = path != null &&
+        path.isNotEmpty &&
+        (path.startsWith('http://') ||
+            path.startsWith('https://') ||
+            path.startsWith('data:'));
+    final isLocalFile =
+        path != null && path.isNotEmpty && !isRemote && File(path).existsSync();
+
+    if (isRemote) {
       avatar = CircleAvatar(
         radius: radius,
-        backgroundImage: FileImage(File(photoPath!)),
+        backgroundColor: ClivoraColors.primaryPurple.withValues(alpha: 0.2),
+        backgroundImage: NetworkImage(path),
+        onBackgroundImageError: (_, _) {},
+      );
+    } else if (isLocalFile) {
+      avatar = CircleAvatar(
+        radius: radius,
+        backgroundImage: FileImage(File(path)),
       );
     } else {
       avatar = CircleAvatar(

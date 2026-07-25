@@ -242,8 +242,15 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
                             ) ??
                             false;
                       },
-                      onDismissed: (_) {
-                        ref.read(databaseProvider).deleteInvoice(inv.id);
+                      onDismissed: (_) async {
+                        await ref.read(syncOutboxServiceProvider).enqueue(
+                              SyncOutboxItem(
+                                kind: 'crm_invoice_delete',
+                                payload: {'localId': inv.id},
+                                isTombstone: true,
+                              ),
+                            );
+                        await ref.read(databaseProvider).deleteInvoice(inv.id);
                       },
                       child: _InvoiceCard(
                         invoice: inv,

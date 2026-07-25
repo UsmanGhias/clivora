@@ -63,6 +63,13 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
       ),
     );
     if (confirmed == true) {
+      await ref.read(syncOutboxServiceProvider).enqueue(
+            SyncOutboxItem(
+              kind: 'crm_customer_delete',
+              payload: {'localId': id},
+              isTombstone: true,
+            ),
+          );
       await ref.read(databaseProvider).deleteCustomer(id);
       invalidateCrmData(ref, customers: true);
       if (mounted) {

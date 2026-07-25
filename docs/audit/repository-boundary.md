@@ -20,4 +20,5 @@
 
 ## Current RC
 
-See `docs/releases/release-manifest.md` (`4.2.6+107`).
+See `docs/releases/release-manifest.md` (`4.2.7+108`).
+See also `docs/releases/CLOUD_BUILD.md` and `docs/audit/web-android-integrity.md`.
