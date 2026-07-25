@@ -40,6 +40,9 @@ android {
                 keyPassword = keystoreProperties["keyPassword"] as String
                 storeFile = rootProject.file(keystoreProperties["storeFile"] as String)
                 storePassword = keystoreProperties["storePassword"] as String
+                // AAB upload to Play requires JAR (v1) signing on the bundle.
+                enableV1Signing = true
+                enableV2Signing = true
             }
         }
     }

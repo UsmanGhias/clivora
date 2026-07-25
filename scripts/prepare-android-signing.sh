@@ -22,13 +22,14 @@ STORE_PASSWORD="${ANDROID_STORE_PASSWORD:-${ANDROID_KEYSTORE_PASSWORD:-}}"
 KEY_PASSWORD="${ANDROID_KEY_PASSWORD:-${ANDROID_KEYSTORE_PASSWORD:-}}"
 
 if [[ -f "$KEYSTORE_PATH" && -n "$STORE_PASSWORD" && -n "$KEY_PASSWORD" ]]; then
+  STORE_FILE_NAME="${ANDROID_KEYSTORE_STORE_FILE:-clivora-upload-keystore.jks}"
   cat > "$KEY_PROPS" <<EOF
 storePassword=${STORE_PASSWORD}
 keyPassword=${KEY_PASSWORD}
 keyAlias=${ANDROID_KEY_ALIAS:-clivora}
-  storeFile=clivora-upload-keystore.jks
+storeFile=${STORE_FILE_NAME}
 EOF
-  echo "Wrote $KEY_PROPS"
+  echo "Wrote $KEY_PROPS (storeFile=${STORE_FILE_NAME})"
 fi
 
 if [[ ! -f "$KEY_PROPS" || ! -f "$KEYSTORE_PATH" ]]; then

@@ -10,7 +10,7 @@ export const site = {
   /** Build-time: set NEXT_PUBLIC_SITE_URL=https://clivora.io on Hostinger production. */
   url: getPublicSiteUrl(),
   appPackage: "org.codcrafters.clivora",
-  appVersion: "5.3.8",
+  appVersion: "5.3.9",
   company: {
     name: "CODCrafters",
     url: "https://codcrafters.org",
