@@ -218,6 +218,9 @@ class _ConnectMarketplaceScreenState
                                 ),
                                 onToggleSaved: _toggleSaved,
                                 browseClients: !isClient,
+                                onBrowseOpenJobs: !isClient
+                                    ? () => _tabs.animateTo(1)
+                                    : null,
                               ),
                               _NeedsTab(
                                 needs: _needs,
@@ -647,6 +650,7 @@ class _ConnectCreditsBanner extends ConsumerStatefulWidget {
 
 class _ConnectCreditsBannerState extends ConsumerState<_ConnectCreditsBanner> {
   String _label = 'Loading credits…';
+  bool _needsProfile = false;
 
   @override
   void initState() {
@@ -655,36 +659,60 @@ class _ConnectCreditsBannerState extends ConsumerState<_ConnectCreditsBanner> {
       try {
         final s = await ref.read(connectMarketplaceServiceProvider).creditSummary();
         if (!mounted) return;
-        setState(() => _label = s?.label ?? 'Credits unavailable · complete profile to unlock');
+        if (s == null) {
+          setState(() {
+            _needsProfile = true;
+            _label = 'Finish your Connect listing to unlock credits';
+          });
+        } else {
+          setState(() {
+            _needsProfile = false;
+            _label = s.label;
+          });
+        }
       } catch (_) {
         if (!mounted) return;
-        setState(() => _label = 'Complete profile to view Connect credits');
+        setState(() {
+          _needsProfile = true;
+          _label = 'Finish your Connect listing to unlock credits';
+        });
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+    final primary = Theme.of(context).colorScheme.primary;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _needsProfile ? () => context.push('/connect/listing') : null,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.toll_outlined, size: 18, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              '$_label · contact/proposal 1 · publish 3 · \$0 fee',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
-            ),
+        child: Container(
+          width: double.infinity,
+          margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: primary.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: primary.withValues(alpha: 0.2)),
           ),
-        ],
+          child: Row(
+            children: [
+              Icon(Icons.toll_outlined, size: 18, color: primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _needsProfile
+                      ? '$_label · tap to edit listing'
+                      : '$_label · contact/proposal 1 · publish 3 · \$0 fee',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ),
+              if (_needsProfile) Icon(Icons.chevron_right, size: 18, color: primary),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -787,6 +815,7 @@ class _TalentTab extends StatelessWidget {
     required this.onOpenDetail,
     required this.onToggleSaved,
     this.browseClients = false,
+    this.onBrowseOpenJobs,
   });
 
   final List<Map<String, dynamic>> profiles;
@@ -804,6 +833,7 @@ class _TalentTab extends StatelessWidget {
   final void Function(Map<String, dynamic>) onOpenDetail;
   final Future<void> Function(Map<String, dynamic>) onToggleSaved;
   final bool browseClients;
+  final VoidCallback? onBrowseOpenJobs;
 
   @override
   Widget build(BuildContext context) {
@@ -841,8 +871,10 @@ class _TalentTab extends StatelessWidget {
             text: showSavedOnly
                 ? 'No saved listings yet.'
                 : browseClients
-                ? 'No client listings yet.'
+                ? 'No client About listings yet. Browse Open jobs for work to apply to.'
                 : 'No freelancers yet.',
+            actionLabel: browseClients && !showSavedOnly ? 'Browse Open jobs' : null,
+            onAction: browseClients && !showSavedOnly ? onBrowseOpenJobs : null,
           )
         else
           ..._withDividers(
@@ -1561,16 +1593,23 @@ class _InitialDot extends StatelessWidget {
 typedef _AvatarDot = _InitialDot;
 
 class _CompactEmpty extends StatelessWidget {
-  const _CompactEmpty({required this.icon, required this.text});
+  const _CompactEmpty({
+    required this.icon,
+    required this.text,
+    this.actionLabel,
+    this.onAction,
+  });
 
   final IconData icon;
   final String text;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
     final onSurface = Theme.of(context).colorScheme.onSurface;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 42),
+      padding: const EdgeInsets.symmetric(vertical: 42, horizontal: 24),
       child: Column(
         children: [
           Icon(icon, size: 32, color: onSurface.withValues(alpha: 0.35)),
@@ -1581,8 +1620,16 @@ class _CompactEmpty extends StatelessWidget {
             style: TextStyle(
               color: onSurface.withValues(alpha: 0.6),
               fontSize: 13,
+              height: 1.35,
             ),
           ),
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(height: 14),
+            FilledButton(
+              onPressed: onAction,
+              child: Text(actionLabel!),
+            ),
+          ],
         ],
       ),
     );

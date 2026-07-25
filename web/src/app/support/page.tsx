@@ -23,7 +23,7 @@ const faqs = [
   },
   {
     q: "How do I upgrade to Pro?",
-    a: `Pro (${site.pricing.proMonthlyLabel}/month) is coming soon via Google Play Billing. Currently all features are unlocked for free during early access.`,
+    a: `Pro (${site.pricing.proMonthlyLabel}/month) and Pro Plus are available via Google Play Billing in the Android app, and via web checkout at /pro. Subscribe in-app on Android; manage or cancel in Google Play → Subscriptions.`,
   },
   {
     q: "How do I export PDF invoices?",

@@ -7,8 +7,8 @@
 
 | Item | Value |
 |------|-------|
-| Android versionName | `4.2.9` |
-| Android versionCode | `110` |
+| Android versionName | `4.2.10` |
+| Android versionCode | `111` |
 | Monorepo branch | `main` |
 | Expected Play signing SHA-1 | `96:93:81:80:EE:59:27:D2:46:B2:BD:FC:6C:96:C6:93:2E:1A:1D:36` |
 | Package | `org.codcrafters.clivora` |

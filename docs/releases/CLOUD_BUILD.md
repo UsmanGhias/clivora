@@ -15,7 +15,7 @@ Confirm version:
 
 ```bash
 grep '^version:' pubspec.yaml
-# expect: 4.2.7+108 (or newer on main)
+# expect: 4.2.10+111 (or newer on main)
 ```
 
 ## 2. Tooling
@@ -42,8 +42,9 @@ bash build-android.sh
 
 Outputs:
 
-- `releases/clivora-4.2.7.apk`
-- `releases/clivora-4.2.7.aab`
+- `releases/clivora-4.2.10.apk`
+- `releases/clivora-4.2.10.aab`
+- `releases/SHA256SUMS.txt`
 
 ## 4. Verify certificate
 
@@ -70,8 +71,8 @@ Or let Vercel rebuild from the pushed `clivora-web` main.
 
 1. Client: sign in on phone → update profile photo → sign in on web → same avatar.
 2. Freelancer: create customer/project on phone → appear on web `/app/clients` / projects after sync.
-3. Connect (Pro Plus): save listing as draft, then list — no PROFILE_INCOMPLETE on first publish.
-4. Confirm no stacked double “sync pending” banners; Sync Center shows the queue.
+3. Connect (Pro Plus): save listing as draft, then list — no PROFILE_INCOMPLETE on first publish; listing auto-approved when admin auto-approve is ON.
+4. Confirm no Hub “sync pending” orange strip; Sync Center tile still available; shell only shows conflicts/failures.
 
 ## Status language
 

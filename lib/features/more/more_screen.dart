@@ -194,28 +194,6 @@ class MoreScreen extends ConsumerWidget {
               ),
             ),
           ],
-          FutureBuilder<int>(
-            future: ref.read(syncOutboxServiceProvider).pendingCount(),
-            builder: (context, snap) {
-              final n = snap.data ?? 0;
-              if (n <= 0) return const SizedBox.shrink();
-              // Single link into Sync Center — do not duplicate shell banners.
-              return Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: ListTile(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  tileColor: ClivoraColors.warningOrange.withValues(alpha: 0.08),
-                  leading: const Icon(Icons.sync, color: ClivoraColors.warningOrange),
-                  title: Text('$n change(s) waiting in Sync Center'),
-                  subtitle: const Text('Tap to review queue, conflicts, and retries'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    if (context.mounted) context.push('/sync-center');
-                  },
-                ),
-              );
-            },
-          ),
           if (!isPlus) ...[
             const SizedBox(height: 24),
             const SectionHeader(title: 'CLIVORA Connect'),
@@ -276,12 +254,11 @@ class MoreScreen extends ConsumerWidget {
             physics: const NeverScrollableScrollPhysics(),
             mainAxisSpacing: 10,
             crossAxisSpacing: 10,
-            childAspectRatio: 2.35,
+            childAspectRatio: 1.65,
             children: [
               ToolGridTile(
                 icon: Icons.task_alt_outlined,
                 label: 'Tasks',
-                description: 'Manage and organize your tasks',
                 iconBackground: ClivoraColors.iconOrange,
                 iconColor: ClivoraColors.warningOrange,
                 onTap: () => context.push('/tasks'),
@@ -289,7 +266,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.cloud_sync_outlined,
                 label: 'Workspace tasks',
-                description: 'Cloud tasks synced with web',
                 iconBackground: ClivoraColors.iconBlue,
                 iconColor: Colors.blue,
                 onTap: () => context.push('/workspace-tasks'),
@@ -297,7 +273,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.calendar_today_outlined,
                 label: 'Calendar',
-                description: 'Schedule and manage your events',
                 iconBackground: ClivoraColors.iconGreen,
                 iconColor: ClivoraColors.successGreen,
                 onTap: () async {
@@ -310,7 +285,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.campaign_outlined,
                 label: 'Campaigns',
-                description: 'Draft → publish content (web parity)',
                 iconBackground: ClivoraColors.iconTeal,
                 iconColor: ClivoraColors.primary,
                 onTap: () => context.push('/campaigns'),
@@ -318,7 +292,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.account_tree_outlined,
                 label: 'Automation builder',
-                description: 'Cloud rules + durable jobs',
                 iconBackground: ClivoraColors.iconOrange,
                 iconColor: ClivoraColors.warningOrange,
                 onTap: () => context.push('/automation-builder'),
@@ -326,7 +299,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.psychology_outlined,
                 label: 'AI suggestions',
-                description: 'Review structured AI (human gate)',
                 iconBackground: ClivoraColors.iconBlue,
                 iconColor: Colors.indigo,
                 onTap: () => context.push('/ai-suggestions'),
@@ -334,7 +306,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.merge_type_outlined,
                 label: 'CRM conflicts',
-                description: 'Keep local / Take cloud',
                 iconBackground: ClivoraColors.iconRed,
                 iconColor: Colors.redAccent,
                 onTap: () => context.push('/crm-conflicts'),
@@ -342,7 +313,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.sync_outlined,
                 label: 'Sync Center',
-                description: 'Outbox queue and retries',
                 iconBackground: ClivoraColors.iconGreen,
                 iconColor: ClivoraColors.successGreen,
                 onTap: () => context.push('/sync-center'),
@@ -350,7 +320,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.people_outline,
                 label: 'Team',
-                description: 'Manage your team and members',
                 iconBackground: ClivoraColors.iconBlue,
                 iconColor: Colors.blue,
                 onTap: () async {
@@ -363,7 +332,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.forum_outlined,
                 label: 'Messages',
-                description: 'Communicate with your team',
                 iconBackground: ClivoraColors.iconTeal,
                 iconColor: ClivoraColors.primary,
                 onTap: () => context.go('/freelancer-messages'),
@@ -371,7 +339,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.payment_outlined,
                 label: 'Payments',
-                description: 'Track payments and transactions',
                 iconBackground: ClivoraColors.iconBlue,
                 iconColor: Colors.blue,
                 onTap: () => context.push('/payments'),
@@ -379,7 +346,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.notifications_outlined,
                 label: 'Follow-ups',
-                description: 'Stay on top of important follow-ups',
                 iconBackground: ClivoraColors.iconRed,
                 iconColor: ClivoraColors.errorRed,
                 onTap: () => context.push('/notifications'),
@@ -387,7 +353,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.flag_outlined,
                 label: 'Milestones',
-                description: 'Track and manage project milestones',
                 iconBackground: ClivoraColors.iconIndigo,
                 iconColor: Colors.indigo,
                 onTap: () => context.push('/projects'),
@@ -395,7 +360,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.star_outline,
                 label: 'Reviews',
-                description: 'See feedback and client reviews',
                 iconBackground: ClivoraColors.iconYellow,
                 iconColor: ClivoraColors.accent,
                 onTap: () => context.push('/reviews'),
@@ -403,7 +367,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.cloud_outlined,
                 label: 'File Vault',
-                description: 'Securely store and access your files',
                 iconBackground: ClivoraColors.iconBlue,
                 iconColor: Colors.blue,
                 onTap: () async {
@@ -416,7 +379,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.note_outlined,
                 label: 'Notes',
-                description: 'Keep all your notes organized',
                 iconBackground: ClivoraColors.iconOrange,
                 iconColor: ClivoraColors.warningOrange,
                 onTap: () => context.push('/notes'),
@@ -424,7 +386,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.view_kanban_outlined,
                 label: 'Projects',
-                description: 'Kanban board and active work',
                 iconBackground: ClivoraColors.iconIndigo,
                 iconColor: Colors.indigo,
                 onTap: () => context.go('/projects'),
@@ -432,7 +393,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.receipt_long_outlined,
                 label: 'Invoices',
-                description: 'Create and track invoices',
                 iconBackground: ClivoraColors.iconTeal,
                 iconColor: ClivoraColors.primary,
                 onTap: () => context.go('/invoices'),
@@ -446,12 +406,11 @@ class MoreScreen extends ConsumerWidget {
             physics: const NeverScrollableScrollPhysics(),
             mainAxisSpacing: 10,
             crossAxisSpacing: 10,
-            childAspectRatio: 2.35,
+            childAspectRatio: 1.65,
             children: [
               ToolGridTile(
                 icon: Icons.inventory_2_outlined,
                 label: 'Catalog',
-                description: 'Products and services',
                 iconBackground: ClivoraColors.iconTeal,
                 iconColor: ClivoraColors.primary,
                 onTap: () => context.push('/products'),
@@ -459,7 +418,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.autorenew,
                 label: 'Recurring',
-                description: 'Recurring invoices',
                 iconBackground: ClivoraColors.iconGreen,
                 iconColor: ClivoraColors.successGreen,
                 onTap: () => context.push('/recurring-invoices'),
@@ -467,7 +425,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.account_balance_wallet_outlined,
                 label: 'Credits',
-                description: 'Credit notes and adjustments',
                 iconBackground: ClivoraColors.iconYellow,
                 iconColor: ClivoraColors.accent,
                 onTap: () => context.push('/credits'),
@@ -475,7 +432,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.playlist_add_check_outlined,
                 label: 'Bill work',
-                description: 'Turn project time into invoices',
                 iconBackground: ClivoraColors.iconGreen,
                 iconColor: ClivoraColors.successGreen,
                 onTap: () => _billProjectToInvoice(context, ref),
@@ -483,7 +439,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.payments_outlined,
                 label: 'Payment queue',
-                description: 'Confirm client payments',
                 iconBackground: ClivoraColors.iconTeal,
                 iconColor: Colors.teal,
                 onTap: () => context.push('/payment-confirmations'),
@@ -507,12 +462,11 @@ class MoreScreen extends ConsumerWidget {
             physics: const NeverScrollableScrollPhysics(),
             mainAxisSpacing: 10,
             crossAxisSpacing: 10,
-            childAspectRatio: 2.35,
+            childAspectRatio: 1.65,
             children: [
               ToolGridTile(
                 icon: Icons.bar_chart_outlined,
                 label: 'Reports',
-                description: 'View detailed reports and insights',
                 iconBackground: ClivoraColors.iconBlue,
                 iconColor: Colors.blue,
                 onTap: () => context.push('/reports'),
@@ -520,7 +474,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.insights_outlined,
                 label: 'Analytics',
-                description: 'Track performance and trends',
                 iconBackground: ClivoraColors.iconTeal,
                 iconColor: ClivoraColors.primary,
                 onTap: () => context.push('/analytics'),
@@ -528,7 +481,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.cloud_upload_outlined,
                 label: 'Backup',
-                description: 'Secure your data and restore anytime',
                 iconBackground: ClivoraColors.iconGreen,
                 iconColor: ClivoraColors.successGreen,
                 onTap: () => context.push('/backup'),
@@ -536,7 +488,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.ios_share_outlined,
                 label: 'Export',
-                description: 'Export your data in multiple formats',
                 iconBackground: ClivoraColors.iconGreen,
                 iconColor: ClivoraColors.successGreen,
                 onTap: () async {
@@ -555,7 +506,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.receipt_outlined,
                 label: 'Expenses',
-                description: 'Manage and track your expenses',
                 iconBackground: ClivoraColors.iconRed,
                 iconColor: ClivoraColors.errorRed,
                 onTap: () => context.push('/expenses'),
@@ -563,7 +513,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.forum_outlined,
                 label: 'Templates',
-                description: 'Use templates to save time and effort',
                 iconBackground: ClivoraColors.iconTeal,
                 iconColor: Colors.teal,
                 onTap: () => context.push('/templates'),
@@ -571,7 +520,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.auto_awesome_outlined,
                 label: 'CLIVORA AI',
-                description: 'AI tools to boost your productivity',
                 iconBackground: ClivoraColors.iconTeal,
                 iconColor: ClivoraColors.primary,
                 onTap: () async {
@@ -584,7 +532,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.description_outlined,
                 label: 'Contracts',
-                description: 'Create, manage and track contracts',
                 iconBackground: ClivoraColors.iconTeal,
                 iconColor: ClivoraColors.primary,
                 onTap: () => context.push('/contracts'),
@@ -592,7 +539,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.bolt_outlined,
                 label: 'Workflows',
-                description: 'Automate tasks and streamline work',
                 iconBackground: ClivoraColors.iconYellow,
                 iconColor: Colors.amber,
                 onTap: () async {
@@ -605,7 +551,6 @@ class MoreScreen extends ConsumerWidget {
               ToolGridTile(
                 icon: Icons.request_quote_outlined,
                 label: 'Quotes',
-                description: 'Send quotes and convert to invoices',
                 iconBackground: ClivoraColors.iconTeal,
                 iconColor: ClivoraColors.primary,
                 onTap: () => context.push('/quotes'),

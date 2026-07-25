@@ -5,7 +5,7 @@
 
 **Flags:** SMEMaster domains **ON** (owner restore 2026-07-25). See `docs/audit/flag-truth.md`.
 
-**App version:** `4.2.9+110`
+**App version:** `4.2.10+111`
 
 ## Fixed 2026-07-25 (integrity batch)
 

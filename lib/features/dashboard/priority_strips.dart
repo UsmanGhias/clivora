@@ -300,16 +300,9 @@ class _PriorityCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final metric in metrics)
-                _PriorityMetric(label: metric.label, value: metric.value),
-            ],
-          ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
+          _PriorityMetricsRow(metrics: metrics),
+          const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
@@ -329,6 +322,46 @@ class _PriorityCard extends StatelessWidget {
   }
 }
 
+/// Full-width metric layout: 3 → one row; 4 → 2×2. No leftover empty gaps.
+class _PriorityMetricsRow extends StatelessWidget {
+  const _PriorityMetricsRow({required this.metrics});
+
+  final List<_PriorityMetricData> metrics;
+
+  @override
+  Widget build(BuildContext context) {
+    if (metrics.length == 4) {
+      return Column(
+        children: [
+          Row(
+            children: [
+              Expanded(child: _PriorityMetric(label: metrics[0].label, value: metrics[0].value)),
+              const SizedBox(width: 8),
+              Expanded(child: _PriorityMetric(label: metrics[1].label, value: metrics[1].value)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(child: _PriorityMetric(label: metrics[2].label, value: metrics[2].value)),
+              const SizedBox(width: 8),
+              Expanded(child: _PriorityMetric(label: metrics[3].label, value: metrics[3].value)),
+            ],
+          ),
+        ],
+      );
+    }
+    return Row(
+      children: [
+        for (var i = 0; i < metrics.length; i++) ...[
+          if (i > 0) const SizedBox(width: 8),
+          Expanded(child: _PriorityMetric(label: metrics[i].label, value: metrics[i].value)),
+        ],
+      ],
+    );
+  }
+}
+
 class _PriorityMetric extends StatelessWidget {
   const _PriorityMetric({required this.label, required this.value});
 
@@ -338,7 +371,7 @@ class _PriorityMetric extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: (MediaQuery.sizeOf(context).width - 40 - 16) / 3,
+      width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.12),
