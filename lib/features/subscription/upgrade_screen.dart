@@ -73,8 +73,12 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
     });
     try {
       await ref.read(billingServiceProvider).restorePurchases();
+      ref.invalidate(serverSubscriptionProvider);
+      ref.invalidate(cloudSubscriptionPlanProvider);
+      ref.invalidate(subscriptionPlanProvider);
       if (mounted) {
-        setState(() => _status = 'Restoring purchases from Google Play…');
+        setState(() => _status =
+            'Restored from Google Play. If you have an active subscription, Pro unlocks within a few seconds.');
       }
     } catch (e) {
       if (mounted) setState(() => _status = '$e');

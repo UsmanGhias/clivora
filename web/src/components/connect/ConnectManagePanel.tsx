@@ -405,6 +405,20 @@ export function ConnectManagePanel() {
       updated_at: new Date().toISOString(),
     };
     const firstPublish = listing.is_listed && !listing.id;
+    // Draft upsert first so credit eligibility / PROFILE_INCOMPLETE can resolve
+    // before connect_publish_profile spends credits (mobile parity).
+    const draftPayload = {
+      ...payload,
+      is_listed: firstPublish && accountType === "freelancer" ? false : listing.is_listed,
+    };
+    const { error: draftErr } = listing.id
+      ? await supabase.from("connect_profiles").update(draftPayload).eq("id", listing.id)
+      : await supabase.from("connect_profiles").upsert(draftPayload, { onConflict: "user_id" });
+    if (draftErr) {
+      setSaving(false);
+      setError(draftErr.message);
+      return;
+    }
     if (firstPublish && accountType === "freelancer") {
       const { error: rpcErr } = await supabase.rpc("connect_publish_profile", {
         p_headline: listing.headline.trim() || listing.display_title.trim(),
@@ -418,14 +432,7 @@ export function ConnectManagePanel() {
         return;
       }
     }
-    const { error: err } = listing.id
-      ? await supabase.from("connect_profiles").update(payload).eq("id", listing.id)
-      : await supabase.from("connect_profiles").upsert(payload, { onConflict: "user_id" });
     setSaving(false);
-    if (err) {
-      setError(err.message);
-      return;
-    }
     setMessage(
       firstPublish
         ? `Profile published (−${CONNECT_CREDIT_COSTS.publish_profile} credits). It is now listed on Connect.`

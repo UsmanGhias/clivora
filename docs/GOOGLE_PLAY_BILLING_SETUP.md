@@ -11,11 +11,12 @@ Complete these steps in [Google Play Console](https://play.google.com/console), 
 ## 2. App package
 
 - Package name: `org.codcrafters.clivora`
-- Upload at least one **AAB** to an **Internal testing** or **Closed testing** track before subscriptions work in sandbox.
+- Upload a signed **AAB** to the **Production** track for public launch (preferred).
+- Sandbox/license-tester purchases still work after any track has an uploaded AAB; Production access is already granted for CLIVORA.
 
-## 3. Create subscriptions (required)
+## 3. Create subscriptions (required — must be Active)
 
-Create **four monthly subscriptions** (account type × plan):
+Create **four monthly subscriptions** (account type × plan) under Monetise → Subscriptions:
 
 | Product ID | Name |
 |------------|------|
@@ -24,7 +25,13 @@ Create **four monthly subscriptions** (account type × plan):
 | `clivora_pro_plus_freelancer_monthly` | Freelancer Pro Plus |
 | `clivora_pro_plus_client_monthly` | Client Pro Plus |
 
+Activate each base plan. Until products are Active, the app shows fallback prices and purchase returns false.
+
 Website Pro uses **SafePay** (`docs/SAFEPAY_SETUP.md`). Do not deep-link web checkout from the Play-distributed APK.
+
+### Real-time developer notifications (optional for launch)
+
+RTDN / Pub/Sub can be enabled later. Launch unlocks use purchase-time verify via `verify-play-purchase`.
 
 ### Server JWT note
 

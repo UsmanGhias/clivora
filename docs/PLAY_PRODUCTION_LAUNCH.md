@@ -1,55 +1,65 @@
-# Play production launch checklist (CLIVORA 4.2.3)
+# Play production launch checklist (CLIVORA 4.2.10)
 
-Use this before making the app available to everyone on Google Play.
+Direct **Production** track launch — **do not** create Open testing / Closed testing tracks unless you want them later.
 
-## Build / signing (done in repo)
+## Build / signing (repo)
 
-- [x] Version `4.2.3+104`
-- [x] Signed with Play **upload** key (`SHA1 96:93:81:80:...`)
-- [x] Hub / Command Center from `v3.9.6-playstore` (Work & collaboration first)
-- [x] Connect icon `travel_explore` on client + freelancer Plus
-- [x] Hub icon `Icons.hub`
-- [x] Native Google Sign-In (no preview keystore)
-- [x] In-app upgrades use **Google Play Billing** only
-- [x] In-app account deletion (`Security & Privacy`)
-- [x] Privacy / Terms routes in app + web URLs
-- [x] `AD_ID` permission removed; camera/biometric marked optional
+- [x] Version `4.2.10+111`
+- [x] Signed with Play **upload** key (`SHA1 96:93:81:80:EE:59:27:D2:46:B2:BD:FC:6C:96:C6:93:2E:1A:1D:36`)
+- [x] Native Google Sign-In
+- [x] In-app upgrades use **Google Play Billing** only (no web checkout deep-link from APK)
+- [x] In-app account deletion
+- [x] Privacy / Terms in app + `https://clivora.codcrafters.org/privacy`
+- [x] Connect auto-approve on publish (admin settings default ON)
+- [x] Hub pending-sync banner removed (conflicts/failures only in shell)
 
-## Play Console (owner must complete)
+## Cloud AI / CI build (APK + AAB)
 
-1. **Create release** → upload `clivora-4.2.3.aab`
-2. **App content**
-   - Privacy policy URL: `https://clivora.codcrafters.org/privacy`
-   - Data safety form (match `play-store/listing/PLAY_STORE_LISTING.md`)
-   - Target audience: 18+ / not for children
-   - Ads: No
-3. **Store listing** — copy from `play-store/listing/PLAY_STORE_LISTING.md`
-4. **Subscriptions** — ensure Pro / Pro Plus products exist and match `BillingService` product IDs
-5. **App signing** — Play App Signing enabled; upload key matches SHA above
-6. **Firebase** — Android app SHA-1 includes upload cert `96:93:81:80:...` (for Google Sign-In)
-7. **Supabase Auth** — authorized redirect URLs include app deep links if used
-8. **Countries / pricing** — set availability
-9. **Pre-launch report** — review crashes / policy findings
-10. **Rollout** — start with closed/open testing if desired, then production
+```bash
+git clone git@github.com:UsmanGhias/clivora.git && cd clivora
+git checkout main && git pull
+# Needs upload keystore: android/clivora-upload-keystore.jks + android/key.properties
+# OR env: ANDROID_KEYSTORE_BASE64, ANDROID_STORE_PASSWORD, ANDROID_KEY_PASSWORD, ANDROID_KEY_ALIAS
+bash build-android.sh
+# Expect: releases/clivora-4.2.10.apk + releases/clivora-4.2.10.aab
+```
+
+Full detail: [`docs/releases/CLOUD_BUILD.md`](releases/CLOUD_BUILD.md)
+
+## Play Console — Production only (owner)
+
+1. **Monetise → Subscriptions** — create/activate all four product IDs (see `docs/GOOGLE_PLAY_BILLING_SETUP.md`):
+   - `clivora_pro_freelancer_monthly`
+   - `clivora_pro_client_monthly`
+   - `clivora_pro_plus_freelancer_monthly`
+   - `clivora_pro_plus_client_monthly`
+2. Supabase secret `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` set for `verify-play-purchase`
+3. **Test and release → Production → Create new release**
+4. Upload **`releases/clivora-4.2.10.aab`** (not APK)
+5. Release notes from `play-store/listing/PLAY_STORE_LISTING.md`
+6. Confirm App content: privacy, Data safety, 18+, Ads = No
+7. Countries / pricing
+8. **Start rollout to Production** at 100% (or staged % if you prefer) — **skip Open testing**
+9. Wait for Google review → Production becomes **Active**
 
 ## Do not upload
 
-- Preview/sideload AABs (`7F:6B:CA:0D:...` signing)
-- `v2.20`, `v2.21-preview`, `v4.1.7-sideload`, superseded `v4.2.1`
+- Preview/sideload AABs (wrong signing SHA)
+- Older builds superseded by `4.2.10+111`
 
 ## Policy reminders
 
-- Digital subscriptions sold in-app → Play Billing only (already wired)
-- Account deletion must remain reachable without contacting support
-- Declare all collected data honestly in Data safety
-- No misleading “offline forever / bank-level” claims beyond what you deliver
-- CAMERA only for profile/attachments; do not request unused SMS/call logs/location
+- Digital subscriptions in-app → Play Billing only
+- Account deletion reachable without support email
+- Honest Data safety declarations
+- CAMERA only for profile/attachments
 
-## Post-publish smoke test
+## Post-publish smoke
 
-- [ ] Install from Play internal track
+- [ ] Install from Play Production
 - [ ] Email + Google Sign-In
-- [ ] Freelancer Home + Hub Command Center
-- [ ] Connect tab icon looks correct
-- [ ] Upgrade screen opens Play Billing
-- [ ] Delete account flow completes
+- [ ] Freelancer home Work queue metrics fill the card evenly
+- [ ] Hub tiles readable (no truncated titles); no orange “sync pending” strip
+- [ ] Connect: publish listing → appears for other role (auto-approved)
+- [ ] Upgrade → Play Billing sheet; Restore purchases
+- [ ] Delete account flow
