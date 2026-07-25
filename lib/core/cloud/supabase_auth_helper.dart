@@ -53,12 +53,32 @@ class SupabaseAuthHelper {
   static Future<void> refreshSessionIfNeeded() async {
     final session = client.auth.currentSession;
     if (session == null) return;
-    if (session.isExpired) {
+    if (session.isExpired || client.auth.currentUser == null) {
       try {
         await client.auth.refreshSession();
       } catch (e) {
         debugPrint('Supabase session refresh: $e');
       }
+    }
+  }
+
+  /// Returns true when a usable cloud JWT is present (refreshes if needed).
+  static Future<bool> ensureCloudSession() async {
+    try {
+      var session = client.auth.currentSession;
+      if (session == null) return false;
+      if (session.isExpired || client.auth.currentUser == null) {
+        try {
+          await client.auth.refreshSession();
+        } catch (e) {
+          debugPrint('ensureCloudSession refresh: $e');
+        }
+      }
+      return client.auth.currentUser?.id != null ||
+          client.auth.currentSession?.user.id != null;
+    } catch (e) {
+      debugPrint('ensureCloudSession: $e');
+      return false;
     }
   }
 

@@ -84,6 +84,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       await SupabaseAuthHelper.refreshSessionIfNeeded();
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getInt(_sessionUserIdKey);
+      await SupabaseAuthHelper.ensureCloudSession();
       final cloudEmail = SupabaseAuthHelper.currentEmail?.trim().toLowerCase();
 
       User? user;

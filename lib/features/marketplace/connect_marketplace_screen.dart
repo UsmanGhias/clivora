@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/auth/auth_service.dart';
 import '../../core/auth/user_roles.dart';
+import '../../core/cloud/supabase_auth_helper.dart';
 import '../../core/constants/pro_pricing.dart';
 import '../../core/services/marketplace/connect_marketplace_service.dart';
 import '../../data/providers/app_providers.dart';
@@ -97,6 +98,19 @@ class _ConnectMarketplaceScreenState
       _error = null;
     });
     try {
+      final cloudOk = await SupabaseAuthHelper.ensureCloudSession();
+      if (!cloudOk) {
+        if (!mounted) return;
+        setState(() {
+          _error =
+              'Cloud session expired. Sign out and sign in again to load Connect.';
+          _loading = false;
+          _profiles = [];
+          _needs = [];
+          _requests = [];
+        });
+        return;
+      }
       final svc = ref.read(connectMarketplaceServiceProvider);
       final user = ref.read(authStateProvider).valueOrNull;
       final isClient = isClientUser(user);
