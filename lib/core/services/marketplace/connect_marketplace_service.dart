@@ -487,13 +487,6 @@ class ConnectMarketplaceService {
     } catch (e) {
       debugPrint('Connect partner CRM enqueue failed: $e');
     }
-    try {
-      await ref.read(syncOutboxServiceProvider).enqueue(
-            SyncOutboxItem(kind: 'crm_customer', payload: {'localId': id}),
-          );
-    } catch (e) {
-      debugPrint('Connect partner CRM enqueue failed: $e');
-    }
     await logConnectEvent('connect_workspace_linked', payload: {
       'customer_email': email,
       'customer_id': id,
