@@ -1,4 +1,4 @@
-/** CLIVORA branded transactional email HTML (Resend). */
+/** CLIVORA branded transactional email HTML (Hostinger SMTP). */
 
 const BRAND = {
   name: "CLIVORA",

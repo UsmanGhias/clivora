@@ -1,9 +1,15 @@
-// CLIVORA transactional email — Resend API with branded HTML templates.
-// Secrets: RESEND_API_KEY, RESEND_FROM (e.g. "CLIVORA <onboarding@resend.dev>")
+// CLIVORA transactional email — Hostinger SMTP (clivora.io mailbox).
+// Secrets: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
+// Resend is removed — do not set RESEND_*.
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { renderTemplate } from "./email_brand.ts";
+import {
+  sendSmtpEmail,
+  smtpConfigured,
+  smtpFromAddress,
+} from "./smtp_send.ts";
 
 const ALLOWED = new Set([
   "password_reset",
@@ -33,36 +39,22 @@ type EmailBody = {
   wrapBrand?: boolean;
 };
 
-function parseResendError(raw: string): { message: string; status: number } {
-  try {
-    const parsed = JSON.parse(raw);
-    const message = String(parsed.message ?? parsed.error ?? raw);
-    const lower = message.toLowerCase();
-    if (lower.includes("only send testing emails") || lower.includes("verify a domain")) {
-      return {
-        message:
-          "Resend sandbox: verify a domain and use a matching from address to email any recipient. In-app delivery still works.",
-        status: 422,
-      };
-    }
-    return { message, status: 502 };
-  } catch {
-    return { message: raw.slice(0, 240), status: 502 };
-  }
-}
-
 serve(async (req) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
   }
 
-  const resendKey = Deno.env.get("RESEND_API_KEY");
-  const from = Deno.env.get("RESEND_FROM") ?? "CLIVORA <onboarding@resend.dev>";
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-  if (!resendKey) {
-    return new Response(JSON.stringify({ error: "Email not configured" }), { status: 503 });
+  if (!smtpConfigured()) {
+    return new Response(
+      JSON.stringify({
+        error:
+          "Email not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS (Hostinger mailbox) on Edge Function secrets.",
+      }),
+      { status: 503 },
+    );
   }
 
   const authHeader = req.headers.get("Authorization");
@@ -106,8 +98,7 @@ serve(async (req) => {
       .select("role, account_type")
       .eq("id", userData.user.id)
       .maybeSingle();
-    const isAdmin =
-      profile?.role === "admin" || profile?.account_type === "admin";
+    const isAdmin = profile?.role === "admin" || profile?.account_type === "admin";
     if (!isAdmin) {
       return new Response(JSON.stringify({ error: "Admin only" }), { status: 403 });
     }
@@ -133,20 +124,7 @@ serve(async (req) => {
   }
 
   try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${resendKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ from, to, subject, html }),
-    });
-    if (!res.ok) {
-      const errText = await res.text();
-      const parsed = parseResendError(errText);
-      return new Response(JSON.stringify({ error: parsed.message }), { status: parsed.status });
-    }
-
+    await sendSmtpEmail({ to, subject, html });
     if (adminClient) {
       await adminClient.from("email_send_log").insert({
         purpose,
@@ -154,8 +132,10 @@ serve(async (req) => {
         sender_uid: userData.user.id,
       });
     }
-
-    return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    return new Response(
+      JSON.stringify({ ok: true, from: smtpFromAddress() }),
+      { status: 200 },
+    );
   } catch (e) {
     return new Response(JSON.stringify({ error: String(e) }), { status: 500 });
   }

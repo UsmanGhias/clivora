@@ -2,6 +2,36 @@
   "mcpServers": {
     "supabase": {
       "url": "https://mcp.supabase.com/mcp?project_ref=jtzjwgovqczlccyeujhq"
+    },
+    "hostinger-hosting": {
+      "command": "npx",
+      "args": [
+        "--package=hostinger-api-mcp@latest",
+        "hostinger-hosting-mcp"
+      ],
+      "env": {
+        "HOSTINGER_API_TOKEN": "PASTE_HOSTINGER_API_TOKEN_HERE"
+      }
+    },
+    "hostinger-domains": {
+      "command": "npx",
+      "args": [
+        "--package=hostinger-api-mcp@latest",
+        "hostinger-domains-mcp"
+      ],
+      "env": {
+        "HOSTINGER_API_TOKEN": "PASTE_HOSTINGER_API_TOKEN_HERE"
+      }
+    },
+    "hostinger-dns": {
+      "command": "npx",
+      "args": [
+        "--package=hostinger-api-mcp@latest",
+        "hostinger-dns-mcp"
+      ],
+      "env": {
+        "HOSTINGER_API_TOKEN": "PASTE_HOSTINGER_API_TOKEN_HERE"
+      }
     }
   }
 }

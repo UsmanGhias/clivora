@@ -164,10 +164,7 @@ class ClivoraEmailService {
 
 String _friendlyEmailError(String raw) {
   final lower = raw.toLowerCase();
-  if (lower.contains('only send testing emails') || lower.contains('verify a domain')) {
-    return 'External email pending domain setup. In-app invite was delivered.';
-  }
-  if (lower.contains('not configured') || lower.contains('resend')) {
+  if (lower.contains('smtp') || lower.contains('not configured')) {
     return 'External email temporarily unavailable. In-app invite was delivered.';
   }
   if (lower.contains('monthly email limit')) {

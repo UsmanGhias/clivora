@@ -55,7 +55,7 @@ class EmailVerificationService {
     await ref.read(authStateProvider.notifier).setEmailVerified(value);
   }
 
-  /// Resend Supabase confirmation email (uses project SMTP / Resend if configured).
+  /// Resend Supabase confirmation email (uses Supabase Auth SMTP / Hostinger).
   Future<String?> resendVerificationEmail() async {
     final user = ref.read(authStateProvider).valueOrNull;
     if (user == null) return 'Sign in required';

@@ -1,10 +1,11 @@
 // CLIVORA — overdue invoice payment reminders (cron / service-role).
-// Secrets: RESEND_API_KEY, RESEND_FROM, SUPABASE_SERVICE_ROLE_KEY, CRON_SECRET (optional)
-// Invoke: POST with header Authorization: Bearer <CRON_SECRET|service_role>
+// Secrets: SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_FROM, SUPABASE_SERVICE_ROLE_KEY, CRON_SECRET
+// Invoke: POST with header Authorization: Bearer <CRON_SECRET>
 // Idempotent: only rows where next_reminder_at <= now(); sets reminder_sent_at + next +3d.
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { sendSmtpEmail, smtpConfigured } from "./smtp_send.ts";
 
 const BATCH = 40;
 
@@ -25,8 +26,6 @@ serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
-  const resendKey = Deno.env.get("RESEND_API_KEY");
-  const from = Deno.env.get("RESEND_FROM") ?? "CLIVORA <onboarding@resend.dev>";
 
   if (!serviceKey || !supabaseUrl || !cronSecret) {
     return new Response(JSON.stringify({ error: "Reminder service is not configured" }), { status: 503 });
@@ -39,8 +38,8 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
   }
 
-  if (!resendKey) {
-    return new Response(JSON.stringify({ error: "Email not configured" }), { status: 503 });
+  if (!smtpConfigured()) {
+    return new Response(JSON.stringify({ error: "Email not configured (SMTP)" }), { status: 503 });
   }
 
   const admin = createClient(supabaseUrl, serviceKey);
@@ -117,17 +116,10 @@ serve(async (req) => {
         </div>
       `;
 
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${resendKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ from, to: [clientEmail], subject, html }),
-      });
-      if (!res.ok) {
-        const raw = await res.text();
-        errors.push(`${inv.id}: ${raw.slice(0, 120)}`);
+      try {
+        await sendSmtpEmail({ to: clientEmail, subject, html });
+      } catch (mailErr) {
+        errors.push(`${inv.id}: ${String(mailErr).slice(0, 120)}`);
         continue;
       }
 
