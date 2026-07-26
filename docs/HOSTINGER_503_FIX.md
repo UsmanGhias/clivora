@@ -20,11 +20,19 @@ Optional: set Hostinger Node to **22.x** for future Supabase upgrades.
 
 Do **not** use `sb_publishable_` / `sb_secret_` for this Next app yet.
 
-## After code push
+## Crash loop: `✓ Starting...` forever, never Ready
 
-1. Hostinger → clivora.io → **Redeploy**
-2. Wait for Completed
-3. Open Runtime logs if still 503
-4. Test `/login` and `/admin`
+Logs show Next binding `0.0.0.0:3000` then restarting every second.
 
-Old domain redirect: do at **DNS / Vercel**, not in Hostinger middleware.
+**Cause:** Hostinger injects `PORT`; if the app ignores it (or npm does not expand `${PORT:-3000}`), the proxy health-check fails and the platform restarts the process → 503.
+
+**Fix:** `npm run start` → `node scripts/start.mjs` which always uses `process.env.PORT`.
+
+Also: middleware temporarily pass-through so Edge/Supabase cannot crash boot.
+
+After deploy, Runtime logs should show:
+```
+[clivora] next start -H 0.0.0.0 -p <HOSTINGER_PORT> (PORT=...)
+✓ Ready
+```
+

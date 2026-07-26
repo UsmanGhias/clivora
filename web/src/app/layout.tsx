@@ -3,7 +3,15 @@ import { site } from "@/lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(site.url),
+  metadataBase: new URL(
+    (() => {
+      try {
+        return new URL(site.url).toString();
+      } catch {
+        return "https://clivora.io";
+      }
+    })()
+  ),
   title: {
     default: `${site.name} | ${site.tagline}`,
     template: `%s | ${site.name}`,
