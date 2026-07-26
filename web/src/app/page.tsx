@@ -1,20 +1,53 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { HomeHero } from "@/components/marketing/HomeHero";
 import { TractionStrip } from "@/components/marketing/TractionStrip";
 import { DualAudienceSection } from "@/components/marketing/DualAudienceSection";
-import { FounderNoteSection } from "@/components/marketing/FounderNoteSection";
-import { DualPortalSection } from "@/components/marketing/DualPortalSection";
-import { FreelancerOSSection } from "@/components/marketing/FreelancerOSSection";
-import { SocialProofSection } from "@/components/marketing/SocialProofSection";
-import { ConnectSection } from "@/components/marketing/ConnectSection";
-import { WorkspaceSection } from "@/components/marketing/WorkspaceSection";
-import { FAQSection } from "@/components/marketing/FAQSection";
-import { PlayStorePromoSection } from "@/components/marketing/PlayStorePromoSection";
 import { CTASection } from "@/components/marketing/CTASection";
 import { site } from "@/lib/site";
 
-/** Keep homepage fresh on Hostinger CDN after deploys. */
+/** Below-fold sections load as separate chunks so the hero paints immediately. */
+const ConnectSection = dynamic(
+  () => import("@/components/marketing/ConnectSection").then((m) => m.ConnectSection),
+  { loading: () => null },
+);
+const FounderNoteSection = dynamic(
+  () =>
+    import("@/components/marketing/FounderNoteSection").then((m) => m.FounderNoteSection),
+  { loading: () => null },
+);
+const SocialProofSection = dynamic(
+  () =>
+    import("@/components/marketing/SocialProofSection").then((m) => m.SocialProofSection),
+  { loading: () => null },
+);
+const DualPortalSection = dynamic(
+  () =>
+    import("@/components/marketing/DualPortalSection").then((m) => m.DualPortalSection),
+  { loading: () => null },
+);
+const FreelancerOSSection = dynamic(
+  () =>
+    import("@/components/marketing/FreelancerOSSection").then((m) => m.FreelancerOSSection),
+  { loading: () => null },
+);
+const WorkspaceSection = dynamic(
+  () => import("@/components/marketing/WorkspaceSection").then((m) => m.WorkspaceSection),
+  { loading: () => null },
+);
+const FAQSection = dynamic(
+  () => import("@/components/marketing/FAQSection").then((m) => m.FAQSection),
+  { loading: () => null },
+);
+const PlayStorePromoSection = dynamic(
+  () =>
+    import("@/components/marketing/PlayStorePromoSection").then(
+      (m) => m.PlayStorePromoSection,
+    ),
+  { loading: () => null },
+);
+
 export const revalidate = 60;
 
 export const metadata: Metadata = {
@@ -27,16 +60,21 @@ export const metadata: Metadata = {
     siteName: site.name,
     type: "website",
   },
+  other: {
+    // Cache-bust / deploy verification marker for Hostinger CDN
+    "clivora-build": "2026-07-26-home-fast",
+  },
 };
 
 export default function Home() {
   return (
     <MarketingShell>
+      {/* First paint: server hero only — no Framer, no heavy client graph */}
       <HomeHero />
-      {/* Public, no-login purpose copy for Google OAuth branding verification */}
       <section
         className="border-y border-navy/8 bg-white py-10 sm:py-12"
         aria-labelledby="clivora-purpose"
+        data-clivora-build="2026-07-26-home-fast"
       >
         <div className="mx-auto max-w-3xl px-5 text-center lg:px-8">
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-teal-800">

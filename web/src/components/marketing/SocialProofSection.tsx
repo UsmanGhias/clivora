@@ -1,7 +1,4 @@
-"use client";
-
 import Link from "next/link";
-import { motion } from "framer-motion";
 import {
   Briefcase,
   Building2,
@@ -47,47 +44,26 @@ export function SocialProofSection() {
 
       <div className="relative mx-auto grid max-w-7xl items-start gap-10 px-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-12 lg:px-8">
         <div>
-          <motion.span
-            initial={{ opacity: 0, y: 8 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-primary"
-          >
+          <span className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-primary">
             <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
             {s.badge}
-          </motion.span>
+          </span>
 
-          <motion.h2
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mt-5 font-display text-3xl font-extrabold tracking-tight text-navy sm:text-4xl lg:text-[2.75rem] lg:leading-[1.12]"
-          >
+          <h2 className="mt-5 font-display text-3xl font-extrabold tracking-tight text-navy sm:text-4xl lg:text-[2.75rem] lg:leading-[1.12]">
             {s.headline[0]}{" "}
             <span className="bg-gradient-to-r from-primary to-teal-400 bg-clip-text text-transparent">
               {s.headline[1]}
             </span>
-          </motion.h2>
+          </h2>
 
-          <motion.p
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mt-4 max-w-xl text-base leading-relaxed text-slate-600"
-          >
-            {s.body}
-          </motion.p>
+          <p className="mt-4 max-w-xl text-base leading-relaxed text-slate-600">{s.body}</p>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-2">
             {s.features.map((f, i) => {
               const Icon = featureIcons[i] ?? Building2;
               return (
-                <motion.div
+                <div
                   key={f.title}
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.04 }}
                   className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm transition hover:border-teal-200 hover:shadow-md"
                 >
                   <div className={cn("mb-3 inline-flex rounded-xl p-2.5", toneBg[f.tone])}>
@@ -95,23 +71,17 @@ export function SocialProofSection() {
                   </div>
                   <p className="text-sm font-bold text-navy">{f.title}</p>
                   <p className="mt-1 text-xs leading-relaxed text-slate-500">{f.description}</p>
-                </motion.div>
+                </div>
               );
             })}
           </div>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.97 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          className="lg:pt-6"
-        >
+        <div className="lg:pt-6">
           <TrustedNetworkMock />
-        </motion.div>
+        </div>
       </div>
 
-      {/* Trusted-by logo bar */}
       <div className="relative mx-auto mt-14 max-w-7xl px-5 lg:mt-20 lg:px-8">
         <div className="rounded-2xl border border-slate-200 bg-[#F8FAFC] px-5 py-6 sm:px-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -141,7 +111,6 @@ export function SocialProofSection() {
         </div>
       </div>
 
-      {/* Bottom metrics */}
       <div className="relative mx-auto mt-6 max-w-7xl px-5 lg:px-8">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {s.metrics.map((m, i) => {
