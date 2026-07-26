@@ -14,6 +14,9 @@ import { PlayStorePromoSection } from "@/components/marketing/PlayStorePromoSect
 import { CTASection } from "@/components/marketing/CTASection";
 import { site } from "@/lib/site";
 
+/** Keep homepage fresh on Hostinger CDN after deploys. */
+export const revalidate = 60;
+
 export const metadata: Metadata = {
   title: `${site.name} | Complete Freelancer OS - $0 deal fees`,
   description: site.description,

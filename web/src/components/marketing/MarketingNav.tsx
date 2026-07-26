@@ -19,7 +19,8 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [user, setUser] = useState<SessionUser | null>(null);
-  const [authReady, setAuthReady] = useState(false);
+  /** Start ready so Login/CTA never stay as a blank skeleton if Supabase hangs. */
+  const [authReady, setAuthReady] = useState(true);
   const light = variant === "light";
 
   useEffect(() => {
@@ -33,26 +34,30 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
     let mounted = true;
 
     async function load() {
-      const {
-        data: { user: u },
-      } = await supabase.auth.getUser();
-      if (!mounted) return;
-      if (!u) {
-        setUser(null);
-        setAuthReady(true);
-        return;
+      try {
+        const {
+          data: { user: u },
+        } = await supabase.auth.getUser();
+        if (!mounted) return;
+        if (!u) {
+          setUser(null);
+          return;
+        }
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("name")
+          .eq("id", u.id)
+          .maybeSingle();
+        if (!mounted) return;
+        setUser({
+          email: u.email ?? null,
+          name: (profile?.name as string | null) ?? null,
+        });
+      } catch {
+        if (mounted) setUser(null);
+      } finally {
+        if (mounted) setAuthReady(true);
       }
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("name")
-        .eq("id", u.id)
-        .maybeSingle();
-      if (!mounted) return;
-      setUser({
-        email: u.email ?? null,
-        name: (profile?.name as string | null) ?? null,
-      });
-      setAuthReady(true);
     }
 
     void load();
