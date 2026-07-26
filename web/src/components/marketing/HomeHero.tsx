@@ -1,27 +1,28 @@
-"use client";
-
 import Link from "next/link";
 import { ArrowUpRight, Users } from "lucide-react";
 import { marketing } from "@/lib/marketing";
 import { ClientDashMock } from "./mockups/ClientDashMock";
 
-/** Marketing hero — no opacity-0 entrance animation (that made the homepage look blank while JS loads). */
+/**
+ * Server Component on purpose — hero copy must be in the first HTML paint.
+ * Never gate this behind client hydration / Framer Motion opacity-0.
+ */
 export function HomeHero() {
   const h = marketing.hero;
 
   return (
     <section className="hero-asymmetric relative overflow-hidden pb-14 pt-8 sm:pb-20 lg:pb-28 lg:pt-12">
-      <div className="hero-ink pointer-events-none absolute inset-0" aria-hidden />
+      <div className="hero-ink pointer-events-none absolute inset-0 z-0" aria-hidden />
       <div
-        className="pointer-events-none absolute -right-24 top-16 hidden h-[28rem] w-[28rem] rounded-[40%_60%_55%_45%] bg-teal-200/30 blur-3xl lg:block"
+        className="pointer-events-none absolute -right-24 top-16 z-0 hidden h-[28rem] w-[28rem] rounded-[40%_60%_55%_45%] bg-teal-200/30 blur-3xl lg:block"
         aria-hidden
       />
 
-      <div className="relative mx-auto max-w-7xl px-5 lg:px-8">
+      <div className="relative z-10 mx-auto max-w-7xl px-5 lg:px-8">
         <div className="grid items-end gap-10 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-6">
           <div className="lg:pb-8 lg:pr-4">
             <div className="inline-flex items-center gap-2 border-l-2 border-teal-500 pl-3">
-              <Users className="h-3.5 w-3.5 text-teal-700" />
+              <Users className="h-3.5 w-3.5 shrink-0 text-teal-700" aria-hidden />
               <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-teal-800">
                 {h.badge}
               </p>

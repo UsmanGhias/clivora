@@ -19,8 +19,6 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [user, setUser] = useState<SessionUser | null>(null);
-  /** Start ready so Login/CTA never stay as a blank skeleton if Supabase hangs. */
-  const [authReady, setAuthReady] = useState(true);
   const light = variant === "light";
 
   useEffect(() => {
@@ -55,8 +53,6 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
         });
       } catch {
         if (mounted) setUser(null);
-      } finally {
-        if (mounted) setAuthReady(true);
       }
     }
 
@@ -77,7 +73,7 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
     window.location.href = "/";
   }
 
-  const loggedIn = authReady && !!user;
+  const loggedIn = !!user;
   const displayName = (user?.name || user?.email || "Account").split(" ")[0];
 
   return (
@@ -167,9 +163,7 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
               {marketing.nav.locale}
             </button>
 
-            {!authReady ? (
-              <span className="h-9 w-28 animate-pulse rounded-xl bg-slate-200/70" />
-            ) : loggedIn ? (
+            {loggedIn ? (
               <>
                 <span
                   className={cn(

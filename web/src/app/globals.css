@@ -168,7 +168,7 @@
   background-image: linear-gradient(transparent 58%, rgba(45, 212, 191, 0.45) 58%);
   background-repeat: no-repeat;
   background-position: left bottom;
-  animation: mark-draw 0.9s 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  background-size: 100% 42%;
 }
 
 .founder-note {
