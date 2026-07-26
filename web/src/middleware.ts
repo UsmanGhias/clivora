@@ -1,12 +1,13 @@
-import { type NextRequest } from "next/server";
-import { updateSession } from "@/lib/supabase/middleware";
+import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Auth session refresh only — keep matcher narrow.
- * Old-domain redirect belongs at DNS / Vercel host, not on every Hostinger request.
+ * Pass-through middleware for Hostinger recovery.
+ * Auth session refresh is temporarily disabled so a bad Edge/Supabase
+ * import cannot crash the Node process boot loop (503).
+ * Re-enable updateSession after production is stable.
  */
-export async function middleware(request: NextRequest) {
-  return updateSession(request);
+export function middleware(_request: NextRequest) {
+  return NextResponse.next();
 }
 
 export const config = {
