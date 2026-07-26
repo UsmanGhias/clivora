@@ -2,11 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, Globe, LayoutDashboard, LogOut, Menu, X } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { marketing } from "@/lib/marketing";
-import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 type SessionUser = {
@@ -23,50 +21,66 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
-    window.addEventListener("scroll", onScroll);
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Defer auth so first paint is not blocked by Supabase JS on marketing pages.
   useEffect(() => {
-    const supabase = createClient();
     let mounted = true;
+    let unsub: (() => void) | undefined;
 
-    async function load() {
-      try {
-        const {
-          data: { user: u },
-        } = await supabase.auth.getUser();
-        if (!mounted) return;
-        if (!u) {
-          setUser(null);
-          return;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const { createClient } = await import("@/lib/supabase/client");
+          const supabase = createClient();
+
+          async function load() {
+            try {
+              const {
+                data: { user: u },
+              } = await supabase.auth.getUser();
+              if (!mounted) return;
+              if (!u) {
+                setUser(null);
+                return;
+              }
+              const { data: profile } = await supabase
+                .from("profiles")
+                .select("name")
+                .eq("id", u.id)
+                .maybeSingle();
+              if (!mounted) return;
+              setUser({
+                email: u.email ?? null,
+                name: (profile?.name as string | null) ?? null,
+              });
+            } catch {
+              if (mounted) setUser(null);
+            }
+          }
+
+          await load();
+          const { data: sub } = supabase.auth.onAuthStateChange(() => {
+            void load();
+          });
+          unsub = () => sub.subscription.unsubscribe();
+        } catch {
+          if (mounted) setUser(null);
         }
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("name")
-          .eq("id", u.id)
-          .maybeSingle();
-        if (!mounted) return;
-        setUser({
-          email: u.email ?? null,
-          name: (profile?.name as string | null) ?? null,
-        });
-      } catch {
-        if (mounted) setUser(null);
-      }
-    }
+      })();
+    }, 1200);
 
-    void load();
-    const { data: sub } = supabase.auth.onAuthStateChange(() => {
-      void load();
-    });
     return () => {
       mounted = false;
-      sub.subscription.unsubscribe();
+      window.clearTimeout(timer);
+      unsub?.();
     };
   }, []);
 
   async function signOut() {
+    const { createClient } = await import("@/lib/supabase/client");
     const supabase = createClient();
     await supabase.auth.signOut();
     setUser(null);
@@ -243,80 +257,73 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
         </div>
       </header>
 
-      <AnimatePresence>
-        {mobileOpen ? (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="fixed inset-x-0 top-[68px] z-40 max-h-[calc(100svh-68px)] overflow-y-auto border-b border-slate-200 bg-white p-5 shadow-xl lg:hidden"
-          >
-            <nav className="flex flex-col gap-1">
-              {marketing.nav.links.map((link) => (
-                <div key={link.label} className="border-b border-slate-100 py-2">
-                  <Link
-                    href={link.href}
-                    onClick={() => setMobileOpen(false)}
-                    className="block py-2 text-base font-semibold text-navy"
-                  >
-                    {link.label}
-                  </Link>
-                  {"children" in link && link.children
-                    ? link.children.map((child) => (
-                        <Link
-                          key={child.href + child.label}
-                          href={child.href}
-                          onClick={() => setMobileOpen(false)}
-                          className="block py-1.5 pl-3 text-sm text-slate-500"
-                        >
-                          {child.label}
-                        </Link>
-                      ))
-                    : null}
-                </div>
-              ))}
-              {loggedIn ? (
-                <>
-                  <Link
-                    href="/app"
-                    onClick={() => setMobileOpen(false)}
-                    className="mt-3 rounded-xl bg-navy px-4 py-3 text-center text-sm font-bold text-white"
-                  >
-                    Open portal
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMobileOpen(false);
-                      void signOut();
-                    }}
-                    className="mt-2 py-2 text-base font-semibold text-slate-600"
-                  >
-                    Sign out
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link
-                    href={marketing.nav.login.href}
-                    onClick={() => setMobileOpen(false)}
-                    className="mt-3 py-2 text-base font-semibold text-navy"
-                  >
-                    {marketing.nav.login.label}
-                  </Link>
-                  <Link
-                    href={marketing.nav.cta.href}
-                    onClick={() => setMobileOpen(false)}
-                    className="mt-2 rounded-xl bg-navy px-4 py-3 text-center text-sm font-bold text-white"
-                  >
-                    {marketing.nav.cta.label}
-                  </Link>
-                </>
-              )}
-            </nav>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+      {mobileOpen ? (
+        <div className="fixed inset-x-0 top-[68px] z-40 max-h-[calc(100svh-68px)] overflow-y-auto border-b border-slate-200 bg-white p-5 shadow-xl lg:hidden">
+          <nav className="flex flex-col gap-1">
+            {marketing.nav.links.map((link) => (
+              <div key={link.label} className="border-b border-slate-100 py-2">
+                <Link
+                  href={link.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="block py-2 text-base font-semibold text-navy"
+                >
+                  {link.label}
+                </Link>
+                {"children" in link && link.children
+                  ? link.children.map((child) => (
+                      <Link
+                        key={child.href + child.label}
+                        href={child.href}
+                        onClick={() => setMobileOpen(false)}
+                        className="block py-1.5 pl-3 text-sm text-slate-500"
+                      >
+                        {child.label}
+                      </Link>
+                    ))
+                  : null}
+              </div>
+            ))}
+            {loggedIn ? (
+              <>
+                <Link
+                  href="/app"
+                  onClick={() => setMobileOpen(false)}
+                  className="mt-3 rounded-xl bg-navy px-4 py-3 text-center text-sm font-bold text-white"
+                >
+                  Open portal
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    void signOut();
+                  }}
+                  className="mt-2 py-2 text-base font-semibold text-slate-600"
+                >
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href={marketing.nav.login.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="mt-3 py-2 text-base font-semibold text-navy"
+                >
+                  {marketing.nav.login.label}
+                </Link>
+                <Link
+                  href={marketing.nav.cta.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="mt-2 rounded-xl bg-navy px-4 py-3 text-center text-sm font-bold text-white"
+                >
+                  {marketing.nav.cta.label}
+                </Link>
+              </>
+            )}
+          </nav>
+        </div>
+      ) : null}
     </>
   );
 }
