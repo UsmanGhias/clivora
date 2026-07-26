@@ -90,7 +90,7 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
         )}
       >
         <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between gap-4 px-5 lg:px-8">
-          <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="CLIVORA Home">
+          <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="Clivora Home">
             <Logo size="sm" showText={false} variant={light ? "onLight" : "onDark"} />
             <span className="hidden flex-col leading-none sm:flex">
               <span

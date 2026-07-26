@@ -1,12 +1,13 @@
 import { getPublicSiteUrl } from "@/lib/site-url";
 
 export const site = {
-  name: "CLIVORA",
+  /** Must match Google OAuth consent screen app name exactly: "Clivora". */
+  name: "Clivora",
   tagline: "Complete Freelancer OS - Connect, CRM & Invoices",
   shortDescription:
     "Complete Freelancer OS: private Connect hiring, CRM, invoices, and timesheets on web and Android - $0 platform fee on your deals.",
   description:
-    "CLIVORA is a complete Freelancer OS for freelancers and clients worldwide. Hire and get hired on Connect with private contact until mutual accept, then run clients, projects, invoices, and timesheets on web and Android with one account. Platform fee on negotiated deals stays $0 - clients pay freelancers directly.",
+    "Clivora is a complete Freelancer OS for freelancers and clients worldwide. Hire and get hired on Connect with private contact until mutual accept, then run clients, projects, invoices, and timesheets on web and Android with one account. Platform fee on negotiated deals stays $0 - clients pay freelancers directly.",
   /** Build-time: set NEXT_PUBLIC_SITE_URL=https://clivora.io on Hostinger production. */
   url: getPublicSiteUrl(),
   appPackage: "org.codcrafters.clivora",
