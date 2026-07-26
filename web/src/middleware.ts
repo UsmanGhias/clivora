@@ -1,9 +1,12 @@
-import { type NextRequest } from "next/server";
-import { updateSession } from "@/lib/supabase/middleware";
+import { NextResponse, type NextRequest } from "next/server";
 
-/** Auth session guard — Hostinger-safe (narrow matcher + hardened updateSession). */
-export async function middleware(request: NextRequest) {
-  return updateSession(request);
+/**
+ * Temporary Hostinger recovery: pass-through middleware.
+ * Full auth guard restored after site is stably 200 (see staging branch).
+ * Broad/auth middleware has previously crash-looped Passenger → platform 503.
+ */
+export function middleware(_request: NextRequest) {
+  return NextResponse.next();
 }
 
 export const config = {
