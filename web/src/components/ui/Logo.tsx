@@ -34,7 +34,7 @@ export function Logo({
       {showText ? (
         <Image
           src={wordmarkSrc}
-          alt="CLIVORA"
+          alt="Clivora"
           width={s.wordmark.width}
           height={s.wordmark.height}
           className="h-auto w-auto"
@@ -47,7 +47,7 @@ export function Logo({
         >
           <Image
             src="/brand/clivora-navbar-mark.png"
-            alt="CLIVORA"
+            alt="Clivora"
             width={s.mark}
             height={s.mark}
             className="h-full w-full object-contain"
