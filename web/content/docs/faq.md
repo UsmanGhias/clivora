@@ -1,13 +1,14 @@
 # FAQ
 
-## Sign in with Google shows a strange supabase.co address
+## Sign in with Google shows a supabase.co address
 
 That text is Google’s OAuth screen showing the login redirect host, **not** your database being exposed.
 
 - On **Android**, Google Sign-In is native and shows CLIVORA / your Google app branding.
-- On **web**, set the Google Cloud OAuth consent **App name** to **CLIVORA**, add your logo, privacy/terms links, verify `clivora.io`, and **Publish** the app. Details: ask support or your developer for the branding checklist.
+- On **web**, set the Google Cloud OAuth consent **App name** to **CLIVORA**, add your logo, privacy/terms links, verify **`clivora.io`**, and **Publish** the app. Full checklist: `docs/internal/GOOGLE_OAUTH_BRANDING.md`.
+- Best fix later: Supabase custom auth domain `auth.clivora.io`.
 
-Until Google branding is published, some browsers may still show a technical host. Your data stays protected by account rules.
+Until Google branding is verified/published, some browsers may still show a technical host. Your data stays protected by account rules.
 
 ## Getting started
 

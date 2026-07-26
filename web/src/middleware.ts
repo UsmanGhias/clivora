@@ -1,13 +1,9 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest } from "next/server";
+import { updateSession } from "@/lib/supabase/middleware";
 
-/**
- * Pass-through middleware for Hostinger recovery.
- * Auth session refresh is temporarily disabled so a bad Edge/Supabase
- * import cannot crash the Node process boot loop (503).
- * Re-enable updateSession after production is stable.
- */
-export function middleware(_request: NextRequest) {
-  return NextResponse.next();
+/** Auth session guard — Hostinger-safe (narrow matcher + hardened updateSession). */
+export async function middleware(request: NextRequest) {
+  return updateSession(request);
 }
 
 export const config = {
@@ -17,6 +13,7 @@ export const config = {
     "/signup",
     "/auth/reset-password",
     "/connect/manage",
+    "/admin",
     "/admin/:path*",
   ],
 };

@@ -15,6 +15,32 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     const supabase = createClient();
+    let cancelled = false;
+
+    async function hydrateRecovery() {
+      // PKCE / email link: ?code=...
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get("code");
+        if (code) {
+          const { error: exchangeErr } = await supabase.auth.exchangeCodeForSession(code);
+          if (!cancelled && !exchangeErr) {
+            setMode("update");
+            setMessage("Choose a new password for your CLIVORA account.");
+            return;
+          }
+          if (!cancelled && exchangeErr) {
+            setError(exchangeErr.message);
+          }
+        }
+        const hash = window.location.hash.toLowerCase();
+        if (hash.includes("type=recovery") || hash.includes("access_token")) {
+          setMode("update");
+          setMessage("Choose a new password for your CLIVORA account.");
+        }
+      }
+    }
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
@@ -23,15 +49,12 @@ export default function ResetPasswordPage() {
         setMessage("Choose a new password for your CLIVORA account.");
       }
     });
-    void supabase.auth.getSession().then(({ data }) => {
-      if (data.session && typeof window !== "undefined") {
-        const hash = window.location.hash.toLowerCase();
-        if (hash.includes("type=recovery") || hash.includes("access_token")) {
-          setMode("update");
-        }
-      }
-    });
-    return () => subscription.unsubscribe();
+
+    void hydrateRecovery();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   async function onRequest(e: FormEvent) {
@@ -40,16 +63,19 @@ export default function ResetPasswordPage() {
     setError(null);
     setMessage(null);
     const supabase = createClient();
+    const redirectTo = `${site.url}/auth/reset-password`;
     const { error: err } = await supabase.auth.resetPasswordForEmail(
       email.trim().toLowerCase(),
-      { redirectTo: `${site.url}/auth/reset-password` },
+      { redirectTo },
     );
     setLoading(false);
     if (err) {
       setError(err.message);
       return;
     }
-    setMessage("Check your inbox for the official Supabase Auth reset link (website redirect).");
+    setMessage(
+      "If that email has a CLIVORA account, we sent a reset link from contact@clivora.io. Check inbox and spam.",
+    );
   }
 
   async function onUpdate(e: FormEvent) {
@@ -65,14 +91,17 @@ export default function ResetPasswordPage() {
       return;
     }
     setMessage("Password updated. You can sign in now.");
+    window.setTimeout(() => {
+      window.location.href = "/login";
+    }, 1200);
   }
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
       <h1 className="text-2xl font-extrabold text-text-primary">Reset password</h1>
       <p className="mt-1 text-sm text-text-secondary">
-        Reset links open on the website at {site.url}/auth/reset-password. Delivery uses Supabase Auth
-        (Resend/SMTP configured in the dashboard — never commit API keys).
+        We email a secure link to set a new password. Links open on{" "}
+        <span className="font-medium text-navy">{site.url}/auth/reset-password</span>.
       </p>
       <div className="mt-4 grid grid-cols-2 gap-2 rounded-xl bg-background p-1">
         <button
