@@ -66,8 +66,8 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     void refresh();
     const supabase = createClient();
-    void supabase.auth.getUser().then(({ data: session }) => {
-      const u = session.user;
+    void supabase.auth.getUser().then(({ data }) => {
+      const u = data.user;
       if (!u) return;
       setAdminEmail(u.email ?? "");
       setAdminName(
