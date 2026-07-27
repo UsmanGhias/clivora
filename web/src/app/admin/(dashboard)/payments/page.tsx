@@ -70,18 +70,17 @@ export default function AdminPaymentsPage() {
     setActionError(null);
     try {
       const plan = String(p.plan || "pro").toLowerCase().includes("plus") ? "pro_plus" : "pro";
-      const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      if (!token) throw new Error("Sign in again to approve payments.");
+      const { assertClientUser, getVerifiedAccessToken } = await import(
+        "@/lib/supabase/access-token"
+      );
+      await assertClientUser();
+      const token = await getVerifiedAccessToken();
       const res = await fetch("/api/admin/grant-pro", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           email,
@@ -110,18 +109,17 @@ export default function AdminPaymentsPage() {
     setBusyId(id);
     setActionError(null);
     try {
-      const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      if (!token) throw new Error("Sign in again to reject payments.");
+      const { assertClientUser, getVerifiedAccessToken } = await import(
+        "@/lib/supabase/access-token"
+      );
+      await assertClientUser();
+      const token = await getVerifiedAccessToken();
       const res = await fetch("/api/admin/payment-requests", {
         method: "PATCH",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ id, status: "rejected" }),
       });

@@ -17,8 +17,8 @@ export default function AdminLoginPage() {
 
   useEffect(() => {
     const supabase = createClient();
-    void supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
+    void supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
         router.replace("/admin/overview");
       } else {
         setChecking(false);

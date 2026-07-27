@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { RowActions, fmtDate, relative } from "@/components/admin/ui";
 
 export type AdminUserRow = Record<string, unknown>;
@@ -11,17 +10,17 @@ function nameOf(u: AdminUserRow) {
 }
 
 async function adminApi(path: string, body: Record<string, unknown>) {
-  const supabase = createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const token = session?.access_token;
-  if (!token) throw new Error("Sign in again to moderate users.");
+  const { assertClientUser, getVerifiedAccessToken } = await import(
+    "@/lib/supabase/access-token"
+  );
+  await assertClientUser();
+  const token = await getVerifiedAccessToken();
   const res = await fetch(path, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify(body),
   });
