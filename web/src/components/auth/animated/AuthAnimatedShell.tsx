@@ -21,13 +21,12 @@ export function AuthAnimatedShell({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
+    // Default is always light/white. Only honor an explicit user toggle choice.
     try {
       const saved = localStorage.getItem(THEME_KEY);
       if (saved === "dark" || saved === "light") {
         setTheme(saved);
-        return;
       }
-      setTheme(window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
     } catch {
       /* ignore */
     }
