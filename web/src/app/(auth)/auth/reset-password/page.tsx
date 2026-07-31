@@ -4,8 +4,10 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { site } from "@/lib/site";
+import { useAuthAnim } from "@/components/auth/animated/AuthAnimContext";
 
 export default function ResetPasswordPage() {
+  const anim = useAuthAnim();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"request" | "update">("request");
@@ -18,7 +20,6 @@ export default function ResetPasswordPage() {
     let cancelled = false;
 
     async function hydrateRecovery() {
-      // PKCE / email link: ?code=...
       if (typeof window !== "undefined") {
         const params = new URLSearchParams(window.location.search);
         const code = params.get("code");
@@ -71,6 +72,7 @@ export default function ResetPasswordPage() {
     setLoading(false);
     if (err) {
       setError(err.message);
+      anim.triggerError();
       return;
     }
     setMessage(
@@ -88,6 +90,7 @@ export default function ResetPasswordPage() {
     setLoading(false);
     if (err) {
       setError(err.message);
+      anim.triggerError();
       return;
     }
     setMessage("Password updated. You can sign in now.");
@@ -97,83 +100,85 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
-      <h1 className="text-2xl font-extrabold text-text-primary">Reset password</h1>
-      <p className="mt-1 text-sm text-text-secondary">
-        We email a secure link to set a new password. Links open on{" "}
-        <span className="font-medium text-navy">{site.url}/auth/reset-password</span>.
-      </p>
-      <div className="mt-4 grid grid-cols-2 gap-2 rounded-xl bg-background p-1">
+    <>
+      <header className="aa-panel-head">
+        <h1>Reset password</h1>
+        <p>We email a secure link so you can set a new password for your CLIVORA account.</p>
+      </header>
+
+      <div className="aa-role-grid" role="group" aria-label="Reset mode">
         <button
           type="button"
           onClick={() => setMode("request")}
-          className={`rounded-lg py-2 text-sm font-semibold ${
-            mode === "request" ? "bg-navy text-white" : "text-text-secondary"
-          }`}
+          className={`aa-role-btn${mode === "request" ? " active-client" : ""}`}
         >
           Send link
         </button>
         <button
           type="button"
           onClick={() => setMode("update")}
-          className={`rounded-lg py-2 text-sm font-semibold ${
-            mode === "update" ? "bg-navy text-white" : "text-text-secondary"
-          }`}
+          className={`aa-role-btn${mode === "update" ? " active-client" : ""}`}
         >
           Set new password
         </button>
       </div>
+
       {mode === "request" ? (
-        <form onSubmit={onRequest} className="mt-6 space-y-4">
-          <label className="block text-sm font-medium text-text-primary">
-            Email
+        <form onSubmit={onRequest} className="aa-form" style={{ marginTop: 18 }}>
+          <label className="aa-field">
+            <span>Email</span>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2.5 outline-none ring-primary focus:ring-2"
+              onFocus={() => anim.setTyping(true)}
+              onBlur={() => anim.setTyping(false)}
+              placeholder="you@company.com"
             />
           </label>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-full bg-primary py-3 text-sm font-semibold text-white disabled:opacity-60"
-          >
+          <button type="submit" disabled={loading} className="aa-btn-primary">
             {loading ? "Sending…" : "Send reset email"}
           </button>
         </form>
       ) : (
-        <form onSubmit={onUpdate} className="mt-6 space-y-4">
-          <label className="block text-sm font-medium text-text-primary">
-            New password
+        <form onSubmit={onUpdate} className="aa-form" style={{ marginTop: 18 }}>
+          <label className="aa-field">
+            <span>New password</span>
             <input
               type="password"
               required
               minLength={6}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2.5 outline-none ring-primary focus:ring-2"
+              onChange={(e) => {
+                setPassword(e.target.value);
+                anim.setPasswordLen(e.target.value.length);
+              }}
+              placeholder="••••••••"
             />
           </label>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-full bg-primary py-3 text-sm font-semibold text-white disabled:opacity-60"
-          >
+          <button type="submit" disabled={loading} className="aa-btn-primary">
             {loading ? "Updating…" : "Update password"}
           </button>
         </form>
       )}
-      {error && <p className="mt-4 rounded-lg bg-error/10 px-3 py-2 text-sm text-error">{error}</p>}
-      {message && (
-        <p className="mt-4 rounded-lg bg-primary/10 px-3 py-2 text-sm text-primary-dark">{message}</p>
+
+      {error && (
+        <div className="aa-error-box" style={{ marginTop: 16 }} role="alert">
+          {error}
+        </div>
       )}
-      <p className="mt-4 text-center text-sm">
-        <Link href="/login" className="text-primary hover:underline">
+      {message && (
+        <div className="aa-error-box info" style={{ marginTop: 16 }} role="status">
+          {message}
+        </div>
+      )}
+
+      <p className="aa-signup">
+        <Link href="/login" className="aa-link strong">
           Back to sign in
         </Link>
       </p>
-    </div>
+    </>
   );
 }

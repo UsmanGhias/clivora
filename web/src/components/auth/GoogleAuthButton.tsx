@@ -8,10 +8,12 @@ export function GoogleAuthButton({
   mode,
   accountType,
   next = "/app",
+  variant = "default",
 }: {
   mode: "signin" | "signup";
   accountType?: "freelancer" | "client";
   next?: string;
+  variant?: "default" | "animated";
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +41,31 @@ export function GoogleAuthButton({
     });
     setLoading(false);
     if (err) setError(err.message);
+  }
+
+  if (variant === "animated") {
+    return (
+      <div>
+        <button
+          type="button"
+          onClick={onGoogle}
+          disabled={loading}
+          className="aa-btn-outline"
+        >
+          <GoogleIcon />
+          {loading
+            ? "Connecting Google…"
+            : mode === "signup"
+              ? "Continue with Google"
+              : "Log in with Google"}
+        </button>
+        {error && (
+          <div className="aa-error-box" style={{ marginTop: 12 }} role="alert">
+            {error}
+          </div>
+        )}
+      </div>
+    );
   }
 
   return (

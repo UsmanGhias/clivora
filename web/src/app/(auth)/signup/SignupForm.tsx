@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -9,6 +9,7 @@ import { authErrorMessage, isRateLimitError } from "@/lib/auth-errors";
 import { ResendVerification } from "@/components/auth/ResendVerification";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 import { earlyAccessPlanForSignup } from "@/lib/early-access";
+import { useAuthAnim } from "@/components/auth/animated/AuthAnimContext";
 
 export default function SignupForm() {
   const router = useRouter();
@@ -17,14 +18,27 @@ export default function SignupForm() {
   const roleParam = search.get("role");
   const initialRole =
     roleParam === "client" || roleParam === "freelancer" ? roleParam : "freelancer";
+  const anim = useAuthAnim();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [accountType, setAccountType] = useState<"freelancer" | "client">(initialRole);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [shake, setShake] = useState(false);
   const [awaitingVerify, setAwaitingVerify] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const { setPasswordLen, setShowPassword: setAnimShowPassword, setTyping, triggerError } = anim;
+
+  useEffect(() => {
+    setPasswordLen(password.length);
+  }, [password, setPasswordLen]);
+
+  useEffect(() => {
+    setAnimShowPassword(showPassword);
+  }, [showPassword, setAnimShowPassword]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -32,6 +46,7 @@ export default function SignupForm() {
     setError(null);
     setInfo(null);
     setAwaitingVerify(false);
+    setShake(false);
     const supabase = createClient();
     const trimmedEmail = email.trim().toLowerCase();
     const { data, error: err } = await supabase.auth.signUp({
@@ -48,6 +63,8 @@ export default function SignupForm() {
     if (err) {
       setLoading(false);
       setError(authErrorMessage(err.message));
+      setShake(true);
+      triggerError();
       if (isRateLimitError(err.message)) {
         setAwaitingVerify(true);
       }
@@ -78,109 +95,129 @@ export default function SignupForm() {
   }
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-7 shadow-xl shadow-slate-200/60 sm:p-8">
-      <h1 className="font-display text-2xl font-extrabold text-navy">Create account</h1>
-      <p className="mt-1.5 text-sm text-slate-500">
-        Register before July 22, 2026 and your account gets Pro free, not Pro Plus.
-      </p>
-      <form onSubmit={onSubmit} className="mt-6 space-y-4">
-        <div className="grid grid-cols-2 gap-1.5 rounded-xl border border-slate-200 bg-[#F8FAFC] p-1">
+    <>
+      <header className="aa-panel-head">
+        <h1>Create account</h1>
+        <p>Register before July 22, 2026 and your account gets Pro free, not Pro Plus.</p>
+      </header>
+
+      <form className="aa-form" onSubmit={onSubmit} noValidate>
+        <div className="aa-role-grid" role="group" aria-label="Account type">
           {(["freelancer", "client"] as const).map((t) => (
             <button
               key={t}
               type="button"
               onClick={() => setAccountType(t)}
-              className={`rounded-lg py-2.5 text-sm font-bold capitalize transition ${
+              className={`aa-role-btn${
                 accountType === t
                   ? t === "freelancer"
-                    ? "bg-primary text-white shadow-sm"
-                    : "bg-navy text-white shadow-sm"
-                  : "text-slate-500 hover:text-navy"
+                    ? " active-freelancer"
+                    : " active-client"
+                  : ""
               }`}
             >
               {t}
             </button>
           ))}
         </div>
-        <label className="block text-sm font-semibold text-navy">
-          Full name
+
+        <label className="aa-field">
+          <span>Full name</span>
           <input
+            type="text"
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-1.5 w-full rounded-xl border border-slate-200 bg-[#F8FAFC] px-3.5 py-3 text-sm text-navy outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20"
+            placeholder="Your name"
           />
         </label>
-        <label className="block text-sm font-semibold text-navy">
-          Email
+
+        <label className="aa-field">
+          <span>Email</span>
           <input
             type="email"
             required
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onFocus={() => setTyping(true)}
+            onBlur={() => setTyping(false)}
             placeholder="you@company.com"
-            className="mt-1.5 w-full rounded-xl border border-slate-200 bg-[#F8FAFC] px-3.5 py-3 text-sm text-navy outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20"
           />
         </label>
-        <label className="block text-sm font-semibold text-navy">
-          Password
-          <input
-            type="password"
-            required
-            minLength={6}
-            autoComplete="new-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-1.5 w-full rounded-xl border border-slate-200 bg-[#F8FAFC] px-3.5 py-3 text-sm text-navy outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20"
-          />
+
+        <label className="aa-field">
+          <span>Password</span>
+          <div className="aa-password-wrap">
+            <input
+              type={showPassword ? "text" : "password"}
+              required
+              minLength={6}
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+            />
+            <button
+              type="button"
+              className="aa-toggle-pass"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              onClick={() => setShowPassword((v) => !v)}
+            >
+              {showPassword ? (
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-10-7-10-7a17.81 17.81 0 0 1 4.06-5.06" />
+                  <path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 10 7 10 7a17.81 17.81 0 0 1-3.17 4.19" />
+                  <path d="M14.12 14.12A3 3 0 1 1 9.88 9.88" />
+                  <line x1="2" y1="2" x2="22" y2="22" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              )}
+            </button>
+          </div>
         </label>
+
         {error && (
-          <p className="rounded-xl bg-red-50 px-3 py-2.5 text-sm text-red-600">{error}</p>
+          <div className={`aa-error-box${shake ? " shake" : ""}`} role="alert">
+            {error}
+          </div>
         )}
         {info && (
-          <p className="rounded-xl bg-teal-50 px-3 py-2.5 text-sm text-primary-dark">{info}</p>
+          <div className="aa-error-box info" role="status">
+            {info}
+          </div>
         )}
         {awaitingVerify && <ResendVerification email={email} />}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-xl bg-primary py-3.5 text-sm font-bold text-white shadow-lg shadow-primary/25 transition hover:bg-primary-dark disabled:opacity-60"
-        >
+
+        <button type="submit" className="aa-btn-primary" disabled={loading}>
           {loading ? "Creating…" : "Create account and claim Pro"}
         </button>
       </form>
-      <div className="my-5 flex items-center gap-3 text-xs font-medium text-slate-400">
-        <div className="h-px flex-1 bg-slate-200" />
-        OR
-        <div className="h-px flex-1 bg-slate-200" />
-      </div>
-      <GoogleAuthButton mode="signup" accountType={accountType} next={next} />
+
+      <div className="aa-divider">OR</div>
+      <GoogleAuthButton mode="signup" accountType={accountType} next={next} variant="animated" />
+
       {awaitingVerify && (
-        <div className="mt-4 flex flex-wrap gap-2 text-sm">
-          <Link
-            href={`/login?next=${encodeURIComponent(next)}`}
-            className="rounded-xl bg-navy px-4 py-2.5 font-semibold text-white"
-          >
+        <div className="aa-row" style={{ marginTop: 16, justifyContent: "center" }}>
+          <Link href={`/login?next=${encodeURIComponent(next)}`} className="aa-link strong">
             Go to sign in
           </Link>
-          <Link
-            href="/connect"
-            className="rounded-xl border border-navy/20 px-4 py-2.5 font-semibold text-navy"
-          >
+          <Link href="/connect" className="aa-link">
             Browse Connect
           </Link>
         </div>
       )}
-      <p className="mt-5 text-center text-sm text-slate-500">
+
+      <p className="aa-signup">
         Already have an account?{" "}
-        <Link
-          href={`/login?next=${encodeURIComponent(next)}`}
-          className="font-semibold text-primary hover:underline"
-        >
+        <Link href={`/login?next=${encodeURIComponent(next)}`} className="aa-link strong">
           Sign in
         </Link>
       </p>
-    </div>
+    </>
   );
 }
