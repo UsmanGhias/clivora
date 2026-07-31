@@ -1,7 +1,6 @@
 import "server-only";
 
 import { createClient as createServiceClient } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/server";
 
 export type SafepayEnv = "sandbox" | "production";
 
@@ -21,25 +20,18 @@ function apiHost(env: SafepayEnv) {
 
 async function readDbSecret(key: string): Promise<string | null> {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!serviceKey) return null;
   try {
-    if (serviceKey) {
-      const admin = createServiceClient(SUPABASE_URL, serviceKey, {
-        auth: { persistSession: false },
-      });
-      const { data, error } = await admin
-        .from("admin_integration_secrets")
-        .select("value")
-        .eq("key", key)
-        .maybeSingle();
-      if (!error && data?.value) {
-        const value = String(data.value).trim();
-        if (value) return value;
-      }
-    }
-    const supabase = await createClient();
-    const { data, error } = await supabase.rpc("admin_get_integration_secret", { p_key: key });
-    if (error || data == null) return null;
-    const value = String(data).trim();
+    const admin = createServiceClient(SUPABASE_URL, serviceKey, {
+      auth: { persistSession: false },
+    });
+    const { data, error } = await admin
+      .from("admin_integration_secrets")
+      .select("value")
+      .eq("key", key)
+      .maybeSingle();
+    if (error || data?.value == null) return null;
+    const value = String(data.value).trim();
     return value || null;
   } catch {
     return null;

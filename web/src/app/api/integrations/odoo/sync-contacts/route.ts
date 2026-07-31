@@ -9,7 +9,9 @@ import {
   type OdooTarget,
   type OdooSyncDirection,
 } from "@/lib/odoo-sync";
-import { createClient } from "@/lib/supabase/server";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { requireAdminServiceConfig } from "@/lib/admin-service";
+import { SUPABASE_URL } from "@/lib/supabase/env";
 
 /**
  * Admin-only Odoo Contacts status + bidirectional write sync (Main + Social).
@@ -174,7 +176,16 @@ export async function PUT(request: Request) {
     );
   }
 
-  const supabase = await createClient();
+  let service;
+  try {
+    const cfg = requireAdminServiceConfig();
+    service = createServiceClient(cfg.url || SUPABASE_URL, cfg.serviceRoleKey, {
+      auth: { persistSession: false },
+    });
+  } catch {
+    return adminJson({ error: "Admin service configuration is unavailable", saved: false }, { status: 503 });
+  }
+
   const prefix =
     target === "social" ? "ODOO_SOCIAL" : target === "legacy" ? "ODOO" : "ODOO_MAIN";
   const pairs: Array<[string, string]> = [
@@ -184,15 +195,17 @@ export async function PUT(request: Request) {
     [`${prefix}_API_KEY`, apiKey],
   ];
   for (const [key, value] of pairs) {
-    const { error } = await supabase.rpc("admin_upsert_integration_secret", {
-      p_key: key,
-      p_value: value,
-    });
+    const { error } = await service.from("admin_integration_secrets").upsert(
+      {
+        key,
+        value,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "key" },
+    );
     if (error) {
-      return adminJson(
-        { error: `Could not save ${key}: ${error.message}`, saved: false },
-        { status: 500 },
-      );
+      console.error("[odoo/sync-contacts] secret upsert failed", key, error.message);
+      return adminJson({ error: `Could not save ${key}`, saved: false }, { status: 500 });
     }
   }
 

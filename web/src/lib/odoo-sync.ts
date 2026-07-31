@@ -1,11 +1,13 @@
 import "server-only";
 
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 import {
   AdminServiceConfigurationError,
   adminServiceHeaders,
   requireAdminServiceConfig,
 } from "@/lib/admin-service";
 import { createClient } from "@/lib/supabase/server";
+import { SUPABASE_URL } from "@/lib/supabase/env";
 
 export type OdooCfg = {
   url: string;
@@ -91,16 +93,31 @@ export function isOdooSyncEnabled() {
   return raw === "1" || raw === "true" || raw === "yes";
 }
 
+async function readIntegrationSecret(key: string): Promise<string | null> {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!serviceKey) return null;
+  try {
+    const admin = createServiceClient(SUPABASE_URL, serviceKey, {
+      auth: { persistSession: false },
+    });
+    const { data, error } = await admin
+      .from("admin_integration_secrets")
+      .select("value")
+      .eq("key", key)
+      .maybeSingle();
+    if (error || data?.value == null) return null;
+    const value = String(data.value).trim();
+    return value || null;
+  } catch {
+    return null;
+  }
+}
+
 /** Env first, then admin_integration_secrets.ODOO_SYNC_ENABLED (no Vercel redeploy needed). */
 export async function resolveOdooSyncEnabled(): Promise<boolean> {
   if (isOdooSyncEnabled()) return true;
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.rpc("admin_get_integration_secret", {
-      p_key: "ODOO_SYNC_ENABLED",
-    });
-    if (error || data == null) return false;
-    const raw = String(data).trim().toLowerCase();
+    const raw = (await readIntegrationSecret("ODOO_SYNC_ENABLED"))?.toLowerCase();
     return raw === "1" || raw === "true" || raw === "yes";
   } catch {
     return false;
@@ -112,16 +129,11 @@ function targetAttempts(target: OdooTarget): OdooTarget[] {
 }
 
 async function readSecretConfig(target: OdooTarget): Promise<OdooCfg | null> {
-  const supabase = await createClient();
   const values: Partial<Record<OdooKeySuffix, string>> = {};
   for (const suffix of ODOO_KEY_SUFFIXES) {
-    const { data, error } = await supabase.rpc("admin_get_integration_secret", {
-      p_key: envKey(target, suffix),
-    });
-    if (error || data == null || String(data).trim() === "") {
-      return null;
-    }
-    values[suffix] = String(data).trim();
+    const value = await readIntegrationSecret(envKey(target, suffix));
+    if (!value) return null;
+    values[suffix] = value;
   }
 
   const url = values.URL?.replace(/\/$/, "");

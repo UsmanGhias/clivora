@@ -222,35 +222,26 @@ export default function ProCheckout() {
 
       const noteParts = [notes.trim()];
       if (promoMeta) noteParts.push(`Promo: ${promoMeta.code} (${promoMeta.note})`);
-      const { error: insertError } = await supabase.from("pro_payment_requests").insert({
-        email: email.trim().toLowerCase(),
-        full_name: fullName.trim(),
-        account_type: accountType,
-        plan,
-        amount_usd: amountDue,
-        currency: "USD",
-        country,
-        payment_method: paymentMethod,
-        payment_reference: paymentReference.trim(),
-        notes: noteParts.filter(Boolean).join("\n"),
-        promo_code: promoMeta?.code ?? null,
-        status: "pending",
+      const res = await fetch("/api/pro/payment-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          plan,
+          accountType,
+          fullName: fullName.trim(),
+          email: email.trim().toLowerCase(),
+          country,
+          paymentMethod,
+          paymentReference: paymentReference.trim(),
+          notes: noteParts.filter(Boolean).join("\n"),
+          promoCode: promoMeta?.code ?? (promoCode.trim() || undefined),
+          amountUsd: amountDue,
+        }),
       });
-      if (insertError) throw insertError;
-      if (promoMeta) {
-        try {
-          const { data: promoRow } = await supabase
-            .from("promo_codes")
-            .select("used_count")
-            .eq("code", promoMeta.code)
-            .maybeSingle();
-          await supabase
-            .from("promo_codes")
-            .update({ used_count: Number(promoRow?.used_count ?? 0) + 1 })
-            .eq("code", promoMeta.code);
-        } catch {
-          /* admin can reconcile usage from payment notes */
-        }
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        throw new Error(json.error || "Could not submit payment request");
       }
       setDone(true);
     } catch (err) {
