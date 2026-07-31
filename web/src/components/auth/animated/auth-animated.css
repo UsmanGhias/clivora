@@ -76,17 +76,9 @@
 
 .auth-animated .aa-page {
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   grid-template-columns: 1fr 1fr;
-}
-
-@media (max-width: 1023px) {
-  .auth-animated .aa-page {
-    grid-template-columns: 1fr;
-  }
-  .auth-animated .aa-stage {
-    display: none;
-  }
 }
 
 .auth-animated .aa-stage {
@@ -99,10 +91,246 @@
   );
   overflow: hidden;
   min-height: 100vh;
+  min-height: 100dvh;
   padding: 48px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+}
+
+.auth-animated .aa-stage-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  z-index: 30;
+}
+
+.auth-animated .aa-stage-actions {
+  display: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-animated .aa-stage-home {
+  display: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--aa-muted);
+  text-decoration: none;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--aa-border);
+  background: color-mix(in srgb, var(--aa-panel-bg) 70%, transparent);
+}
+
+.auth-animated .aa-stage-home:hover {
+  color: var(--aa-text);
+}
+
+.auth-animated .aa-footer-links-mobile {
+  display: none;
+}
+
+.auth-animated .aa-theme-toggle-stage {
+  position: static;
+  background: color-mix(in srgb, var(--aa-panel-bg) 70%, transparent);
+}
+
+.auth-animated .aa-back-home-desktop {
+  display: inline-flex;
+}
+
+.auth-animated .aa-theme-toggle-panel {
+  display: inline-flex;
+}
+
+/* Mobile / tablet: stacked hero banner + form (keep animation, don't hide it) */
+@media (max-width: 1023px) {
+  .auth-animated .aa-page {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .auth-animated .aa-stage {
+    min-height: 0;
+    height: clamp(168px, 28svh, 220px);
+    padding: 14px 16px 0;
+    justify-content: flex-start;
+    gap: 4px;
+  }
+
+  .auth-animated .aa-stage::after {
+    width: 180px;
+    height: 180px;
+    top: 10%;
+    right: -8%;
+    filter: blur(56px);
+  }
+
+  .auth-animated .aa-stage-actions {
+    display: flex;
+  }
+
+  .auth-animated .aa-stage-home {
+    display: inline-flex;
+  }
+
+  .auth-animated .aa-brand {
+    font-size: 15px;
+    gap: 8px;
+  }
+
+  .auth-animated .aa-brand-mark {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+  }
+
+  .auth-animated .aa-brand-sub {
+    font-size: 8px;
+  }
+
+  .auth-animated .aa-stage-inner {
+    flex: 1;
+    align-items: flex-end;
+    justify-content: center;
+    min-height: 0;
+    padding-bottom: 0;
+    overflow: hidden;
+  }
+
+  .auth-animated .aa-characters {
+    width: 300px;
+    height: 150px;
+    transform: scale(0.62);
+    transform-origin: bottom center;
+  }
+
+  .auth-animated .aa-footer-links-desktop {
+    display: none;
+  }
+
+  .auth-animated .aa-footer-links-mobile {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    margin-top: 28px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    font-size: 12px;
+  }
+
+  .auth-animated .aa-panel {
+    align-items: flex-start;
+    padding: 22px 18px 28px;
+    min-height: 0;
+  }
+
+  .auth-animated .aa-panel-inner {
+    max-width: 440px;
+    margin: 0 auto;
+    padding-top: 4px;
+  }
+
+  .auth-animated .aa-back-home-desktop,
+  .auth-animated .aa-theme-toggle-panel,
+  .auth-animated .aa-mobile-brand {
+    display: none !important;
+  }
+
+  .auth-animated .aa-panel-head {
+    margin-bottom: 22px;
+  }
+
+  .auth-animated .aa-panel-head h1 {
+    font-size: 26px;
+  }
+
+  .auth-animated .aa-panel-head p {
+    font-size: 13px;
+    line-height: 1.45;
+    padding: 0 4px;
+  }
+
+  .auth-animated .aa-form {
+    gap: 14px;
+  }
+
+  .auth-animated .aa-field input[type="email"],
+  .auth-animated .aa-field input[type="password"],
+  .auth-animated .aa-field input[type="text"],
+  .auth-animated .aa-btn-primary,
+  .auth-animated .aa-btn-outline {
+    height: 48px;
+    font-size: 16px; /* prevent iOS zoom */
+  }
+
+  .auth-animated .aa-signup {
+    margin-top: 22px;
+  }
+
+  .auth-animated .aa-divider {
+    margin-top: 16px;
+  }
+
+  .auth-animated .aa-btn-outline {
+    margin-top: 16px;
+  }
+}
+
+@media (max-width: 380px) {
+  .auth-animated .aa-stage {
+    height: clamp(148px, 26svh, 190px);
+    padding: 12px 12px 0;
+  }
+
+  .auth-animated .aa-characters {
+    width: 280px;
+    height: 140px;
+    transform: scale(0.54);
+  }
+
+  .auth-animated .aa-panel {
+    padding: 18px 14px 24px;
+  }
+
+  .auth-animated .aa-panel-head h1 {
+    font-size: 24px;
+  }
+
+  .auth-animated .aa-stage-home {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+}
+
+/* Short phones / landscape: keep stage compact so the form stays usable */
+@media (max-width: 1023px) and (max-height: 560px) {
+  .auth-animated .aa-stage {
+    height: 132px;
+  }
+
+  .auth-animated .aa-characters {
+    transform: scale(0.42);
+  }
+
+  .auth-animated .aa-panel {
+    padding-top: 16px;
+  }
+
+  .auth-animated .aa-panel-head {
+    margin-bottom: 14px;
+  }
+
+  .auth-animated .aa-panel-head h1 {
+    font-size: 22px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .auth-animated .aa-stage-actions {
+    display: none;
+  }
 }
 
 .auth-animated .aa-stage::before {
@@ -198,7 +426,7 @@
   transform-origin: bottom center;
 }
 
-@media (max-width: 1280px) {
+@media (min-width: 1024px) and (max-width: 1280px) {
   .auth-animated .aa-characters {
     transform: scale(1.05);
   }
@@ -385,13 +613,6 @@
 .auth-animated .aa-theme-toggle:active {
   transform: scale(0.94);
 }
-@media (max-width: 1023px) {
-  .auth-animated .aa-theme-toggle {
-    top: 16px;
-    right: 16px;
-  }
-}
-
 .auth-animated .aa-panel-inner {
   width: 100%;
   max-width: 420px;
@@ -399,19 +620,6 @@
 
 .auth-animated .aa-mobile-brand {
   display: none;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 36px;
-  font-weight: 700;
-  font-size: 18px;
-  text-decoration: none;
-  color: var(--aa-text);
-}
-@media (max-width: 1023px) {
-  .auth-animated .aa-mobile-brand {
-    display: flex;
-  }
 }
 
 .auth-animated .aa-panel-head {
@@ -761,10 +969,4 @@
 }
 .auth-animated .aa-back-home:hover {
   color: var(--aa-text);
-}
-@media (max-width: 1023px) {
-  .auth-animated .aa-back-home {
-    top: 20px;
-    left: 16px;
-  }
 }
