@@ -44,7 +44,12 @@ export const site = {
     fileVaultGb: 50,
   },
   social: {
-    github: "https://github.com/usmanghias/clivora-web",
+    facebook: "https://www.facebook.com/clivora.io/",
+    x: "https://x.com/clivoraos",
+    linkedin: "https://www.linkedin.com/company/clivoraos",
+    instagram: "https://www.instagram.com/clivoraos",
+    youtube: "https://www.youtube.com/@clivora",
+    tiktok: "https://tiktok.com/@clivoraos",
   },
   playStoreUrl: "https://play.google.com/store/apps/details?id=org.codcrafters.clivora",
   /** Custom scheme handled by Android MainActivity */

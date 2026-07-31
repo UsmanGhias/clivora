@@ -12,6 +12,14 @@ export const metadata: Metadata = {
   },
   description:
     "Compare CLIVORA to fee-heavy marketplaces. $0 platform fee on negotiated deals, direct invoicing, and a full Freelancer OS for clients and freelancers.",
+  alternates: { canonical: `${site.url}/compare` },
+  keywords: [
+    "Clivora vs Upwork",
+    "Clivora vs Fiverr",
+    "freelancer platform compare",
+    "marketplace fees",
+    "Clivora Connect",
+  ],
 };
 
 export default function ComparePage() {

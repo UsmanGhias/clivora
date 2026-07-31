@@ -11,6 +11,7 @@ import { site } from "@/lib/site";
 export const metadata: Metadata = {
   title: "Pricing",
   description: `CLIVORA pricing - Free, Pro (${site.pricing.proMonthlyLabel}/mo), and Pro Plus (${site.pricing.proPlusMonthlyLabel}/mo). Start free, upgrade when you grow.`,
+  alternates: { canonical: "/pricing" },
 };
 
 export default function PricingPage() {

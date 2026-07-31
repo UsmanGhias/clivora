@@ -11,6 +11,8 @@ import { marketing } from "@/lib/marketing";
 export const metadata: Metadata = {
   title: "For Clients",
   description: marketing.forClients.body,
+  alternates: { canonical: "/for-clients" },
+  keywords: ["client workspace", "hire freelancers", "client portal", "Clivora"],
 };
 
 export default function ForClientsPage() {

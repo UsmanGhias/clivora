@@ -53,6 +53,16 @@ export const revalidate = 60;
 export const metadata: Metadata = {
   title: `${site.name} | Complete Freelancer OS - $0 deal fees`,
   description: site.description,
+  alternates: { canonical: site.url },
+  keywords: [
+    "Clivora",
+    "Clivora freelancer platform",
+    "freelancer workspace",
+    "client workspace",
+    "freelance project management",
+    "CODCrafters",
+    "Usman Ghias",
+  ],
   openGraph: {
     title: `${site.name} — Freelancer OS for hire, CRM & invoices`,
     description: site.description,
@@ -62,7 +72,7 @@ export const metadata: Metadata = {
   },
   other: {
     // Cache-bust / deploy verification marker for Hostinger CDN
-    "clivora-build": "2026-07-26-home-fast",
+    "clivora-build": "2026-08-01-seo-nav-social",
   },
 };
 

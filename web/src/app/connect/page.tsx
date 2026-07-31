@@ -17,14 +17,23 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
+import { MarketingJsonLd } from "@/components/marketing/MarketingJsonLd";
 import { ConnectMarketingHero } from "@/components/connect/ConnectMarketingHero";
 import { ConnectBoard } from "@/components/connect/ConnectBoard";
 import { Lock, ShieldCheck, Building2 } from "lucide-react";
+import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "CLIVORA Connect - Private marketplace",
   description:
     "Hire freelancers and find clients on CLIVORA Connect. Private contact until mutual accept, then continue in the same CRM. Browse free.",
+  alternates: { canonical: `${site.url}/connect` },
+  keywords: [
+    "Clivora Connect",
+    "freelancer platform",
+    "hire freelancers",
+    "freelance marketplace",
+  ],
 };
 
 export default async function ConnectPage({
@@ -75,6 +84,7 @@ export default async function ConnectPage({
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-navy antialiased">
+      <MarketingJsonLd />
       <MarketingNav />
       <main className="mx-auto max-w-7xl space-y-8 px-5 py-8 lg:px-8 lg:py-12">
         <ConnectMarketingHero signedIn={signedIn} isClient={client} />

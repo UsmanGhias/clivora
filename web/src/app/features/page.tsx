@@ -9,6 +9,13 @@ import { site } from "@/lib/site";
 export const metadata: Metadata = {
   title: "Features",
   description: `Explore every CLIVORA capability - CRM, projects, invoices, Connect marketplace, AI, analytics, web and Android.`,
+  alternates: { canonical: "/features" },
+  keywords: [
+    "Clivora features",
+    "freelancer collaboration",
+    "client workspace",
+    "invoice app",
+  ],
 };
 
 export default function FeaturesPage() {
