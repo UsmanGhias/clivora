@@ -5,6 +5,7 @@ export function isEarlyAccessProWindow(now = new Date()) {
   return now.getTime() <= new Date(EARLY_ACCESS_PRO_END_ISO).getTime();
 }
 
-export function earlyAccessPlanForSignup(now = new Date()) {
-  return isEarlyAccessProWindow(now) ? "pro" : "free";
+/** New signups always start on free. Early-access Pro claims are retired. */
+export function earlyAccessPlanForSignup(_now = new Date()) {
+  return "free" as const;
 }

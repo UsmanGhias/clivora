@@ -98,7 +98,7 @@ export default function SignupForm() {
     <>
       <header className="aa-panel-head">
         <h1>Create account</h1>
-        <p>Register before July 22, 2026 and your account gets Pro free, not Pro Plus.</p>
+        <p>Use the same email as your CLIVORA mobile app.</p>
       </header>
 
       <form className="aa-form" onSubmit={onSubmit} noValidate>
@@ -194,7 +194,7 @@ export default function SignupForm() {
         {awaitingVerify && <ResendVerification email={email} />}
 
         <button type="submit" className="aa-btn-primary" disabled={loading}>
-          {loading ? "Creating…" : "Create account and claim Pro"}
+          {loading ? "Creating…" : "Create account"}
         </button>
       </form>
 
