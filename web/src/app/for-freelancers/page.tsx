@@ -10,6 +10,13 @@ import { marketing } from "@/lib/marketing";
 export const metadata: Metadata = {
   title: "For Freelancers",
   description: marketing.forFreelancers.body,
+  alternates: { canonical: "/for-freelancers" },
+  keywords: [
+    "freelancer workspace",
+    "freelancer CRM",
+    "freelance project management",
+    "Clivora freelancer platform",
+  ],
 };
 
 export default function ForFreelancersPage() {

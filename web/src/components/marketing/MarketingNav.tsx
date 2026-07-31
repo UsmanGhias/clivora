@@ -124,7 +124,15 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
 
           <nav className="hidden items-center gap-1 lg:flex">
             {marketing.nav.links.map((link) => {
-              const hasChildren = "children" in link && link.children?.length;
+              const hasChildren = "children" in link && !!link.children?.length;
+              const isExternal = "external" in link && link.external;
+              const itemClass = cn(
+                "inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                light
+                  ? "text-slate-600 hover:bg-slate-100 hover:text-navy"
+                  : "text-white/75 hover:bg-white/10 hover:text-white",
+                isExternal && light ? "text-primary hover:text-primary" : null,
+              );
               return (
                 <div
                   key={link.label}
@@ -132,18 +140,21 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
                   onMouseEnter={() => hasChildren && setOpenMenu(link.label)}
                   onMouseLeave={() => setOpenMenu(null)}
                 >
-                  <Link
-                    href={link.href}
-                    className={cn(
-                      "inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                      light
-                        ? "text-slate-600 hover:bg-slate-100 hover:text-navy"
-                        : "text-white/75 hover:bg-white/10 hover:text-white",
-                    )}
-                  >
-                    {link.label}
-                    {hasChildren ? <ChevronDown className="h-3.5 w-3.5 opacity-60" /> : null}
-                  </Link>
+                  {isExternal ? (
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={itemClass}
+                    >
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link href={link.href} className={itemClass}>
+                      {link.label}
+                      {hasChildren ? <ChevronDown className="h-3.5 w-3.5 opacity-60" /> : null}
+                    </Link>
+                  )}
                   {hasChildren && openMenu === link.label ? (
                     <div className="absolute left-0 top-full pt-2">
                       <div className="min-w-[200px] rounded-xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-900/10">
@@ -260,29 +271,44 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
       {mobileOpen ? (
         <div className="fixed inset-x-0 top-[68px] z-40 max-h-[calc(100svh-68px)] overflow-y-auto border-b border-slate-200 bg-white p-5 shadow-xl lg:hidden">
           <nav className="flex flex-col gap-1">
-            {marketing.nav.links.map((link) => (
-              <div key={link.label} className="border-b border-slate-100 py-2">
-                <Link
-                  href={link.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="block py-2 text-base font-semibold text-navy"
-                >
-                  {link.label}
-                </Link>
-                {"children" in link && link.children
-                  ? link.children.map((child) => (
-                      <Link
-                        key={child.href + child.label}
-                        href={child.href}
-                        onClick={() => setMobileOpen(false)}
-                        className="block py-1.5 pl-3 text-sm text-slate-500"
-                      >
-                        {child.label}
-                      </Link>
-                    ))
-                  : null}
-              </div>
-            ))}
+            {marketing.nav.links.map((link) => {
+              const isExternal = "external" in link && link.external;
+              return (
+                <div key={link.label} className="border-b border-slate-100 py-2">
+                  {isExternal ? (
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setMobileOpen(false)}
+                      className="block py-2 text-base font-semibold text-primary"
+                    >
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link
+                      href={link.href}
+                      onClick={() => setMobileOpen(false)}
+                      className="block py-2 text-base font-semibold text-navy"
+                    >
+                      {link.label}
+                    </Link>
+                  )}
+                  {"children" in link && link.children
+                    ? link.children.map((child) => (
+                        <Link
+                          key={child.href + child.label}
+                          href={child.href}
+                          onClick={() => setMobileOpen(false)}
+                          className="block py-1.5 pl-3 text-sm text-slate-500"
+                        >
+                          {child.label}
+                        </Link>
+                      ))
+                    : null}
+                </div>
+              );
+            })}
             {loggedIn ? (
               <>
                 <Link
