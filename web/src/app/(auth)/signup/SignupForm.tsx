@@ -202,7 +202,7 @@ export default function SignupForm() {
       <GoogleAuthButton mode="signup" accountType={accountType} next={next} variant="animated" />
 
       {awaitingVerify && (
-        <div className="aa-row" style={{ marginTop: 16, justifyContent: "center" }}>
+        <div className="aa-auth-nav" style={{ marginTop: 16 }}>
           <Link href={`/login?next=${encodeURIComponent(next)}`} className="aa-link strong">
             Go to sign in
           </Link>
@@ -212,12 +212,12 @@ export default function SignupForm() {
         </div>
       )}
 
-      <p className="aa-signup">
-        Already have an account?{" "}
+      <div className="aa-auth-nav">
+        <span className="aa-auth-nav-hint">Already have an account?</span>
         <Link href={`/login?next=${encodeURIComponent(next)}`} className="aa-link strong">
           Sign in
         </Link>
-      </p>
+      </div>
     </>
   );
 }

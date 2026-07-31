@@ -115,13 +115,6 @@ export default function LoginForm() {
           </div>
         </label>
 
-        <div className="aa-row">
-          <span />
-          <Link href="/auth/reset-password" className="aa-link">
-            Forgot password?
-          </Link>
-        </div>
-
         {error && (
           <div className={`aa-error-box${shake ? " shake" : ""}`} role="alert">
             {error}
@@ -139,12 +132,14 @@ export default function LoginForm() {
         <GoogleAuthButton mode="signin" next={next} variant="animated" />
       </div>
 
-      <p className="aa-signup">
-        Don&apos;t have an account?{" "}
-        <Link href={`/signup?next=${encodeURIComponent(next)}`} className="aa-link strong">
-          Sign Up
+      <div className="aa-auth-nav">
+        <Link href="/auth/reset-password" className="aa-link">
+          Forgot password?
         </Link>
-      </p>
+        <Link href={`/signup?next=${encodeURIComponent(next)}`} className="aa-link strong">
+          Create account
+        </Link>
+      </div>
     </>
   );
 }
