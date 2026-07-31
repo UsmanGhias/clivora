@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -10,22 +10,37 @@ import {
 } from "@/lib/auth-errors";
 import { ResendVerification } from "@/components/auth/ResendVerification";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
+import { useAuthAnim } from "@/components/auth/animated/AuthAnimContext";
 
 export default function LoginForm() {
   const router = useRouter();
   const search = useSearchParams();
   const next = search.get("next") || "/app";
+  const anim = useAuthAnim();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shake, setShake] = useState(false);
   const [needsVerify, setNeedsVerify] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const { setPasswordLen, setShowPassword: setAnimShowPassword, setTyping, triggerError } = anim;
+
+  useEffect(() => {
+    setPasswordLen(password.length);
+  }, [password, setPasswordLen]);
+
+  useEffect(() => {
+    setAnimShowPassword(showPassword);
+  }, [showPassword, setAnimShowPassword]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setNeedsVerify(false);
+    setShake(false);
     const supabase = createClient();
     const { error: err } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
@@ -35,6 +50,8 @@ export default function LoginForm() {
     if (err) {
       setError(authErrorMessage(err.message));
       setNeedsVerify(isEmailNotConfirmedError(err.message));
+      setShake(true);
+      triggerError();
       return;
     }
     router.push(next);
@@ -42,65 +59,92 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-7 shadow-xl shadow-slate-200/60 sm:p-8">
-      <h1 className="font-display text-2xl font-extrabold text-navy">Sign in</h1>
-      <p className="mt-1.5 text-sm text-slate-500">
-        Use the same email as your CLIVORA mobile app.
-      </p>
-      <form onSubmit={onSubmit} className="mt-6 space-y-4">
-        <label className="block text-sm font-semibold text-navy">
-          Email
+    <>
+      <header className="aa-panel-head">
+        <h1>Welcome back!</h1>
+        <p>Sign in with the same email as your CLIVORA mobile app.</p>
+      </header>
+
+      <form className="aa-form" onSubmit={onSubmit} noValidate>
+        <label className="aa-field">
+          <span>Email</span>
           <input
             type="email"
             required
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onFocus={() => setTyping(true)}
+            onBlur={() => setTyping(false)}
             placeholder="you@company.com"
-            className="mt-1.5 w-full rounded-xl border border-slate-200 bg-[#F8FAFC] px-3.5 py-3 text-sm text-navy outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20"
           />
         </label>
-        <label className="block text-sm font-semibold text-navy">
-          Password
-          <input
-            type="password"
-            required
-            minLength={6}
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-1.5 w-full rounded-xl border border-slate-200 bg-[#F8FAFC] px-3.5 py-3 text-sm text-navy outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20"
-          />
+
+        <label className="aa-field">
+          <span>Password</span>
+          <div className="aa-password-wrap">
+            <input
+              type={showPassword ? "text" : "password"}
+              required
+              minLength={6}
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+            />
+            <button
+              type="button"
+              className="aa-toggle-pass"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              onClick={() => setShowPassword((v) => !v)}
+            >
+              {showPassword ? (
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-10-7-10-7a17.81 17.81 0 0 1 4.06-5.06" />
+                  <path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 10 7 10 7a17.81 17.81 0 0 1-3.17 4.19" />
+                  <path d="M14.12 14.12A3 3 0 1 1 9.88 9.88" />
+                  <line x1="2" y1="2" x2="22" y2="22" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              )}
+            </button>
+          </div>
         </label>
+
+        <div className="aa-row">
+          <span />
+          <Link href="/auth/reset-password" className="aa-link">
+            Forgot password?
+          </Link>
+        </div>
+
         {error && (
-          <p className="rounded-xl bg-red-50 px-3 py-2.5 text-sm text-red-600">{error}</p>
+          <div className={`aa-error-box${shake ? " shake" : ""}`} role="alert">
+            {error}
+          </div>
         )}
         {needsVerify && <ResendVerification email={email} />}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-xl bg-primary py-3.5 text-sm font-bold text-white shadow-lg shadow-primary/25 transition hover:bg-primary-dark disabled:opacity-60"
-        >
-          {loading ? "Signing in…" : "Sign in"}
+
+        <button type="submit" className="aa-btn-primary" disabled={loading}>
+          {loading ? "Signing in…" : "Log in"}
         </button>
       </form>
-      <div className="my-5 flex items-center gap-3 text-xs font-medium text-slate-400">
-        <div className="h-px flex-1 bg-slate-200" />
-        OR
-        <div className="h-px flex-1 bg-slate-200" />
+
+      <div className="aa-divider">OR</div>
+      <div className="aa-google-wrap">
+        <GoogleAuthButton mode="signin" next={next} variant="animated" />
       </div>
-      <GoogleAuthButton mode="signin" next={next} />
-      <div className="mt-5 flex items-center justify-between text-sm">
-        <Link href="/auth/reset-password" className="font-medium text-slate-500 hover:text-primary">
-          Forgot password?
+
+      <p className="aa-signup">
+        Don&apos;t have an account?{" "}
+        <Link href={`/signup?next=${encodeURIComponent(next)}`} className="aa-link strong">
+          Sign Up
         </Link>
-        <Link
-          href={`/signup?next=${encodeURIComponent(next)}`}
-          className="font-semibold text-primary hover:underline"
-        >
-          Create account
-        </Link>
-      </div>
-    </div>
+      </p>
+    </>
   );
 }
