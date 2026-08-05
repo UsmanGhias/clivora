@@ -50,7 +50,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  drift_dev: ^2.25.0
+  drift_dev: ^2.34.5
   build_runner: ^2.4.15
   image: ^4.9.1
 
