@@ -34,7 +34,7 @@
     "@types/node": "^22.15.29",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.5",
-    "autoprefixer": "^10.4.21",
+    "autoprefixer": "^10.5.4",
     "eslint": "^8.57.1",
     "eslint-config-next": "15.5.22",
     "postcss": "8.5.23",
