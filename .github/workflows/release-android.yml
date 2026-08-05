@@ -25,7 +25,7 @@ jobs:
           test "$tag_version" = "v$file_version"
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
