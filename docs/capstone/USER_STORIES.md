@@ -9,19 +9,19 @@ Status is also tracked on the GitHub Project / Issues (`label: capstone`).
 
 | ID | Story | Acceptance | Status |
 |---|---|---|---|
-| US-1 | As a Quantic grader, I want a README that links the live app, board, and design/testing doc so that I can score the submission without hunting. | Root README contains clivora.io, Play Store, design doc, board, `quantic-grader` note. | In progress |
-| US-2 | As a Product Owner, I want an accessible agile board of Capstone tasks so that sprint scope is visible. | GitHub Project + Issues with sprint labels; this file kept in sync. | In progress |
+| US-1 | As a Quantic grader, I want a README that links the live app, board, and design/testing doc so that I can score the submission without hunting. | Root README contains clivora.io, Play Store, design doc, board, `quantic-grader` note. | Done |
+| US-2 | As a Product Owner, I want an accessible agile board of Capstone tasks so that sprint scope is visible. | GitHub Issues with sprint labels; this file kept in sync. | Done |
 | US-3 | As a maintainer, I want Hostinger SSH keys ignored by git so that secrets never reach the grader clone. | `.ssh-hostinger/` in `.gitignore`; folder untracked. | Done |
-| US-4 | As a developer, I want plan and money rules covered by unit tests so that Free/Pro limits cannot silently break. | Vitest for `plan`, `plan-gates`, `money`; `npm test` in CI. | In progress |
+| US-4 | As a developer, I want plan and money rules covered by unit tests so that Free/Pro limits cannot silently break. | Vitest for `plan`, `plan-gates`, `money`; `npm test` in CI. | Done |
 | US-5 | As a grader, I want a design-and-testing document that names patterns, reasons, tests, and deploy cost so that rubric item 4 is met. | `docs/capstone/DESIGN_AND_TESTING.md` in the repo. | Done |
 
 ## Sprint 2 — AI system
 
 | ID | Story | Acceptance | Status |
 |---|---|---|---|
-| US-6 | As a Pro freelancer, I want Ask AI to retrieve my own clients/invoices (not only totals) so that answers are grounded. | Embeddings written on CRM create/update; Ask AI uses retrieved chunks; no invented amounts. | Backlog |
-| US-7 | As a Product Owner, I want a small Ask AI eval set so that we can show AI engineering (not only a chat wrapper). | Documented questions + expected behavior in `docs/capstone/`. | Backlog |
-| US-8 | As a freelancer, I want AI suggestions to require my review so that the system never auto-pays or auto-publishes. | Existing human-review copy remains; flags documented. | Backlog |
+| US-6 | As a Pro freelancer, I want Ask AI to retrieve my own clients/invoices (not only totals) so that answers are grounded. | Keyword/recent retrieval over `crm_embeddings` with aggregate fallback. Opt-in `POST /api/ai/index-crm`. Live CRM saves unchanged. | In progress |
+| US-7 | As a Product Owner, I want a small Ask AI eval set so that we can show AI engineering (not only a chat wrapper). | Documented questions + expected behavior in `docs/capstone/ASK_AI_EVAL.md`. | Done |
+| US-8 | As a freelancer, I want AI suggestions to require my review so that the system never auto-pays or auto-publishes. | Existing human-review copy remains; flags documented. | Done |
 
 ## Sprint 3 — Demo loop
 
