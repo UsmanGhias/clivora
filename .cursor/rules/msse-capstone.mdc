@@ -1,0 +1,16 @@
+---
+description: MSSE Capstone constraints while working on CLIVORA
+alwaysApply: true
+---
+
+# CLIVORA is the Quantic MSSE Capstone product
+
+- Product: AI-assisted Freelancer OS (web + Android). Owner: Usman Ghias / CODCrafters.
+- Baseline already shipped (clivora.io + Play Store). Capstone work is a **new 3-sprint increment**, not a rewrite of the whole OS.
+- Primary repo: `UsmanGhias/clivora`. Author web in `web/`. Do not treat the stale standalone `clivora-web` folder as source of truth.
+- Required grader artifacts live in `docs/capstone/` and must stay linked from the root README: live URL, GitHub Project/Issues board, design-and-testing doc.
+- Share the repo with GitHub user `quantic-grader` (read access is enough).
+- Prefer tests, CI, architecture docs, real Ask-AI RAG, and one demo loop (job → accept → project → invoice) over new payment gateways, iOS, or microservices.
+- Never commit `.ssh-hostinger/`, keystores, `.env`, or service-role keys. Do not claim Stripe/escrow is live.
+- Do not describe pre-Capstone features as built during the three sprints. Label them as baseline.
+- Solo Capstone: Usman is Product Owner. Still use sprint planning, the board, and a recorded demo at each sprint end.

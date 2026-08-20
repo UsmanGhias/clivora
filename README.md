@@ -45,6 +45,22 @@ Our ambition is to build the world's leading community-driven Freelancer OS:
 | [UsmanGhias/clivora](https://github.com/UsmanGhias/clivora) | Flutter Android app, shared platform source, Supabase resources |
 | [UsmanGhias/clivora-web](https://github.com/UsmanGhias/clivora-web) | Next.js marketing site, web app, and public documentation |
 
+## Quantic MSSE Capstone
+
+CLIVORA is also the MSSE Capstone product. The live app is the **baseline**; Capstone is a three-sprint increment (docs/tests/CI, Ask AI RAG, hire→invoice demo). It does not replace the product above.
+
+| Grader item | Link |
+|---|---|
+| Live web app | [https://clivora.io](https://clivora.io) |
+| Android | [Google Play](https://play.google.com/store/apps/details?id=org.codcrafters.clivora) |
+| Agile board | [Issues labeled `capstone`](https://github.com/UsmanGhias/clivora/issues?q=is%3Aissue+label%3Acapstone) |
+| Design and testing | [docs/capstone/DESIGN_AND_TESTING.md](docs/capstone/DESIGN_AND_TESTING.md) |
+| User stories / sprints | [USER_STORIES.md](docs/capstone/USER_STORIES.md) · [SPRINT_PLAN.md](docs/capstone/SPRINT_PLAN.md) |
+| Baseline vs Capstone | [BASELINE_VS_CAPSTONE.md](docs/capstone/BASELINE_VS_CAPSTONE.md) |
+| Capstone index | [docs/capstone/README.md](docs/capstone/README.md) |
+
+Share this private repository with GitHub user `quantic-grader` before final submission.
+
 ## Quick start
 
 ### Requirements
