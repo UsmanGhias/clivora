@@ -78,3 +78,6 @@ android/.signing/
 graphify-out/
 
 .tmp_deploy/
+
+# Hostinger / server SSH keys — never commit
+.ssh-hostinger/
