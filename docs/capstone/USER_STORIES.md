@@ -3,7 +3,7 @@
 Format: *As a … I want … so that …*  
 Only these stories are in the Capstone increment. Baseline product features are already shipped.
 
-Status is also tracked on the GitHub Project / Issues (`label: capstone`).
+Status is also tracked on GitHub Issues (`label: capstone`).
 
 ## Sprint 1 — Engineering bar
 
@@ -19,7 +19,7 @@ Status is also tracked on the GitHub Project / Issues (`label: capstone`).
 
 | ID | Story | Acceptance | Status |
 |---|---|---|---|
-| US-6 | As a Pro freelancer, I want Ask AI to retrieve my own clients/invoices (not only totals) so that answers are grounded. | Keyword/recent retrieval over `crm_embeddings` with aggregate fallback. Opt-in `POST /api/ai/index-crm`. Live CRM saves unchanged. | In progress |
+| US-6 | As a Pro freelancer, I want Ask AI to retrieve my own clients/invoices (not only totals) so that answers are grounded. | Keyword/recent retrieval over `crm_embeddings` with aggregate fallback. Opt-in `POST /api/ai/index-crm`. Live CRM saves unchanged. | Done |
 | US-7 | As a Product Owner, I want a small Ask AI eval set so that we can show AI engineering (not only a chat wrapper). | Documented questions + expected behavior in `docs/capstone/ASK_AI_EVAL.md`. | Done |
 | US-8 | As a freelancer, I want AI suggestions to require my review so that the system never auto-pays or auto-publishes. | Existing human-review copy remains; flags documented. | Done |
 
@@ -27,7 +27,7 @@ Status is also tracked on the GitHub Project / Issues (`label: capstone`).
 
 | ID | Story | Acceptance | Status |
 |---|---|---|---|
-| US-9 | As a client, I want to post a job, review a proposal, and mutually accept so that contact can unlock in a live demo. | Scripted path on clivora.io with seed/test accounts. | Backlog |
-| US-10 | As a freelancer, I want to open a project, track time, and share an invoice link so that the OS loop is visible end-to-end. | `/i/[token]` shown in the demo; timesheet uses approved rate. | Backlog |
-| US-11 | As a Capstone student, I want a 15–20 minute recorded demo with ID on camera so that the presentation rubric is met. | Single .mp4 on Google Drive; all speakers visible. | Backlog |
-| US-12 | As a grader, I want sprint-end demo recordings for the Product Owner so that the three-sprint journey is evidenced. | Three short recordings linked from `docs/capstone/`. | Backlog |
+| US-9 | As a client, I want to post a job, review a proposal, and mutually accept so that contact can unlock in a live demo. | Scripted path on clivora.io in [DEMO_SCRIPT.md](./DEMO_SCRIPT.md). | Script done; you perform it on camera |
+| US-10 | As a freelancer, I want to open a project, track time, and share an invoice link so that the OS loop is visible end-to-end. | Script includes `/i/[token]` and timesheets. | Script done; you perform it on camera |
+| US-11 | As a Capstone student, I want a 15–20 minute recorded demo with ID on camera so that the presentation rubric is met. | [RECORDING.md](./RECORDING.md) — you record and paste the Drive link. | You record this |
+| US-12 | As a grader, I want sprint-end demo recordings for the Product Owner so that the three-sprint journey is evidenced. | Table in [RECORDING.md](./RECORDING.md) for three Drive links. | You record these |

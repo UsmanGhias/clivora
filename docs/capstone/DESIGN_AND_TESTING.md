@@ -80,7 +80,7 @@ Web production is a Node process on Hostinger (not a static export). Android use
 
 **Current:** `POST /api/ai/ask` loads CRM aggregates, optionally calls OpenAI or Anthropic, and falls back to honest offline tips if no LLM key is set. Structured suggestions are feature-flagged and require human review.
 
-**Capstone Sprint 2:** embed CRM rows into `pgvector` (`crm_embeddings`) on write; retrieve chunks for Ask AI; keep a small eval set; never auto-pay or auto-publish.
+**Capstone Sprint 2 (shipped, fail-open):** Ask AI retrieves keyword/recent rows from `crm_embeddings` when present, otherwise keeps CRM aggregates. Indexing is **opt-in** (`POST /api/ai/index-crm`) so live invoice/client saves are unchanged. Eval set: [ASK_AI_EVAL.md](./ASK_AI_EVAL.md). Human review forbids `auto_pay` / `auto_publish`. The optional `match_crm_embeddings` SQL is in the repo and is **not** applied to production until a maintenance window.
 
 **Why:** Aggregates are useful but shallow. RAG is the AI-engineering technique that grounds answers in the user’s own invoices and projects.
 
@@ -114,6 +114,7 @@ Web production is a Node process on Hostinger (not a static export). Android use
 | `web/src/lib/money.test.ts` | Minor-unit conversion and invoice dual-write fields | Vitest |
 | `web/src/lib/plan.test.ts` | Pro / Pro Plus / client detection | Vitest |
 | `web/src/lib/plan-gates.test.ts` | Free-plan create caps and UTC month invoice counting | Vitest |
+| `web/src/lib/crm-rag.test.ts` | Chunk formatting, ilike sanitization, index text without inventing amounts | Vitest |
 
 **Why:** Money and plan gates are pure functions with high blast radius. They are cheaper and more stable to unit-test than full UI.
 

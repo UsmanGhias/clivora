@@ -16,7 +16,9 @@
 | Deployed web app | https://clivora.io |
 | Agile task board | [Issues labeled capstone](https://github.com/UsmanGhias/clivora/issues?q=is%3Aissue+label%3Acapstone) |
 | Design and testing document | [DESIGN_AND_TESTING.md](./DESIGN_AND_TESTING.md) |
-| Recorded 15–20 min demo | Linked here when recorded (Sprint 3) |
+| Recorded 15–20 min demo | [RECORDING.md](./RECORDING.md) — Drive link after you record |
+| Demo walkthrough | [DEMO_SCRIPT.md](./DEMO_SCRIPT.md) |
+| What to paste in Quantic | [WHAT_TO_SUBMIT.md](./WHAT_TO_SUBMIT.md) |
 | At least 3 sprints | [SPRINT_PLAN.md](./SPRINT_PLAN.md) |
 
 ## Academic framing

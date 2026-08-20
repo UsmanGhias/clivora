@@ -56,6 +56,8 @@ CLIVORA is also the MSSE Capstone product. The live app is the **baseline**; Cap
 | Agile board | [Issues labeled `capstone`](https://github.com/UsmanGhias/clivora/issues?q=is%3Aissue+label%3Acapstone) |
 | Design and testing | [docs/capstone/DESIGN_AND_TESTING.md](docs/capstone/DESIGN_AND_TESTING.md) |
 | User stories / sprints | [USER_STORIES.md](docs/capstone/USER_STORIES.md) · [SPRINT_PLAN.md](docs/capstone/SPRINT_PLAN.md) |
+| What to submit | [docs/capstone/WHAT_TO_SUBMIT.md](docs/capstone/WHAT_TO_SUBMIT.md) |
+| Demo script | [docs/capstone/DEMO_SCRIPT.md](docs/capstone/DEMO_SCRIPT.md) |
 | Baseline vs Capstone | [BASELINE_VS_CAPSTONE.md](docs/capstone/BASELINE_VS_CAPSTONE.md) |
 | Capstone index | [docs/capstone/README.md](docs/capstone/README.md) |
 
