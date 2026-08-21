@@ -1,0 +1,5 @@
+# Intermediates. `visuals/` is committed so the deck stays reproducible for graders,
+# but these two are throwaway build products.
+catalogue/
+preview/
+__pycache__/
