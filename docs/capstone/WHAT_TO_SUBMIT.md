@@ -1,6 +1,6 @@
 # What to share with Quantic (final submission)
 
-Submit **once**, as one group member, from the Quantic dashboard **Submit Project** button. Do not zip the repo.
+The dashboard has **two** Submit Project buttons (same deadline). One person submits both. Do not zip the repo.
 
 ## Links to paste (accessible)
 
@@ -13,7 +13,8 @@ Submit **once**, as one group member, from the Quantic dashboard **Submit Projec
 | 5 | Agile board | https://github.com/UsmanGhias/clivora/issues?q=is%3Aissue+label%3Acapstone |
 | 6 | Design and testing | https://github.com/UsmanGhias/clivora/blob/main/docs/capstone/DESIGN_AND_TESTING.md |
 | 7 | Capstone index | https://github.com/UsmanGhias/clivora/blob/main/docs/capstone/README.md |
-| 8 | Demo recording | Google Drive `.mp4` — Anyone with the link *(you record this)* |
+| 8 | Presentation video | Google Drive `.mp4` — Anyone with the link *(you record this)* |
+| 9 | Speaker deck | [presentation/](./presentation/README.md) — **do not upload** this PPT |
 
 Optional mirror: https://github.com/UsmanGhias/clivora-web
 
