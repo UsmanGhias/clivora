@@ -9,7 +9,9 @@
   [![Website](https://img.shields.io/badge/Live-clivora.io-0F172A.svg)](https://clivora.io)
   [![Google Play](https://img.shields.io/badge/Get_it_on-Google_Play-414141.svg)](https://play.google.com/store/apps/details?id=org.codcrafters.clivora)
 
-  [Website](https://clivora.io) · [Web app](https://clivora.io/app) · [Google Play](https://play.google.com/store/apps/details?id=org.codcrafters.clivora) · [Documentation](https://clivora.io/docs) · [Community](https://community.clivora.io)
+  **Repos:** [CLIVORA (this repo · Android + platform)](https://github.com/UsmanGhias/clivora) · [clivora-web (Next.js site + web app)](https://github.com/UsmanGhias/clivora-web)
+
+  [Website](https://clivora.io) · [Web app](https://clivora.io/app) · [Google Play](https://play.google.com/store/apps/details?id=org.codcrafters.clivora) · [Documentation](https://clivora.io/docs) · [Community](https://community.clivora.io) · [Capstone Drive folder](https://drive.google.com/drive/folders/1RETX5qyRIfKbB0NZpvIPW0RnUczc1xPS?usp=sharing)
 </div>
 
 ## Why CLIVORA exists
@@ -40,10 +42,14 @@ Our ambition is to build the world's leading community-driven Freelancer OS:
 
 ## Repository family
 
-| Repository | Purpose |
-|---|---|
-| [UsmanGhias/clivora](https://github.com/UsmanGhias/clivora) | Flutter Android app, shared platform source, Supabase resources |
-| [UsmanGhias/clivora-web](https://github.com/UsmanGhias/clivora-web) | Next.js marketing site, web app, and public documentation |
+This is the **primary** GitHub link for Quantic. The Next.js site lives in a sibling repo — open it from here:
+
+| Repository | What it is | Link |
+|---|---|---|
+| **CLIVORA** (this repo) | Flutter Android app, shared platform source, Supabase, Capstone docs | [github.com/UsmanGhias/clivora](https://github.com/UsmanGhias/clivora) |
+| **clivora-web** | Next.js marketing site, signed-in web app, and public documentation | [github.com/UsmanGhias/clivora-web](https://github.com/UsmanGhias/clivora-web) |
+
+The `web/` folder in this repo is the source of truth for the site. `clivora-web` is the synced GitHub copy used for Hostinger/Vercel deploys.
 
 ## Quantic MSSE Capstone
 
@@ -51,6 +57,9 @@ CLIVORA is also the MSSE Capstone product. The live app is the **baseline**; Cap
 
 | Grader item | Link |
 |---|---|
+| GitHub — Android / platform (this repo) | [UsmanGhias/clivora](https://github.com/UsmanGhias/clivora) |
+| GitHub — web (Next.js) | [UsmanGhias/clivora-web](https://github.com/UsmanGhias/clivora-web) |
+| Capstone Drive folder (all project data) | [Google Drive](https://drive.google.com/drive/folders/1RETX5qyRIfKbB0NZpvIPW0RnUczc1xPS?usp=sharing) |
 | Live web app | [https://clivora.io](https://clivora.io) |
 | Android | [Google Play](https://play.google.com/store/apps/details?id=org.codcrafters.clivora) |
 | Agile board | [Issues labeled `capstone`](https://github.com/UsmanGhias/clivora/issues?q=is%3Aissue+label%3Acapstone) |
@@ -62,7 +71,7 @@ CLIVORA is also the MSSE Capstone product. The live app is the **baseline**; Cap
 | Baseline vs Capstone | [BASELINE_VS_CAPSTONE.md](docs/capstone/BASELINE_VS_CAPSTONE.md) |
 | Capstone index | [docs/capstone/README.md](docs/capstone/README.md) |
 
-Share this private repository with GitHub user `quantic-grader` before final submission.
+Share **both** private repositories (`clivora` and `clivora-web`) with GitHub user `quantic-grader` before final submission. Capstone files (deck, notes, recordings) are also in the [Drive folder](https://drive.google.com/drive/folders/1RETX5qyRIfKbB0NZpvIPW0RnUczc1xPS?usp=sharing).
 
 ## Quick start
 
