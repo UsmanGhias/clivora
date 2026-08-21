@@ -6,7 +6,9 @@ The dashboard has **two** Submit Project buttons (same deadline). One person sub
 
 | # | Item | Value |
 |---|---|---|
-| 1 | GitHub repository | https://github.com/UsmanGhias/clivora |
+| 1 | GitHub repository (primary — Android + platform) | https://github.com/UsmanGhias/clivora |
+| 1b | GitHub repository (web — Next.js) | https://github.com/UsmanGhias/clivora-web |
+| 1c | Capstone Drive folder (all project data) | https://drive.google.com/drive/folders/1RETX5qyRIfKbB0NZpvIPW0RnUczc1xPS?usp=sharing |
 | 2 | Live web app | https://clivora.io |
 | 3 | Web app (signed-in) | https://clivora.io/app |
 | 4 | Android | https://play.google.com/store/apps/details?id=org.codcrafters.clivora |
@@ -16,12 +18,12 @@ The dashboard has **two** Submit Project buttons (same deadline). One person sub
 | 8 | Presentation video | Google Drive `.mp4` — Anyone with the link *(you record this)* |
 | 9 | Speaker deck | [presentation/](./presentation/README.md) — **do not upload** this PPT |
 
-Optional mirror: https://github.com/UsmanGhias/clivora-web
+The Quantic form has **one** GitHub field. Paste `https://github.com/UsmanGhias/clivora`. Both repos and the Drive folder are linked from the top of that README so the grader can open `clivora-web` from there.
 
 ## Before you click Submit
 
-1. Invite GitHub user **`quantic-grader`** to `UsmanGhias/clivora` with **read** access (Settings → Collaborators).
-2. Confirm the grader can open the private repo, the Issues board, and https://clivora.io without a password.
+1. Invite GitHub user **`quantic-grader`** to **`UsmanGhias/clivora` and `UsmanGhias/clivora-web`** with **read** access (Settings → Collaborators on each repo).
+2. Confirm the grader can open both private repos, the Issues board, the [Drive folder](https://drive.google.com/drive/folders/1RETX5qyRIfKbB0NZpvIPW0RnUczc1xPS?usp=sharing), and https://clivora.io without a password.
 3. Upload the signed last page of the **Group Project Agreement** (even if you worked solo, follow the dashboard prompt).
 4. Record the 15–20 minute demo with ID on camera ([RECORDING.md](./RECORDING.md), script: [DEMO_SCRIPT.md](./DEMO_SCRIPT.md)).
 

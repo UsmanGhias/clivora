@@ -4,15 +4,18 @@
 **Program:** Master of Science in Software Engineering, Quantic School of Business and Technology  
 **Product:** CLIVORA Freelancer OS (web + Android)  
 **Company:** CODCrafters  
-**Primary repository:** https://github.com/UsmanGhias/clivora  
+**Primary repository (Android + platform):** https://github.com/UsmanGhias/clivora  
+**Web repository (Next.js):** https://github.com/UsmanGhias/clivora-web  
 **Live system:** https://clivora.io  
+**Capstone Drive folder (all project data):** https://drive.google.com/drive/folders/1RETX5qyRIfKbB0NZpvIPW0RnUczc1xPS?usp=sharing  
 
 ## How this maps to the handbook
 
 | Handbook requirement | Where it is |
 |---|---|
-| Working software / AI system | Live product + this repo |
-| GitHub shared with `quantic-grader` | Add as a read-only collaborator before final submission |
+| Working software / AI system | Live product + [clivora](https://github.com/UsmanGhias/clivora) + [clivora-web](https://github.com/UsmanGhias/clivora-web) |
+| GitHub shared with `quantic-grader` | Add as a read-only collaborator on **both** repos before final submission |
+| Capstone Drive folder | [All project data](https://drive.google.com/drive/folders/1RETX5qyRIfKbB0NZpvIPW0RnUczc1xPS?usp=sharing) |
 | Deployed web app | https://clivora.io |
 | Agile task board | [Issues labeled capstone](https://github.com/UsmanGhias/clivora/issues?q=is%3Aissue+label%3Acapstone) |
 | Design and testing document | [DESIGN_AND_TESTING.md](./DESIGN_AND_TESTING.md) |
