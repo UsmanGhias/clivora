@@ -4,14 +4,22 @@
   <p><strong>The open-source Freelancer OS for freelancers, agencies, and clients.</strong></p>
   <p>Find opportunities, manage work, collaborate with clients, and run your freelance business from one community-built platform.</p>
 
+  <p>
+    <a href="https://github.com/UsmanGhias/clivora"><img src="assets/images/btn-clivora.png" alt="CLIVORA — Android app, platform, Capstone docs" width="720" /></a>
+  </p>
+  <p>
+    <a href="https://github.com/UsmanGhias/clivora-web"><img src="assets/images/btn-clivora-web.png" alt="clivora-web — Next.js site and web app" width="720" /></a>
+  </p>
+  <p>
+    <a href="https://drive.google.com/drive/folders/1RETX5qyRIfKbB0NZpvIPW0RnUczc1xPS?usp=sharing"><img src="assets/images/btn-capstone-drive.png" alt="Capstone Drive folder — all Quantic project data" width="720" /></a>
+  </p>
+
   [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-0F766E.svg)](LICENSE)
   [![Flutter](https://img.shields.io/badge/Flutter-Android-02569B.svg)](https://flutter.dev)
   [![Website](https://img.shields.io/badge/Live-clivora.io-0F172A.svg)](https://clivora.io)
   [![Google Play](https://img.shields.io/badge/Get_it_on-Google_Play-414141.svg)](https://play.google.com/store/apps/details?id=org.codcrafters.clivora)
 
-  **Repos:** [CLIVORA (this repo · Android + platform)](https://github.com/UsmanGhias/clivora) · [clivora-web (Next.js site + web app)](https://github.com/UsmanGhias/clivora-web)
-
-  [Website](https://clivora.io) · [Web app](https://clivora.io/app) · [Google Play](https://play.google.com/store/apps/details?id=org.codcrafters.clivora) · [Documentation](https://clivora.io/docs) · [Community](https://community.clivora.io) · [Capstone Drive folder](https://drive.google.com/drive/folders/1RETX5qyRIfKbB0NZpvIPW0RnUczc1xPS?usp=sharing)
+  [Website](https://clivora.io) · [Web app](https://clivora.io/app) · [Google Play](https://play.google.com/store/apps/details?id=org.codcrafters.clivora) · [Documentation](https://clivora.io/docs) · [Community](https://community.clivora.io)
 </div>
 
 ## Why CLIVORA exists
