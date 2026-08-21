@@ -9,16 +9,20 @@ type InvoiceShare = {
   payment_method: string | null;
 };
 
+// Guest lookup goes through invoice_share_by_token, not a table read. A table
+// read here would be authorised by RLS before the token filter is applied, so
+// the filter would be advisory only and any anon caller could enumerate every
+// shared invoice. The function takes the token as an argument and returns at
+// most the one matching row, display columns only.
 async function loadShare(token: string): Promise<InvoiceShare | null> {
   const supabase = createBrowserSupabaseClient();
-  const { data, error } = await supabase
-    .from("invoice_shares")
-    .select("invoice_number, total, currency, status, due_date, payment_method")
-    .eq("public_token", token)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("invoice_share_by_token", {
+    p_token: token,
+  });
 
-  if (error || !data) return null;
-  return data as InvoiceShare;
+  if (error) return null;
+  const row = Array.isArray(data) ? data[0] : data;
+  return (row as InvoiceShare) ?? null;
 }
 
 export default async function PublicInvoicePage({
