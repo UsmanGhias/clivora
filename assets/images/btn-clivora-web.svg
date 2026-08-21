@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="96" viewBox="0 0 720 96" role="img" aria-label="clivora-web GitHub repository">
+  <rect width="720" height="96" rx="20" fill="#5B21B6"/>
+  <rect x="4" y="4" width="712" height="88" rx="16" fill="none" stroke="#C4B5FD" stroke-width="2" opacity="0.5"/>
+  <text x="360" y="42" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#FFFFFF">clivora-web</text>
+  <text x="360" y="70" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#EDE9FE">Next.js site · web app · documentation</text>
+</svg>
