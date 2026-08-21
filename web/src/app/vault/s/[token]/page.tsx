@@ -2,6 +2,12 @@ import { createClient } from "@/lib/supabase/server";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import Link from "next/link";
 
+// Read-only view of a vault share link.
+//
+// vault_lookup_share_by_token returns nothing for a token that is unknown,
+// expired, or out of downloads, and never returns the storage path. Spending a
+// download happens on click, in /api/vault/share/[token]/download.
+
 export default async function VaultSharePage({
   params,
 }: {
@@ -29,8 +35,10 @@ export default async function VaultSharePage({
   if (error || !link) {
     return (
       <main className="mx-auto max-w-lg px-4 py-16 text-center">
-        <h1 className="text-xl font-extrabold">Link not found</h1>
-        <p className="mt-2 text-sm text-slate-600">This vault share token is invalid or expired.</p>
+        <h1 className="text-xl font-extrabold">Link unavailable</h1>
+        <p className="mt-2 text-sm text-slate-600">
+          This share link is invalid, has expired, or has reached its download limit.
+        </p>
         <Link href="/" className="mt-6 inline-block text-sm font-bold text-primary underline">
           Back to CLIVORA
         </Link>
@@ -38,31 +46,12 @@ export default async function VaultSharePage({
     );
   }
 
-  const expired = link.expires_at && new Date(link.expires_at).getTime() < Date.now();
-  const maxed =
+  const remaining =
     typeof link.max_downloads === "number" &&
-    typeof link.download_count === "number" &&
     link.max_downloads > 0 &&
-    link.download_count >= link.max_downloads;
-
-  if (expired || maxed) {
-    return (
-      <main className="mx-auto max-w-lg px-4 py-16 text-center">
-        <h1 className="text-xl font-extrabold">Link expired</h1>
-        <p className="mt-2 text-sm text-slate-600">
-          Ask the owner to create a new share link.
-        </p>
-      </main>
-    );
-  }
-
-  let signedUrl: string | null = null;
-  if (link.storage_path) {
-    const { data: signed } = await supabase.storage
-      .from("vault")
-      .createSignedUrl(link.storage_path, 60 * 15);
-    signedUrl = signed?.signedUrl ?? null;
-  }
+    typeof link.download_count === "number"
+      ? link.max_downloads - link.download_count
+      : null;
 
   return (
     <main className="mx-auto max-w-lg px-4 py-16">
@@ -73,19 +62,17 @@ export default async function VaultSharePage({
           Expires {new Date(link.expires_at).toLocaleString()}
         </p>
       ) : null}
-      {signedUrl ? (
-        <a
-          href={signedUrl}
-          className="mt-6 inline-flex rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white"
-        >
-          Download
-        </a>
-      ) : (
-        <p className="mt-6 text-sm text-amber-800">
-          File metadata is available, but a download URL could not be created. Confirm the vault
-          storage bucket and path.
+      {remaining !== null ? (
+        <p className="mt-1 text-xs text-slate-500">
+          {remaining} download{remaining === 1 ? "" : "s"} left
         </p>
-      )}
+      ) : null}
+      <a
+        href={`/api/vault/share/${encodeURIComponent(token)}/download`}
+        className="mt-6 inline-flex rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white"
+      >
+        Download
+      </a>
     </main>
   );
 }

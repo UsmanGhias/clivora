@@ -18,6 +18,8 @@
 | Design and testing document | [DESIGN_AND_TESTING.md](./DESIGN_AND_TESTING.md) |
 | Recorded 15–20 min demo | [RECORDING.md](./RECORDING.md) — Drive link after you record |
 | Demo walkthrough | [DEMO_SCRIPT.md](./DEMO_SCRIPT.md) |
+| Security and performance audit | [SECURITY_AUDIT_2026-08.md](./SECURITY_AUDIT_2026-08.md) |
+| Speaker deck (do not upload) | [presentation/](./presentation/README.md) |
 | What to paste in Quantic | [WHAT_TO_SUBMIT.md](./WHAT_TO_SUBMIT.md) |
 | At least 3 sprints | [SPRINT_PLAN.md](./SPRINT_PLAN.md) |
 

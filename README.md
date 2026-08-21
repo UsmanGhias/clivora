@@ -58,6 +58,7 @@ CLIVORA is also the MSSE Capstone product. The live app is the **baseline**; Cap
 | User stories / sprints | [USER_STORIES.md](docs/capstone/USER_STORIES.md) · [SPRINT_PLAN.md](docs/capstone/SPRINT_PLAN.md) |
 | What to submit | [docs/capstone/WHAT_TO_SUBMIT.md](docs/capstone/WHAT_TO_SUBMIT.md) |
 | Demo script | [docs/capstone/DEMO_SCRIPT.md](docs/capstone/DEMO_SCRIPT.md) |
+| Security audit (Aug 2026) | [docs/capstone/SECURITY_AUDIT_2026-08.md](docs/capstone/SECURITY_AUDIT_2026-08.md) |
 | Baseline vs Capstone | [BASELINE_VS_CAPSTONE.md](docs/capstone/BASELINE_VS_CAPSTONE.md) |
 | Capstone index | [docs/capstone/README.md](docs/capstone/README.md) |
 

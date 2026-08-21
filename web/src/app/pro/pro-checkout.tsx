@@ -239,15 +239,11 @@ export default function ProCheckout() {
       if (insertError) throw insertError;
       if (promoMeta) {
         try {
-          const { data: promoRow } = await supabase
-            .from("promo_codes")
-            .select("used_count")
-            .eq("code", promoMeta.code)
-            .maybeSingle();
-          await supabase
-            .from("promo_codes")
-            .update({ used_count: Number(promoRow?.used_count ?? 0) + 1 })
-            .eq("code", promoMeta.code);
+          await fetch("/api/promo/redeem", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code: promoMeta.code }),
+          });
         } catch {
           /* admin can reconcile usage from payment notes */
         }

@@ -44,7 +44,7 @@ jobs:
       - name: Resolve dependencies and verify quality
         run: |
           flutter pub get
-          flutter analyze lib/ --no-fatal-infos
+          flutter analyze
           flutter test
 
       - name: Build and verify signed APK/AAB

@@ -27,7 +27,7 @@ export type ValidatedPromo = {
   finalAmountUsd: number;
 };
 
-async function promoClient(): Promise<Pick<SupabaseClient, "from">> {
+async function promoClient(): Promise<Pick<SupabaseClient, "rpc">> {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (serviceKey) {
     return createServiceClient(SUPABASE_URL, serviceKey, { auth: { persistSession: false } });
@@ -59,14 +59,14 @@ export async function validatePromoCode({
   const code = codeRaw.trim().toUpperCase();
   if (!code) return null;
 
+  // promo_code_lookup keys on the code the caller presented. Reading the table
+  // directly would need a policy broad enough to expose every live discount,
+  // because RLS cannot see the typed code.
   const supabase = await promoClient();
-  const { data, error } = await supabase
-    .from("promo_codes")
-    .select("code, discount_type, discount_value, applies_to, max_uses, used_count, expires_at, is_active")
-    .eq("code", code)
-    .maybeSingle<PromoRow>();
+  const { data: rows, error } = await supabase.rpc("promo_code_lookup", { p_code: code });
 
   if (error) throw new Error(error.message);
+  const data = (Array.isArray(rows) ? rows[0] : rows) as PromoRow | null;
   if (!data || !data.is_active) throw new Error("Promo code is invalid or inactive");
   if (data.expires_at && new Date(data.expires_at) < new Date()) {
     throw new Error("Promo code expired");
@@ -91,4 +91,26 @@ export async function validatePromoCode({
     note,
     finalAmountUsd: discountedAmount(amountUsd, data.discount_type, discountValue),
   };
+}
+
+/**
+ * Spend one use of a promo code. Returns false when the code is unknown,
+ * inactive, expired, or already at its cap.
+ *
+ * promo_code_redeem re-checks the cap inside the UPDATE, so this is safe to call
+ * concurrently and cannot overshoot max_uses. It must stay server-side: an
+ * increment issued from the browser is one the browser can decline to send.
+ */
+export async function redeemPromoCode(codeRaw: string): Promise<boolean> {
+  const code = codeRaw.trim().toUpperCase();
+  if (!code) return false;
+
+  const supabase = await promoClient();
+  const { data, error } = await supabase.rpc("promo_code_redeem", { p_code: code });
+  if (error) {
+    console.error("[promo] redeem failed", error.message);
+    return false;
+  }
+  const row = Array.isArray(data) ? data[0] : data;
+  return row != null;
 }

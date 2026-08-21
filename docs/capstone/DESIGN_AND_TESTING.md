@@ -118,20 +118,61 @@ Web production is a Node process on Hostinger (not a static export). Android use
 
 **Why:** Money and plan gates are pure functions with high blast radius. They are cheaper and more stable to unit-test than full UI.
 
-### 4.3 Static analysis
+### 4.3 Database security invariants (`supabase/tests/security_invariants.sql`)
 
-- Flutter: `flutter analyze lib/`
+Seven catalog-level assertions, one per class of defect found in the Sprint 3
+audit. Each raises an exception naming the offending objects.
+
+| # | Asserts |
+|---|---|
+| 1 | No table is anon-readable through a policy that does not constrain rows to the caller |
+| 2 | No trigger function is reachable as a PostgREST RPC endpoint |
+| 3 | The invoice-reminder cron entry point is not client-callable |
+| 4 | Every `SECURITY DEFINER` function pins `search_path` |
+| 5 | RLS is enabled on every table in `public` |
+| 6 | Vault share expiry and download quota are enforced in SQL, not in the page |
+| 7 | The promo code usage cap is enforced in SQL |
+
+```bash
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/security_invariants.sql
+```
+
+**Why:** RLS defects are invisible to unit tests and to the type checker — the
+code compiles and the feature works, while the policy behind it is wide open.
+These are the only tests in the project that could have caught the critical
+finding. Invariant 1 proved that immediately: written to guard the
+`invoice_shares` bug, its first run failed and pointed at `promo_codes`, a second
+instance of the same mistake that was not on the list.
+
+Full write-up: [SECURITY_AUDIT_2026-08.md](./SECURITY_AUDIT_2026-08.md).
+
+### 4.4 Static analysis
+
+- Flutter: `flutter analyze` — whole package, infos fatal, currently at zero
 - Web: TypeScript `tsc --noEmit` and ESLint `--max-warnings=0`
 
 **Why:** Catch type and lint errors before they reach Hostinger or Play.
 
-### 4.4 CI execution
+Until August 2026 this gate was decorative. CI ran
+`flutter analyze lib/ --no-fatal-infos`, which reported 97 issues and exited
+zero, so the job had been green its entire life without being able to fail. 12 of
+those 97 were `use_build_context_synchronously` — real crash risks where a
+`BuildContext` was used after an `await`. All 97 are fixed and the flag is gone.
 
-On every push/PR to `main` or `develop`, GitHub Actions runs the Flutter and web jobs above, including `npm test`. Tag-driven Android jobs re-run analyze/test before signing.
+### 4.5 CI execution
 
-**Why:** Tests that never run in CI do not count as engineering evidence.
+On every push/PR to `main` or `develop`, GitHub Actions runs the Flutter and web
+jobs above, including `npm test`. Tag-driven Android jobs re-run analyze/test
+before signing.
 
-### 4.5 Manual / exploratory testing (production)
+The web job now runs on Node 22.x. It previously ran on 24.x while
+`web/package.json` declared `"node": ">=20 <23"`, so CI was validating the app on
+a runtime the package itself called unsupported.
+
+**Why:** Tests that never run in CI do not count as engineering evidence — and a
+gate that cannot fail is not a gate.
+
+### 4.6 Manual / exploratory testing (production)
 
 - Public marketing pages and docs on `clivora.io`
 - Authenticated freelancer and client workspaces
@@ -140,7 +181,7 @@ On every push/PR to `main` or `develop`, GitHub Actions runs the Flutter and web
 
 These are **not** a substitute for automation. They are used for release smoke checks.
 
-### 4.6 Tests planned in remaining Capstone sprints (not yet complete)
+### 4.7 Tests planned in remaining Capstone sprints (not yet complete)
 
 | Gap | Planned method | Sprint |
 |---|---|---|
@@ -154,10 +195,13 @@ Internal risk `QA-001` (web E2E) remains open; Capstone Sprint 1 started closing
 
 ```bash
 # Android / Flutter
-flutter test
+flutter analyze && flutter test
 
 # Web
-cd web && npm test
+cd web && npm run test:ci     # typecheck + lint + vitest + build
+
+# Database security invariants
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/security_invariants.sql
 ```
 
 ## 6. Traceability
