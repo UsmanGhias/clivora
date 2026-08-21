@@ -198,7 +198,7 @@ class _SecuritySettingsScreenState extends ConsumerState<SecuritySettingsScreen>
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     child: DropdownButtonFormField<int>(
-                      value: _timeoutMinutes,
+                      initialValue: _timeoutMinutes,
                       decoration: const InputDecoration(
                         labelText: 'Lock after idle',
                         border: OutlineInputBorder(),

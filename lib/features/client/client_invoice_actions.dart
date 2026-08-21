@@ -202,7 +202,7 @@ class _PaymentFormState extends State<_PaymentForm> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         DropdownButtonFormField<String>(
-          value: _method,
+          initialValue: _method,
           decoration: const InputDecoration(labelText: 'Payment method'),
           items: const [
             DropdownMenuItem(value: 'JazzCash', child: Text('JazzCash')),

@@ -34,7 +34,7 @@ class TrackingTimeline extends ConsumerWidget {
         const SizedBox(height: 12),
         eventsAsync.when(
           loading: () => const LinearProgressIndicator(),
-          error: (_, __) => const Text('Could not load tracking history'),
+          error: (_, _) => const Text('Could not load tracking history'),
           data: (events) {
             if (events.isEmpty) {
               return Text(

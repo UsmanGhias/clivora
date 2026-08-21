@@ -118,7 +118,7 @@ class CloudMessageRepository {
       'subject': subject,
       'body': body,
       'is_read': false,
-      if (projectShareId != null) 'project_share_id': projectShareId,
+      'project_share_id': ?projectShareId,
     });
 
     if (resolvedToUid != null && resolvedToUid.isNotEmpty) {

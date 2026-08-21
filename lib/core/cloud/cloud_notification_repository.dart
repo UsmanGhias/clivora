@@ -233,7 +233,7 @@ class CloudClientTaskRepository {
         'freelancer_uid': freelancerUid,
         'title': title,
         'description': description,
-        if (projectShareId != null) 'project_share_id': projectShareId,
+        'project_share_id': ?projectShareId,
       });
     } catch (e) {
       debugPrint('client_tasks insert failed: $e');

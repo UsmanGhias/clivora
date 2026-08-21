@@ -42,7 +42,7 @@ class CreditsScreen extends ConsumerWidget {
           return ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
             itemBuilder: (context, i) {
               final c = items[i];
               final client = customers[c.customerId];
@@ -102,13 +102,14 @@ class CreditsScreen extends ConsumerWidget {
       return;
     }
     var invoiceId = open.first.id;
-    final remaining = () {
+    double remaining() {
       final inv = open.firstWhere((i) => i.id == invoiceId);
       return (inv.total - inv.amountPaid).clamp(0.0, double.infinity).toDouble();
-    };
+    }
     final amountCtrl = TextEditingController(
       text: credit.balance < remaining() ? credit.balance.toStringAsFixed(2) : remaining().toStringAsFixed(2),
     );
+    if (!context.mounted) return;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -189,6 +190,7 @@ class CreditsScreen extends ConsumerWidget {
     var customerId = customers.first.id;
     final amount = TextEditingController(text: '0');
     final notes = TextEditingController();
+    if (!context.mounted) return;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -200,7 +202,7 @@ class CreditsScreen extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: spacedDialogFields([
                 DropdownButtonFormField<int>(
-                  value: customerId,
+                  initialValue: customerId,
                   decoration: clivoraDialogFieldDecoration(ctx, 'Client'),
                   items: customers
                       .map((c) => DropdownMenuItem(value: c.id, child: Text(c.contactPerson)))

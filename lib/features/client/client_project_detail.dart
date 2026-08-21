@@ -149,6 +149,7 @@ Future<void> showClientProjectDetail(
                   final rating = await _pickRating(ctx);
                   if (rating == null) return;
                   final commentCtrl = TextEditingController();
+                  if (!ctx.mounted) return;
                   final ok = await showDialog<bool>(
                     context: ctx,
                     builder: (dCtx) => AlertDialog(

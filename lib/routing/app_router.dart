@@ -490,12 +490,12 @@ final appRouter = GoRouter(
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/vendors',
-      redirect: (_, __) => '/more',
+      redirect: (_, _) => '/more',
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/purchase-orders',
-      redirect: (_, __) => '/more',
+      redirect: (_, _) => '/more',
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
@@ -530,7 +530,7 @@ final appRouter = GoRouter(
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/licenses',
-      redirect: (_, __) => '/privacy',
+      redirect: (_, _) => '/privacy',
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,

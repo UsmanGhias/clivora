@@ -135,7 +135,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                 }
                 return ListView.separated(
                   itemCount: customers.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final c = customers[index];
                     final emails = parseStringList(c.emails);

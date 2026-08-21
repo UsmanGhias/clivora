@@ -93,7 +93,7 @@ class CloudQuoteRepository {
         'freelancer_uid': uid,
         'freelancer_email': freelancer.email.trim().toLowerCase(),
         'client_email': clientEmail.trim().toLowerCase(),
-        if (clientUid != null) 'client_uid': clientUid,
+        'client_uid': ?clientUid,
         'local_quote_id': quote.id,
         'quote_number': quote.quoteNumber,
         'status': quote.status,

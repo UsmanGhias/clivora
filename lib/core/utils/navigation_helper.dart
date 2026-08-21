@@ -87,6 +87,7 @@ Future<bool> tryOpenWithPlanCheck(
     if (upgrade && context.mounted) context.push('/upgrade');
     return false;
   }
+  if (!context.mounted) return false;
   openFormRoute(context, path);
   return true;
 }

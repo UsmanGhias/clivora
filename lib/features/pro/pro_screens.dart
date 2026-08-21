@@ -414,7 +414,7 @@ class _MessageTemplatesScreenState extends ConsumerState<MessageTemplatesScreen>
                   ClivoraTextField(controller: nameCtrl, label: 'Template Name', hint: 'e.g. Payment Reminder'),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: category,
+                    initialValue: category,
                     decoration: const InputDecoration(labelText: 'CATEGORY'),
                     items: const [
                       DropdownMenuItem(value: 'general', child: Text('General')),
@@ -591,7 +591,7 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<String>(
-                  value: status,
+                  initialValue: status,
                   items: const [
                     DropdownMenuItem(value: 'draft', child: Text('Draft')),
                     DropdownMenuItem(value: 'sent', child: Text('Sent')),
@@ -672,6 +672,7 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
     if (ownerId == null) return;
     final customer = await ref.read(databaseProvider).getCustomerForUser(ownerId, contract.customerId);
     if (customer == null) return;
+    if (!context.mounted) return;
     final emails = parseStringList(customer.emails);
     if (emails.isEmpty) {
       showFormError(context, 'Add an email to this customer first');
@@ -707,13 +708,13 @@ class _ContractsScreenState extends ConsumerState<ContractsScreen> {
     final ownerId = ref.read(authStateProvider).valueOrNull?.id;
     if (ownerId == null) return;
     final customers = await ref.read(databaseProvider).watchCustomersForUser(ownerId).first;
+    if (!context.mounted) return;
     if (customers.isEmpty) {
       showFormError(context, 'Add a customer first');
       return;
     }
     final titleCtrl = TextEditingController();
     var customerId = customers.first.id;
-    if (!context.mounted) return;
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -846,7 +847,7 @@ class AutomationsScreen extends ConsumerWidget {
               padding: EdgeInsets.all(12),
               child: Center(child: CircularProgressIndicator()),
             ),
-            error: (_, __) => const Text('Could not load run log'),
+            error: (_, _) => const Text('Could not load run log'),
             data: (runs) {
               if (runs.isEmpty) {
                 return Text('No runs logged yet.', style: Theme.of(context).textTheme.bodySmall);

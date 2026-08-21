@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/providers/app_providers.dart';
-import '../../data/providers/database_provider.dart';
 import '../auth/auth_service.dart';
 import '../auth/user_roles.dart';
 import '../cloud/cloud_notification_repository.dart';

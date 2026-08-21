@@ -160,7 +160,7 @@ class _ClientTasksScreenState extends ConsumerState<ClientTasksScreen> {
                   Text('Assign task to freelancer', style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<ClientSharedProjectView>(
-                    value: selected,
+                    initialValue: selected,
                     decoration: const InputDecoration(labelText: 'Project'),
                     items: projects
                         .map((p) => DropdownMenuItem(value: p, child: Text(p.name)))

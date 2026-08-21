@@ -33,7 +33,7 @@ class MenuScreen extends ConsumerWidget {
         children: [
           profileAsync.when(
             loading: () => const SizedBox(height: 72),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
             data: (profile) {
               final name = authUser?.name.isNotEmpty == true
                   ? authUser!.name

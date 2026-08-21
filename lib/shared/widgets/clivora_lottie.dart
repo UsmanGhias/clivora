@@ -25,7 +25,7 @@ class ClivoraLottie extends StatelessWidget {
         asset,
         repeat: repeat,
         fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => Icon(fallbackIcon, size: size * 0.5, color: Theme.of(context).colorScheme.primary),
+        errorBuilder: (_, _, _) => Icon(fallbackIcon, size: size * 0.5, color: Theme.of(context).colorScheme.primary),
       ),
     );
   }

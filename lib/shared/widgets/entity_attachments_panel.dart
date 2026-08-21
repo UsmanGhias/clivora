@@ -50,7 +50,7 @@ class EntityAttachmentsPanel extends ConsumerWidget {
         ),
         attachmentsAsync.when(
           loading: () => const LinearProgressIndicator(),
-          error: (_, __) => const Text('Could not load attachments'),
+          error: (_, _) => const Text('Could not load attachments'),
           data: (files) {
             if (files.isEmpty) {
               return Text(

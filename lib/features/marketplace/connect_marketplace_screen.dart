@@ -1575,7 +1575,7 @@ class _InitialDot extends StatelessWidget {
           width: 34,
           height: 34,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _letter(context),
+          errorBuilder: (_, _, _) => _letter(context),
         ),
       );
     }

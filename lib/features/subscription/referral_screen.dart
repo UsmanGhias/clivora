@@ -136,7 +136,7 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> {
               child: OutlinedButton(
                 onPressed: () async {
                   final err = await ref.read(referralServiceProvider).applyReferralCode(_applyController.text);
-                  if (!mounted) return;
+                  if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(err ?? 'Referral code saved. Bonus applies when you subscribe to Pro.')),
                   );
