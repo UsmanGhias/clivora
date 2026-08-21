@@ -73,7 +73,9 @@ class BackupRestoreService {
     final file = File(p.join(dir.path, 'clivora_backup_${DateTime.now().millisecondsSinceEpoch}.json'));
     await file.writeAsString(content);
     await BackupMetaService.recordExport(content.length);
-    await Share.shareXFiles([XFile(file.path)], text: 'CLIVORA workspace backup');
+    await SharePlus.instance.share(
+      ShareParams(files: [XFile(file.path)], text: 'CLIVORA workspace backup'),
+    );
   }
 
   Map<String, dynamic> decodeImportFile(String raw, {String? password}) {

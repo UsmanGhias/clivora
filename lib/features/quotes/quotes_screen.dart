@@ -78,7 +78,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                 return ListView.separated(
                   padding: const EdgeInsets.all(16),
                   itemCount: quotes.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, i) {
                     final q = quotes[i];
                     final client = customers[q.customerId];
@@ -274,6 +274,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
     );
     final tax = TextEditingController(text: '0');
 
+    if (!context.mounted) return;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -286,7 +287,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: spacedDialogFields([
                   DropdownButtonFormField<int>(
-                    value: customerId,
+                    initialValue: customerId,
                     decoration: clivoraDialogFieldDecoration(ctx, 'Client'),
                     items: customers
                         .map((c) => DropdownMenuItem(value: c.id, child: Text(c.contactPerson)))

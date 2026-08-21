@@ -74,7 +74,7 @@ class RecurringInvoicesScreen extends ConsumerWidget {
           return ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
             itemBuilder: (context, i) {
               final r = items[i];
               final client = customers[r.customerId];
@@ -165,6 +165,7 @@ class RecurringInvoicesScreen extends ConsumerWidget {
     final title = TextEditingController(text: 'Monthly retainer');
     final amount = TextEditingController(text: '0');
 
+    if (!context.mounted) return;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -179,7 +180,7 @@ class RecurringInvoicesScreen extends ConsumerWidget {
                   children: spacedDialogFields([
                     TextField(controller: title, decoration: clivoraDialogFieldDecoration(ctx, 'Title')),
                     DropdownButtonFormField<int>(
-                      value: customerId,
+                      initialValue: customerId,
                       decoration: clivoraDialogFieldDecoration(ctx, 'Client'),
                       items: customers
                           .map((c) => DropdownMenuItem(value: c.id, child: Text(c.contactPerson)))
@@ -187,7 +188,7 @@ class RecurringInvoicesScreen extends ConsumerWidget {
                       onChanged: (v) => setLocal(() => customerId = v ?? customerId),
                     ),
                     DropdownButtonFormField<String>(
-                      value: frequency,
+                      initialValue: frequency,
                       decoration: clivoraDialogFieldDecoration(ctx, 'Frequency'),
                       items: const [
                         DropdownMenuItem(value: 'weekly', child: Text('Weekly')),

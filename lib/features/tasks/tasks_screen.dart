@@ -335,7 +335,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
             loading: () => const SizedBox.shrink(),
             error: (_, _) => const SizedBox.shrink(),
             data: (customers) => DropdownButtonFormField<int?>(
-              value: _selectedCustomerId,
+              initialValue: _selectedCustomerId,
               decoration: const InputDecoration(labelText: 'Customer (optional)'),
               items: [
                 const DropdownMenuItem<int?>(value: null, child: Text('None')),
@@ -356,7 +356,7 @@ class _TaskFormScreenState extends ConsumerState<TaskFormScreen> {
                   ? projects
                   : projects.where((p) => p.customerId == _selectedCustomerId).toList();
               return DropdownButtonFormField<int?>(
-                value: filtered.any((p) => p.id == _selectedProjectId) ? _selectedProjectId : null,
+                initialValue: filtered.any((p) => p.id == _selectedProjectId) ? _selectedProjectId : null,
                 decoration: const InputDecoration(labelText: 'Project (optional)'),
                 items: [
                   const DropdownMenuItem<int?>(value: null, child: Text('None')),

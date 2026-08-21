@@ -39,7 +39,7 @@ class EntityActivityTimeline extends ConsumerWidget {
         const SizedBox(height: 12),
         trackingAsync.when(
           loading: () => const LinearProgressIndicator(),
-          error: (_, __) => const Text('Could not load activity'),
+          error: (_, _) => const Text('Could not load activity'),
           data: (tracking) {
             final audit = auditAsync.valueOrNull ?? [];
             final filteredAudit = audit.where((a) {

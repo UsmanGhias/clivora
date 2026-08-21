@@ -340,7 +340,7 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
                           const SizedBox(height: 16),
                           const ClivoraFieldLabel(label: 'Currency'),
                           DropdownButtonFormField<String>(
-                            value: _currency,
+                            initialValue: _currency,
                             decoration: const InputDecoration(hintText: 'Select currency'),
                             items: kSupportedCurrencies
                                 .map((c) => DropdownMenuItem(value: c, child: Text('$c (${currencySymbol(c)})')))
@@ -350,7 +350,7 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
                           const SizedBox(height: 16),
                           const ClivoraFieldLabel(label: 'Status'),
                           DropdownButtonFormField<String>(
-                            value: _status,
+                            initialValue: _status,
                             decoration: const InputDecoration(),
                             items: const [
                               DropdownMenuItem(value: 'not_started', child: Text('Not Started')),
@@ -362,7 +362,7 @@ class _ProjectFormScreenState extends ConsumerState<ProjectFormScreen> {
                           const SizedBox(height: 16),
                           const ClivoraFieldLabel(label: 'Priority'),
                           DropdownButtonFormField<String>(
-                            value: _priority,
+                            initialValue: _priority,
                             decoration: const InputDecoration(),
                             items: const [
                               DropdownMenuItem(value: 'low', child: Text('Low')),

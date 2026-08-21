@@ -1,5 +1,4 @@
 import 'package:drift/drift.dart' show Value;
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -419,7 +418,7 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                         const ClivoraFieldLabel(label: 'Project (optional)'),
                         projectsAsync.when(
                           loading: () => const SizedBox.shrink(),
-                          error: (_, __) => const SizedBox.shrink(),
+                          error: (_, _) => const SizedBox.shrink(),
                           data: (projects) {
                             final filtered = _selectedCustomerId == null
                                 ? projects
@@ -462,7 +461,7 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
                         const SizedBox(height: 16),
                         const ClivoraFieldLabel(label: 'Currency'),
                         DropdownButtonFormField<String>(
-                          value: _currency,
+                          initialValue: _currency,
                           decoration: const InputDecoration(hintText: 'Select currency'),
                           items: kSupportedCurrencies
                               .map((c) => DropdownMenuItem(value: c, child: Text('$c (${currencySymbol(c)})')))

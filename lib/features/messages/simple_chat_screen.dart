@@ -66,7 +66,7 @@ class _SimpleChatScreenState extends ConsumerState<SimpleChatScreen> {
 
     final allowed = await ref.read(linkedPeerEmailsProvider(widget.isClient).future);
     if (!allowed.contains(toEmail.trim().toLowerCase())) {
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('You can only message linked contacts on shared projects.')),
         );
@@ -79,7 +79,7 @@ class _SimpleChatScreenState extends ConsumerState<SimpleChatScreen> {
 
     final uid = SupabaseAuthHelper.currentUid;
     if (uid == null) {
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Sign in with Google or email to share images.')),
         );
@@ -93,7 +93,7 @@ class _SimpleChatScreenState extends ConsumerState<SimpleChatScreen> {
 
       final plan = await ref.read(planLimitServiceProvider).currentPlan();
       final vaultResult = await VaultService.archiveChatImageBytes(bytes: bytes, plan: plan);
-      if (vaultResult.isQuota && context.mounted) {
+      if (vaultResult.isQuota && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -113,7 +113,7 @@ class _SimpleChatScreenState extends ConsumerState<SimpleChatScreen> {
       ref.invalidate(chatThreadProvider(ChatThreadKey(peerEmail: toEmail, isClient: widget.isClient)));
       ref.invalidate(unreadBadgeCountProvider);
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         final msg = e.toString().contains('403')
             ? 'Image upload blocked. Update the app or contact support (storage policy).'
             : 'Could not send image: $e';
@@ -142,7 +142,7 @@ class _SimpleChatScreenState extends ConsumerState<SimpleChatScreen> {
 
     final allowed = await ref.read(linkedPeerEmailsProvider(widget.isClient).future);
     if (!allowed.contains(toEmail.trim().toLowerCase())) {
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('You can only message linked contacts on shared projects.')),
         );
@@ -283,7 +283,7 @@ class _SimpleChatScreenState extends ConsumerState<SimpleChatScreen> {
                 if (myUid == null) return;
                 final peerUid = await ref.read(supabaseSyncServiceProvider).uidForEmail(_peerEmail!);
                 if (peerUid == null || peerUid.isEmpty) {
-                  if (mounted) {
+                  if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Could not resolve contact to block')),
                     );
@@ -291,7 +291,7 @@ class _SimpleChatScreenState extends ConsumerState<SimpleChatScreen> {
                   return;
                 }
                 await ref.read(chatBlockServiceProvider).block(blockerUid: myUid, blockedUid: peerUid);
-                if (mounted) {
+                if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Contact blocked')),
                   );
@@ -509,11 +509,11 @@ class _Bubble extends StatelessWidget {
                   height: 180,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  placeholder: (_, __) => const SizedBox(
+                  placeholder: (_, _) => const SizedBox(
                     height: 120,
                     child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
                   ),
-                  errorWidget: (_, __, ___) => Text('Image unavailable', style: TextStyle(color: fg)),
+                  errorWidget: (_, _, _) => Text('Image unavailable', style: TextStyle(color: fg)),
                 ),
               )
             else if (isContract) ...[

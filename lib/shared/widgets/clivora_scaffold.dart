@@ -83,7 +83,7 @@ class ClivoraScaffold extends StatelessWidget {
                     MessagesIconButton(route: messagesRoute),
                     if (action != null) const SizedBox(width: ClivoraSpacing.sm),
                   ],
-                  if (action != null) action!,
+                  ?action,
                 ],
               ),
             ),

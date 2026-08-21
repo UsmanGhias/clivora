@@ -91,6 +91,7 @@ Future<void> previewClientInvoiceFromShare(
     updatedAt: share.updatedAt ?? DateTime.now(),
   );
 
+  if (!context.mounted) return;
   await _previewInvoice(ref, context, synthetic, freelancerId: freelancer.id);
 }
 

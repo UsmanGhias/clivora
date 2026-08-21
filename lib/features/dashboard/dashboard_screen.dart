@@ -174,13 +174,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 12),
               statsAsync.when(
                 loading: () => const StatsGridSkeleton(),
-                error: (_, __) => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
                 data: (stats) => _ProfileCompletenessCard(stats: stats, profile: profileAsync.valueOrNull),
               ),
               const SizedBox(height: 14),
               statsAsync.when(
                 loading: () => const StatsGridSkeleton(),
-                error: (_, __) => const StatsGridSkeleton(),
+                error: (_, _) => const StatsGridSkeleton(),
                 data: (stats) => _KpiGrid(
                   stats: stats,
                   unread: unreadAsync.valueOrNull ?? 0,
@@ -190,7 +190,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 12),
               statsAsync.when(
                 loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
                 data: (stats) => _SuccessScoreCard(stats: stats),
               ),
               const SizedBox(height: 12),
@@ -210,7 +210,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 10),
               projectsAsync.when(
                 loading: () => const CardSkeleton(height: 72),
-                error: (_, __) => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
                 data: (projects) {
                   final active = projects.where((p) => p.status == 'in_progress').take(3).toList();
                   if (active.isEmpty) {
@@ -249,7 +249,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 10),
               customersAsync.when(
                 loading: () => const CardSkeleton(height: 72),
-                error: (_, __) => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
                 data: (customers) {
                   if (customers.isEmpty) {
                     return _EmptySectionCard(
@@ -774,7 +774,7 @@ class _EarningsOverviewCard extends ConsumerWidget {
           const SizedBox(height: 14),
           seriesAsync.when(
             loading: () => const SizedBox(height: 120, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
             data: (series) {
               final max = series.fold<double>(0, (m, v) => v > m ? v : m);
               return SizedBox(

@@ -58,6 +58,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
       _showRoleMismatchIfNeeded();
       await LastLoginService.record('email');
+      if (!mounted) return;
       navigateAfterAuth(context, ref);
     } catch (e) {
       if (mounted) {
@@ -113,6 +114,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
       _showRoleMismatchIfNeeded();
       await LastLoginService.record('google');
+      if (!mounted) return;
       navigateAfterAuth(context, ref);
     } catch (e) {
       if (mounted) {
@@ -268,6 +270,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(refErr)));
         }
       }
+      if (!mounted) return;
       final user = ref.read(authStateProvider).valueOrNull;
       if (user != null && !isAdminUser(user) && !isGuestUser(user)) {
         final expectedClient = _accountType == kAccountClient;
@@ -344,6 +347,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(refErr)));
         }
       }
+      if (!mounted) return;
       final user = ref.read(authStateProvider).valueOrNull;
       if (user != null && !isAdminUser(user) && !isGuestUser(user)) {
         final expectedClient = _accountType == kAccountClient;

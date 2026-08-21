@@ -322,8 +322,7 @@ class _NotificationCard extends StatelessWidget {
                       ),
                     ),
                   )
-                else if (trailing != null)
-                  trailing!,
+                else ?trailing,
               ],
             ),
           ),

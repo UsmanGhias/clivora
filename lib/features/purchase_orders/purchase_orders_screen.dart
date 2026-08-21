@@ -41,7 +41,7 @@ class PurchaseOrdersScreen extends ConsumerWidget {
           return ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
             itemBuilder: (context, i) {
               final po = items[i];
               final vendor = vendors[po.vendorId];
@@ -95,6 +95,7 @@ class PurchaseOrdersScreen extends ConsumerWidget {
     var vendorId = vendors.first.id;
     final desc = TextEditingController(text: 'Supplies');
     final amount = TextEditingController(text: '0');
+    if (!context.mounted) return;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -104,7 +105,7 @@ class PurchaseOrdersScreen extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<int>(
-                value: vendorId,
+                initialValue: vendorId,
                 decoration: const InputDecoration(labelText: 'Vendor'),
                 items: vendors.map((v) => DropdownMenuItem(value: v.id, child: Text(v.name))).toList(),
                 onChanged: (v) => setLocal(() => vendorId = v ?? vendorId),

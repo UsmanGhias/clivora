@@ -137,7 +137,7 @@ class _ProjectMilestonesScreenState extends ConsumerState<ProjectMilestonesScree
                               onStatus: (status) => ref.read(milestoneServiceProvider).updateStatus(m, status),
                               onInvoice: () async {
                                 final id = await ref.read(milestoneServiceProvider).createInvoiceFromMilestone(m);
-                                if (!mounted || id == null) return;
+                                if (!context.mounted || id == null) return;
                                 context.push('/invoices/$id/edit');
                               },
                             )),

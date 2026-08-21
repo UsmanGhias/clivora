@@ -26,7 +26,7 @@ class FilterChipRow extends StatelessWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: options.length,
-        separatorBuilder: (_, __) => const SizedBox(width: ClivoraSpacing.sm),
+        separatorBuilder: (_, _) => const SizedBox(width: ClivoraSpacing.sm),
         itemBuilder: (context, index) {
           final option = options[index];
           final isSelected = option == selected;

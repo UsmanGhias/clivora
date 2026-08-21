@@ -22,12 +22,14 @@ class AppEngagementService {
   Future<void> shareApp({String? customMessage}) async {
     final message = customMessage ??
         'Try CLIVORA for clients, invoices, projects and chat in one app.\n$playStoreUrl';
-    await Share.share(message, subject: 'CLIVORA');
+    await SharePlus.instance.share(ShareParams(text: message, subject: 'CLIVORA'));
   }
 
   Future<void> shareReferral() async {
     final message = await ref.read(referralServiceProvider).shareMessage();
-    await Share.share(message, subject: 'Join CLIVORA with my referral code');
+    await SharePlus.instance.share(
+      ShareParams(text: message, subject: 'Join CLIVORA with my referral code'),
+    );
   }
 
   Future<void> openPlayStoreListing() async {

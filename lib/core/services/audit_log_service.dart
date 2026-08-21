@@ -29,7 +29,7 @@ class AuditLogService {
     final payload = jsonEncode({
       'action': action,
       'entityType': entityType,
-      if (entityId != null) 'entityId': entityId,
+      'entityId': ?entityId,
       'detail': detail,
       'actorEmail': user?.email ?? '',
       'actorName': user?.name ?? '',

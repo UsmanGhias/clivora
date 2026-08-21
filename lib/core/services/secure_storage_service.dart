@@ -7,10 +7,7 @@ final secureStorageServiceProvider = Provider<SecureStorageService>((ref) {
 
 /// Encrypted key-value storage for session tokens and sensitive prefs.
 class SecureStorageService {
-  SecureStorageService()
-      : _storage = const FlutterSecureStorage(
-          aOptions: AndroidOptions(encryptedSharedPreferences: true),
-        );
+  SecureStorageService() : _storage = const FlutterSecureStorage();
 
   final FlutterSecureStorage _storage;
 

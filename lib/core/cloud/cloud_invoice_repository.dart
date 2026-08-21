@@ -121,7 +121,7 @@ class CloudInvoiceRepository {
           payload: {
             'invoiceId': invoice.id,
             'clientEmail': clientEmail,
-            if (clientUid != null) 'clientUid': clientUid,
+            'clientUid': ?clientUid,
           },
           action: () => _upsertShare(
                 freelancer: freelancer,
@@ -160,7 +160,7 @@ class CloudInvoiceRepository {
         'freelancer_uid': uid,
         'freelancer_email': freelancer.email.trim().toLowerCase(),
         'client_email': clientEmail.trim().toLowerCase(),
-        if (clientUid != null) 'client_uid': clientUid,
+        'client_uid': ?clientUid,
         'local_invoice_id': invoice.id,
         if (invoice.projectId != null) 'local_project_id': invoice.projectId,
         'invoice_number': invoice.invoiceNumber,

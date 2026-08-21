@@ -118,7 +118,7 @@ class CloudProjectRepository {
       'freelancer_uid': freelancerUid,
       'freelancer_email': freelancerEmail.trim().toLowerCase(),
       'client_email': clientEmail.trim().toLowerCase(),
-      if (clientUid != null) 'client_uid': clientUid,
+      'client_uid': ?clientUid,
       'local_project_id': localProjectId,
       'project_name': project.name,
       'description': project.description,
