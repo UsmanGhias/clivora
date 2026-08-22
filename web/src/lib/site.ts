@@ -48,7 +48,7 @@ export const site = {
     x: "https://x.com/clivoraos",
     linkedin: "https://www.linkedin.com/company/clivoraos",
     instagram: "https://www.instagram.com/clivoraos",
-    youtube: "https://www.youtube.com/@clivora",
+    youtube: "https://www.youtube.com/@clivora-io",
     tiktok: "https://tiktok.com/@clivoraos",
   },
   playStoreUrl: "https://play.google.com/store/apps/details?id=org.codcrafters.clivora",

@@ -14,7 +14,7 @@ This is **go-to-market**, not a Quantic file. Do not upload social screenshots a
 | LinkedIn | https://www.linkedin.com/company/clivoraos |
 | Instagram | https://www.instagram.com/clivoraos |
 | Facebook | https://www.facebook.com/clivora.io/ |
-| YouTube | https://www.youtube.com/@clivora |
+| YouTube | https://www.youtube.com/@clivora-io |
 | TikTok | https://tiktok.com/@clivoraos |
 | Play Store | https://play.google.com/store/apps/details?id=org.codcrafters.clivora |
 | Support | contact@clivora.io |
