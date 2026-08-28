@@ -106,16 +106,17 @@ class BillingService {
         if (user != null &&
             purchase.productID != expectedPro &&
             purchase.productID != expectedPlus) {
-          debugPrint('Purchase product ${purchase.productID} does not match account type');
-          if (purchase.pendingCompletePurchase) {
-            await _iap.completePurchase(purchase);
-          }
+          debugPrint('Purchase product ${purchase.productID} does not match account type. Not consuming.');
           continue;
         }
 
         final verify = await ref.read(playBillingVerifyServiceProvider).verifyPurchase(purchase);
-        if (verify == null || !verify.active) {
-          debugPrint('Play purchase not verified, plan not activated');
+        if (verify == null) {
+          debugPrint('Play purchase verification transiently failed, skipping completePurchase');
+          continue;
+        }
+        if (!verify.active) {
+          debugPrint('Play purchase not verified (inactive), plan not activated');
           if (purchase.pendingCompletePurchase) {
             await _iap.completePurchase(purchase);
           }

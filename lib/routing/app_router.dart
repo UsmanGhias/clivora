@@ -217,6 +217,30 @@ final appRouter = GoRouter(
           pageBuilder: (context, state) =>
               const NoTransitionPage(child: ClientHubScreen()),
         ),
+        GoRoute(
+          path: '/client-quotes',
+          builder: (context, state) => const ClientQuotesScreen(),
+        ),
+        GoRoute(
+          path: '/client-payments',
+          builder: (context, state) => const ClientPaymentsScreen(),
+        ),
+        GoRoute(
+          path: '/client-credits',
+          builder: (context, state) => const ClientCreditsScreen(),
+        ),
+        GoRoute(
+          path: '/client-recurring',
+          builder: (context, state) => const ClientRecurringScreen(),
+        ),
+        GoRoute(
+          path: '/client-files',
+          builder: (context, state) => const ClientFilesScreen(),
+        ),
+        GoRoute(
+          path: '/products',
+          builder: (context, state) => const ProductsScreen(),
+        ),
       ],
     ),
     GoRoute(
@@ -453,30 +477,7 @@ final appRouter = GoRouter(
       path: '/connect/need',
       builder: (context, state) => const ConnectNeedScreen(),
     ),
-    GoRoute(
-      path: '/client-quotes',
-      builder: (context, state) => const ClientQuotesScreen(),
-    ),
-    GoRoute(
-      path: '/client-payments',
-      builder: (context, state) => const ClientPaymentsScreen(),
-    ),
-    GoRoute(
-      path: '/client-credits',
-      builder: (context, state) => const ClientCreditsScreen(),
-    ),
-    GoRoute(
-      path: '/client-recurring',
-      builder: (context, state) => const ClientRecurringScreen(),
-    ),
-    GoRoute(
-      path: '/client-files',
-      builder: (context, state) => const ClientFilesScreen(),
-    ),
-    GoRoute(
-      path: '/products',
-      builder: (context, state) => const ProductsScreen(),
-    ),
+
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/quotes',

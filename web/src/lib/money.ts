@@ -29,11 +29,19 @@ export function invoiceMinorFields(input: {
   const total = Number(input.total ?? 0);
   const amountPaid = Number(input.amountPaid ?? 0);
   const taxAmount = (subtotal * taxRate) / 100;
+  
+  const subtotal_minor = toMinorUnits(subtotal);
+  const tax_minor = toMinorUnits(taxAmount);
+  const discount_minor = toMinorUnits(discount);
+  // Compute total from integer minor units to guarantee arithmetic closure
+  const total_minor = subtotal_minor - discount_minor + tax_minor;
+  const amount_paid_minor = toMinorUnits(amountPaid);
+  
   return {
-    subtotal_minor: toMinorUnits(subtotal),
-    tax_minor: toMinorUnits(taxAmount),
-    discount_minor: toMinorUnits(discount),
-    total_minor: toMinorUnits(total),
-    amount_paid_minor: toMinorUnits(amountPaid),
+    subtotal_minor,
+    tax_minor,
+    discount_minor,
+    total_minor,
+    amount_paid_minor,
   };
 }

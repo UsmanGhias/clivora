@@ -18,6 +18,7 @@ const ALLOWED = new Set([
   "team_invite",
   "task_completed",
   "welcome",
+  "job_claim",
 ]);
 const MONTHLY_LIMIT = 3000;
 
@@ -36,6 +37,9 @@ type EmailBody = {
   userName?: string;
   accountType?: string;
   adminMessage?: string;
+  companyName?: string;
+  jobTitle?: string;
+  claimUrl?: string;
   wrapBrand?: boolean;
 };
 
@@ -137,6 +141,10 @@ serve(async (req) => {
       { status: 200 },
     );
   } catch (e) {
-    return new Response(JSON.stringify({ error: String(e) }), { status: 500 });
+    console.error("[send-clivora-email] SMTP failure:", e);
+    return new Response(
+      JSON.stringify({ error: "email_send_failed", message: "Failed to dispatch email notification" }),
+      { status: 500 },
+    );
   }
 });
