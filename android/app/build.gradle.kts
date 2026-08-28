@@ -38,7 +38,13 @@ android {
             create("release") {
                 keyAlias = keystoreProperties["keyAlias"] as String
                 keyPassword = keystoreProperties["keyPassword"] as String
-                storeFile = rootProject.file(keystoreProperties["storeFile"] as String)
+                val rawPath = keystoreProperties["storeFile"] as String
+                storeFile = when {
+                    rootProject.file(rawPath).exists() -> rootProject.file(rawPath)
+                    file(rawPath).exists() -> file(rawPath)
+                    rootProject.file("clivora-upload-keystore.jks").exists() -> rootProject.file("clivora-upload-keystore.jks")
+                    else -> rootProject.file(rawPath)
+                }
                 storePassword = keystoreProperties["storePassword"] as String
             }
         }
