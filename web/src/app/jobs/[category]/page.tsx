@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { site } from "@/lib/site";
+import { cleanText } from "@/lib/clean-text";
 import { MapPin, Clock, DollarSign, Briefcase, ChevronRight } from "lucide-react";
 
 export const revalidate = 3600;
@@ -101,16 +102,16 @@ export default async function CategoryPage({ params }: Props) {
               <div className="flex-1 space-y-3">
                 <div>
                   <h2 className="text-xl font-semibold text-[#0F172A] group-hover:text-[#0F766E]">
-                    {job.title}
+                    {cleanText(job.title)}
                   </h2>
-                  <p className="text-slate-600">{job.company_name}</p>
+                  <p className="text-slate-600">{cleanText(job.company_name)}</p>
                 </div>
                 
                 <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-500">
                   {job.location && (
                     <div className="flex items-center gap-1.5">
                       <MapPin className="h-4 w-4" />
-                      {job.location}
+                      {cleanText(job.location)}
                     </div>
                   )}
                   <div className="flex items-center gap-1.5">
@@ -133,7 +134,7 @@ export default async function CategoryPage({ params }: Props) {
                   <div className="flex flex-wrap gap-2">
                     {job.tags.slice(0, 5).map((tag: string) => (
                       <span key={tag} className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
-                        {tag}
+                        {cleanText(tag)}
                       </span>
                     ))}
                     {job.tags.length > 5 && (
