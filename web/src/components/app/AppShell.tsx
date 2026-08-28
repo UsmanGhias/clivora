@@ -437,6 +437,40 @@ export function AppShell({
     });
   }, [pathname, sections]);
 
+  useEffect(() => {
+    const supabase = createClient();
+    if (!profile?.id) return;
+    
+    const channel = supabase
+      .channel('app-shell-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${profile.id}` },
+        () => {
+          router.refresh();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_uid=eq.${profile.id}` },
+        () => {
+          router.refresh();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'client_messages', filter: `to_uid=eq.${profile.id}` },
+        () => {
+          router.refresh();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [profile?.id, router]);
+
   function isFlagAllowed(item: NavItem): boolean {
     if (!item.flags?.length) return true;
     return item.flags.some((key) => enabledFlags[key] === true);

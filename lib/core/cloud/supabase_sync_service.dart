@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
@@ -32,9 +33,84 @@ class SupabaseSyncService {
       await _resolveProjectSharesForClient(uid, user.email);
       await _resolveMessagesForUser(uid, user.email);
       await ref.read(cloudCrmRepositoryProvider).syncAllForSignedInUser();
+      subscribeToRealtimeUpdates(uid);
     } catch (e) {
       debugPrint('Supabase user sync error: $e');
     }
+  }
+
+  RealtimeChannel? _syncChannel;
+  Timer? _syncTimer;
+
+  void subscribeToRealtimeUpdates(String uid) {
+    dispose();
+
+    _syncChannel = _db.channel('clivora:sync:$uid');
+
+    void onInsertUpdate(PostgresChangePayload payload) {
+      _syncTimer?.cancel();
+      _syncTimer = Timer(const Duration(milliseconds: 500), () {
+        ref.read(cloudCrmRepositoryProvider).syncAllForSignedInUser();
+      });
+    }
+
+    void onDelete(PostgresChangePayload payload) {
+      debugPrint('Sync: item deleted from ${payload.table}');
+    }
+
+    final tables = [
+      'crm_customers',
+      'crm_projects',
+      'crm_invoices',
+      'workspace_tasks',
+      'notifications'
+    ];
+
+    for (final table in tables) {
+      _syncChannel!.onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: table,
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'owner_uid',
+          value: uid,
+        ),
+        callback: (payload) {
+          if (payload.eventType == PostgresChangeEvent.delete) {
+            onDelete(payload);
+          } else {
+            onInsertUpdate(payload);
+          }
+        },
+      );
+    }
+
+    _syncChannel!.onPostgresChanges(
+      event: PostgresChangeEvent.all,
+      schema: 'public',
+      table: 'client_messages',
+      filter: PostgresChangeFilter(
+        type: PostgresChangeFilterType.eq,
+        column: 'to_uid',
+        value: uid,
+      ),
+      callback: (payload) {
+        if (payload.eventType == PostgresChangeEvent.delete) {
+          onDelete(payload);
+        } else {
+          onInsertUpdate(payload);
+        }
+      },
+    );
+
+    _syncChannel!.subscribe();
+  }
+
+  void dispose() {
+    _syncTimer?.cancel();
+    _syncChannel?.unsubscribe();
+    _syncChannel = null;
   }
 
   Future<String?> uidForEmail(String email) async {

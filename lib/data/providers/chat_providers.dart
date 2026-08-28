@@ -87,11 +87,7 @@ final chatThreadProvider = StreamProvider.family<List<ChatBubble>, ChatThreadKey
   return repo
       .watchThread(myUid: uid, myEmail: user.email, peerEmail: key.peerEmail)
       .map((messages) {
-    for (final m in messages) {
-      if (!m.isRead && m.toUid == uid) {
-        repo.markMessageReadById(m.id);
-      }
-    }
+    // Note: read receipts should be dispatched from the UI layer (SimpleChatScreen).
     return messages
         .map(
           (m) => ChatBubble(

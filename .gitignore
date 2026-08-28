@@ -81,3 +81,12 @@ graphify-out/
 
 # Hostinger / server SSH keys — never commit
 .ssh-hostinger/
+
+# Local QA and Analysis (Untracked)
+docs/analysis/
+analysis/
+
+# Node / Web / MCP
+**/node_modules/
+**/.next/
+tools/clivora-mcp/dist/

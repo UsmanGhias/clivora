@@ -250,6 +250,38 @@ export function welcomeTemplate(userName: string, accountType: string): string {
   });
 }
 
+export function jobClaimTemplate(
+  companyName: string,
+  jobTitle: string,
+  claimUrl: string,
+): string {
+  const cn = escapeHtml(companyName);
+  const jt = escapeHtml(jobTitle);
+  return wrapBrandedEmail({
+    preheader: `Your ${jobTitle} role is live on CLIVORA — 0% platform fee`,
+    title: `Your open role is published on CLIVORA`,
+    bodyHtml: `
+      <p>Hi ${cn} team,</p>
+      <p>Your <strong>${jt}</strong> role has been published on the CLIVORA Connect marketplace — the world's first <strong>$0 platform fee</strong> freelancer marketplace.</p>
+      <p style="margin:16px 0;padding:16px;background:${BRAND.surface};border-radius:12px;border-left:4px solid ${BRAND.primary};">
+        <strong>What does this mean?</strong><br/>
+        <span style="color:${BRAND.muted};font-size:14px;">Talented freelancers can now discover and apply to your role. You receive 100% of the value — no commission, no hidden fees, ever.</span>
+      </p>
+      ${featureList([
+        "Review freelancer proposals and portfolios",
+        "Manage milestones and payments with built-in escrow",
+        "Chat, share files, and track progress in real time",
+        "All for <strong>$0</strong> — forever",
+      ])}
+      <p>Click below to claim your listing and start reviewing applicants:</p>`,
+    ctaLabel: "Claim Your Job Listing",
+    ctaUrl: claimUrl,
+    secondaryCtaLabel: "Learn more at clivora.io",
+    secondaryCtaUrl: BRAND.webUrl,
+    footerNote: "This listing was automatically published from a public job board. If this is not your company, please ignore this email. The listing will remain public with no action required.",
+  });
+}
+
 export function renderTemplate(
   purpose: string,
   payload: {
@@ -265,6 +297,9 @@ export function renderTemplate(
     userName?: string;
     accountType?: string;
     adminMessage?: string;
+    companyName?: string;
+    jobTitle?: string;
+    claimUrl?: string;
   },
 ): string {
   if (purpose === "client_invite" && payload.freelancerName && payload.clientName) {
@@ -289,6 +324,9 @@ export function renderTemplate(
   }
   if (purpose === "welcome" && payload.userName) {
     return welcomeTemplate(payload.userName, payload.accountType ?? "freelancer");
+  }
+  if (purpose === "job_claim" && payload.companyName && payload.jobTitle && payload.claimUrl) {
+    return jobClaimTemplate(payload.companyName, payload.jobTitle, payload.claimUrl);
   }
   return payload.html ?? "";
 }
