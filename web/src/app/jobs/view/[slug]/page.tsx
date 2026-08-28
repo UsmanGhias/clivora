@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { site } from "@/lib/site";
+import { cleanText } from "@/lib/clean-text";
 import { MapPin, Clock, DollarSign, Briefcase, Globe, ExternalLink } from "lucide-react";
 
 type Props = {
@@ -117,17 +118,17 @@ export default async function JobViewPage({ params }: Props) {
         <div className="lg:col-span-2">
           <div className="mb-8 border-b border-slate-200 pb-8">
             <h1 className="text-3xl font-bold tracking-tight text-[#0F172A] sm:text-4xl">
-              {job.title}
+              {cleanText(job.title)}
             </h1>
             <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-slate-600">
               <div className="flex items-center gap-1.5 font-medium text-[#0F172A]">
                 <Globe className="h-4 w-4 text-slate-400" />
-                {job.company_name}
+                {cleanText(job.company_name)}
               </div>
               {job.location && (
                 <div className="flex items-center gap-1.5">
                   <MapPin className="h-4 w-4 text-slate-400" />
-                  {job.location}
+                  {cleanText(job.location)}
                 </div>
               )}
               <div className="flex items-center gap-1.5">
@@ -154,20 +155,15 @@ export default async function JobViewPage({ params }: Props) {
                     href={`/jobs/${job.category}/${tag}`}
                     className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200"
                   >
-                    {tag}
+                    {cleanText(tag)}
                   </Link>
                 ))}
               </div>
             )}
           </div>
 
-          <div className="prose prose-slate max-w-none">
-            {/* Split description by newlines for basic formatting */}
-            {job.description.split('\n').map((paragraph: string, idx: number) => (
-              <p key={idx} className={paragraph.trim() === '' ? 'h-4' : 'mb-4'}>
-                {paragraph}
-              </p>
-            ))}
+          <div className="prose prose-slate max-w-none text-slate-700 leading-relaxed whitespace-pre-line">
+            {cleanText(job.description)}
           </div>
         </div>
 
@@ -176,32 +172,32 @@ export default async function JobViewPage({ params }: Props) {
           <div className="sticky top-24 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h3 className="text-lg font-semibold text-[#0F172A]">Apply for this role</h3>
             <p className="mt-2 text-sm text-slate-600">
-              Apply via CLIVORA to securely share your profile and negotiate with $0 platform fees.
+              Apply via CLIVORA to negotiate directly, manage milestones, and keep 100% of your earnings ($0 fee).
             </p>
             
             <div className="mt-6 space-y-3">
-              {job.source_url ? (
+              <Link
+                href={`/app/connect/apply?job_id=${job.id}&title=${encodeURIComponent(cleanText(job.title))}`}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0F766E] px-4 py-3 font-semibold text-white shadow-sm hover:bg-[#0F766E]/90 transition-colors"
+              >
+                Apply via CLIVORA ($0 Fee)
+              </Link>
+
+              {job.source_url && (
                 <a
                   href={job.source_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0F766E] px-4 py-3 font-medium text-white hover:bg-[#0F766E]/90"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
                 >
-                  Apply Externally
-                  <ExternalLink className="h-4 w-4" />
+                  View Original Source
+                  <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
                 </a>
-              ) : (
-                <Link
-                  href={`/connect?tab=talent&apply=${job.id}`}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0F766E] px-4 py-3 font-medium text-white hover:bg-[#0F766E]/90"
-                >
-                  Submit Proposal
-                </Link>
               )}
             </div>
 
             <div className="mt-8 border-t border-slate-200 pt-6">
-              <h4 className="font-medium text-[#0F172A]">About {job.company_name}</h4>
+              <h4 className="font-medium text-[#0F172A]">About {cleanText(job.company_name)}</h4>
               {job.company_domain && (
                 <a
                   href={`https://${job.company_domain}`}
@@ -209,7 +205,7 @@ export default async function JobViewPage({ params }: Props) {
                   rel="noopener noreferrer"
                   className="mt-2 flex items-center gap-1.5 text-sm text-[#0F766E] hover:underline"
                 >
-                  {job.company_domain}
+                  {cleanText(job.company_domain)}
                   <ExternalLink className="h-3 w-3" />
                 </a>
               )}

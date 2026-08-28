@@ -27,6 +27,32 @@ interface NormalizedJob {
   seo_slug: string;
 }
 
+// ── HTML Entity Decoder ──────────────────────────────────────────────────────
+
+function decodeHtmlEntities(str: string): string {
+  if (!str) return "";
+  return str
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;/g, "'")
+    .replace(/&#39;/g, "'")
+    .replace(/&#x2F;/gi, "/")
+    .replace(/&#47;/g, "/")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)))
+    .replace(/&#x([a-f0-9]+);/gi, (_, code) => String.fromCharCode(parseInt(code, 16)))
+    .trim();
+}
+
+function stripHtmlTags(html: string): string {
+  if (!html) return "";
+  return decodeHtmlEntities(
+    html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ")
+  ).trim();
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function slugify(text: string): string {
@@ -36,7 +62,7 @@ function slugify(text: string): string {
     .replace(/[\s_]+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "")
-    .slice(0, 120);
+    .slice(0, 100);
 }
 
 function extractDomain(url: string | null | undefined): string | null {
@@ -54,18 +80,21 @@ function mapCategory(rawCategory: string): string {
   const categoryMap: Record<string, string> = {
     software: "software-development",
     "software-dev": "software-development",
+    "software-development": "software-development",
     devops: "devops-sysadmin",
+    "devops-sysadmin": "devops-sysadmin",
     "devops / sysadmin": "devops-sysadmin",
-    "sysadmin": "devops-sysadmin",
+    sysadmin: "devops-sysadmin",
     design: "design",
-    "product": "product",
+    product: "product",
     marketing: "marketing",
     "customer support": "customer-support",
     "customer-support": "customer-support",
     writing: "writing",
-    "data": "data-science",
+    data: "data-science",
     "data science": "data-science",
-    "qa": "quality-assurance",
+    "data-science": "data-science",
+    qa: "quality-assurance",
     "quality assurance": "quality-assurance",
     hr: "human-resources",
     "human resources": "human-resources",
@@ -76,9 +105,9 @@ function mapCategory(rawCategory: string): string {
     "project management": "management",
     teaching: "education",
     education: "education",
-    "all others": "general",
+    general: "general",
   };
-  return categoryMap[lower] || "general";
+  return categoryMap[lower] || "software-development";
 }
 
 function secureEqual(a: string, b: string): boolean {
@@ -104,27 +133,32 @@ async function fetchRemotiveJobs(): Promise<NormalizedJob[]> {
     const data = await res.json();
     const jobs = data.jobs || [];
 
-    return jobs.map((j: any) => ({
-      title: (j.title || "").trim(),
-      company_name: (j.company_name || "").trim(),
-      company_domain: extractDomain(j.url),
-      company_email: null,
-      description: (j.description || "").slice(0, 10000),
-      category: mapCategory(j.category || ""),
-      tags: (j.tags || []).map((t: string) => t.toLowerCase().trim()).filter(Boolean),
-      salary_min: null,
-      salary_max: null,
-      currency: "USD",
-      location: (j.candidate_required_location || "Worldwide").trim(),
-      job_type: j.job_type === "contract" ? "contract"
-        : j.job_type === "part_time" ? "part_time"
-        : j.job_type === "freelance" ? "freelance"
-        : "full_time",
-      source: "remotive",
-      source_id: String(j.id),
-      source_url: j.url || `https://remotive.com/remote-jobs/${j.id}`,
-      seo_slug: slugify(`${j.company_name}-${j.title}-${j.id}`),
-    }));
+    return jobs.map((j: any) => {
+      const cleanTitle = decodeHtmlEntities(j.title || "").trim();
+      const cleanCompany = decodeHtmlEntities(j.company_name || "").trim();
+      const cleanDesc = stripHtmlTags(j.description || "").slice(0, 10000);
+      return {
+        title: cleanTitle,
+        company_name: cleanCompany,
+        company_domain: extractDomain(j.url),
+        company_email: null,
+        description: cleanDesc,
+        category: mapCategory(j.category || ""),
+        tags: (j.tags || []).map((t: string) => decodeHtmlEntities(t).toLowerCase().trim()).filter(Boolean),
+        salary_min: null,
+        salary_max: null,
+        currency: "USD",
+        location: decodeHtmlEntities(j.candidate_required_location || "Worldwide").trim(),
+        job_type: j.job_type === "contract" ? "contract"
+          : j.job_type === "part_time" ? "part_time"
+          : j.job_type === "freelance" ? "freelance"
+          : "full_time",
+        source: "remotive",
+        source_id: String(j.id),
+        source_url: j.url || `https://remotive.com/remote-jobs/${j.id}`,
+        seo_slug: slugify(`${cleanCompany}-${cleanTitle}-${j.id}`),
+      };
+    });
   } catch (e) {
     console.error("[remotive] Fetch error:", e);
     return [];
@@ -143,24 +177,29 @@ async function fetchArbeitnowJobs(): Promise<NormalizedJob[]> {
     const data = await res.json();
     const jobs = data.data || [];
 
-    return jobs.map((j: any) => ({
-      title: (j.title || "").trim(),
-      company_name: (j.company_name || "").trim(),
-      company_domain: extractDomain(j.url),
-      company_email: null,
-      description: (j.description || "").slice(0, 10000),
-      category: mapCategory(j.tags?.[0] || "general"),
-      tags: (j.tags || []).map((t: string) => t.toLowerCase().trim()).filter(Boolean),
-      salary_min: null,
-      salary_max: null,
-      currency: "EUR",
-      location: (j.location || "Remote").trim(),
-      job_type: j.remote ? "full_time" : "full_time",
-      source: "arbeitnow",
-      source_id: String(j.slug || j.title).slice(0, 200),
-      source_url: j.url || `https://www.arbeitnow.com/view/${j.slug}`,
-      seo_slug: slugify(`${j.company_name}-${j.title}-an-${j.slug || Date.now()}`),
-    }));
+    return jobs.map((j: any) => {
+      const cleanTitle = decodeHtmlEntities(j.title || "").trim();
+      const cleanCompany = decodeHtmlEntities(j.company_name || "").trim();
+      const cleanDesc = stripHtmlTags(j.description || "").slice(0, 10000);
+      return {
+        title: cleanTitle,
+        company_name: cleanCompany,
+        company_domain: extractDomain(j.url),
+        company_email: null,
+        description: cleanDesc,
+        category: mapCategory(j.tags?.[0] || "general"),
+        tags: (j.tags || []).map((t: string) => decodeHtmlEntities(t).toLowerCase().trim()).filter(Boolean),
+        salary_min: null,
+        salary_max: null,
+        currency: "EUR",
+        location: decodeHtmlEntities(j.location || "Remote").trim(),
+        job_type: "full_time",
+        source: "arbeitnow",
+        source_id: String(j.slug || j.title).slice(0, 200),
+        source_url: j.url || `https://www.arbeitnow.com/view/${j.slug}`,
+        seo_slug: slugify(`${cleanCompany}-${cleanTitle}-an-${j.slug || Date.now()}`),
+      };
+    });
   } catch (e) {
     console.error("[arbeitnow] Fetch error:", e);
     return [];
@@ -169,7 +208,7 @@ async function fetchArbeitnowJobs(): Promise<NormalizedJob[]> {
 
 async function fetchHackerNewsJobs(): Promise<NormalizedJob[]> {
   try {
-    // Search for the latest "Who is Hiring?" post
+    // Search for the latest "Who is Hiring?" Ask HN post
     const searchRes = await fetch(
       "https://hn.algolia.com/api/v1/search?query=%22Who%20is%20hiring%22&tags=ask_hn&hitsPerPage=1",
       { headers: { "User-Agent": "CLIVORA-JobCrawler/1.0" } }
@@ -179,7 +218,7 @@ async function fetchHackerNewsJobs(): Promise<NormalizedJob[]> {
     const parentId = searchData.hits?.[0]?.objectID;
     if (!parentId) return [];
 
-    // Fetch comments (job listings) from the thread
+    // Fetch top comments from the thread
     const commentsRes = await fetch(
       `https://hn.algolia.com/api/v1/search?tags=comment,story_${parentId}&hitsPerPage=100`,
       { headers: { "User-Agent": "CLIVORA-JobCrawler/1.0" } }
@@ -188,38 +227,71 @@ async function fetchHackerNewsJobs(): Promise<NormalizedJob[]> {
     const commentsData = await commentsRes.json();
     const comments = commentsData.hits || [];
 
-    return comments
-      .filter((c: any) => c.comment_text && c.comment_text.length > 50)
-      .map((c: any, idx: number) => {
-        const text = (c.comment_text || "").replace(/<[^>]*>/g, " ").trim();
-        // Try to extract company name from first line (typical format: "Company Name | Role | Location | ...")
-        const firstLine = text.split("\n")[0] || "";
-        const parts = firstLine.split("|").map((p: string) => p.trim());
-        const companyName = parts[0]?.slice(0, 100) || "Unknown";
-        const title = parts[1]?.slice(0, 200) || `HN Hiring: ${companyName}`;
-        const location = parts.find((p: string) =>
-          /remote|onsite|hybrid|sf|nyc|london|berlin/i.test(p)
-        ) || "Remote";
+    const parsedJobs: NormalizedJob[] = [];
 
-        return {
-          title,
-          company_name: companyName,
-          company_domain: null,
-          company_email: null,
-          description: text.slice(0, 10000),
-          category: "software-development",
-          tags: ["hackernews", "who-is-hiring"],
-          salary_min: null,
-          salary_max: null,
-          currency: "USD",
-          location: location.trim(),
-          job_type: "full_time" as const,
-          source: "hackernews",
-          source_id: String(c.objectID),
-          source_url: `https://news.ycombinator.com/item?id=${c.objectID}`,
-          seo_slug: slugify(`hn-${companyName}-${c.objectID}`),
-        };
+    for (const c of comments) {
+      if (!c.comment_text || c.comment_text.length < 80) continue;
+
+      const rawText = decodeHtmlEntities(c.comment_text);
+      const cleanText = stripHtmlTags(rawText);
+      const firstLine = cleanText.split("\n")[0] || "";
+
+      // Strict validation: A genuine HN hiring post MUST have '|' in the first line
+      // format: Company Name | Role | Location | Full-time/Remote/Salary
+      if (!firstLine.includes("|")) continue;
+
+      const parts = firstLine.split("|").map((p: string) => p.trim());
+      if (parts.length < 2) continue;
+
+      const rawCompany = parts[0];
+      const rawTitle = parts[1];
+
+      // Reject non-job replies / complaints / commentary
+      if (
+        /^(note:|fyi:|hello|basically|are you|it'?s|i'?ll|when|why|what|you should|commenters|screening)/i.test(rawCompany) ||
+        rawCompany.length > 50 ||
+        rawCompany.length < 2 ||
+        /^(note:|fyi:|hello|basically|are you|it'?s|i'?ll|when|why|what|you should)/i.test(rawTitle)
+      ) {
+        continue;
+      }
+
+      const companyName = rawCompany.replace(/^[-\s*]+/, "").slice(0, 60).trim();
+      const title = rawTitle.slice(0, 100).trim() || `${companyName} Engineer`;
+      const location = parts.find((p: string) =>
+        /remote|onsite|hybrid|sf|nyc|london|berlin|europe|us|worldwide|canada|singapore/i.test(p)
+      ) || "Remote";
+
+      // Tag extraction
+      const tags: string[] = ["hackernews", "who-is-hiring"];
+      if (/react|frontend|front-end/i.test(cleanText)) tags.push("react");
+      if (/node|backend|back-end/i.test(cleanText)) tags.push("nodejs");
+      if (/python/i.test(cleanText)) tags.push("python");
+      if (/rust/i.test(cleanText)) tags.push("rust");
+      if (/golang|go /i.test(cleanText)) tags.push("golang");
+      if (/flutter|mobile|ios|android/i.test(cleanText)) tags.push("mobile");
+
+      parsedJobs.push({
+        title,
+        company_name: companyName,
+        company_domain: null,
+        company_email: null,
+        description: cleanText.slice(0, 10000),
+        category: "software-development",
+        tags,
+        salary_min: null,
+        salary_max: null,
+        currency: "USD",
+        location: location.slice(0, 60).trim(),
+        job_type: "full_time",
+        source: "hackernews",
+        source_id: String(c.objectID),
+        source_url: `https://news.ycombinator.com/item?id=${c.objectID}`,
+        seo_slug: slugify(`hn-${companyName}-${title}-${c.objectID}`),
       });
+    }
+
+    return parsedJobs;
   } catch (e) {
     console.error("[hackernews] Fetch error:", e);
     return [];
@@ -252,7 +324,15 @@ serve(async (req) => {
 
   const db = createClient(supabaseUrl, serviceKey);
 
-  // Fetch from all sources in parallel
+  // 1. Auto-expire jobs older than 30 days
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  await db
+    .from("connect_jobs")
+    .update({ status: "expired", is_public: false })
+    .lt("created_at", thirtyDaysAgo)
+    .eq("status", "published");
+
+  // 2. Fetch from all sources in parallel
   const [remotiveJobs, arbeitnowJobs, hnJobs] = await Promise.all([
     fetchRemotiveJobs(),
     fetchArbeitnowJobs(),
@@ -305,7 +385,7 @@ serve(async (req) => {
   }
 
   console.log(
-    `[sync-external-jobs] Ingested ${ingested} jobs (remotive: ${remotiveJobs.length}, arbeitnow: ${arbeitnowJobs.length}, hn: ${hnJobs.length})`
+    `[sync-external-jobs] Ingested ${ingested} clean jobs (remotive: ${remotiveJobs.length}, arbeitnow: ${arbeitnowJobs.length}, hn: ${hnJobs.length})`
   );
 
   return new Response(
