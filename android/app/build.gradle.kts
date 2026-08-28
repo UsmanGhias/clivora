@@ -56,9 +56,13 @@ android {
             if (keystorePropertiesFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
-            // R8 was stripping plugin classes and causing release APK crashes on launch.
-            isMinifyEnabled = false
-            isShrinkResources = false
+            // Enable R8 optimization as recommended by Google Play Console
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }
