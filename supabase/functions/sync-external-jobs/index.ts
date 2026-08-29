@@ -191,7 +191,7 @@ async function fetchArbeitnowJobs(): Promise<NormalizedJob[]> {
         tags: (j.tags || []).map((t: string) => decodeHtmlEntities(t).toLowerCase().trim()).filter(Boolean),
         salary_min: null,
         salary_max: null,
-        currency: "EUR",
+        currency: "USD",
         location: decodeHtmlEntities(j.location || "Remote").trim(),
         job_type: "full_time",
         source: "arbeitnow",
