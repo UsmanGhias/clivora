@@ -4,11 +4,33 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { site } from "@/lib/site";
 import { cleanText } from "@/lib/clean-text";
-import { MapPin, Clock, DollarSign, Briefcase, Globe, ExternalLink } from "lucide-react";
+import {
+  MapPin,
+  Clock,
+  DollarSign,
+  Briefcase,
+  Globe,
+  ShieldCheck,
+  CheckCircle2,
+  Sparkles,
+  ArrowLeft,
+  Lock,
+  Send,
+  Building2,
+} from "lucide-react";
 
 type Props = {
   params: Promise<{ slug: string }>;
 };
+
+const EXCLUDED_TAGS = new Set([
+  "hackernews",
+  "who-is-hiring",
+  "arbeitnow",
+  "remotive",
+  "source",
+  "external",
+]);
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -21,8 +43,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!job) return {};
 
-  const title = `${job.title} at ${job.company_name} | CLIVORA`;
-  const description = `Apply for ${job.title} at ${job.company_name}. Remote opportunity with $0 platform fees on CLIVORA.`;
+  const cleanJobTitle = cleanText(job.title);
+  const cleanCompany = cleanText(job.company_name);
+  const title = `${cleanJobTitle} at ${cleanCompany} | CLIVORA ($0 Fee)`;
+  const description = `Apply directly for ${cleanJobTitle} at ${cleanCompany}. Direct client communication with 100% earnings and $0 platform fees on CLIVORA.`;
 
   return {
     title,
@@ -38,16 +62,39 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 function formatSalary(min?: number, max?: number, currency: string = "USD") {
-  if (!min && !max) return "Competitive";
+  if (!min && !max) return "Competitive Pay";
   const curr = currency || "USD";
   if (min && !max) return `From ${min.toLocaleString()} ${curr}`;
   if (!min && max) return `Up to ${max.toLocaleString()} ${curr}`;
   return `${min?.toLocaleString()} - ${max?.toLocaleString()} ${curr}`;
 }
 
+function getInitials(name: string): string {
+  const clean = cleanText(name).trim();
+  if (!clean) return "CL";
+  const parts = clean.split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return clean.slice(0, 2).toUpperCase();
+}
+
+function getAvatarGradient(name: string): string {
+  const gradients = [
+    "from-teal-500 to-emerald-600",
+    "from-blue-600 to-cyan-600",
+    "from-indigo-600 to-violet-600",
+    "from-slate-700 to-slate-900",
+    "from-emerald-600 to-teal-700",
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash += name.charCodeAt(i);
+  return gradients[Math.abs(hash) % gradients.length];
+}
+
 export default async function JobViewPage({ params }: Props) {
   const { slug } = await params;
-  
+
   const supabase = await createClient();
   const { data: job } = await supabase
     .from("connect_jobs")
@@ -59,25 +106,36 @@ export default async function JobViewPage({ params }: Props) {
     notFound();
   }
 
-  // Build JSON-LD
+  const cleanJobTitle = cleanText(job.title);
+  const cleanCompany = cleanText(job.company_name);
+  const cleanLocation = cleanText(job.location || "Remote");
+  const cleanDescription = cleanText(job.description);
+  const displayTags = (job.tags || [])
+    .filter((t: string) => !EXCLUDED_TAGS.has(t.toLowerCase()))
+    .slice(0, 8);
+
+  const companyInitials = getInitials(cleanCompany);
+  const avatarGradient = getAvatarGradient(cleanCompany);
+
+  // Schema.org JSON-LD for Google Jobs
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "JobPosting",
-    title: job.title,
-    description: job.description,
+    title: cleanJobTitle,
+    description: cleanDescription,
     datePosted: job.created_at,
     validThrough: new Date(new Date(job.created_at).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
     employmentType: job.job_type ? (job.job_type === "full_time" ? "FULL_TIME" : "CONTRACTOR") : "FULL_TIME",
     hiringOrganization: {
       "@type": "Organization",
-      name: job.company_name,
-      sameAs: job.company_domain ? `https://${job.company_domain}` : undefined,
+      name: cleanCompany,
+      sameAs: job.company_domain ? `https://${cleanText(job.company_domain)}` : undefined,
     },
     jobLocation: {
       "@type": "Place",
       address: {
         "@type": "PostalAddress",
-        addressLocality: job.location || "Remote",
+        addressLocality: cleanLocation,
         addressCountry: "Anywhere",
       },
     },
@@ -101,126 +159,165 @@ export default async function JobViewPage({ params }: Props) {
   };
 
   return (
-    <main className="mx-auto max-w-7xl px-5 py-12 lg:px-8">
+    <main className="min-h-screen bg-slate-50/50 py-10">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      
-      <div className="mb-8">
-        <Link href="/jobs" className="text-sm font-medium text-slate-500 hover:text-[#0F766E]">
-          &larr; Back to jobs
-        </Link>
-      </div>
 
-      <div className="grid gap-8 lg:grid-cols-3 lg:gap-12">
-        {/* Main Content */}
-        <div className="lg:col-span-2">
-          <div className="mb-8 border-b border-slate-200 pb-8">
-            <h1 className="text-3xl font-bold tracking-tight text-[#0F172A] sm:text-4xl">
-              {cleanText(job.title)}
-            </h1>
-            <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-slate-600">
-              <div className="flex items-center gap-1.5 font-medium text-[#0F172A]">
-                <Globe className="h-4 w-4 text-slate-400" />
-                {cleanText(job.company_name)}
-              </div>
-              {job.location && (
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="h-4 w-4 text-slate-400" />
-                  {cleanText(job.location)}
-                </div>
-              )}
-              <div className="flex items-center gap-1.5">
-                <DollarSign className="h-4 w-4 text-slate-400" />
-                {formatSalary(job.salary_min, job.salary_max, job.currency)}
-              </div>
-              {job.job_type && (
-                <div className="flex items-center gap-1.5 capitalize">
-                  <Briefcase className="h-4 w-4 text-slate-400" />
-                  {job.job_type.replace('_', ' ')}
-                </div>
-              )}
-              <div className="flex items-center gap-1.5">
-                <Clock className="h-4 w-4 text-slate-400" />
-                Posted {new Date(job.created_at).toLocaleDateString()}
-              </div>
-            </div>
-
-            {job.tags && job.tags.length > 0 && (
-              <div className="mt-6 flex flex-wrap gap-2">
-                {job.tags.map((tag: string) => (
-                  <Link
-                    key={tag}
-                    href={`/jobs/${job.category}/${tag}`}
-                    className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200"
-                  >
-                    {cleanText(tag)}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="prose prose-slate max-w-none text-slate-700 leading-relaxed whitespace-pre-line">
-            {cleanText(job.description)}
-          </div>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Back navigation */}
+        <div className="mb-6">
+          <Link
+            href="/jobs"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 transition-colors hover:text-teal-700"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to all jobs
+          </Link>
         </div>
 
-        {/* Sidebar */}
-        <div className="lg:col-span-1">
-          <div className="sticky top-24 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-[#0F172A]">Apply for this role</h3>
-            <p className="mt-2 text-sm text-slate-600">
-              Apply via CLIVORA to negotiate directly, manage milestones, and keep 100% of your earnings ($0 fee).
-            </p>
-            
-            <div className="mt-6 space-y-3">
-              <Link
-                href={`/app/connect/apply?job_id=${job.id}&title=${encodeURIComponent(cleanText(job.title))}`}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0F766E] px-4 py-3 font-semibold text-white shadow-sm hover:bg-[#0F766E]/90 transition-colors"
-              >
-                Apply via CLIVORA ($0 Fee)
-              </Link>
-
-              {job.source_url && (
-                <a
-                  href={job.source_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+        <div className="grid gap-8 lg:grid-cols-3 lg:gap-10">
+          {/* Main Job Body */}
+          <div className="space-y-6 lg:col-span-2">
+            {/* Header Card */}
+            <div className="rounded-3xl border border-slate-200/90 bg-white p-7 shadow-xs">
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+                <div
+                  className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${avatarGradient} text-xl font-bold text-white shadow-sm`}
                 >
-                  View Original Source
-                  <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
-                </a>
-              )}
-            </div>
-
-            <div className="mt-8 border-t border-slate-200 pt-6">
-              <h4 className="font-medium text-[#0F172A]">About {cleanText(job.company_name)}</h4>
-              {job.company_domain && (
-                <a
-                  href={`https://${job.company_domain}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 flex items-center gap-1.5 text-sm text-[#0F766E] hover:underline"
-                >
-                  {cleanText(job.company_domain)}
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              )}
-            </div>
-            
-            <div className="mt-8 rounded-xl bg-slate-50 p-4">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 rounded-full bg-[#0F766E]/10 p-1.5 text-[#0F766E]">
-                  <DollarSign className="h-4 w-4" />
+                  {companyInitials}
                 </div>
-                <div>
-                  <h5 className="text-sm font-semibold text-[#0F172A]">100% Free for Freelancers</h5>
-                  <p className="mt-1 text-xs text-slate-500">
-                    CLIVORA charges $0 platform fees on your earnings. What you negotiate is what you keep.
+
+                <div className="space-y-2.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-3 py-1 text-xs font-bold text-teal-800 border border-teal-200">
+                      <Sparkles className="h-3 w-3 text-teal-600" />
+                      $0 Platform Fee
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                      <ShieldCheck className="h-3.5 w-3.5 text-slate-500" />
+                      Verified Opportunity
+                    </span>
+                  </div>
+
+                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+                    {cleanJobTitle}
+                  </h1>
+
+                  <p className="text-base font-semibold text-slate-700">
+                    {cleanCompany}
                   </p>
+
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-2 text-xs font-medium text-slate-500">
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="h-4 w-4 text-slate-400" />
+                      <span>{cleanLocation}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 font-bold text-emerald-700">
+                      <DollarSign className="h-4 w-4 text-emerald-600" />
+                      <span>{formatSalary(job.salary_min, job.salary_max, job.currency)}</span>
+                    </div>
+                    {job.job_type && (
+                      <div className="flex items-center gap-1.5 capitalize">
+                        <Briefcase className="h-4 w-4 text-slate-400" />
+                        <span>{job.job_type.replace("_", " ")}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="h-4 w-4 text-slate-400" />
+                      <span>Posted {new Date(job.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+
+                  {displayTags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-3">
+                      {displayTags.map((tag: string) => (
+                        <Link
+                          key={tag}
+                          href={`/jobs/${job.category}/${tag}`}
+                          className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-200 transition-colors"
+                        >
+                          {cleanText(tag)}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Description Card */}
+            <div className="rounded-3xl border border-slate-200/90 bg-white p-7 shadow-xs">
+              <h2 className="text-lg font-bold text-slate-900">Job Overview & Requirements</h2>
+              <div className="mt-5 prose prose-slate max-w-none text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                {cleanDescription}
+              </div>
+            </div>
+          </div>
+
+          {/* Sticky Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-20 space-y-5">
+              {/* Primary Apply Card */}
+              <div className="rounded-3xl border border-teal-500/30 bg-gradient-to-b from-white to-teal-50/20 p-6 shadow-sm">
+                <div className="flex items-center gap-2 text-teal-800">
+                  <Send className="h-5 w-5 text-teal-600" />
+                  <h3 className="text-base font-bold">Apply on CLIVORA</h3>
+                </div>
+                <p className="mt-2 text-xs text-slate-600 leading-relaxed">
+                  Submit your proposal directly through CLIVORA. Enjoy private client negotiation, escrow security, and <strong>$0 platform commission</strong>.
+                </p>
+
+                <div className="mt-5">
+                  <Link
+                    href={`/app/connect/apply?job_id=${job.id}&title=${encodeURIComponent(cleanJobTitle)}`}
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-teal-600 px-5 py-3.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-teal-700 hover:shadow active:scale-98"
+                  >
+                    <Send className="h-4 w-4" />
+                    Submit Proposal ($0 Fee)
+                  </Link>
+                </div>
+
+                <div className="mt-5 space-y-2.5 border-t border-slate-200/80 pt-4 text-xs text-slate-600">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-teal-600 shrink-0" />
+                    <span>Keep 100% of negotiated amount</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-teal-600 shrink-0" />
+                    <span>Direct milestone invoices & timesheets</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-teal-600 shrink-0" />
+                    <span>Secure client chat & file vault</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Founder Guarantee Box */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs">
+                <div className="flex items-center gap-2.5">
+                  <div className="rounded-xl bg-teal-50 p-2 text-teal-700">
+                    <Lock className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900">Founder Platform Guarantee</h4>
+                    <p className="text-[11px] text-slate-500">1 Year Free Pro Plus included for all early members.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Company Info Box */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs">
+                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider text-slate-400">About the Client</h4>
+                <p className="mt-2 text-sm font-bold text-slate-900">{cleanCompany}</p>
+                {job.company_domain && (
+                  <p className="mt-1 text-xs text-slate-500">{cleanText(job.company_domain)}</p>
+                )}
+                <div className="mt-3 flex items-center gap-1.5 text-xs text-teal-700">
+                  <ShieldCheck className="h-4 w-4 text-teal-600" />
+                  <span>Verified Organization</span>
                 </div>
               </div>
             </div>
