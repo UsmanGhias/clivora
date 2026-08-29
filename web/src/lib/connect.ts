@@ -39,21 +39,67 @@ export async function listPublicConnectProfiles(search?: string) {
 
 export async function listPublicConnectNeeds(search?: string) {
   const supabase = await createClient();
-  let q = supabase
-    .from("connect_need_posts")
-    .select(
-      "id, client_user_id, title, summary, skills, budget_band, is_open, moderation_status, created_at",
-    )
-    .eq("is_open", true)
-    .eq("moderation_status", "approved")
-    .order("created_at", { ascending: false })
-    .limit(500);
+  const [needsRes, jobsRes] = await Promise.all([
+    supabase
+      .from("connect_need_posts")
+      .select(
+        "id, client_user_id, title, summary, skills, budget_band, is_open, moderation_status, created_at",
+      )
+      .eq("is_open", true)
+      .eq("moderation_status", "approved")
+      .order("created_at", { ascending: false })
+      .limit(100),
+    supabase
+      .from("connect_jobs")
+      .select(
+        "id, title, company_name, company_email, description, category, tags, salary_min, salary_max, currency, location, job_type, seo_slug, posted_by, created_at",
+      )
+      .eq("is_public", true)
+      .eq("status", "published")
+      .order("created_at", { ascending: false })
+      .limit(500),
+  ]);
+
+  const rawNeeds = (needsRes.data ?? []) as ConnectNeed[];
+
+  const mappedJobs: ConnectNeed[] = (jobsRes.data ?? []).map((j) => {
+    const budget =
+      j.salary_min && j.salary_max
+        ? `$${j.salary_min.toLocaleString()} - $${j.salary_max.toLocaleString()} USD`
+        : j.salary_min
+          ? `$${j.salary_min.toLocaleString()} USD`
+          : "Market Rate ($ USD)";
+
+    return {
+      id: j.id,
+      client_user_id: j.posted_by || "00000000-0000-0000-0000-000000000000",
+      title: j.title || "Remote Role",
+      summary: j.description || "",
+      skills: j.tags && j.tags.length > 0 ? j.tags : [j.category || "General"],
+      budget_band: budget,
+      is_open: true,
+      moderation_status: "approved",
+      created_at: j.created_at,
+      company_name: j.company_name,
+      company_email: j.company_email,
+      job_id: j.id,
+      seo_slug: j.seo_slug,
+      location: j.location,
+    };
+  });
+
+  const combined = [...rawNeeds, ...mappedJobs];
+
   if (search?.trim()) {
-    const s = `%${search.trim()}%`;
-    q = q.or(`title.ilike.${s},summary.ilike.${s}`);
+    const s = search.trim().toLowerCase();
+    return combined.filter(
+      (item) =>
+        (item.title || "").toLowerCase().includes(s) ||
+        (item.summary || "").toLowerCase().includes(s) ||
+        (item.company_name || "").toLowerCase().includes(s),
+    );
   }
-  const { data } = await q;
-  return (data ?? []) as ConnectNeed[];
+  return combined;
 }
 
 export async function listMyConnectRequests() {
