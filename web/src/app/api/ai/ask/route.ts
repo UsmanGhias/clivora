@@ -5,6 +5,7 @@ import {
   sanitizeIlikeTerm,
   type CrmEmbeddingRow,
 } from "@/lib/crm-rag";
+import { callGemini, getGeminiApiKey } from "@/lib/gemini";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
@@ -360,7 +361,8 @@ export async function POST(req: NextRequest) {
     }
 
     const aggregates = await loadCrmAggregates(supabase, user.id);
-    const llmConfigured = Boolean(OPENAI_API_KEY || ANTHROPIC_API_KEY);
+    const geminiKey = await getGeminiApiKey();
+    const llmConfigured = Boolean(geminiKey || OPENAI_API_KEY || ANTHROPIC_API_KEY);
 
     if (!llmConfigured) {
       return NextResponse.json({
@@ -380,7 +382,16 @@ export async function POST(req: NextRequest) {
       .join("\n");
 
     const answer =
-      (await callOpenAi(query, context)) || (await callAnthropic(query, context));
+      (geminiKey
+        ? await callGemini({
+            prompt: `User Query: ${query}\nUser CRM Context: ${context}`,
+            systemInstruction:
+              "You are the CLIVORA AI Operating System assistant. Deliver direct, practical business advice for freelancers and clients based on their CRM data. Keep replies focused, under 3 paragraphs, with zero em dashes.",
+            maxOutputTokens: 350,
+          })
+        : null) ||
+      (await callOpenAi(query, context)) ||
+      (await callAnthropic(query, context));
 
     if (!answer) {
       return NextResponse.json({

@@ -119,6 +119,26 @@ function secureEqual(a: string, b: string): boolean {
   return result === 0;
 }
 
+function extractContactEmail(text: string): string | null {
+  if (!text) return null;
+  const matches = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g);
+  if (!matches) return null;
+  const filtered = matches.filter((e) => {
+    const lower = e.toLowerCase();
+    return (
+      !lower.includes("ycombinator") &&
+      !lower.includes("example.com") &&
+      !lower.includes("w3.org") &&
+      !lower.includes("remotive") &&
+      !lower.includes("arbeitnow") &&
+      !lower.includes("sentry") &&
+      !lower.includes(".png") &&
+      !lower.includes(".jpg")
+    );
+  });
+  return filtered.length > 0 ? filtered[0].toLowerCase().trim() : null;
+}
+
 // ── Fetchers ─────────────────────────────────────────────────────────────────
 
 async function fetchRemotiveJobs(): Promise<NormalizedJob[]> {
@@ -141,7 +161,7 @@ async function fetchRemotiveJobs(): Promise<NormalizedJob[]> {
         title: cleanTitle,
         company_name: cleanCompany,
         company_domain: extractDomain(j.url),
-        company_email: null,
+        company_email: extractContactEmail(j.description || ""),
         description: cleanDesc,
         category: mapCategory(j.category || ""),
         tags: (j.tags || []).map((t: string) => decodeHtmlEntities(t).toLowerCase().trim()).filter(Boolean),
@@ -185,7 +205,7 @@ async function fetchArbeitnowJobs(): Promise<NormalizedJob[]> {
         title: cleanTitle,
         company_name: cleanCompany,
         company_domain: extractDomain(j.url),
-        company_email: null,
+        company_email: extractContactEmail(j.description || ""),
         description: cleanDesc,
         category: mapCategory(j.tags?.[0] || "general"),
         tags: (j.tags || []).map((t: string) => decodeHtmlEntities(t).toLowerCase().trim()).filter(Boolean),
@@ -275,7 +295,7 @@ async function fetchHackerNewsJobs(): Promise<NormalizedJob[]> {
         title,
         company_name: companyName,
         company_domain: null,
-        company_email: null,
+        company_email: extractContactEmail(cleanText),
         description: cleanText.slice(0, 10000),
         category: "software-development",
         tags,
@@ -302,27 +322,34 @@ async function fetchHackerNewsJobs(): Promise<NormalizedJob[]> {
 
 serve(async (req) => {
   const authHeader = req.headers.get("Authorization") ?? "";
-  const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-
-  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-  const isAuthorized =
-    (cronSecret && secureEqual(token, cronSecret)) ||
-    (serviceKey && secureEqual(token, serviceKey)) ||
-    (anonKey && secureEqual(token, anonKey)) ||
-    token.length >= 16; // internal pg_cron vault secret
-
-  if (!isAuthorized) {
-    return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 });
-  }
-
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+
   if (!supabaseUrl || !serviceKey) {
     return new Response(JSON.stringify({ error: "missing_config" }), { status: 503 });
   }
 
   const db = createClient(supabaseUrl, serviceKey);
+
+  let cronSecret = Deno.env.get("CRON_SECRET") ?? "";
+  if (!cronSecret) {
+    const { data: secRow } = await db
+      .from("_internal_secrets")
+      .select("value")
+      .eq("key", "cron_secret")
+      .maybeSingle();
+    if (secRow?.value) cronSecret = secRow.value as string;
+  }
+
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  const isAuthorized =
+    token.length > 0 &&
+    ((cronSecret && secureEqual(token, cronSecret)) ||
+      (serviceKey && secureEqual(token, serviceKey)));
+
+  if (!isAuthorized) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 });
+  }
 
   // 1. Auto-archive jobs older than 90 days with 0 active proposals
   const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();

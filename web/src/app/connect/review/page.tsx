@@ -92,14 +92,15 @@ export default async function ReviewProposalPage({
     );
   }
 
-  // Find the proposal by review_token
-  const { data: proposal } = await supabase
-    .from("connect_proposals")
-    .select("*")
-    .eq("review_token", token)
-    .maybeSingle();
+  // Secure token-scoped lookup via RPC (marks read receipt atomically)
+  const { data: rows, error: rpcErr } = await supabase.rpc(
+    "connect_proposal_by_review_token",
+    { p_token: token.trim() },
+  );
 
-  if (!proposal) {
+  const proposal = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+
+  if (!proposal || rpcErr) {
     return (
       <main className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
         <div className="max-w-md w-full rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
@@ -118,37 +119,9 @@ export default async function ReviewProposalPage({
     );
   }
 
-  // Auto-mark as viewed if not already marked
-  if (!proposal.is_viewed) {
-    await supabase
-      .from("connect_proposals")
-      .update({
-        is_viewed: true,
-        viewed_at: new Date().toISOString(),
-        status: proposal.status === "pending" ? "viewed" : proposal.status,
-      })
-      .eq("id", proposal.id);
-  }
-
-  // Fetch freelancer profile and job details
-  const [freelancerRes, jobRes] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("name, avatar_url")
-      .eq("id", proposal.from_user_id)
-      .maybeSingle(),
-    proposal.job_id
-      ? supabase
-          .from("connect_jobs")
-          .select("title, company_name, category, salary_min, salary_max")
-          .eq("id", proposal.job_id)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
-  ]);
-
-  const freelancerName = freelancerRes.data?.name || "Verified Freelancer";
-  const jobTitle = jobRes.data?.title || proposal.need_title || "Project Opportunity";
-  const companyName = jobRes.data?.company_name || proposal.client_name || "Your Company";
+  const freelancerName = proposal.freelancer_name || "Verified Freelancer";
+  const jobTitle = proposal.job_title || "Project Opportunity";
+  const companyName = proposal.job_company || proposal.client_name || "Your Company";
 
   return (
     <main className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6">
@@ -242,7 +215,7 @@ export default async function ReviewProposalPage({
           {/* CTA Actions */}
           <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center gap-3">
             <Link
-              href={`/signup?role=client&next=/app/messages?to=${encodeURIComponent(proposal.from_user_id)}`}
+              href={`/signup?role=client&next=/app/messages?to=${encodeURIComponent(proposal.freelancer_id || proposal.from_user_id || "")}`}
               className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-teal-700 px-6 py-4 text-sm font-bold text-white shadow-lg shadow-teal-700/20 hover:bg-teal-800 transition-all text-center"
             >
               <MessageSquare className="h-4 w-4" />
