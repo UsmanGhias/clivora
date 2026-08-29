@@ -86,8 +86,6 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
   }
 
-  const admin = createClient(supabaseUrl, serviceKey);
-
   let payload: PushBody;
   try {
     payload = await req.json();
@@ -102,6 +100,7 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: "user_uid required" }), { status: 400 });
   }
 
+  // Validate caller identity BEFORE creating privileged admin client
   if (bearer !== serviceKey) {
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
@@ -114,6 +113,8 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "Target is not authorized" }), { status: 403 });
     }
   }
+
+  const admin = createClient(supabaseUrl, serviceKey);
 
   const { data: tokenRows, error: tokenErr } = await admin
     .from("device_tokens")

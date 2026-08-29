@@ -1056,3 +1056,254 @@ export function emailsMatch(a: string, b: string) {
   return emailsEqual(a, b);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Odoo Social Media Marketing Automation (clivoraos.odoo.com)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type OdooSocialAccount = {
+  id: number;
+  name: string;
+  media_type: string;
+  is_media_disconnected: boolean;
+};
+
+export type OdooSocialPublishResult = {
+  ok: boolean;
+  postId?: number;
+  state?: string;
+  accountsPublished?: number[];
+  error?: string;
+};
+
+/**
+ * Fetch all configured and connected social media accounts from clivoraos.odoo.com
+ * (LinkedIn, Facebook, Instagram, Twitter/X, YouTube).
+ */
+export async function listOdooSocialAccounts(): Promise<{
+  accounts: OdooSocialAccount[];
+  error?: string;
+}> {
+  try {
+    const { cfg } = await loadOdooCfg("social");
+    if (!cfg) {
+      return { accounts: [], error: "Odoo Social configuration (clivoraos.odoo.com) not found" };
+    }
+    const uid = await authenticateOdoo(cfg);
+    const accounts = (await odooJsonRpc(cfg.url, "object", "execute_kw", [
+      cfg.db,
+      uid,
+      cfg.apiKey,
+      "social.account",
+      "search_read",
+      [[["is_media_disconnected", "=", false]]],
+      { fields: ["id", "name", "media_type", "is_media_disconnected"] },
+    ])) as OdooSocialAccount[];
+
+    return { accounts: accounts ?? [] };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { accounts: [], error: msg };
+  }
+}
+
+/**
+ * Attaches a base64 image to Odoo for social media posting (Odoo 19 uses ir.attachment.raw)
+ */
+export async function createOdooSocialImage(
+  cfg: OdooCfg,
+  uid: number,
+  imageBase64: string,
+  imageName = "clivora_social_share.png",
+): Promise<number | null> {
+  try {
+    const cleanB64 = imageBase64.replace(/^data:image\/\w+;base64,/, "").trim();
+    // 1. Create ir.attachment with raw binary
+    const attId = (await odooJsonRpc(cfg.url, "object", "execute_kw", [
+      cfg.db,
+      uid,
+      cfg.apiKey,
+      "ir.attachment",
+      "create",
+      [
+        {
+          name: imageName,
+          raw: cleanB64,
+          mimetype: "image/png",
+          res_model: "social.post",
+          type: "binary",
+        },
+      ],
+    ])) as number;
+
+    // 2. Create social.post.image linked to the attachment
+    const imgId = (await odooJsonRpc(cfg.url, "object", "execute_kw", [
+      cfg.db,
+      uid,
+      cfg.apiKey,
+      "social.post.image",
+      "create",
+      [
+        {
+          name: imageName,
+          attachment_id: attId,
+        },
+      ],
+    ])) as number;
+
+    return imgId;
+  } catch (e) {
+    console.error("[createOdooSocialImage] Error attaching image to Odoo:", e);
+    return null;
+  }
+}
+
+/**
+ * Publishes an announcement or job listing across all configured social media platforms
+ * in clivoraos.odoo.com (LinkedIn, Facebook, Instagram, Twitter/X, YouTube).
+ */
+export async function publishToOdooSocial(options: {
+  message: string;
+  twitterMessage?: string;
+  imageBase64?: string;
+  imageName?: string;
+  accountIds?: number[];
+  autoPublish?: boolean;
+}): Promise<OdooSocialPublishResult> {
+  try {
+    const { cfg } = await loadOdooCfg("social");
+    if (!cfg) {
+      return { ok: false, error: "Odoo Social configuration (clivoraos.odoo.com) not found" };
+    }
+    const uid = await authenticateOdoo(cfg);
+
+    let targetAccountIds = options.accountIds;
+    if (!targetAccountIds || targetAccountIds.length === 0) {
+      const { accounts } = await listOdooSocialAccounts();
+      targetAccountIds = accounts.map((a) => a.id);
+    }
+
+    if (targetAccountIds.length === 0) {
+      return { ok: false, error: "No active social media accounts connected in clivoraos.odoo.com" };
+    }
+
+    const baseMessage = options.message.trim();
+    const twitterMsg = (options.twitterMessage || baseMessage).slice(0, 280);
+
+    // Optional image attachment
+    const imageIds: number[] = [];
+    if (options.imageBase64) {
+      const imgId = await createOdooSocialImage(
+        cfg,
+        uid,
+        options.imageBase64,
+        options.imageName || "clivora_social_share.png",
+      );
+      if (imgId) imageIds.push(imgId);
+    }
+
+    const postValues: Record<string, unknown> = {
+      message: baseMessage,
+      facebook_message: baseMessage,
+      twitter_message: twitterMsg,
+      linkedin_message: baseMessage,
+      instagram_message: baseMessage,
+      is_split_per_media: false,
+      account_ids: [[6, 0, targetAccountIds]],
+      state: "draft",
+    };
+
+    if (imageIds.length > 0) {
+      postValues.image_ids = [[6, 0, imageIds]];
+    }
+
+    // Create the social.post record in Odoo
+    const postId = (await odooJsonRpc(cfg.url, "object", "execute_kw", [
+      cfg.db,
+      uid,
+      cfg.apiKey,
+      "social.post",
+      "create",
+      [postValues],
+    ])) as number;
+
+    // Immediately dispatch across all platforms if autoPublish is true (default)
+    if (options.autoPublish !== false) {
+      await odooJsonRpc(cfg.url, "object", "execute_kw", [
+        cfg.db,
+        uid,
+        cfg.apiKey,
+        "social.post",
+        "action_post",
+        [[postId]],
+      ]);
+    }
+
+    return {
+      ok: true,
+      postId,
+      state: options.autoPublish !== false ? "posted" : "draft",
+      accountsPublished: targetAccountIds,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { ok: false, error: msg };
+  }
+}
+
+/**
+ * Formats and broadcasts a CLIVORA remote job directly to social media channels
+ */
+export async function publishJobToSocial(job: {
+  title: string;
+  company_name: string;
+  category?: string | null;
+  salary_min?: number | null;
+  salary_max?: number | null;
+  currency?: string | null;
+  location?: string | null;
+  seo_slug?: string | null;
+  accountIds?: number[];
+  imageBase64?: string;
+  imageName?: string;
+}): Promise<OdooSocialPublishResult> {
+  const salaryText =
+    job.salary_min && job.salary_max
+      ? `$${job.salary_min.toLocaleString()} - $${job.salary_max.toLocaleString()} USD`
+      : job.salary_min
+        ? `$${job.salary_min.toLocaleString()} USD`
+        : "Competitive ($ USD)";
+
+  const categorySlug = job.category || "software-development";
+  const jobUrl = job.seo_slug
+    ? `https://clivora.io/jobs/${categorySlug}/${job.seo_slug}`
+    : "https://clivora.io/jobs";
+
+  const message = [
+    `🚀 NEW REMOTE ROLE: ${job.title} at ${job.company_name}`,
+    `💰 Compensation: ${salaryText}`,
+    `📍 Location: ${job.location || "Remote (Worldwide)"}`,
+    `⚡ 0% Platform Fees for Freelancers & Clients!`,
+    ``,
+    `👉 Review proposal details & apply: ${jobUrl}`,
+    ``,
+    `#RemoteJobs #Hiring #TechCareers #WorkFromAnywhere #Clivora #FreelanceOS #USD`,
+  ].join("\n");
+
+  const twitterMessage = [
+    `🚀 Remote Role: ${job.title} at ${job.company_name}`,
+    `💰 ${salaryText}`,
+    `⚡ 0% Platform Fee!`,
+    `👉 Apply: ${jobUrl}`,
+    `#RemoteWork #Clivora`,
+  ].join("\n");
+
+  return publishToOdooSocial({
+    message,
+    twitterMessage,
+    imageBase64: job.imageBase64,
+    imageName: job.imageName,
+    accountIds: job.accountIds,
+    autoPublish: true,
+  });
+}
+

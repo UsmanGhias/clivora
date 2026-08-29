@@ -25,10 +25,25 @@ serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
 
-  if (!serviceKey || !supabaseUrl || !cronSecret) {
+  if (!serviceKey || !supabaseUrl) {
     return new Response(JSON.stringify({ error: "Reminder service is not configured" }), { status: 503 });
+  }
+
+  const admin = createClient(supabaseUrl, serviceKey);
+
+  let cronSecret = Deno.env.get("CRON_SECRET") ?? "";
+  if (!cronSecret) {
+    const { data: secRow } = await admin
+      .from("_internal_secrets")
+      .select("value")
+      .eq("key", "cron_secret")
+      .maybeSingle();
+    if (secRow?.value) cronSecret = secRow.value as string;
+  }
+
+  if (!cronSecret) {
+    return new Response(JSON.stringify({ error: "Reminder secret is not configured" }), { status: 503 });
   }
 
   const auth = req.headers.get("Authorization") ?? "";
@@ -42,7 +57,6 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: "Email not configured (SMTP)" }), { status: 503 });
   }
 
-  const admin = createClient(supabaseUrl, serviceKey);
   const nowIso = new Date().toISOString();
 
   const { data: invoices, error } = await admin

@@ -48,6 +48,15 @@ type EmailBody = {
   wrapBrand?: boolean;
 };
 
+function secureEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
+
 serve(async (req) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
@@ -66,17 +75,38 @@ serve(async (req) => {
     );
   }
 
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const bearer = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!bearer) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
   }
 
-  const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
-    global: { headers: { Authorization: authHeader } },
-  });
-  const { data: userData, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !userData.user) {
-    return new Response(JSON.stringify({ error: "Invalid session" }), { status: 401 });
+  let cronSecret = Deno.env.get("CRON_SECRET") ?? "";
+  if (!cronSecret && serviceKey && supabaseUrl) {
+    const adminDb = createClient(supabaseUrl, serviceKey);
+    const { data: secRow } = await adminDb
+      .from("_internal_secrets")
+      .select("value")
+      .eq("key", "cron_secret")
+      .maybeSingle();
+    if (secRow?.value) cronSecret = secRow.value as string;
+  }
+
+  let senderUid: string | null = null;
+  const isServiceRole = Boolean(
+    (serviceKey && secureEqual(bearer, serviceKey)) ||
+    (cronSecret && secureEqual(bearer, cronSecret))
+  );
+
+  if (!isServiceRole) {
+    const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userData, error: userErr } = await userClient.auth.getUser();
+    if (userErr || !userData.user) {
+      return new Response(JSON.stringify({ error: "Invalid session" }), { status: 401 });
+    }
+    senderUid = userData.user.id;
   }
 
   let body: EmailBody;
@@ -97,15 +127,15 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: "Purpose not allowed" }), { status: 403 });
   }
 
-  if (purpose === "admin_notice") {
-    if (!serviceKey) {
+  if (purpose === "admin_notice" && !isServiceRole) {
+    if (!serviceKey || !senderUid) {
       return new Response(JSON.stringify({ error: "Admin email not configured" }), { status: 503 });
     }
     const adminCheck = createClient(supabaseUrl, serviceKey);
     const { data: profile } = await adminCheck
       .from("profiles")
       .select("role, account_type")
-      .eq("id", userData.user.id)
+      .eq("id", senderUid)
       .maybeSingle();
     const isAdmin = profile?.role === "admin" || profile?.account_type === "admin";
     if (!isAdmin) {
@@ -138,7 +168,7 @@ serve(async (req) => {
       await adminClient.from("email_send_log").insert({
         purpose,
         recipient: to,
-        sender_uid: userData.user.id,
+        sender_uid: senderUid || "00000000-0000-0000-0000-000000000000",
       });
     }
     return new Response(

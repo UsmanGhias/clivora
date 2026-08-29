@@ -60,6 +60,8 @@ export function ConnectApplyPanel() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [planOk, setPlanOk] = useState(false);
+  const [reviewUrl, setReviewUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const combinedText = useMemo(
     () => [coverLetter, approach, portfolioLinks, milestones].join("\n"),
@@ -257,20 +259,31 @@ export function ConnectApplyPanel() {
 
     // Dispatch background client notification email
     if (proposalId) {
-      void fetch("/api/connect/notify-client-proposal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          proposalId,
-          jobId: jobInfo?.id,
-          companyEmail: jobInfo?.company_email,
-          companyName: jobInfo?.company_name,
-          jobTitle: jobInfo?.title || need?.title,
-          amount: amount ? Number(amount) : 0,
-          timelineDays: timelineDays ? Number(timelineDays) : 7,
-          pitchMessage: messageParts.trim(),
-        }),
-      }).catch((e) => console.error("Client email notification error:", e));
+      void (async () => {
+        try {
+          const res = await fetch("/api/connect/notify-client-proposal", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              proposalId,
+              jobId: jobInfo?.id,
+              toUserId: targetUserId,
+              companyEmail: jobInfo?.company_email,
+              companyName: jobInfo?.company_name,
+              jobTitle: jobInfo?.title || need?.title,
+              amount: amount ? Number(amount) : 0,
+              timelineDays: timelineDays ? Number(timelineDays) : 7,
+              pitchMessage: messageParts.trim(),
+            }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (data?.reviewUrl) {
+            setReviewUrl(data.reviewUrl);
+          }
+        } catch (e) {
+          console.error("Client email notification error:", e);
+        }
+      })();
     }
 
     setBusy(false);
@@ -294,9 +307,39 @@ export function ConnectApplyPanel() {
         </h1>
         <p className="mt-2 text-sm text-text-secondary">
           (−{CONNECT_CREDIT_COSTS[mode === "contact" ? "contact" : "proposal"]} Connect credit)
-          The client can review your details privately. Contact info unlocks only after mutual
-          acceptance.
+          The hiring team is notified to review your proposal privately.
         </p>
+
+        {reviewUrl && (
+          <div className="mt-6 rounded-xl border border-border bg-slate-50 p-4 text-left">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              1-Click Client Review Link
+            </p>
+            <p className="mt-1 text-xs text-slate-600">
+              Share this link directly with the hiring manager or in external outreach. It tracks views automatically and lets the client review your bid with $0 platform fees.
+            </p>
+            <div className="mt-3 flex items-center gap-2">
+              <input
+                type="text"
+                readOnly
+                value={reviewUrl}
+                className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-mono text-slate-700 select-all"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  void navigator.clipboard.writeText(reviewUrl);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2500);
+                }}
+                className="rounded-lg bg-teal-700 px-3 py-2 text-xs font-bold text-white hover:bg-teal-800 transition-colors shrink-0"
+              >
+                {copied ? "Copied!" : "Copy Link"}
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Link
             href="/app/proposals"
