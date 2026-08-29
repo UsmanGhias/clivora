@@ -152,15 +152,20 @@ export function ConnectApplyPanel() {
       return;
     }
 
-    const toUserId = peerId || need?.client_user_id || jobInfo?.posted_by || user.id;
+    const targetUserId = peerId || need?.client_user_id || jobInfo?.posted_by || null;
 
-    if (!toUserId && !jobInfo) {
+    if (!targetUserId && !jobInfo) {
       setError("Missing recipient. Open this page from a Connect job card.");
       setBusy(false);
       return;
     }
 
     if (mode === "contact") {
+      if (!targetUserId) {
+        setError("This role accepts direct proposals. Please use the Submit Proposal tab.");
+        setBusy(false);
+        return;
+      }
       if (coverLetter.trim().length < 20) {
         setError("Add a short introduction (at least a couple of sentences).");
         setBusy(false);
@@ -176,7 +181,7 @@ export function ConnectApplyPanel() {
         .filter(Boolean)
         .join("");
       const { error: err } = await supabase.rpc("connect_send_request", {
-        p_to_user_id: toUserId,
+        p_to_user_id: targetUserId,
         p_message: contactMessage.trim(),
         p_target_need_id: needId || null,
       });
@@ -214,7 +219,7 @@ export function ConnectApplyPanel() {
         .from("connect_proposals")
         .insert({
           from_user_id: user.id,
-          to_user_id: toUserId,
+          to_user_id: targetUserId,
           job_id: jobInfo.id,
           amount: amount ? Number(amount) : 0,
           currency: "USD",
@@ -235,7 +240,7 @@ export function ConnectApplyPanel() {
       proposalId = pData?.id;
     } else {
       const { data: pRes, error: err } = await supabase.rpc("connect_submit_proposal", {
-        p_to_user_id: toUserId,
+        p_to_user_id: targetUserId || user.id,
         p_need_id: needId || null,
         p_amount: amount ? Number(amount) : 0,
         p_currency: "USD",
@@ -305,6 +310,52 @@ export function ConnectApplyPanel() {
           >
             Back to Connect
           </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!jobInfo && !need && !peerId) {
+    return (
+      <div className="space-y-6 pb-10">
+        <div>
+          <Link
+            href="/app/connect"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Connect
+          </Link>
+          <h1 className="mt-3 font-display text-2xl font-extrabold text-navy sm:text-3xl">
+            Submit a Proposal
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm text-text-secondary">
+            Proposals are attached to specific job briefs or client needs.
+          </p>
+        </div>
+
+        <div className="mx-auto max-w-2xl rounded-3xl border border-border bg-surface p-8 text-center shadow-xs space-y-4">
+          <div className="mx-auto h-14 w-14 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center">
+            <FileText className="h-7 w-7" />
+          </div>
+          <h2 className="text-xl font-bold text-navy">Choose an Open Job First</h2>
+          <p className="text-sm text-text-secondary max-w-md mx-auto leading-relaxed">
+            To submit a tailored proposal with milestones and pricing, browse our open remote roles or client briefs and click &quot;Apply ($0 Fee)&quot;.
+          </p>
+          <div className="pt-3 flex flex-wrap justify-center gap-3">
+            <Link
+              href="/app/connect?tab=jobs"
+              className="rounded-xl bg-teal-700 hover:bg-teal-800 px-5 py-2.5 text-sm font-bold text-white shadow-xs transition-colors"
+            >
+              Browse Connect Jobs
+            </Link>
+            <Link
+              href="/jobs"
+              className="rounded-xl border border-border bg-white px-5 py-2.5 text-sm font-semibold text-navy hover:bg-slate-50 transition-colors"
+            >
+              Browse 430+ Remote Jobs
+            </Link>
+          </div>
         </div>
       </div>
     );

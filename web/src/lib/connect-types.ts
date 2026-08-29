@@ -33,6 +33,11 @@ export type ConnectNeed = {
   is_open: boolean | null;
   moderation_status: string | null;
   created_at: string | null;
+  company_name?: string | null;
+  company_email?: string | null;
+  job_id?: string | null;
+  seo_slug?: string | null;
+  location?: string | null;
 };
 
 export type ConnectRequestRow = {

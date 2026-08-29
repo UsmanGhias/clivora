@@ -28,26 +28,69 @@ export default async function ReviewProposalPage({
   const sp = await searchParams;
   const token = sp.token;
 
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   if (!token) {
+    // If logged in, fetch their recent proposals
+    let recentProposals: Array<{ id: string; client_name?: string | null; amount?: number | null; created_at: string; review_token?: string | null }> = [];
+    if (user) {
+      const { data } = await supabase
+        .from("connect_proposals")
+        .select("id, client_name, amount, created_at, review_token")
+        .or(`to_user_id.eq.${user.id},from_user_id.eq.${user.id}`)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      recentProposals = data ?? [];
+    }
+
     return (
       <main className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-        <div className="max-w-md w-full rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <h1 className="text-xl font-bold text-slate-900">Missing Proposal Review Token</h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Please use the secure link sent to your email to review this candidate.
+        <div className="max-w-lg w-full rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm space-y-5">
+          <div className="mx-auto h-12 w-12 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center">
+            <Sparkles className="h-6 w-6" />
+          </div>
+          <h1 className="text-xl font-bold text-slate-900">Review Candidate Proposals</h1>
+          <p className="text-sm text-slate-600 max-w-sm mx-auto">
+            Hiring clients receive unique magic review links in their email notification when a freelancer submits a proposal.
           </p>
-          <Link
-            href="/connect"
-            className="mt-6 inline-block rounded-xl bg-teal-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-teal-800"
-          >
-            Go to Connect
-          </Link>
+
+          {recentProposals.length > 0 && (
+            <div className="text-left border-t border-slate-100 pt-4 space-y-2">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Your Recent Proposals</p>
+              <div className="space-y-1.5">
+                {recentProposals.map((p) => (
+                  <Link
+                    key={p.id}
+                    href={p.review_token ? `/connect/review?token=${p.review_token}` : "/app/proposals"}
+                    className="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-teal-300 hover:bg-teal-50/50 transition-colors text-xs font-semibold text-slate-800"
+                  >
+                    <span>{p.client_name || "Proposal"} · ${p.amount || 0} USD</span>
+                    <span className="text-teal-700">Review →</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="pt-2 flex flex-wrap justify-center gap-3">
+            <Link
+              href="/app/proposals"
+              className="rounded-xl bg-teal-700 hover:bg-teal-800 px-5 py-2.5 text-xs font-bold text-white shadow-xs transition-colors"
+            >
+              Open Proposals Portal
+            </Link>
+            <Link
+              href="/connect"
+              className="rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-5 py-2.5 text-xs font-semibold text-slate-700 transition-colors"
+            >
+              Go to Connect
+            </Link>
+          </div>
         </div>
       </main>
     );
   }
-
-  const supabase = await createClient();
 
   // Find the proposal by review_token
   const { data: proposal } = await supabase

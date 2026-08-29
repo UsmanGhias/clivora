@@ -1093,74 +1093,73 @@ export function ConnectBoard({
                 .map((n) => (
                 <article
                   key={n.id}
-                  className="rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-primary/40"
+                  className="rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-primary/40 flex flex-col justify-between"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-bold text-navy">{n.title || "Job"}</h3>
-                    <span className="rounded-lg bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-900">
-                      Open
-                    </span>
-                  </div>
-                  <p
-                    className={cn(
-                      "mt-2 text-sm text-text-secondary",
-                      expandedId === n.id ? "" : "line-clamp-3",
-                    )}
-                  >
-                    {n.summary || "Details in Connect"}
-                  </p>
-                  {n.summary && n.summary.length > 140 && (
-                    <button
-                      type="button"
-                      className="mt-1 text-xs font-semibold text-primary"
-                      onClick={() => setExpandedId(expandedId === n.id ? null : n.id)}
+                  <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        {n.company_name && (
+                          <span className="text-[11px] font-bold text-teal-700 uppercase tracking-wider block mb-0.5">
+                            {n.company_name} {n.location ? `· ${n.location}` : ""}
+                          </span>
+                        )}
+                        <h3 className="font-bold text-navy text-base">{n.title || "Job"}</h3>
+                      </div>
+                      <span className="rounded-lg bg-teal-50 border border-teal-200 px-2 py-0.5 text-[10px] font-bold uppercase text-teal-800 shrink-0">
+                        {n.job_id ? "$0 Fee" : "Open"}
+                      </span>
+                    </div>
+                    <p
+                      className={cn(
+                        "mt-2 text-sm text-text-secondary leading-relaxed",
+                        expandedId === n.id ? "" : "line-clamp-3",
+                      )}
                     >
-                      {expandedId === n.id ? "Show less" : "Full description"}
-                    </button>
-                  )}
-                  {n.budget_band && (
-                    <p className="mt-2 text-sm font-extrabold text-navy">
-                      Budget: {n.budget_band}
+                      {n.summary || "Details in Connect"}
                     </p>
-                  )}
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {skillsList(n.skills)
-                      .slice(0, 8)
-                      .map((s) => (
-                        <button
-                          key={s}
-                          type="button"
-                          onClick={() => setSkillFilter(s)}
-                          className="rounded-lg bg-background px-2 py-0.5 text-[11px] text-text-secondary hover:bg-primary/10 hover:text-primary-dark"
-                        >
-                          {s}
-                        </button>
-                      ))}
+                    {n.summary && n.summary.length > 140 && (
+                      <button
+                        type="button"
+                        className="mt-1 text-xs font-semibold text-primary hover:underline"
+                        onClick={() => setExpandedId(expandedId === n.id ? null : n.id)}
+                      >
+                        {expandedId === n.id ? "Show less" : "Full description"}
+                      </button>
+                    )}
+                    {n.budget_band && (
+                      <p className="mt-2 text-sm font-extrabold text-navy font-mono">
+                        Budget: {n.budget_band}
+                      </p>
+                    )}
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {skillsList(n.skills)
+                        .slice(0, 6)
+                        .map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => setSkillFilter(s)}
+                            className="rounded-lg bg-background px-2 py-0.5 text-[11px] text-text-secondary hover:bg-primary/10 hover:text-primary-dark"
+                          >
+                            {s}
+                          </button>
+                        ))}
+                    </div>
                   </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
+
+                  <div className="mt-5 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
                     <Link
                       href={
-                        signedIn && isProPlus
-                          ? `/app/connect/apply?needId=${encodeURIComponent(n.id)}&to=${encodeURIComponent(n.client_user_id)}&mode=contact`
-                          : "/pro?plan=pro_plus"
+                        n.job_id
+                          ? `/app/connect/apply?job_id=${encodeURIComponent(n.job_id)}&mode=proposal`
+                          : `/app/connect/apply?needId=${encodeURIComponent(n.id)}&to=${encodeURIComponent(n.client_user_id)}&mode=proposal`
                       }
-                      onClick={(e) => {
-                        if (n.client_user_id === myUserId) {
-                          e.preventDefault();
-                          return;
-                        }
-                        if (signedIn && isProPlus) return;
-                        e.preventDefault();
-                        contactGate(() => {
-                          window.location.href = `/app/connect/apply?needId=${encodeURIComponent(n.id)}&to=${encodeURIComponent(n.client_user_id)}&mode=contact`;
-                        });
-                      }}
                       className={cn(
-                        "rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white",
+                        "rounded-xl bg-teal-700 hover:bg-teal-800 px-4 py-2 text-xs font-bold text-white shadow-xs transition-colors",
                         n.client_user_id === myUserId && "pointer-events-none opacity-40",
                       )}
                     >
-                      Contact
+                      {n.job_id ? "Apply ($0 Fee)" : "Apply to Job"}
                     </Link>
                     <button
                       type="button"
