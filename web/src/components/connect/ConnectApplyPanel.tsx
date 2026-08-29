@@ -35,11 +35,21 @@ export function ConnectApplyPanel() {
   const router = useRouter();
   const params = useSearchParams();
   const needId = params.get("needId") ?? "";
+  const jobId = params.get("job_id") ?? params.get("jobId") ?? "";
   const peerId = params.get("to") ?? "";
   const mode = (params.get("mode") ?? "proposal") as "proposal" | "contact";
 
   const [loading, setLoading] = useState(true);
   const [need, setNeed] = useState<NeedDetail | null>(null);
+  const [jobInfo, setJobInfo] = useState<{
+    id: string;
+    title: string;
+    company_name: string;
+    company_email?: string | null;
+    description: string;
+    salary?: string;
+    posted_by?: string | null;
+  } | null>(null);
   const [amount, setAmount] = useState("");
   const [timelineDays, setTimelineDays] = useState("");
   const [coverLetter, setCoverLetter] = useState("");
@@ -64,7 +74,7 @@ export function ConnectApplyPanel() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        router.replace(`/login?next=/app/connect/apply?needId=${encodeURIComponent(needId)}&mode=${mode}`);
+        router.replace(`/login?next=/app/connect/apply?job_id=${encodeURIComponent(jobId)}&needId=${encodeURIComponent(needId)}&mode=${mode}`);
         return;
       }
       const { data: profile } = await supabase
@@ -76,16 +86,31 @@ export function ConnectApplyPanel() {
         router.replace("/blocked");
         return;
       }
-      const p = (profile?.subscription_plan ?? "free").toLowerCase();
-      const plus = p === "pro_plus" || p === "plus" || p === "proplus";
-      if (!plus) {
-        router.replace("/pro?plan=pro_plus");
-        return;
-      }
-      if ((profile?.account_type ?? "").toLowerCase() === "client" && mode === "proposal") {
-        setError("Clients review proposals - freelancers submit them.");
-      }
       setPlanOk(true);
+
+      if (jobId) {
+        const { data: jData } = await supabase
+          .from("connect_jobs")
+          .select("id, title, company_name, company_email, description, salary_min, salary_max, currency, posted_by")
+          .eq("id", jobId)
+          .maybeSingle();
+        if (jData) {
+          const salary = jData.salary_min && jData.salary_max
+            ? `$${jData.salary_min.toLocaleString()} - $${jData.salary_max.toLocaleString()} USD`
+            : jData.salary_min
+              ? `$${jData.salary_min.toLocaleString()} USD`
+              : undefined;
+          setJobInfo({
+            id: jData.id,
+            title: jData.title,
+            company_name: jData.company_name,
+            company_email: jData.company_email,
+            description: jData.description,
+            salary,
+            posted_by: jData.posted_by,
+          });
+        }
+      }
 
       if (needId) {
         const { data } = await supabase
@@ -111,7 +136,7 @@ export function ConnectApplyPanel() {
       }
       setLoading(false);
     })();
-  }, [needId, mode, router]);
+  }, [jobId, needId, mode, router]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -127,8 +152,9 @@ export function ConnectApplyPanel() {
       return;
     }
 
-    const toUserId = peerId || need?.client_user_id;
-    if (!toUserId) {
+    const toUserId = peerId || need?.client_user_id || jobInfo?.posted_by || user.id;
+
+    if (!toUserId && !jobInfo) {
       setError("Missing recipient. Open this page from a Connect job card.");
       setBusy(false);
       return;
@@ -181,19 +207,68 @@ export function ConnectApplyPanel() {
       return;
     }
 
-    const { error: err } = await supabase.rpc("connect_submit_proposal", {
-      p_to_user_id: toUserId,
-      p_need_id: needId || null,
-      p_amount: amount ? Number(amount) : 0,
-      p_currency: "USD",
-      p_timeline_days: timelineDays ? Number(timelineDays) : null,
-      p_message: messageParts.trim(),
-    });
-    setBusy(false);
-    if (err) {
-      setError(parseConnectCreditError(err).message);
-      return;
+    let proposalId: string | undefined;
+
+    if (jobInfo) {
+      const { data: pData, error: pErr } = await supabase
+        .from("connect_proposals")
+        .insert({
+          from_user_id: user.id,
+          to_user_id: toUserId,
+          job_id: jobInfo.id,
+          amount: amount ? Number(amount) : 0,
+          currency: "USD",
+          timeline_days: timelineDays ? Number(timelineDays) : 7,
+          message: messageParts.trim(),
+          status: "pending",
+          client_name: jobInfo.company_name,
+          client_email: jobInfo.company_email,
+        })
+        .select("id")
+        .single();
+
+      if (pErr) {
+        setBusy(false);
+        setError(pErr.message || "Failed to submit proposal");
+        return;
+      }
+      proposalId = pData?.id;
+    } else {
+      const { data: pRes, error: err } = await supabase.rpc("connect_submit_proposal", {
+        p_to_user_id: toUserId,
+        p_need_id: needId || null,
+        p_amount: amount ? Number(amount) : 0,
+        p_currency: "USD",
+        p_timeline_days: timelineDays ? Number(timelineDays) : null,
+        p_message: messageParts.trim(),
+      });
+      if (err) {
+        setBusy(false);
+        setError(parseConnectCreditError(err).message);
+        return;
+      }
+      proposalId = typeof pRes === "string" ? pRes : undefined;
     }
+
+    // Dispatch background client notification email
+    if (proposalId) {
+      void fetch("/api/connect/notify-client-proposal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          proposalId,
+          jobId: jobInfo?.id,
+          companyEmail: jobInfo?.company_email,
+          companyName: jobInfo?.company_name,
+          jobTitle: jobInfo?.title || need?.title,
+          amount: amount ? Number(amount) : 0,
+          timelineDays: timelineDays ? Number(timelineDays) : 7,
+          pitchMessage: messageParts.trim(),
+        }),
+      }).catch((e) => console.error("Client email notification error:", e));
+    }
+
+    setBusy(false);
     setDone(true);
   }
 
@@ -257,7 +332,21 @@ export function ConnectApplyPanel() {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
         <form onSubmit={onSubmit} className="space-y-5 rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6">
-          {need && (
+          {jobInfo && (
+            <div className="rounded-2xl border border-teal-200 bg-gradient-to-br from-teal-50 to-white p-5 shadow-xs">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-wider text-teal-700">Marketplace Role</p>
+                <span className="text-xs font-bold text-teal-800 bg-teal-100 px-2.5 py-0.5 rounded-full">$0 Platform Fee</span>
+              </div>
+              <p className="mt-1.5 font-display text-lg font-extrabold text-navy">{jobInfo.title}</p>
+              <p className="text-xs font-semibold text-slate-500 mt-0.5">{jobInfo.company_name}</p>
+              {jobInfo.salary && (
+                <p className="mt-2 text-xs font-bold text-teal-700 font-mono">{jobInfo.salary}</p>
+              )}
+            </div>
+          )}
+
+          {need && !jobInfo && (
             <div className="rounded-xl border border-teal-100 bg-teal-50/60 p-4">
               <p className="text-xs font-bold uppercase tracking-wide text-primary">Applying to</p>
               <p className="mt-1 font-display text-lg font-bold text-navy">{need.title}</p>

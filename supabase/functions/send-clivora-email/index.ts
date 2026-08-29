@@ -19,6 +19,7 @@ const ALLOWED = new Set([
   "task_completed",
   "welcome",
   "job_claim",
+  "proposal_received",
 ]);
 const MONTHLY_LIMIT = 3000;
 
@@ -40,6 +41,10 @@ type EmailBody = {
   companyName?: string;
   jobTitle?: string;
   claimUrl?: string;
+  amount?: number;
+  timelineDays?: number;
+  pitchMessage?: string;
+  reviewUrl?: string;
   wrapBrand?: boolean;
 };
 

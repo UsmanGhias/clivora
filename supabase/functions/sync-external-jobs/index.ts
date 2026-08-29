@@ -324,12 +324,12 @@ serve(async (req) => {
 
   const db = createClient(supabaseUrl, serviceKey);
 
-  // 1. Auto-expire jobs older than 30 days
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  // 1. Auto-archive jobs older than 90 days with 0 active proposals
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
   await db
     .from("connect_jobs")
-    .update({ status: "expired", is_public: false })
-    .lt("created_at", thirtyDaysAgo)
+    .update({ status: "archived", is_public: false })
+    .lt("created_at", ninetyDaysAgo)
     .eq("status", "published");
 
   // 2. Fetch from all sources in parallel
