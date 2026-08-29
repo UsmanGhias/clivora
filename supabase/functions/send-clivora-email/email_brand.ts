@@ -250,6 +250,45 @@ export function welcomeTemplate(userName: string, accountType: string): string {
   });
 }
 
+export function proposalReceivedTemplate(
+  companyOrClientName: string,
+  freelancerName: string,
+  jobTitle: string,
+  amount: number,
+  timelineDays: number,
+  pitchMessage: string,
+  reviewUrl: string,
+): string {
+  const cn = escapeHtml(companyOrClientName || "Hiring Team");
+  const fn = escapeHtml(freelancerName || "A Top Freelancer");
+  const jt = escapeHtml(jobTitle || "Your Project");
+  const msg = escapeHtml(pitchMessage || "Cover letter attached in review link.");
+
+  return wrapBrandedEmail({
+    preheader: `New proposal from ${fn} on CLIVORA ($0 Platform Fee)`,
+    title: `New proposal received for ${jt}`,
+    bodyHtml: `
+      <p>Hi ${cn},</p>
+      <p><strong>${fn}</strong> just submitted a tailored proposal for your open role <strong>${jt}</strong> on the CLIVORA Connect marketplace.</p>
+      <div style="margin:20px 0;padding:20px;background:${BRAND.surface};border-radius:14px;border:1px solid ${BRAND.border};">
+        <p style="margin:0 0 10px;font-size:16px;font-weight:700;color:${BRAND.navy};">Proposal Snapshot</p>
+        <p style="margin:4px 0;font-size:14px;color:#334155;"><strong>Candidate:</strong> ${fn}</p>
+        <p style="margin:4px 0;font-size:14px;color:#334155;"><strong>Proposed Bid:</strong> $${amount} USD</p>
+        <p style="margin:4px 0;font-size:14px;color:#334155;"><strong>Estimated Timeline:</strong> ${timelineDays} days</p>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid ${BRAND.border};">
+          <p style="margin:0 0 4px;font-size:12px;font-weight:700;text-transform:uppercase;color:${BRAND.muted};">Cover Note</p>
+          <p style="margin:0;font-size:14px;color:#334155;font-style:italic;">"${msg.slice(0, 300)}${msg.length > 300 ? "..." : ""}"</p>
+        </div>
+      </div>
+      <p>Click below to review the complete proposal, inspect portfolio items, and start a <strong>direct private chat with 0% platform fees</strong>:</p>`,
+    ctaLabel: "Review Proposal & Connect ($0 Fee)",
+    ctaUrl: reviewUrl,
+    secondaryCtaLabel: "Browse marketplace at clivora.io",
+    secondaryCtaUrl: BRAND.webUrl,
+    footerNote: "CLIVORA is 100% free with $0 platform fees on your negotiated deals. You and the freelancer keep 100% of your earnings.",
+  });
+}
+
 export function jobClaimTemplate(
   companyName: string,
   jobTitle: string,
@@ -300,8 +339,23 @@ export function renderTemplate(
     companyName?: string;
     jobTitle?: string;
     claimUrl?: string;
+    amount?: number;
+    timelineDays?: number;
+    pitchMessage?: string;
+    reviewUrl?: string;
   },
 ): string {
+  if (purpose === "proposal_received" && payload.jobTitle && payload.reviewUrl) {
+    return proposalReceivedTemplate(
+      payload.companyName ?? payload.clientName ?? "Hiring Team",
+      payload.freelancerName ?? "Candidate",
+      payload.jobTitle,
+      payload.amount ?? 0,
+      payload.timelineDays ?? 7,
+      payload.pitchMessage ?? "",
+      payload.reviewUrl,
+    );
+  }
   if (purpose === "client_invite" && payload.freelancerName && payload.clientName) {
     return clientInviteTemplate(payload.freelancerName, payload.clientName);
   }
