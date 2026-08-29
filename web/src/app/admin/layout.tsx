@@ -12,7 +12,8 @@ export const metadata: Metadata = {
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   try {
-    await requireAdmin();
+    // Validate that the user is an admin at AAL1 so AdminMfaGate can handle the 2FA step
+    await requireAdmin({ requireAal2: false });
   } catch (err) {
     // No session → show admin page login form (children)
     if (err instanceof AdminAuthError && err.status === 401) {
@@ -23,7 +24,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       );
     }
     // Signed in but not admin
-    if (err instanceof AdminAuthError && err.status === 403) {
+    if (err instanceof AdminAuthError && err.code === "ADMIN_REQUIRED") {
       return (
         <div className="flex min-h-screen items-center justify-center bg-slate-950 p-6 text-white">
           <div className="max-w-md rounded-2xl border border-white/10 bg-slate-900 p-8 text-center">
