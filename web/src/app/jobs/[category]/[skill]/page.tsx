@@ -4,7 +4,16 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { site } from "@/lib/site";
 import { cleanText } from "@/lib/clean-text";
-import { MapPin, Clock, DollarSign, Briefcase, ChevronRight } from "lucide-react";
+import {
+  MapPin,
+  Clock,
+  DollarSign,
+  Briefcase,
+  ChevronRight,
+  ArrowLeft,
+  CheckCircle2,
+  Building2,
+} from "lucide-react";
 
 const CATEGORIES = [
   "software-development",
@@ -15,11 +24,23 @@ const CATEGORIES = [
   "product",
   "customer-support",
   "management",
-  "general"
+  "general",
 ];
 
+const EXCLUDED_TAGS = new Set([
+  "hackernews",
+  "who-is-hiring",
+  "arbeitnow",
+  "remotive",
+  "source",
+  "external",
+]);
+
 function formatTitle(slug: string) {
-  return slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  return slug
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 }
 
 type Props = {
@@ -31,9 +52,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!CATEGORIES.includes(category)) return {};
 
   const decodedSkill = decodeURIComponent(skill);
-  const title = `Remote ${formatTitle(decodedSkill)} Jobs in ${formatTitle(category)} | CLIVORA`;
+  const title = `Remote ${formatTitle(decodedSkill)} Jobs in ${formatTitle(category)} — $0 Fee | CLIVORA`;
   const description = `Find the best remote ${formatTitle(decodedSkill)} jobs. Apply directly with $0 platform fees.`;
-  
+
   return {
     title,
     description,
@@ -43,11 +64,34 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 function formatSalary(min?: number, max?: number, currency: string = "USD") {
-  if (!min && !max) return "Competitive";
+  if (!min && !max) return "Competitive Pay";
   const curr = currency || "USD";
   if (min && !max) return `From ${min.toLocaleString()} ${curr}`;
   if (!min && max) return `Up to ${max.toLocaleString()} ${curr}`;
   return `${min?.toLocaleString()} - ${max?.toLocaleString()} ${curr}`;
+}
+
+function getInitials(name: string): string {
+  const clean = cleanText(name).trim();
+  if (!clean) return "CL";
+  const parts = clean.split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return clean.slice(0, 2).toUpperCase();
+}
+
+function getAvatarGradient(name: string): string {
+  const gradients = [
+    "from-teal-500 to-emerald-600",
+    "from-blue-600 to-cyan-600",
+    "from-indigo-600 to-violet-600",
+    "from-slate-700 to-slate-900",
+    "from-emerald-600 to-teal-700",
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash += name.charCodeAt(i);
+  return gradients[Math.abs(hash) % gradients.length];
 }
 
 export default async function SkillPage({ params }: Props) {
@@ -74,86 +118,126 @@ export default async function SkillPage({ params }: Props) {
   const skillName = formatTitle(decodedSkill);
 
   return (
-    <main className="mx-auto max-w-7xl px-5 py-12 lg:px-8">
-      <div className="mb-8 flex items-center gap-2 text-sm font-medium text-slate-500">
-        <Link href="/jobs" className="hover:text-[#0F766E]">All Jobs</Link>
-        <span>/</span>
-        <Link href={`/jobs/${category}`} className="hover:text-[#0F766E]">{catName}</Link>
-        <span>/</span>
-        <span className="text-slate-800">{skillName}</span>
-      </div>
-      
-      <div className="mb-12">
-        <h1 className="text-4xl font-bold tracking-tight text-[#0F172A] sm:text-5xl">
-          Remote {skillName} Jobs
-        </h1>
-        <p className="mt-4 text-lg text-slate-600">
-          Browse the latest remote opportunities for {skillName} professionals in {catName}.
-        </p>
-      </div>
+    <main className="min-h-screen bg-slate-50/50 py-10">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-6 flex items-center gap-2 text-xs font-semibold text-slate-500">
+          <Link href="/jobs" className="hover:text-teal-700">All Jobs</Link>
+          <span>/</span>
+          <Link href={`/jobs/${category}`} className="hover:text-teal-700">{catName}</Link>
+          <span>/</span>
+          <span className="text-slate-900">{skillName}</span>
+        </div>
 
-      <div className="grid gap-4">
-        {jobs && jobs.length > 0 ? (
-          jobs.map((job) => (
-            <Link
-              key={job.id}
-              href={`/jobs/view/${job.seo_slug}`}
-              className="group flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-6 transition-shadow hover:shadow-md sm:flex-row sm:items-center"
-            >
-              <div className="flex-1 space-y-3">
-                <div>
-                  <h2 className="text-xl font-semibold text-[#0F172A] group-hover:text-[#0F766E]">
-                    {cleanText(job.title)}
-                  </h2>
-                  <p className="text-slate-600">{cleanText(job.company_name)}</p>
-                </div>
-                
-                <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-500">
-                  {job.location && (
-                    <div className="flex items-center gap-1.5">
-                      <MapPin className="h-4 w-4" />
-                      {cleanText(job.location)}
-                    </div>
-                  )}
-                  <div className="flex items-center gap-1.5">
-                    <DollarSign className="h-4 w-4" />
-                    {formatSalary(job.salary_min, job.salary_max, job.currency)}
-                  </div>
-                  {job.job_type && (
-                    <div className="flex items-center gap-1.5 capitalize">
-                      <Briefcase className="h-4 w-4" />
-                      {job.job_type.replace('_', ' ')}
-                    </div>
-                  )}
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="h-4 w-4" />
-                    {new Date(job.created_at).toLocaleDateString()}
-                  </div>
-                </div>
+        <div className="mb-10">
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+            Remote {skillName} Jobs <span className="text-teal-600">— $0 Fee</span>
+          </h1>
+          <p className="mt-3 text-base text-slate-600">
+            Browse remote opportunities for {skillName} specialists in {catName}. Zero commission, direct client contracts.
+          </p>
+        </div>
 
-                {job.tags && job.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {job.tags.slice(0, 5).map((tag: string) => (
-                      <span key={tag} className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
-                        {cleanText(tag)}
-                      </span>
-                    ))}
-                    {job.tags.length > 5 && (
-                      <span className="text-xs text-slate-500">+{job.tags.length - 5} more</span>
-                    )}
+        <div className="space-y-4">
+          {jobs && jobs.length > 0 ? (
+            jobs.map((job) => {
+              const displayTags = (job.tags || [])
+                .filter((t: string) => !EXCLUDED_TAGS.has(t.toLowerCase()))
+                .slice(0, 4);
+
+              const companyInitials = getInitials(job.company_name);
+              const avatarGradient = getAvatarGradient(job.company_name);
+
+              return (
+                <Link
+                  key={job.id}
+                  href={`/jobs/view/${job.seo_slug}`}
+                  className="group relative flex flex-col justify-between gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-xs transition-all hover:-translate-y-0.5 hover:border-teal-500/80 hover:shadow-md md:flex-row md:items-center"
+                >
+                  <div className="flex items-start gap-4">
+                    <div
+                      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${avatarGradient} text-base font-bold text-white shadow-xs`}
+                    >
+                      {companyInitials}
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-lg font-bold text-slate-900 transition-colors group-hover:text-teal-700">
+                          {cleanText(job.title)}
+                        </h2>
+                        <span className="inline-flex items-center gap-1 rounded-md bg-teal-50 px-2 py-0.5 text-[11px] font-semibold text-teal-700 border border-teal-200/60">
+                          <CheckCircle2 className="h-3 w-3 text-teal-600" />
+                          $0 Fee
+                        </span>
+                      </div>
+
+                      <p className="text-sm font-medium text-slate-600">
+                        {cleanText(job.company_name)}
+                      </p>
+
+                      <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-slate-500">
+                        {job.location && (
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                            <span>{cleanText(job.location)}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1 font-semibold text-slate-700">
+                          <DollarSign className="h-3.5 w-3.5 text-emerald-600" />
+                          <span>{formatSalary(job.salary_min, job.salary_max, job.currency)}</span>
+                        </div>
+                        {job.job_type && (
+                          <div className="flex items-center gap-1 capitalize">
+                            <Briefcase className="h-3.5 w-3.5 text-slate-400" />
+                            <span>{job.job_type.replace("_", " ")}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3.5 w-3.5 text-slate-400" />
+                          <span>{new Date(job.created_at).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+
+                      {displayTags.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {displayTags.map((tag: string) => (
+                            <span
+                              key={tag}
+                              className="rounded-md bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-600"
+                            >
+                              {cleanText(tag)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
-              <div className="hidden sm:block">
-                <ChevronRight className="h-6 w-6 text-slate-400 group-hover:text-[#0F766E]" />
-              </div>
-            </Link>
-          ))
-        ) : (
-          <div className="py-12 text-center text-slate-500">
-            No jobs found for {skillName} at the moment.
-          </div>
-        )}
+
+                  <div className="flex shrink-0 items-center justify-end gap-3 pt-2 md:pt-0">
+                    <span className="inline-flex items-center gap-1 rounded-xl bg-teal-50 px-4 py-2 text-xs font-bold text-teal-700 transition-colors group-hover:bg-teal-600 group-hover:text-white">
+                      Apply Role
+                      <ChevronRight className="h-4 w-4" />
+                    </span>
+                  </div>
+                </Link>
+              );
+            })
+          ) : (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
+              <Building2 className="mx-auto h-10 w-10 text-slate-400" />
+              <h3 className="mt-3 text-base font-semibold text-slate-900">No jobs found for {skillName}</h3>
+              <p className="mt-1 text-sm text-slate-500">
+                Try browsing other skills or explore the main job board.
+              </p>
+              <Link
+                href="/jobs"
+                className="mt-4 inline-flex items-center gap-1 rounded-xl bg-teal-600 px-4 py-2 text-xs font-semibold text-white hover:bg-teal-700"
+              >
+                Browse All Jobs
+              </Link>
+            </div>
+          )}
+        </div>
       </div>
     </main>
   );
