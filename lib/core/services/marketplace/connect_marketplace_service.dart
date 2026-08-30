@@ -14,6 +14,34 @@ import '../../../data/providers/app_providers.dart';
 import '../sync_outbox_service.dart';
 import 'connect_credits.dart';
 
+String cleanJobText(dynamic raw) {
+  if (raw == null) return '';
+  var s = raw.toString();
+  s = s.replaceAll(RegExp(r'<style[^>]*>[\s\S]*?</style>', caseSensitive: false), '');
+  s = s.replaceAll(RegExp(r'<script[^>]*>[\s\S]*?</script>', caseSensitive: false), '');
+  s = s.replaceAll(RegExp(r'<li>', caseSensitive: false), '\n• ');
+  s = s.replaceAll(RegExp(r'</li>', caseSensitive: false), '');
+  s = s.replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n');
+  s = s.replaceAll(RegExp(r'</(p|div|h1|h2|h3|h4|h5|h6|tr|table|ul|ol)>', caseSensitive: false), '\n\n');
+  s = s.replaceAll(RegExp(r'<[^>]+>'), ' ');
+  s = s.replaceAll('&amp;', '&');
+  s = s.replaceAll('&lt;', '<');
+  s = s.replaceAll('&gt;', '>');
+  s = s.replaceAll('&quot;', '"');
+  s = s.replaceAll('&#x27;', "'");
+  s = s.replaceAll('&#39;', "'");
+  s = s.replaceAll('&apos;', "'");
+  s = s.replaceAll('&#x2F;', '/');
+  s = s.replaceAll('&#47;', '/');
+  s = s.replaceAll('&nbsp;', ' ');
+  s = s.replaceAll('&bull;', '•');
+  s = s.replaceAll('&middot;', '·');
+  s = s.replaceAll(RegExp(r'[\u2014\u2013]'), '-');
+  s = s.replaceAll(RegExp(r'[ \t]+'), ' ');
+  s = s.replaceAll(RegExp(r'\n\s*\n\s*\n+'), '\n\n');
+  return s.trim();
+}
+
 final connectMarketplaceServiceProvider = Provider<ConnectMarketplaceService>((ref) {
   return ConnectMarketplaceService(ref);
 });
@@ -231,24 +259,24 @@ class ConnectMarketplaceService {
         final rawTags = row['tags'];
         List<dynamic> skills = [];
         if (rawTags is List && rawTags.isNotEmpty) {
-          skills = rawTags;
+          skills = rawTags.map((t) => cleanJobText(t)).toList();
         } else if (row['category'] != null) {
-          skills = [row['category'].toString()];
+          skills = [cleanJobText(row['category'])];
         }
 
         combined.add({
           'id': row['id'],
           'client_user_id': row['posted_by'] ?? '00000000-0000-0000-0000-000000000000',
-          'title': row['title'] ?? 'Remote Role',
-          'summary': row['description'] ?? '',
+          'title': cleanJobText(row['title'] ?? 'Remote Role'),
+          'summary': cleanJobText(row['description'] ?? ''),
           'skills': skills,
           'budget_band': budgetBand,
           'created_at': row['created_at'],
           'moderation_status': 'approved',
           'is_open': true,
-          'company_name': row['company_name'],
+          'company_name': cleanJobText(row['company_name']),
           'company_email': row['company_email'],
-          'location': row['location'] ?? 'Remote',
+          'location': cleanJobText(row['location'] ?? 'Remote'),
           'seo_slug': row['seo_slug'],
           'category': row['category'],
           'is_crawled_job': true,

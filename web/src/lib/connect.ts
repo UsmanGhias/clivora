@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { cleanText } from "@/lib/clean-text";
 import type { ConnectNeed, ConnectProfile, ConnectRequestRow } from "@/lib/connect-types";
 
 export type { ConnectNeed, ConnectProfile, ConnectRequestRow } from "@/lib/connect-types";
@@ -73,14 +74,14 @@ export async function listPublicConnectNeeds(search?: string) {
     return {
       id: j.id,
       client_user_id: j.posted_by || "00000000-0000-0000-0000-000000000000",
-      title: j.title || "Remote Role",
-      summary: j.description || "",
-      skills: j.tags && j.tags.length > 0 ? j.tags : [j.category || "General"],
+      title: cleanText(j.title) || "Remote Role",
+      summary: cleanText(j.description) || "",
+      skills: j.tags && j.tags.length > 0 ? j.tags.map((t: string) => cleanText(t)) : [j.category || "General"],
       budget_band: budget,
       is_open: true,
       moderation_status: "approved",
       created_at: j.created_at,
-      company_name: j.company_name,
+      company_name: cleanText(j.company_name),
       company_email: j.company_email,
       job_id: j.id,
       seo_slug: j.seo_slug,

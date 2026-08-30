@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { site } from "@/lib/site";
 import { cleanText } from "@/lib/clean-text";
+import { JobStructuredDescription } from "@/components/jobs/JobStructuredDescription";
 import {
   MapPin,
   Clock,
@@ -247,12 +248,9 @@ export default async function JobViewPage({ params }: Props) {
               </div>
             </div>
 
-            {/* Description Card */}
-            <div className="rounded-3xl border border-slate-200/90 bg-white p-7 shadow-xs">
-              <h2 className="text-lg font-bold text-slate-900">Job Overview & Requirements</h2>
-              <div className="mt-5 prose prose-slate max-w-none text-sm text-slate-700 leading-relaxed whitespace-pre-line">
-                {cleanDescription}
-              </div>
+            {/* Description Sections */}
+            <div className="space-y-6">
+              <JobStructuredDescription rawDescription={job.description} />
             </div>
           </div>
 
