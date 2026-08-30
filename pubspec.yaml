@@ -1,7 +1,7 @@
 name: clivora
 description: CLIVORA - Business Operating System for Freelancers and Agencies
 publish_to: 'none'
-version: 5.3.12+542
+version: 5.3.18+580
 
 environment:
   sdk: ^3.12.0
