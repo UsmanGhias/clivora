@@ -202,19 +202,132 @@ class ConnectMarketplaceService {
     try {
       await SupabaseAuthHelper.refreshSessionIfNeeded();
     } catch (_) {}
+
+    final List<Map<String, dynamic>> combined = [];
+
+    // 1. Fetch live published jobs from connect_jobs (530+ live listings, $0 platform fees)
     try {
-      final rows = await c
+      final jobRows = await c
+          .from('connect_jobs')
+          .select(
+            'id,title,company_name,company_domain,company_email,description,category,tags,salary_min,salary_max,currency,location,job_type,seo_slug,posted_by,created_at',
+          )
+          .eq('is_public', true)
+          .eq('status', 'published')
+          .order('created_at', ascending: false)
+          .limit(300);
+
+      for (final j in (jobRows as List)) {
+        final row = Map<String, dynamic>.from(j as Map);
+        final minSal = row['salary_min'];
+        final maxSal = row['salary_max'];
+        String budgetBand = 'Competitive (\$ USD)';
+        if (minSal != null && maxSal != null) {
+          budgetBand = '\$$minSal - \$$maxSal USD';
+        } else if (minSal != null) {
+          budgetBand = '\$$minSal USD';
+        }
+
+        final rawTags = row['tags'];
+        List<dynamic> skills = [];
+        if (rawTags is List && rawTags.isNotEmpty) {
+          skills = rawTags;
+        } else if (row['category'] != null) {
+          skills = [row['category'].toString()];
+        }
+
+        combined.add({
+          'id': row['id'],
+          'client_user_id': row['posted_by'] ?? '00000000-0000-0000-0000-000000000000',
+          'title': row['title'] ?? 'Remote Role',
+          'summary': row['description'] ?? '',
+          'skills': skills,
+          'budget_band': budgetBand,
+          'created_at': row['created_at'],
+          'moderation_status': 'approved',
+          'is_open': true,
+          'company_name': row['company_name'],
+          'company_email': row['company_email'],
+          'location': row['location'] ?? 'Remote',
+          'seo_slug': row['seo_slug'],
+          'category': row['category'],
+          'is_crawled_job': true,
+        });
+      }
+    } catch (e) {
+      debugPrint('[browseNeeds] connect_jobs fetch error: $e');
+    }
+
+    // 2. Fetch community needs from connect_need_posts (if accessible)
+    try {
+      final needRows = await c
           .from('connect_need_posts')
           .select('id,client_user_id,title,summary,skills,budget_band,created_at,moderation_status,is_open')
           .eq('is_open', true)
           .eq('moderation_status', 'approved')
           .order('created_at', ascending: false)
           .limit(50);
-      return (rows as List).cast<Map<String, dynamic>>();
-    } catch (e) {
-      debugPrint('browseNeeds failed: $e');
-      return [];
+
+      for (final n in (needRows as List)) {
+        final row = Map<String, dynamic>.from(n as Map);
+        row['is_crawled_job'] = false;
+        combined.add(row);
+      }
+    } catch (_) {
+      // Ignored if user does not have Pro Plus to read connect_need_posts
     }
+
+    return combined;
+  }
+
+  /// Submits a proposal to a live remote job with $0 platform fee
+  Future<String?> submitJobProposal({
+    required String jobId,
+    required String message,
+    String? companyName,
+    String? companyEmail,
+    double amount = 0,
+    int timelineDays = 7,
+  }) async {
+    final auth = await _requireAuthedClient();
+    final c = auth.client;
+    final uid = auth.uid;
+
+    final inserted = await c.from('connect_proposals').insert({
+      'from_user_id': uid,
+      'job_id': jobId,
+      'amount': amount,
+      'currency': 'USD',
+      'timeline_days': timelineDays,
+      'message': message.trim(),
+      'status': 'pending',
+      'client_name': companyName,
+      'client_email': companyEmail,
+    }).select('id, review_token').single();
+
+    final proposalId = inserted['id'] as String?;
+    final reviewToken = inserted['review_token'] as String? ?? proposalId;
+
+    if (companyEmail != null && companyEmail.trim().isNotEmpty) {
+      try {
+        await c.functions.invoke('send-clivora-email', body: {
+          'to': companyEmail.trim(),
+          'subject': 'New proposal on CLIVORA (\$0 Platform Fee)',
+          'purpose': 'proposal_received',
+          'companyName': companyName ?? 'Hiring Team',
+          'freelancerName': 'CLIVORA Candidate',
+          'jobTitle': 'Remote Role',
+          'amount': amount,
+          'timelineDays': timelineDays,
+          'pitchMessage': message.trim(),
+          'reviewUrl': 'https://clivora.io/connect/review?token=$reviewToken',
+        });
+      } catch (err) {
+        debugPrint('[submitJobProposal] email notification note: $err');
+      }
+    }
+
+    return proposalId;
   }
 
   Future<Map<String, dynamic>?> myListing() async {

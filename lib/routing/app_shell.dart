@@ -37,9 +37,9 @@ class AppShell extends ConsumerWidget {
   static const _freelancerBaseTabs = [
     _NavItem('/dashboard', Icons.home_outlined, Icons.home_rounded, 'Home'),
     _NavItem('/customers', Icons.groups_outlined, Icons.groups, 'Clients'),
-    _NavItem('/more', Icons.hub_outlined, Icons.hub, 'Hub'),
+    _NavItem('/connect', Icons.travel_explore_outlined, Icons.travel_explore, 'Connect', connectBadge: true),
     _NavItem('/invoices', Icons.receipt_long_outlined, Icons.receipt_long, 'Billing'),
-    _NavItem('/menu', Icons.apps_outlined, Icons.apps, 'More'),
+    _NavItem('/more', Icons.hub_outlined, Icons.hub, 'Hub'),
   ];
 
   /// Pro Plus: Connect uses v3.9.6 travel_explore logo (both roles).

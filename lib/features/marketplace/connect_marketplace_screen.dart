@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/auth/auth_service.dart';
 import '../../core/auth/user_roles.dart';
 import '../../core/cloud/supabase_auth_helper.dart';
-import '../../core/constants/pro_pricing.dart';
 import '../../core/services/marketplace/connect_marketplace_service.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
@@ -39,8 +38,6 @@ class _ConnectMarketplaceScreenState
   String _inboxFilter = 'all'; // all | pending | accepted | declined
   String? _categoryFilter; // null = all categories
   bool _showSavedOnly = false;
-
-  bool _hasConnectAccess(WidgetRef ref) => ref.read(isProPlusProvider);
 
   @override
   void initState() {
@@ -86,13 +83,6 @@ class _ConnectMarketplaceScreenState
   }
 
   Future<void> _reload() async {
-    if (!_hasConnectAccess(ref)) {
-      setState(() {
-        _loading = false;
-        _error = null;
-      });
-      return;
-    }
     setState(() {
       _loading = true;
       _error = null;
@@ -158,19 +148,21 @@ class _ConnectMarketplaceScreenState
         onPressed: _loading ? null : _reload,
         icon: const Icon(Icons.refresh),
       ),
-      body: !hasAccess
-          ? const _ConnectGate()
-          : Column(
-              children: [
-                const _ConnectCreditsBanner(),
-                _QuickActionsRow(
-                  isClient: isClient,
-                  savedCount: _savedIds.length,
-                  onListing: () => context.push('/connect/listing'),
-                  onPostJob: () => context.push('/connect/need'),
-                  onSaved: _showSaved,
-                  onInbox: () => _tabs.animateTo(2),
-                ),
+      body: Column(
+        children: [
+          if (hasAccess) const _ConnectCreditsBanner(),
+          _QuickActionsRow(
+            isClient: isClient,
+            savedCount: _savedIds.length,
+            onListing: () => hasAccess
+                ? context.push('/connect/listing')
+                : context.push('/upgrade'),
+            onPostJob: () => hasAccess
+                ? context.push('/connect/need')
+                : context.push('/upgrade'),
+            onSaved: _showSaved,
+            onInbox: () => _tabs.animateTo(2),
+          ),
                 TabBar(
                   controller: _tabs,
                   labelColor: scheme.primary,
@@ -429,26 +421,44 @@ class _ConnectMarketplaceScreenState
   }
 
   Future<void> _contactNeed(Map<String, dynamic> row) async {
+    final isCrawled = row['is_crawled_job'] == true;
+    final companyName = row['company_name'] as String?;
     final message = await _askMessage(
-      'Pitch your fit for this need. Stay anonymous for now.',
+      isCrawled
+          ? 'Pitch your fit for ${companyName ?? 'this role'}. Keep 100% of your earnings (\$0 Platform Fee).'
+          : 'Pitch your fit for this need. Stay anonymous for now.',
     );
     if (message == null || message.isEmpty) return;
     try {
-      await ref
-          .read(connectMarketplaceServiceProvider)
-          .sendContactRequest(
-            toUserId: row['client_user_id'] as String,
-            targetNeedId: row['id'] as String?,
-            message: message,
-          );
-      await ref
-          .read(connectMarketplaceServiceProvider)
-          .logConnectEvent('connect_need_pitch_sent');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Pitch sent anonymously.')),
+      final svc = ref.read(connectMarketplaceServiceProvider);
+      if (isCrawled) {
+        await svc.submitJobProposal(
+          jobId: row['id'] as String,
+          message: message,
+          companyName: companyName,
+          companyEmail: row['company_email'] as String?,
         );
-        await _reload();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Proposal submitted! Hiring team will receive review details.'),
+            ),
+          );
+          await _reload();
+        }
+      } else {
+        await svc.sendContactRequest(
+          toUserId: row['client_user_id'] as String,
+          targetNeedId: row['id'] as String?,
+          message: message,
+        );
+        await svc.logConnectEvent('connect_need_pitch_sent');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Pitch sent anonymously.')),
+          );
+          await _reload();
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -464,7 +474,7 @@ class _ConnectMarketplaceScreenState
     return showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Send Connect request'),
+        title: const Text('Submit proposal'),
         content: TextField(
           controller: ctrl,
           maxLines: 4,
@@ -477,7 +487,7 @@ class _ConnectMarketplaceScreenState
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-            child: const Text('Send'),
+            child: const Text('Submit'),
           ),
         ],
       ),
@@ -522,22 +532,24 @@ class _ConnectMarketplaceScreenState
     required VoidCallback onApply,
   }) async {
     final title = row['title'] as String? ?? 'Job';
+    final company = row['company_name'] as String? ?? '';
+    final loc = row['location'] as String? ?? row['location_label'] as String?;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => _ConnectDetailSheet(
         title: title,
-        subtitle: '',
+        subtitle: company.isNotEmpty ? company : 'CLIVORA Connect',
         description: row['summary'] as String? ?? '',
         skills: _stringList(row['skills']),
         moneyLabel: row['budget_band'] as String? ?? 'Negotiable',
-        moneyCaption: 'Budget',
-        location: row['location_label'] as String?,
+        moneyCaption: 'Compensation',
+        location: loc,
         avgRating: null,
         reviewCount: null,
         verified: false,
-        ctaLabel: canApply ? 'Apply' : null,
+        ctaLabel: canApply ? 'Apply (\$0 Platform Fee)' : null,
         onCta: canApply
             ? () {
                 Navigator.pop(ctx);
@@ -548,113 +560,6 @@ class _ConnectMarketplaceScreenState
     );
   }
 }
-
-class _ConnectGate extends ConsumerWidget {
-  const _ConnectGate();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final scheme = Theme.of(context).colorScheme;
-    final user = ref.watch(authStateProvider).valueOrNull;
-    final guest = user == null || isGuestUser(user);
-    final bodyStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-      color: scheme.onSurface.withValues(alpha: 0.7),
-      height: 1.4,
-    );
-
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.hub_outlined, size: 56, color: scheme.primary),
-            const SizedBox(height: 14),
-            Text(
-              'Buy Pro Plus for monthly Connect credits',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'A private marketplace where freelancers list services and clients post needs. '
-              'Browse matches, send requests, and message after both sides accept.',
-              style: bodyStyle,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: _teal.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _teal.withValues(alpha: 0.28)),
-              ),
-              child: Text(
-                '\$0 platform fee on negotiated rates. Keep 100% of what you agree.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: _teal,
-                  fontWeight: FontWeight.w700,
-                  height: 1.35,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              guest
-                  ? 'Create a free account, then upgrade to Pro Plus '
-                      '(${ProPricing.plusMonthlyLabel}/mo) for 100 monthly Connect credits (contact, proposals, posting).'
-                  : 'Connect is included with Pro Plus (${ProPricing.plusMonthlyLabel}/mo) and appears as a bottom tab.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: scheme.onSurface.withValues(alpha: 0.65),
-                height: 1.35,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 18),
-            if (guest) ...[
-              FilledButton.icon(
-                onPressed: () => context.push('/signup'),
-                icon: const Icon(Icons.person_add_outlined),
-                label: Text(
-                  'Sign up, then get Pro Plus · ${ProPricing.plusMonthlyLabel}',
-                ),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton(
-                onPressed: () => context.push('/login'),
-                child: const Text('Already have an account? Sign in'),
-              ),
-              const SizedBox(height: 4),
-              TextButton(
-                onPressed: () => context.push('/signup'),
-                child: const Text('After signup, open Upgrade for Pro Plus'),
-              ),
-            ] else ...[
-              FilledButton.icon(
-                onPressed: () => context.push('/upgrade'),
-                icon: const Icon(Icons.lock_open_outlined),
-                label: Text(
-                  'Buy Pro Plus · ${ProPricing.plusMonthlyLabel}/mo',
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () => context.push('/upgrade'),
-                child: const Text('Compare Pro and Pro Plus plans'),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 
 class _ConnectCreditsBanner extends ConsumerStatefulWidget {
   const _ConnectCreditsBanner();
@@ -1282,11 +1187,24 @@ class _NeedFeedRow extends StatelessWidget {
                         fontSize: 14,
                       ),
                     ),
+                    if (row['company_name'] != null && (row['company_name'] as String).isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '${row['company_name']}${row['location'] != null ? ' · ${row['location']}' : ''}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: onSurface.withValues(alpha: 0.65),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                     if (summary.isNotEmpty) ...[
                       const SizedBox(height: 3),
                       Text(
                         summary,
-                        maxLines: 3,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: onSurface.withValues(alpha: 0.68),
@@ -1296,15 +1214,35 @@ class _NeedFeedRow extends StatelessWidget {
                       ),
                     ],
                     const SizedBox(height: 4),
-                    Text(
-                      budget,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _teal,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          budget,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: _teal,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: _teal.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            '\$0 Fee',
+                            style: TextStyle(
+                              color: _teal,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     if (skillLine.isNotEmpty)
                       Text(
