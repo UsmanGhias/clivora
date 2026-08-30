@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { site } from "@/lib/site";
 import { cleanText } from "@/lib/clean-text";
+import { getJobExecutiveSummary } from "@/lib/job-formatter";
 import {
   MapPin,
   Clock,
@@ -249,6 +250,12 @@ export default async function JobsIndexPage({
                       <p className="text-sm font-medium text-slate-600">
                         {cleanText(job.company_name)}
                       </p>
+
+                      {job.description && (
+                        <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed pt-0.5">
+                          {getJobExecutiveSummary(job.description, 160)}
+                        </p>
+                      )}
 
                       {/* Meta information */}
                       <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-slate-500">
