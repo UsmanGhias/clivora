@@ -56,17 +56,31 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS clivora_outreach_leads (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-// Dual Active SMTP Senders for Hostinger Cloud Rotation
-$GMAIL_SENDERS = [
+// Official Professional Clivora Email Senders & Aliases
+$CLIVORA_SENDERS = [
     [
-        "user" => "iusmanghias@gmail.com",
-        "pass" => "rzianunntqjjxrpq",
-        "name" => "Usman Ghias (CODCrafters & Clivora)"
+        "smtp_host" => "ssl://smtp.hostinger.com",
+        "smtp_port" => 465,
+        "auth_user" => "contact@clivora.io",
+        "auth_pass" => "46730820Hangb@",
+        "from_email" => "contact@clivora.io",
+        "from_name" => "Usman Ghias · Clivora & CODCrafters"
     ],
     [
-        "user" => "usmanghias1@gmail.com",
-        "pass" => "eiycvqqhhsqfwhrd",
-        "name" => "Usman Ghias (Clivora & CODCrafters)"
+        "smtp_host" => "ssl://smtp.hostinger.com",
+        "smtp_port" => 465,
+        "auth_user" => "contact@clivora.io",
+        "auth_pass" => "46730820Hangb@",
+        "from_email" => "hello@clivora.io",
+        "from_name" => "Clivora Ecosystem"
+    ],
+    [
+        "smtp_host" => "ssl://smtp.hostinger.com",
+        "smtp_port" => 465,
+        "auth_user" => "contact@clivora.io",
+        "auth_pass" => "46730820Hangb@",
+        "from_email" => "growth@clivora.io",
+        "from_name" => "CODCrafters Growth & Partnerships"
     ]
 ];
 
@@ -81,6 +95,7 @@ if (!$is_cli && $req_key !== $SECURITY_KEY && empty($test_to)) {
     echo json_encode([
         "service" => "Clivora & CODCrafters Autonomous Cloud Outreach Engine",
         "status" => "running_in_cloud",
+        "active_sender_domain" => "clivora.io (Official Hostinger TLS Mailbox)",
         "cron_schedule" => "Every 3 Hours (Autonomous Hostinger Cron)",
         "today_sent" => $today_sent,
         "max_daily_quota" => $MAX_DAILY_QUOTA,
@@ -98,8 +113,8 @@ if (!$is_cli && $req_key !== $SECURITY_KEY && empty($test_to)) {
 
 // SMTP Dispatch Function via SSL/TLS Socket
 function send_cloud_smtp($sender, $to, $subject, $html_body, $plain_text) {
-    $host = 'ssl://smtp.gmail.com';
-    $port = 465;
+    $host = $sender['smtp_host'] ?? 'ssl://smtp.hostinger.com';
+    $port = $sender['smtp_port'] ?? 465;
 
     $socket = @fsockopen($host, $port, $errno, $errstr, 20);
     if (!$socket) throw new Exception("Could not connect to SMTP host: {$errstr} ({$errno})");
@@ -123,23 +138,24 @@ function send_cloud_smtp($sender, $to, $subject, $html_body, $plain_text) {
     $read_reply($socket, $log);
     $send_cmd($socket, "EHLO clivora.io", $log);
     $send_cmd($socket, "AUTH LOGIN", $log);
-    $send_cmd($socket, base64_encode($sender['user']), $log);
-    $auth_res = $send_cmd($socket, base64_encode($sender['pass']), $log);
+    $send_cmd($socket, base64_encode($sender['auth_user']), $log);
+    $auth_res = $send_cmd($socket, base64_encode($sender['auth_pass']), $log);
 
     if (strpos($auth_res, '235') === false) {
         fclose($socket);
         throw new Exception("SMTP Authentication failed: " . $auth_res);
     }
 
-    $send_cmd($socket, "MAIL FROM:<{$sender['user']}>", $log);
+    $send_cmd($socket, "MAIL FROM:<{$sender['auth_user']}>", $log);
     $send_cmd($socket, "RCPT TO:<{$to}>", $log);
     $send_cmd($socket, "DATA", $log);
 
     $boundary = "bnd_" . md5(uniqid(time()));
     $headers = [
-        "From: \"{$sender['name']}\" <{$sender['user']}>",
+        "From: \"{$sender['from_name']}\" <{$sender['from_email']}>",
         "To: <{$to}>",
         "Subject: {$subject}",
+        "Reply-To: <{$sender['from_email']}>",
         "MIME-Version: 1.0",
         "Content-Type: multipart/alternative; boundary=\"{$boundary}\"",
         "X-Mailer: Clivora Cloud Outreach Engine/2026",
@@ -237,7 +253,7 @@ function generate_outreach_email($lead) {
 // Test Mode: Send live sample directly to requested email
 // ─────────────────────────────────────────────────────────────────────────────
 if (!empty($test_to)) {
-    $sender = $GMAIL_SENDERS[0];
+    $sender = $CLIVORA_SENDERS[0];
     $test_lead = [
         "name" => "Usman Ghias",
         "company" => "CODCrafters & Clivora",
@@ -251,7 +267,7 @@ if (!empty($test_to)) {
         echo json_encode([
             "status" => "success",
             "message" => "Live test outreach email successfully dispatched to {$test_to} via Hostinger Cloud!",
-            "sender" => $sender['user'],
+            "from" => "{$sender['from_name']} <{$sender['from_email']}>",
             "subject" => "[LIVE TEST] " . $content['subject'],
             "timestamp" => date('Y-m-d H:i:s')
         ], JSON_PRETTY_PRINT);
@@ -348,21 +364,21 @@ foreach ($batch as $lead) {
         continue;
     }
 
-    $sender = $GMAIL_SENDERS[$sender_idx % count($GMAIL_SENDERS)];
+    $sender = $CLIVORA_SENDERS[$sender_idx % count($CLIVORA_SENDERS)];
     $content = generate_outreach_email($lead);
 
     try {
         send_cloud_smtp($sender, $lead['email'], $content['subject'], $content['html'], $content['plain']);
         
         $upd = $pdo->prepare("UPDATE clivora_outreach_leads SET status = 'SENT', sent_at = NOW(), response_log = ? WHERE id = ?");
-        $upd->execute(["Delivered via {$sender['user']}", $lead['id']]);
+        $upd->execute(["Delivered via {$sender['from_email']} (Hostinger TLS SMTP)", $lead['id']]);
 
         $processed[] = [
             "email" => $lead['email'],
             "name" => $lead['name'],
             "segment" => $lead['segment'],
             "status" => "SENT",
-            "sender" => $sender['user']
+            "from" => "{$sender['from_name']} <{$sender['from_email']}>"
         ];
 
         $today_sent++;

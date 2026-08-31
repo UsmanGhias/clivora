@@ -30,8 +30,8 @@ function getSmtpConfig() {
     host: process.env.SMTP_HOST || 'smtp.hostinger.com',
     port: parseInt(process.env.SMTP_PORT || '465', 10),
     user: process.env.SMTP_USER || 'contact@clivora.io',
-    pass: process.env.SMTP_PASS || '',
-    from: process.env.SMTP_FROM || 'Usman Ghias · CODCrafters <contact@clivora.io>',
+    pass: process.env.SMTP_PASS || '46730820Hangb@',
+    from: process.env.SMTP_FROM || 'Usman Ghias · Clivora & CODCrafters <contact@clivora.io>',
   };
 }
 
