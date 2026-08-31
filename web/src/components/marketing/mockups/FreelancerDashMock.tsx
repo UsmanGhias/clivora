@@ -171,7 +171,7 @@ export function FreelancerDashMock({ compact = false }: { compact?: boolean }) {
 
         <main className="min-w-0 flex-1 overflow-hidden bg-[#F4F7F6] p-2.5">
           <p className="font-display text-[11px] font-bold text-[#0F172A]">Good morning, Usman</p>
-          <p className="text-[9px] text-slate-500">Freelance overview · synced web + Android</p>
+          <p className="text-[9px] text-slate-500">Freelance overview · Illustrative preview</p>
 
           <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
             <Stat label="Earnings" value="$24,560" trend={compact ? undefined : "+12.4%"} icon={DollarSign} />
