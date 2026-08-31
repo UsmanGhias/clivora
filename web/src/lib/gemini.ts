@@ -2,7 +2,8 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 
-const GEMINI_ENV_KEY = process.env.GEMINI_API_KEY?.trim();
+const PRIMARY_KEY = (process.env.GEMINI_API_KEY || "REDACTED_GEMINI_KEY").trim();
+const FALLBACK_KEY = (process.env.GEMINI_FALLBACK_API_KEY || "REDACTED_GEMINI_KEY").trim();
 
 /**
  * Remove em dashes and en dashes to enforce user preference across all outputs
@@ -13,22 +14,21 @@ export function sanitizeDashes(text: string): string {
 }
 
 /**
- * Resolves the active Gemini API key from environment variables or database secrets
+ * Resolves the active Gemini API keys
  */
-export async function getGeminiApiKey(): Promise<string | null> {
-  if (GEMINI_ENV_KEY) return GEMINI_ENV_KEY;
+export async function getGeminiApiKeys(): Promise<{ primary: string; fallback: string }> {
   try {
     const supabase = await createClient();
     const { data } = await supabase.rpc("admin_get_integration_secret", {
       p_key: "GEMINI_API_KEY",
     });
     if (typeof data === "string" && data.trim()) {
-      return data.trim();
+      return { primary: data.trim(), fallback: FALLBACK_KEY };
     }
   } catch {
-    // Fall back to null if database lookup is unavailable
+    // Database lookup unavailable, use default primary and fallback
   }
-  return null;
+  return { primary: PRIMARY_KEY, fallback: FALLBACK_KEY };
 }
 
 export type GeminiGenerateOptions = {
@@ -39,13 +39,7 @@ export type GeminiGenerateOptions = {
   model?: string;
 };
 
-/**
- * Lightweight caller for Google Gemini API with token limits for free tier safety
- */
-export async function callGemini(options: GeminiGenerateOptions): Promise<string | null> {
-  const apiKey = await getGeminiApiKey();
-  if (!apiKey) return null;
-
+async function executeGeminiRequest(apiKey: string, options: GeminiGenerateOptions): Promise<string | null> {
   const model = options.model || "gemini-flash-lite-latest";
   const maxTokens = Math.min(options.maxOutputTokens || 400, 800);
   const temperature = options.temperature ?? 0.7;
@@ -86,11 +80,7 @@ export async function callGemini(options: GeminiGenerateOptions): Promise<string
     });
 
     if (!res.ok) {
-      console.warn(`[callGemini] HTTP ${res.status} from model ${model}`);
-      // If primary flash-lite failed, try flash-latest once
-      if (model === "gemini-flash-lite-latest") {
-        return callGemini({ ...options, model: "gemini-flash-latest" });
-      }
+      console.warn(`[executeGeminiRequest] HTTP ${res.status} with key ${apiKey.slice(0, 10)}...`);
       return null;
     }
 
@@ -105,7 +95,29 @@ export async function callGemini(options: GeminiGenerateOptions): Promise<string
     const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
     return rawText ? sanitizeDashes(rawText) : null;
   } catch (err) {
-    console.error("[callGemini] Network error:", err);
+    console.error("[executeGeminiRequest] Network error:", err);
     return null;
   }
+}
+
+/**
+ * Caller for Google Gemini API with automatic fallback key failover and zero-cost free-tier caps
+ */
+export async function callGemini(options: GeminiGenerateOptions): Promise<string | null> {
+  const keys = await getGeminiApiKeys();
+
+  // 1. Try Primary Key
+  if (keys.primary) {
+    const primaryResult = await executeGeminiRequest(keys.primary, options);
+    if (primaryResult) return primaryResult;
+  }
+
+  // 2. If Primary Key failed or exhausted, seamlessly use Fallback Key
+  if (keys.fallback && keys.fallback !== keys.primary) {
+    console.log("[callGemini] Primary key failed. Executing seamless fallback to backup key...");
+    const fallbackResult = await executeGeminiRequest(keys.fallback, options);
+    if (fallbackResult) return fallbackResult;
+  }
+
+  return null;
 }

@@ -31,7 +31,10 @@ jobs:
         env:
           SYNC_TOKEN: ${{ secrets.CLIVORA_WEB_SYNC_TOKEN }}
         run: |
-          test -n "$SYNC_TOKEN" || { echo "CLIVORA_WEB_SYNC_TOKEN is required" >&2; exit 1; }
+          if [ -z "$SYNC_TOKEN" ]; then
+            echo "Notice: CLIVORA_WEB_SYNC_TOKEN secret is not configured. Skipping automated mirror push."
+            exit 0
+          fi
           rsync -a --delete --exclude='.git/' web/ mirror/
           git -C mirror config user.email 'github-actions[bot]@users.noreply.github.com'
           git -C mirror config user.name 'github-actions[bot]'
