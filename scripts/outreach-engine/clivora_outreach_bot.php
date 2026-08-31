@@ -294,10 +294,60 @@ if (empty($batch)) {
     exit;
 }
 
+// Global Rule: Pre-Flight Email Syntax & MX Domain Verification
+function verify_email_domain_mx($email, &$reason = "") {
+    $email = trim($email);
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $reason = "Invalid email syntax";
+        return false;
+    }
+    
+    $parts = explode('@', $email);
+    $domain = end($parts);
+
+    $fake_domains = ['example.com', 'test.com', 'localhost', 'invalid.com', 'tempmail.com'];
+    if (in_array(strtolower($domain), $fake_domains, true)) {
+        $reason = "Domain is blacklisted or placeholder: {$domain}";
+        return false;
+    }
+
+    $mx_hosts = [];
+    if (getmxrr($domain, $mx_hosts) && !empty($mx_hosts)) {
+        return true;
+    }
+
+    if (checkdnsrr($domain, "MX")) {
+        return true;
+    }
+
+    if (checkdnsrr($domain, "A")) {
+        return true;
+    }
+
+    $reason = "Domain {$domain} has no active MX or A mail records";
+    return false;
+}
+
 $processed = [];
 $sender_idx = 0;
 
 foreach ($batch as $lead) {
+    // 1. Mandatory Pre-Flight MX Verification Rule
+    $reject_reason = "";
+    if (!verify_email_domain_mx($lead['email'], $reject_reason)) {
+        $upd = $pdo->prepare("UPDATE clivora_outreach_leads SET status = 'REJECTED', response_log = ? WHERE id = ?");
+        $upd->execute(["Pre-flight check rejected: {$reject_reason}", $lead['id']]);
+
+        $processed[] = [
+            "email" => $lead['email'],
+            "name" => $lead['name'],
+            "segment" => $lead['segment'],
+            "status" => "REJECTED",
+            "reason" => $reject_reason
+        ];
+        continue;
+    }
+
     $sender = $GMAIL_SENDERS[$sender_idx % count($GMAIL_SENDERS)];
     $content = generate_outreach_email($lead);
 

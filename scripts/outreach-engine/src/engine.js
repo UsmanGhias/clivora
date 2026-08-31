@@ -13,7 +13,7 @@
 
 const path = require('path');
 const fs = require('fs');
-const { sendSmtpEmail } = require('./smtp_client');
+const { sendSmtpEmail, verifyEmailDomainMx } = require('./smtp_client');
 const { renderClientPitch, renderSponsorPitch, renderFreelancerPitch } = require('./templates');
 const { getDailyProspects, SEED_PROSPECTS } = require('./lead_generator');
 const {
@@ -158,6 +158,15 @@ async function runCampaign(options) {
     if (!canSendToday()) {
       console.log('Reached daily quota cap (95/day). Stopping batch for today.');
       break;
+    }
+
+    // 1. Mandatory Pre-Flight MX & Domain Verification Rule
+    const mxCheck = await verifyEmailDomainMx(lead.email);
+    if (!mxCheck.valid) {
+      console.log(`[${i + 1}/${batch.length}] REJECTED: ${lead.email} - Reason: ${mxCheck.reason}`);
+      recordSend(lead, { success: false, error: `Pre-flight MX verification failed: ${mxCheck.reason}` });
+      skippedCount++;
+      continue;
     }
 
     const emailContent = renderLeadEmail(lead);

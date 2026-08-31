@@ -179,7 +179,36 @@ function sendSmtpEmail(config, mailOptions) {
   });
 }
 
+async function verifyEmailDomainMx(email) {
+  const dns = require('dns').promises;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return { valid: false, reason: 'Invalid email syntax' };
+  }
+  const domain = email.split('@')[1].trim();
+  const fakeDomains = ['example.com', 'test.com', 'localhost', 'invalid.com', 'tempmail.com'];
+  if (fakeDomains.includes(domain.toLowerCase())) {
+    return { valid: false, reason: `Domain is blacklisted or placeholder: ${domain}` };
+  }
+  try {
+    const mxRecords = await dns.resolveMx(domain);
+    if (mxRecords && mxRecords.length > 0) {
+      return { valid: true, mx: mxRecords[0].exchange };
+    }
+  } catch (err) {
+    try {
+      const aRecords = await dns.resolve4(domain);
+      if (aRecords && aRecords.length > 0) {
+        return { valid: true, a: aRecords[0] };
+      }
+    } catch (aErr) {}
+    return { valid: false, reason: `No MX or A records found for domain ${domain}` };
+  }
+  return { valid: false, reason: `Domain ${domain} has no valid MX records` };
+}
+
 module.exports = {
   sendSmtpEmail,
   buildMimeMessage,
+  verifyEmailDomainMx,
 };
