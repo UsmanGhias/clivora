@@ -1081,7 +1081,7 @@ export function ConnectBoard({
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-text-muted">
               <span>
                 Showing{" "}
-                {Math.min(filteredNeeds.length, (jobsPage - 1) * JOBS_PER_PAGE + 1)}–
+                {Math.min(filteredNeeds.length, (jobsPage - 1) * JOBS_PER_PAGE + 1)}-
                 {Math.min(filteredNeeds.length, jobsPage * JOBS_PER_PAGE)} of{" "}
                 {filteredNeeds.length} jobs
               </span>

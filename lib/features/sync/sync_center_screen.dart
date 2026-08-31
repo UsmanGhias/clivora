@@ -161,7 +161,7 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
                   ),
                   const SizedBox(height: 8),
                   if (_entries.isEmpty)
-                    const Text('Queue is empty — all caught up.')
+                    const Text('Queue is empty - all caught up.')
                   else
                     ..._entries.map((e) {
                       final color = switch (e.status) {

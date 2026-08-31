@@ -117,7 +117,7 @@ export default function AdminReportsPage() {
           <SidePanel>
             <SideCard title="Export">
               <p className="text-xs text-slate-500">
-                CSV export uses the same live counts as Overview — not template placeholders.
+                CSV export uses the same live counts as Overview - not template placeholders.
               </p>
             </SideCard>
           </SidePanel>

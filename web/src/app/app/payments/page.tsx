@@ -109,8 +109,8 @@ export default async function PaymentsOverviewPage() {
         <div className="grid gap-3 sm:grid-cols-4">
           {[
             { label: "Current", value: money(pending * 0.55) },
-            { label: "1–30 days", value: money(pending * 0.25 + overdue * 0.4) },
-            { label: "31–60 days", value: money(overdue * 0.35) },
+            { label: "1-30 days", value: money(pending * 0.25 + overdue * 0.4) },
+            { label: "31-60 days", value: money(overdue * 0.35) },
             { label: "60+ days", value: money(overdue * 0.25) },
           ].map((b) => (
             <div key={b.label} className="rounded-xl bg-client-surface px-3 py-3">

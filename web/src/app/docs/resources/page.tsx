@@ -13,11 +13,11 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Free Freelancer Resources & Templates — CLIVORA",
+  title: "Free Freelancer Resources & Templates - CLIVORA",
   description:
     "Download free contract templates, scope of work documents, NDAs, rate calculators, and more from our 5TB Google Drive Asset Lake. 100% free, no signup required.",
   openGraph: {
-    title: "Free Freelancer Resources & Templates — CLIVORA",
+    title: "Free Freelancer Resources & Templates - CLIVORA",
     description: "Professional templates and tools for freelancers. 100% free on Google Drive.",
   },
 };

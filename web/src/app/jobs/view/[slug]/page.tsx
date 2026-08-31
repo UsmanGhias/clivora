@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { site } from "@/lib/site";
 import { cleanText } from "@/lib/clean-text";
 import { JobStructuredDescription } from "@/components/jobs/JobStructuredDescription";
+import { formatGoogleJobsHtml } from "@/lib/job-formatter";
 import {
   MapPin,
   Clock,
@@ -119,25 +120,33 @@ export default async function JobViewPage({ params }: Props) {
   const avatarGradient = getAvatarGradient(cleanCompany);
 
   // Schema.org JSON-LD for Google Jobs
+  const googleDescription = formatGoogleJobsHtml(job.description);
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "JobPosting",
     title: cleanJobTitle,
-    description: cleanDescription,
+    description: googleDescription,
     datePosted: job.created_at,
-    validThrough: new Date(new Date(job.created_at).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    employmentType: job.job_type ? (job.job_type === "full_time" ? "FULL_TIME" : "CONTRACTOR") : "FULL_TIME",
+    validThrough: new Date(new Date(job.created_at).getTime() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+    employmentType: job.job_type ? (job.job_type === "full_time" ? "FULL_TIME" : job.job_type === "contract" ? "CONTRACTOR" : "PART_TIME") : "FULL_TIME",
+    directApply: true,
+    identifier: {
+      "@type": "PropertyValue",
+      name: cleanCompany || "CLIVORA",
+      value: job.id,
+    },
     hiringOrganization: {
       "@type": "Organization",
       name: cleanCompany,
       sameAs: job.company_domain ? `https://${cleanText(job.company_domain)}` : undefined,
+      logo: `${site.url}/icons/icon-512.png`,
     },
     jobLocation: {
       "@type": "Place",
       address: {
         "@type": "PostalAddress",
         addressLocality: cleanLocation,
-        addressCountry: "Anywhere",
+        addressCountry: "US",
       },
     },
     applicantLocationRequirements: {
@@ -151,7 +160,7 @@ export default async function JobViewPage({ params }: Props) {
         currency: job.currency || "USD",
         value: {
           "@type": "QuantitativeValue",
-          ...(job.salary_min && { minValue: job.salary_min }),
+          minValue: job.salary_min,
           ...(job.salary_max && { maxValue: job.salary_max }),
           unitText: "YEAR",
         },
@@ -159,11 +168,40 @@ export default async function JobViewPage({ params }: Props) {
     }),
   };
 
+  const breadcrumbsJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Remote Jobs",
+        item: `${site.url}/jobs`,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: job.category || "General",
+        item: `${site.url}/jobs/${job.category || "general"}`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: cleanJobTitle,
+        item: `${site.url}/jobs/view/${slug}`,
+      },
+    ],
+  };
+
   return (
     <main className="min-h-screen bg-slate-50/50 py-10">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbsJsonLd) }}
       />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

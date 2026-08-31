@@ -20,7 +20,7 @@ export default async function CampaignsPage() {
         <CampaignsClient />
       ) : (
         <p className="rounded-2xl border border-dashed border-border bg-surface p-6 text-sm text-text-secondary">
-          Campaigns are behind a feature flag and not enabled yet. Ask an admin after Gates 1–12.
+          Campaigns are behind a feature flag and not enabled yet. Ask an admin after Gates 1-12.
         </p>
       )}
     </div>

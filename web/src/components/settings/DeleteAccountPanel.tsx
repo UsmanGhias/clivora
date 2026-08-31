@@ -35,7 +35,7 @@ export function DeleteAccountPanel({ email }: { email: string }) {
       <h3 className="font-display text-lg font-bold text-rose-900">Delete account</h3>
       <p className="mt-2 text-sm leading-relaxed text-rose-900/80">
         This requests cloud account deletion, restricts access, and signs you out. Full
-        anonymization completes within 30 days. CLIVORA does not hold escrow funds — cancel any
+        anonymization completes within 30 days. CLIVORA does not hold escrow funds - cancel any
         external payment arrangements with clients separately.
       </p>
       <label className="mt-4 block text-xs font-semibold uppercase tracking-wide text-rose-900/70">

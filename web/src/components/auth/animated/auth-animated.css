@@ -124,7 +124,7 @@
 
 /*
  * Mobile + tablet (< lg): no animation.
- * Classic auth chrome — brand + back home + centered form card.
+ * Classic auth chrome - brand + back home + centered form card.
  */
 @media (max-width: 1023px) {
   .auth-animated .aa-page {

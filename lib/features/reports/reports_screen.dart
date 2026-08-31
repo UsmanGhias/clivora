@@ -101,13 +101,13 @@ class ReportsScreen extends ConsumerWidget {
               children: [
                 Expanded(child: _MiniStat(label: 'Current', value: formatCurrency(data.agingCurrent))),
                 const SizedBox(width: 8),
-                Expanded(child: _MiniStat(label: '1–30', value: formatCurrency(data.aging30))),
+                Expanded(child: _MiniStat(label: '1-30', value: formatCurrency(data.aging30))),
               ],
             ),
             const SizedBox(height: 8),
             Row(
               children: [
-                Expanded(child: _MiniStat(label: '31–60', value: formatCurrency(data.aging60))),
+                Expanded(child: _MiniStat(label: '31-60', value: formatCurrency(data.aging60))),
                 const SizedBox(width: 8),
                 Expanded(child: _MiniStat(label: '60+', value: formatCurrency(data.aging90))),
               ],

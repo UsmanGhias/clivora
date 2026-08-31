@@ -343,7 +343,7 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
               <p className="text-sm text-text-secondary">
                 {tab === "payment"
                   ? "JazzCash, Easypaisa, bank transfer, and Google Play are used for Pro upgrades. Hiring invoices go direct between you and freelancers."
-                  : `You are on ${plan}. Renewals: SafePay or JazzCash/bank on the website, or Google Play inside the Android app — not Stripe.`}
+                  : `You are on ${plan}. Renewals: SafePay or JazzCash/bank on the website, or Google Play inside the Android app - not Stripe.`}
               </p>
               <div className="mt-4">
                 <ManageBillingButton />

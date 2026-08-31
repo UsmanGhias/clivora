@@ -302,7 +302,7 @@ export default async function AccountPage({
         />
         <FreelancerStatCard
           label="Response Time"
-          value="—"
+          value=" - "
           sub="Shown when message activity is available"
           icon={Clock}
           iconTone="bg-orange-100 text-orange-700"

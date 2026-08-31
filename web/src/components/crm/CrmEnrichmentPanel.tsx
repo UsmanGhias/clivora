@@ -164,7 +164,7 @@ export function CrmEnrichmentPanel({ customerId }: { customerId?: string | null 
                 .filter((d) => d.score > 0)
                 .map((d) => (
                   <li key={d.id}>
-                    Possible duplicate: {d.contact_person} ({d.company}) — {d.score}
+                    Possible duplicate: {d.contact_person} ({d.company}) - {d.score}
                   </li>
                 ))}
             </ul>

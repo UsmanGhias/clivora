@@ -43,7 +43,7 @@ export function ConnectMarketplace() {
           The marketplace that becomes your operating system
         </h2>
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/70 sm:text-lg">
-          Upwork and Fiverr stop at the hire. CLIVORA Connect starts there — private
+          Upwork and Fiverr stop at the hire. CLIVORA Connect starts there - private
           matching with clear delivery signals, then the CRM, projects, and invoices you
           already run your business on.
         </p>

@@ -10,8 +10,8 @@ type Phase = "loading" | "request" | "update";
 
 /**
  * Password reset is two gated steps:
- * 1) request — enter email, Supabase sends recovery link (no password form)
- * 2) update — only after a valid recovery link (PKCE code or PASSWORD_RECOVERY session)
+ * 1) request - enter email, Supabase sends recovery link (no password form)
+ * 2) update - only after a valid recovery link (PKCE code or PASSWORD_RECOVERY session)
  * Users cannot open the password form by clicking a tab.
  */
 export default function ResetPasswordPage() {

@@ -10,19 +10,19 @@ export function clampHourlyRate(n: unknown): number | null {
 }
 
 /**
- * Parse Connect `rate_band` strings like "$200–500/hr" or "3-50".
+ * Parse Connect `rate_band` strings like "$200-500/hr" or "3-50".
  * Never concatenates range digits (bug that produced 200500).
  */
 export function parseHourlyFromRateBand(rateBand: string | null | undefined): number | null {
   const s = String(rateBand ?? "").trim();
   if (!s) return null;
 
-  const range = s.match(/(\d+(?:\.\d+)?)\s*(?:[-–—]|to)\s*(\d+(?:\.\d+)?)/i);
+  const range = s.match(/(\d+(?:\.\d+)?)\s*(?:-|to|\/)\s*(\d+(?:\.\d+)?)/i);
   if (range) {
     const a = Number(range[1]);
     const b = Number(range[2]);
     if (Number.isFinite(a) && Number.isFinite(b) && a > 0 && b > 0) {
-      // Prefer the lower bound as the working rate ( freelancers often list min–max ).
+      // Prefer the lower bound as the working rate ( freelancers often list min-max ).
       return clampHourlyRate(Math.min(a, b));
     }
   }

@@ -23,7 +23,7 @@ class ReviewService {
     int? customerId,
     String clientEmail = '',
   }) async {
-    if (rating < 1 || rating > 5) return 'Rating must be 1–5 stars.';
+    if (rating < 1 || rating > 5) return 'Rating must be 1-5 stars.';
     final db = ref.read(databaseProvider);
     final existing = await (db.select(db.projectReviews)
           ..where((t) => t.projectId.equals(projectId) & t.fromClient.equals(true)))

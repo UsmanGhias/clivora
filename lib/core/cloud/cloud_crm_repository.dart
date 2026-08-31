@@ -184,7 +184,7 @@ class CloudCrmRepository {
     final uid = SupabaseAuthHelper.currentUid;
     final user = ref.read(authStateProvider).valueOrNull;
     if (uid == null || user == null) return;
-    // Clients consume shares/portal data — do not push local CRM into freelancer tables.
+    // Clients consume shares/portal data - do not push local CRM into freelancer tables.
     if (isClientUser(user)) return;
     final db = ref.read(databaseProvider);
     final ownerId = user.id;
@@ -258,7 +258,7 @@ class CloudCrmRepository {
               ),
             );
           } else if (existing.updatedAt.isAfter(cloudUpdated) && fieldsDiffer) {
-            // Local is ahead of cloud with divergent fields — surface for Keep/Take UI.
+            // Local is ahead of cloud with divergent fields - surface for Keep/Take UI.
             try {
               await ref.read(cloudCrmConflictsRepositoryProvider).reportConflict(
                     entityType: 'customer',

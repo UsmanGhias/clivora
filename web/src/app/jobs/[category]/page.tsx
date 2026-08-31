@@ -58,7 +58,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { category } = await params;
   if (!CATEGORIES.includes(category)) return {};
 
-  const title = `${formatTitle(category)} Remote Jobs — $0 Fee | CLIVORA`;
+  const title = `${formatTitle(category)} Remote Jobs - $0 Fee | CLIVORA`;
   const description = `Find the best remote ${formatTitle(category)} jobs. Apply directly with $0 platform fees.`;
 
   return {
@@ -134,7 +134,7 @@ export default async function CategoryPage({ params }: Props) {
 
         <div className="mb-10">
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            {titleName} Remote Jobs <span className="text-teal-600">— $0 Fee</span>
+            {titleName} Remote Jobs <span className="text-teal-600"> -  $0 Fee</span>
           </h1>
           <p className="mt-3 text-base text-slate-600">
             Browse remote opportunities in {titleName}. Apply directly, negotiate privately, and keep 100% of your earnings.

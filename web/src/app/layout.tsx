@@ -55,7 +55,7 @@ export const metadata: Metadata = {
         url: "/brand/clivora-og-share-1200x630.png",
         width: 1200,
         height: 630,
-        alt: "Clivora Freelancer OS — workspace for freelancers and clients",
+        alt: "Clivora Freelancer OS - workspace for freelancers and clients",
       },
     ],
   },

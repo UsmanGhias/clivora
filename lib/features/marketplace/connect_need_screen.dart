@@ -17,7 +17,7 @@ class _ConnectNeedScreenState extends ConsumerState<ConnectNeedScreen> {
   final _title = TextEditingController();
   final _summary = TextEditingController();
   final _skills = TextEditingController();
-  String _budget = '\$500–1,500';
+  String _budget = '\$500-1,500';
   bool _busy = false;
 
   @override
@@ -81,8 +81,8 @@ class _ConnectNeedScreenState extends ConsumerState<ConnectNeedScreen> {
             decoration: const InputDecoration(labelText: 'Budget band'),
             items: const [
               DropdownMenuItem(value: 'Under \$500', child: Text('Under \$500')),
-              DropdownMenuItem(value: '\$500–1,500', child: Text('\$500–1,500')),
-              DropdownMenuItem(value: '\$1,500–5,000', child: Text('\$1,500–5,000')),
+              DropdownMenuItem(value: '\$500-1,500', child: Text('\$500-1,500')),
+              DropdownMenuItem(value: '\$1,500-5,000', child: Text('\$1,500-5,000')),
               DropdownMenuItem(value: '\$5,000+', child: Text('\$5,000+')),
               DropdownMenuItem(value: 'negotiable', child: Text('Negotiable')),
             ],

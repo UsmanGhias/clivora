@@ -27,9 +27,9 @@ const PAYMENT_METHODS: Array<{
   detail: string;
   disabled?: boolean;
 }> = [
-  { value: "jazzcash", label: "JazzCash", detail: "Pay to 03067917467 — recommended" },
+  { value: "jazzcash", label: "JazzCash", detail: "Pay to 03067917467 - recommended" },
   { value: "easypaisa", label: "Easypaisa", detail: "Pay to 03126912440" },
-  { value: "bank", label: "Bank transfer", detail: "MCB or Bank Islami — details below" },
+  { value: "bank", label: "Bank transfer", detail: "MCB or Bank Islami - details below" },
   { value: "manual", label: "Manual", detail: "Share details for team review" },
   {
     value: "safepay",
@@ -321,7 +321,7 @@ export default function ProCheckout() {
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
             <h2 className="text-lg font-extrabold text-navy">SafePay payment received</h2>
             <p className="mt-1 text-sm text-text-secondary">
-              Thanks — we&apos;re confirming your payment now. Refresh in a minute or open the app;
+              Thanks - we&apos;re confirming your payment now. Refresh in a minute or open the app;
               Pro unlocks automatically after the webhook settles.
             </p>
             <Link href="/app" className="mt-3 inline-flex rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white">

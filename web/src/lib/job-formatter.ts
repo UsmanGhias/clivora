@@ -138,3 +138,25 @@ export function parseJobIntoSections(raw?: string | null): StructuredJobSection[
 
   return sections;
 }
+
+/**
+ * Formats a raw job description into clean semantic HTML (<p> and <ul><li>)
+ * strictly formatted according to Google Search JobPosting Structured Data specifications.
+ */
+export function formatGoogleJobsHtml(raw?: string | null): string {
+  const sections = parseJobIntoSections(raw);
+  if (sections.length === 0) return "<p>Remote career opportunity on CLIVORA with $0 platform fees.</p>";
+
+  return sections
+    .map((s) => {
+      let html = `<p><strong>${s.title}</strong></p>`;
+      for (const p of s.paragraphs) {
+        html += `<p>${p}</p>`;
+      }
+      if (s.bullets.length > 0) {
+        html += `<ul>${s.bullets.map((b) => `<li>${b}</li>`).join("")}</ul>`;
+      }
+      return html;
+    })
+    .join("");
+}

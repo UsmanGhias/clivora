@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
     `${source}:${req.headers.get("x-webhook-timestamp") ?? Date.now()}`;
 
   if (!SUPABASE_SERVICE_ROLE_KEY) {
-    // Cannot durably accept work — tell the caller to retry rather than lie.
+    // Cannot durably accept work - tell the caller to retry rather than lie.
     return NextResponse.json({ error: "queue_unavailable" }, { status: 503 });
   }
 

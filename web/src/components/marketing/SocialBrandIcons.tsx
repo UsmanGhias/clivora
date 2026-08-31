@@ -1,4 +1,4 @@
-/** Brand social icons for marketing footer (inline SVG — no extra deps). */
+/** Brand social icons for marketing footer (inline SVG - no extra deps). */
 
 type IconProps = { className?: string };
 

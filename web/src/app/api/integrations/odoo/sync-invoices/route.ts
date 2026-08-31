@@ -28,7 +28,7 @@ export async function POST() {
       return NextResponse.json({ error: "admin_only" }, { status: 403 });
     }
 
-    // Invoice sync endpoint — requires ODOO_MAIN_* environment variables
+    // Invoice sync endpoint - requires ODOO_MAIN_* environment variables
     // Full sync will call syncInvoicesToOdoo() and syncInvoicesFromOdoo()
     // once those exports are added to odoo-sync.ts
     return NextResponse.json({

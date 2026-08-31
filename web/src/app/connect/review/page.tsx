@@ -16,7 +16,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Review Candidate Proposal — CLIVORA",
+  title: "Review Candidate Proposal - CLIVORA",
   description: "Review freelancer proposal on CLIVORA with $0 platform fees.",
 };
 
@@ -130,7 +130,7 @@ export default async function ReviewProposalPage({
         <div className="rounded-3xl border border-teal-200 bg-gradient-to-r from-teal-900 via-slate-900 to-navy p-6 sm:p-8 text-white shadow-xl">
           <div className="inline-flex items-center gap-2 rounded-full bg-teal-500/20 border border-teal-400/30 px-3.5 py-1 text-xs font-bold text-teal-300">
             <Sparkles className="h-3.5 w-3.5" />
-            <span>0% Platform Commission — $0 Fee Guaranteed</span>
+            <span>0% Platform Commission - $0 Fee Guaranteed</span>
           </div>
           <h1 className="mt-3 text-2xl sm:text-3xl font-extrabold tracking-tight">
             Proposal for {jobTitle}

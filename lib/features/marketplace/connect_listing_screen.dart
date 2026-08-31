@@ -21,7 +21,7 @@ class _ConnectListingScreenState extends ConsumerState<ConnectListingScreen> {
   final _bio = TextEditingController();
   final _skills = TextEditingController();
   final _location = TextEditingController();
-  String _rate = '\$200–500 / project';
+  String _rate = '\$200-500 / project';
   String _availability = 'available';
   bool _listed = false;
   bool _busy = false;
@@ -138,9 +138,9 @@ class _ConnectListingScreenState extends ConsumerState<ConnectListingScreen> {
                     labelText: isClient ? 'Typical budget band' : 'Rate band',
                   ),
                   items: const [
-                    DropdownMenuItem(value: '\$100–200 / project', child: Text('\$100–200 / project')),
-                    DropdownMenuItem(value: '\$200–500 / project', child: Text('\$200–500 / project')),
-                    DropdownMenuItem(value: '\$500–1,500 / project', child: Text('\$500–1,500 / project')),
+                    DropdownMenuItem(value: '\$100-200 / project', child: Text('\$100-200 / project')),
+                    DropdownMenuItem(value: '\$200-500 / project', child: Text('\$200-500 / project')),
+                    DropdownMenuItem(value: '\$500-1,500 / project', child: Text('\$500-1,500 / project')),
                     DropdownMenuItem(value: '\$1,500+ / project', child: Text('\$1,500+ / project')),
                     DropdownMenuItem(value: 'negotiable', child: Text('Negotiable')),
                   ],

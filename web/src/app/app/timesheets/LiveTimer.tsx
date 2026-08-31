@@ -88,7 +88,7 @@ export function LiveTimer({
   function toggle() {
     setMsg(null);
     if (!approvedRate) {
-      setMsg("This project has no client-approved hourly rate yet ($3–$500).");
+      setMsg("This project has no client-approved hourly rate yet ($3-$500).");
       return;
     }
     if (!running) {

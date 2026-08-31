@@ -12,7 +12,7 @@ import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_logo.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 
-/// Freelancer Menu tab — workspace settings & account (Command Center mockup).
+/// Freelancer Menu tab - workspace settings & account (Command Center mockup).
 class MenuScreen extends ConsumerWidget {
   const MenuScreen({super.key});
 

@@ -66,7 +66,7 @@ export function FounderNoteSection() {
                 contact@clivora.io
               </a>
               {" "}
-              - I read those.
+             - I read those.
             </p>
             <div className="flex flex-wrap gap-4 border-t border-white/10 pt-5 text-xs font-semibold uppercase tracking-wide text-teal-200/90">
               <span>For freelancers: keep your rate</span>

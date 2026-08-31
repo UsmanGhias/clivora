@@ -8,7 +8,7 @@ import '../../core/theme/clivora_colors.dart';
 import '../../core/utils/crm_refresh.dart';
 
 /// Shell banner for sync *problems only* (conflicts / permanent failures).
-/// Plain pending work stays quiet — Sync Center shows the queue.
+/// Plain pending work stays quiet - Sync Center shows the queue.
 /// While offline, [OfflineStatusBar] owns the message (no double banner).
 class SyncFailureBanner extends ConsumerWidget {
   const SyncFailureBanner({super.key});

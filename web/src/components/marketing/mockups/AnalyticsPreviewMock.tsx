@@ -6,7 +6,7 @@ export function AnalyticsPreviewMock() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-bold text-[#0F172A]">Analytics overview</p>
-            <p className="text-[11px] text-[#64748B]">Jul 1 – Jul 31, 2026</p>
+            <p className="text-[11px] text-[#64748B]">Jul 1 - Jul 31, 2026</p>
           </div>
           <span className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-[#475569]">
             This month

@@ -175,7 +175,7 @@ class SyncOutboxService {
       ),
     );
     ref.read(syncFailureMessageProvider.notifier).state =
-        '${entityType[0].toUpperCase()}${entityType.substring(1)} sync conflict — open Sync Center.';
+        '${entityType[0].toUpperCase()}${entityType.substring(1)} sync conflict - open Sync Center.';
   }
 
   Future<List<Map<String, dynamic>>> pendingByEntity(String entityType) async {
@@ -421,7 +421,7 @@ class SyncOutboxService {
                   retries: retries,
                   nextAttemptAt: Value(DateTime.now().add(delay)),
                   updatedAt: DateTime.now(),
-                  lastError: const Value('Transient failure — will retry'),
+                  lastError: const Value('Transient failure - will retry'),
                 ),
               );
             }
@@ -470,7 +470,7 @@ class SyncOutboxService {
     final failed = await permanentlyFailedCount();
     final conflicts = (await pendingConflicts()).length;
     // Only surface actionable problems in the shell banner. Routine pending
-    // work is visible in Sync Center — avoids "2 sync in progress" double UI
+    // work is visible in Sync Center - avoids "2 sync in progress" double UI
     // with OfflineStatusBar / Hub cards.
     if (conflicts > 0) {
       ref.read(syncFailureMessageProvider.notifier).state =
@@ -653,7 +653,7 @@ class SyncOutboxService {
         if (invoiceId == null) return _ExecResult.transientFailure;
         final invoice = await _db.getInvoiceForUser(user.id, invoiceId);
         if (invoice == null) {
-          // Deleted locally — treat delete tombstone as success once noted.
+          // Deleted locally - treat delete tombstone as success once noted.
           if (item.isTombstone) return _ExecResult.success;
           return _ExecResult.transientFailure;
         }

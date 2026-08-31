@@ -19,12 +19,12 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Remote Jobs Marketplace — $0 Platform Fee | CLIVORA",
+  title: "Remote Jobs Marketplace - $0 Platform Fee | CLIVORA",
   description:
     "Explore curated remote career opportunities and freelance contracts. Direct client relationships, escrow milestones, and $0 platform commissions.",
   alternates: { canonical: `${site.url}/jobs` },
   openGraph: {
-    title: "Remote Jobs Marketplace — $0 Platform Fee | CLIVORA",
+    title: "Remote Jobs Marketplace - $0 Platform Fee | CLIVORA",
     description:
       "Explore curated remote opportunities with direct client communication and zero platform fees.",
   },
@@ -148,7 +148,7 @@ export default async function JobsIndexPage({
         {/* Hero Section */}
         <div className="mt-6 text-center">
           <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
-            Browse Remote Jobs <span className="text-teal-600">— $0 Fee</span>
+            Browse Remote Jobs <span className="text-teal-600"> -  $0 Fee</span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-base sm:text-lg text-slate-600">
             Direct opportunities from high-growth companies and startups worldwide. 

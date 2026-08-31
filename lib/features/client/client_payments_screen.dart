@@ -54,13 +54,13 @@ class ClientPaymentsScreen extends ConsumerWidget {
                 children: [
                   Expanded(child: _Mini(label: 'Current', value: formatCurrency(current))),
                   const SizedBox(width: 8),
-                  Expanded(child: _Mini(label: '1–30', value: formatCurrency(d30))),
+                  Expanded(child: _Mini(label: '1-30', value: formatCurrency(d30))),
                 ],
               ),
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Expanded(child: _Mini(label: '31–60', value: formatCurrency(d60))),
+                  Expanded(child: _Mini(label: '31-60', value: formatCurrency(d60))),
                   const SizedBox(width: 8),
                   Expanded(child: _Mini(label: '60+', value: formatCurrency(d90))),
                 ],

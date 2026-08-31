@@ -251,7 +251,7 @@ export async function readOdooPartners(options: {
   limit?: number;
 }) {
   const { cfg, uid, limit = 50 } = options;
-  // Odoo Online / some DBs omit `mobile` on res.partner — never request it unconditionally.
+  // Odoo Online / some DBs omit `mobile` on res.partner - never request it unconditionally.
   const fields = await resolvePartnerReadFields(cfg, uid, [
     "id",
     "name",

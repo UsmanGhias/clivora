@@ -201,7 +201,7 @@ class ClientHubScreen extends ConsumerWidget {
           const SizedBox(height: 22),
           _HubSectionHeader(
             title: 'Growth & tools',
-            subtitle: 'Campaigns, automation, AI, and sync — same suite as web.',
+            subtitle: 'Campaigns, automation, AI, and sync - same suite as web.',
           ),
           const SizedBox(height: 12),
           _ClientHubGrid(
