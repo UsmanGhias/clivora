@@ -27,7 +27,7 @@ export function HomeHero() {
             </div>
 
             <h1 className="mt-5 font-display text-[2.35rem] font-extrabold leading-[1.05] tracking-tight text-navy sm:text-5xl lg:text-[3.4rem]">
-              <span className="block">{h.headline[0]}</span>
+              <span className="block">{h.headline[0]}</span>{" "}
               <span className="mt-1 inline-block bg-[linear-gradient(transparent_58%,rgba(45,212,191,0.45)_58%)]">
                 {h.headline[1]}
               </span>

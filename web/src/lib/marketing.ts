@@ -64,18 +64,18 @@ export const marketing = {
 
   hero: {
     badge: "Freelancer OS for complete businesses",
-    headline: ["Find work. Keep your rate.", "Run your business with $0 fees."],
+    headline: ["Stop losing 20%", "to marketplace fees."],
     body:
-      "Clivora is a complete Freelancer OS for independent talent and hiring clients worldwide: private Connect hiring, CRM, projects, timesheets, and direct invoices on web and Android. Zero platform fees on negotiated deals, direct client payments, and offline-first cloud synchronization.",
+      "Clivora is a complete Freelancer OS for freelancers and clients worldwide: private Connect (emails unlock only after mutual accept), CRM, projects, timesheets, messages, and invoices. Platform fee on your deals stays $0 - clients pay you directly against your invoice. One account for the web app and Android. The purpose of Clivora is one workspace to hire, deliver, and get paid without marketplace cuts.",
     primaryCta: { label: "I'm a Freelancer", href: "/signup?role=freelancer" },
     secondaryCta: { label: "I'm hiring", href: "/signup?role=client" },
     trusts: [
       "$0 Connect platform fee",
-      "Direct client invoices",
-      "Offline-first + Cloud sync",
+      "Invoice clients directly",
+      "One account · web + Android",
     ],
     socialLine:
-      "Built for independent professionals, studios, and hiring clients worldwide.",
+      "Join freelancers and clients already moving off fee-heavy marketplaces into one workspace.",
   },
 
   traction: {
