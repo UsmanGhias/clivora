@@ -56,21 +56,21 @@ $pdo->exec("CREATE TABLE IF NOT EXISTS clivora_outreach_leads (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-// Official Professional Clivora Email Senders & Aliases
+// Official Professional Clivora Hostinger Mailbox Senders
 $CLIVORA_SENDERS = [
     [
         "smtp_host" => "ssl://smtp.hostinger.com",
         "smtp_port" => 465,
-        "auth_user" => "contact@clivora.io",
-        "auth_pass" => "46730820Hangb@",
-        "from_email" => "contact@clivora.io",
+        "auth_user" => "growth@clivora.io",
+        "auth_pass" => "46730820Hangb@?!;Usman",
+        "from_email" => "growth@clivora.io",
         "from_name" => "Usman Ghias · Clivora & CODCrafters"
     ],
     [
         "smtp_host" => "ssl://smtp.hostinger.com",
         "smtp_port" => 465,
-        "auth_user" => "contact@clivora.io",
-        "auth_pass" => "46730820Hangb@",
+        "auth_user" => "hello@clivora.io",
+        "auth_pass" => "46730820Hangb@?!;Usman",
         "from_email" => "hello@clivora.io",
         "from_name" => "Clivora Ecosystem"
     ],
@@ -78,9 +78,33 @@ $CLIVORA_SENDERS = [
         "smtp_host" => "ssl://smtp.hostinger.com",
         "smtp_port" => 465,
         "auth_user" => "contact@clivora.io",
-        "auth_pass" => "46730820Hangb@",
-        "from_email" => "growth@clivora.io",
-        "from_name" => "CODCrafters Growth & Partnerships"
+        "auth_pass" => "46730820Hangb@?!;Usman",
+        "from_email" => "contact@clivora.io",
+        "from_name" => "Usman Ghias · Principal Architect"
+    ],
+    [
+        "smtp_host" => "ssl://smtp.hostinger.com",
+        "smtp_port" => 465,
+        "auth_user" => "marketing@clivora.io",
+        "auth_pass" => "46730820Hangb@?!;Usman",
+        "from_email" => "marketing@clivora.io",
+        "from_name" => "Clivora Community & Growth"
+    ],
+    [
+        "smtp_host" => "ssl://smtp.hostinger.com",
+        "smtp_port" => 465,
+        "auth_user" => "partners@clivora.io",
+        "auth_pass" => "46730820Hangb@?!;Usman",
+        "from_email" => "partners@clivora.io",
+        "from_name" => "Clivora Strategic Partnerships"
+    ],
+    [
+        "smtp_host" => "ssl://smtp.hostinger.com",
+        "smtp_port" => 465,
+        "auth_user" => "usmanghias@clivora.io",
+        "auth_pass" => "46730820Hangb@?!;Usman",
+        "from_email" => "usmanghias@clivora.io",
+        "from_name" => "Usman Ghias (Founder)"
     ]
 ];
 
