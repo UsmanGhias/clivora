@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth/auth_service.dart';
 import '../../core/services/app_engagement_service.dart';
@@ -586,6 +587,28 @@ class MoreScreen extends ConsumerWidget {
                 iconBackground: ClivoraColors.iconTeal,
                 iconColor: ClivoraColors.primary,
                 onTap: () => context.push('/quotes'),
+              ),
+              ToolGridTile(
+                icon: Icons.forum_outlined,
+                label: 'Community',
+                description: 'Discussions, Q&A and events',
+                iconBackground: ClivoraColors.iconTeal,
+                iconColor: ClivoraColors.primary,
+                onTap: () => launchUrl(
+                  Uri.parse('https://community.clivora.io'),
+                  mode: LaunchMode.externalApplication,
+                ),
+              ),
+              ToolGridTile(
+                icon: Icons.work_outline,
+                label: 'Remote Jobs',
+                description: 'Browse 700+ remote opportunities',
+                iconBackground: ClivoraColors.iconPurple,
+                iconColor: ClivoraColors.primaryPurple,
+                onTap: () => launchUrl(
+                  Uri.parse('https://clivora.io/jobs'),
+                  mode: LaunchMode.externalApplication,
+                ),
               ),
             ],
           ),
