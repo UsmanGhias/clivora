@@ -15,7 +15,8 @@ export const site = {
   company: {
     name: "CODCrafters",
     url: "https://clivora.io",
-    email: "contact@clivora.io",
+    email: "hello@clivora.io",
+    supportEmail: "contact@clivora.io",
     privacyEmail: "contact@clivora.io",
     legalEmail: "contact@clivora.io",
   },
