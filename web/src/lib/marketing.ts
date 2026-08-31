@@ -605,6 +605,7 @@ export const marketing = {
       Product: [
         { label: "Features", href: "/features" },
         { label: "Connect", href: "/connect" },
+        { label: "Community", href: "https://community.clivora.io" },
         { label: "Compare", href: "/compare" },
         { label: "Pricing", href: "/pricing" },
         { label: "Pro Plans", href: "/pro" },
