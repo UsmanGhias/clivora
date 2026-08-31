@@ -27,7 +27,7 @@ export async function POST() {
       return NextResponse.json({ error: "admin_only" }, { status: 403 });
     }
 
-    // Task sync stub — requires active Odoo project module
+    // Task sync stub - requires active Odoo project module
     return NextResponse.json({
       ok: true,
       message: "Task sync endpoint ready. Configure ODOO_MAIN_* environment variables to activate.",

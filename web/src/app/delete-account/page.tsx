@@ -72,15 +72,15 @@ export default function DeleteAccountPage() {
       <h2>What may be retained</h2>
       <ul>
         <li>
-          <strong>Subscription records</strong> — Google Play / billing providers keep
+          <strong>Subscription records</strong> - Google Play / billing providers keep
           their own history; cancel subscriptions before deleting
         </li>
         <li>
-          <strong>Support correspondence</strong> — may be retained up to 2 years for
+          <strong>Support correspondence</strong> - may be retained up to 2 years for
           legal compliance
         </li>
         <li>
-          <strong>Fraud / abuse audit logs</strong> — limited retention where required by law
+          <strong>Fraud / abuse audit logs</strong> - limited retention where required by law
         </li>
       </ul>
 

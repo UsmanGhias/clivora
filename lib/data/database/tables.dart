@@ -296,7 +296,7 @@ class ProjectMilestones extends Table {
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
 
-/// Post-project client feedback (1–5 stars).
+/// Post-project client feedback (1-5 stars).
 class ProjectReviews extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get ownerUserId => integer().references(Users, #id)();

@@ -273,7 +273,7 @@ export default async function AnalyticsPage() {
         actions={
           <>
             <span className="inline-flex min-h-11 items-center rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-navy">
-              Jul 1 – Jul 31, 2026
+              Jul 1 - Jul 31, 2026
             </span>
             <PrimaryButton href="/app/earnings">
               <Download className="h-4 w-4" />

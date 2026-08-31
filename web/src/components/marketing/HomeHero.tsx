@@ -4,7 +4,7 @@ import { marketing } from "@/lib/marketing";
 import { ClientDashMock } from "./mockups/ClientDashMock";
 
 /**
- * Server Component — hero copy is in the first HTML paint (same pattern as /for-freelancers).
+ * Server Component - hero copy is in the first HTML paint (same pattern as /for-freelancers).
  */
 export function HomeHero() {
   const h = marketing.hero;

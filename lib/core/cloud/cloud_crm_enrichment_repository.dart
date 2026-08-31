@@ -8,7 +8,7 @@ final cloudCrmEnrichmentRepositoryProvider = Provider<CloudCrmEnrichmentReposito
 });
 
 /// Cloud sync for Phase 1 CRM enrichment tables (companies, activities, scoring).
-/// Gated by app_feature_flags.crm_enrichment — callers should check before heavy use.
+/// Gated by app_feature_flags.crm_enrichment - callers should check before heavy use.
 class CloudCrmEnrichmentRepository {
   CloudCrmEnrichmentRepository(this.ref);
 

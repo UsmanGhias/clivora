@@ -202,7 +202,7 @@ export default async function ReviewsPage() {
     { name: "5★", value: reviews.filter((r) => Math.round(r.rating) === 5).length, color: "#0D9488" },
     { name: "4★", value: reviews.filter((r) => Math.round(r.rating) === 4).length, color: "#0EA5E9" },
     { name: "3★", value: reviews.filter((r) => Math.round(r.rating) === 3).length, color: "#F59E0B" },
-    { name: "1–2★", value: reviews.filter((r) => Math.round(r.rating) <= 2).length, color: "#DC2626" },
+    { name: "1-2★", value: reviews.filter((r) => Math.round(r.rating) <= 2).length, color: "#DC2626" },
   ].filter((x) => x.value > 0);
 
   const skills = [

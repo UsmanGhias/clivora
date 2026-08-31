@@ -164,7 +164,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Text(
-                    'Cloud events enabled — syncs with web /app/calendar',
+                    'Cloud events enabled - syncs with web /app/calendar',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(color: ClivoraColors.textSecondary),
                   ),
                 ),

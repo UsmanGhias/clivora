@@ -47,7 +47,7 @@ export default async function AdminOpsPage() {
         <OpsClient initialQueue={queue} initialAudits={audits} errors={errors} />
       ) : (
         <p className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">
-          Admin ops dashboard flag is off. Enable <code>admin_ops_dashboard</code> after Gates 1–12.
+          Admin ops dashboard flag is off. Enable <code>admin_ops_dashboard</code> after Gates 1-12.
         </p>
       )}
     </div>

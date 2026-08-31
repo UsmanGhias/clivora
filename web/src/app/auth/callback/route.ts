@@ -39,7 +39,7 @@ export async function GET(request: Request) {
         updated_at: new Date().toISOString(),
       };
 
-      // Never overwrite an existing paid (or free) plan on login — only set plan for brand-new profiles.
+      // Never overwrite an existing paid (or free) plan on login - only set plan for brand-new profiles.
       if (!existingProfile) {
         patch.subscription_plan = earlyAccessPlanForSignup();
       }

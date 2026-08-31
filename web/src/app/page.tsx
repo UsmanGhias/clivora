@@ -64,7 +64,7 @@ export const metadata: Metadata = {
     "Usman Ghias",
   ],
   openGraph: {
-    title: `${site.name} — Freelancer OS for hire, CRM & invoices`,
+    title: `${site.name} - Freelancer OS for hire, CRM & invoices`,
     description: site.description,
     url: site.url,
     siteName: site.name,
@@ -79,7 +79,7 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <MarketingShell>
-      {/* First paint: server hero only — no Framer, no heavy client graph */}
+      {/* First paint: server hero only - no Framer, no heavy client graph */}
       <HomeHero />
       <section
         className="border-y border-navy/8 bg-white py-10 sm:py-12"
@@ -99,7 +99,7 @@ export default function Home() {
           <p className="mt-4 text-[15px] leading-relaxed text-slate-600 sm:text-base">
             The purpose of Clivora is to help freelancers and clients hire and get hired on a
             private Connect board, then run CRM, projects, timesheets, messages, and invoices on
-            web and Android — with $0 platform fees on negotiated deals. Anyone can read this page
+            web and Android - with $0 platform fees on negotiated deals. Anyone can read this page
             without signing in.
           </p>
         </div>

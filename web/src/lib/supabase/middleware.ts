@@ -55,7 +55,7 @@ export async function updateSession(request: NextRequest) {
         .select("role, account_type, is_blocked, is_restricted")
         .eq("id", user.id)
         .maybeSingle();
-      // Only bounce on definitive non-admin / blocked — not on transient query errors.
+      // Only bounce on definitive non-admin / blocked - not on transient query errors.
       if (!error) {
         if (
           (profile?.role !== "admin" && profile?.account_type !== "admin") ||

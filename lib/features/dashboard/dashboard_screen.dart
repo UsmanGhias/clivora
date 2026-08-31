@@ -196,7 +196,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 12),
               const _EarningsOverviewCard(),
               const SizedBox(height: 12),
-              // Secondary 2x2 removed — KPI grid above already covers earnings / projects / customers
+              // Secondary 2x2 removed - KPI grid above already covers earnings / projects / customers
               _QuickActions(ref: ref, l10n: l10n),
               const SizedBox(height: 14),
               _SearchBar(onTap: () => openFormRoute(context, '/search')),

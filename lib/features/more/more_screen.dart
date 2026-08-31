@@ -122,7 +122,7 @@ class MoreScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(0, 4, 0, 32),
         children: [
-          // Profile card kept compact — full settings live under Menu tab
+          // Profile card kept compact - full settings live under Menu tab
           profileAsync.when(
             loading: () => const SizedBox(height: 8),
             error: (_, _) => const SizedBox.shrink(),

@@ -61,7 +61,7 @@ export async function upsertAutomationRule(input: {
   return data.id as string;
 }
 
-/** Enqueue durable job — never silently discard */
+/** Enqueue durable job - never silently discard */
 export async function enqueueAutomationJob(input: {
   rule_id?: string;
   payload?: Record<string, unknown>;

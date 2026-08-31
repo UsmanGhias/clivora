@@ -67,7 +67,7 @@ export default function ContactPage() {
           <Clock className="mb-3 h-7 w-7 text-primary" />
           <h3 className="font-bold text-white">Response Time</h3>
           <p className="mt-2 text-sm text-white/60">
-            We typically respond within 1–2 business days. Pro subscribers
+            We typically respond within 1-2 business days. Pro subscribers
             receive priority support.
           </p>
         </div>

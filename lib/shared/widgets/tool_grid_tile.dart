@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/clivora_colors.dart';
 
-/// Hub tool card — icon well, title, optional description, chevron.
+/// Hub tool card - icon well, title, optional description, chevron.
 class ToolGridTile extends StatelessWidget {
   const ToolGridTile({
     super.key,

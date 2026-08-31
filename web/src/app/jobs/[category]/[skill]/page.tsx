@@ -53,7 +53,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!CATEGORIES.includes(category)) return {};
 
   const decodedSkill = decodeURIComponent(skill);
-  const title = `Remote ${formatTitle(decodedSkill)} Jobs in ${formatTitle(category)} — $0 Fee | CLIVORA`;
+  const title = `Remote ${formatTitle(decodedSkill)} Jobs in ${formatTitle(category)} - $0 Fee | CLIVORA`;
   const description = `Find the best remote ${formatTitle(decodedSkill)} jobs. Apply directly with $0 platform fees.`;
 
   return {
@@ -131,7 +131,7 @@ export default async function SkillPage({ params }: Props) {
 
         <div className="mb-10">
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            Remote {skillName} Jobs <span className="text-teal-600">— $0 Fee</span>
+            Remote {skillName} Jobs <span className="text-teal-600"> -  $0 Fee</span>
           </h1>
           <p className="mt-3 text-base text-slate-600">
             Browse remote opportunities for {skillName} specialists in {catName}. Zero commission, direct client contracts.

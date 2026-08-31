@@ -227,7 +227,7 @@ class _CrmEnrichmentPanelState extends ConsumerState<CrmEnrichmentPanel> {
               if (_score != null) Text('Lead score: $_score', style: const TextStyle(fontWeight: FontWeight.w600)),
               ..._dupes.map(
                 (d) => Text(
-                  'Possible duplicate: ${d['contact_person']} (${d['company']}) — ${d['score']}',
+                  'Possible duplicate: ${d['contact_person']} (${d['company']}) - ${d['score']}',
                   style: const TextStyle(fontSize: 12),
                 ),
               ),

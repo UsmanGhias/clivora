@@ -137,7 +137,7 @@ function ClaimContent() {
         )}
 
         <p className="text-xs text-gray-400 mt-8">
-          CLIVORA — The World&apos;s #1 Open-Source, $0-Fee Freelancer Business OS
+          CLIVORA - The World&apos;s #1 Open-Source, $0-Fee Freelancer Business OS
         </p>
       </div>
     </div>

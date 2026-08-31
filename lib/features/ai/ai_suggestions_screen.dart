@@ -47,7 +47,7 @@ class _AiSuggestionsScreenState extends ConsumerState<AiSuggestionsScreen> {
   Widget build(BuildContext context) {
     return ClivoraScaffold(
       title: 'AI suggestions',
-      subtitle: 'Human review required — never auto-pay/publish',
+      subtitle: 'Human review required - never auto-pay/publish',
       showBackButton: true,
       body: _enabled == null
           ? const Center(child: CircularProgressIndicator())

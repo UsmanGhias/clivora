@@ -60,7 +60,7 @@ class _CampaignsScreenState extends ConsumerState<CampaignsScreen> {
               ? const Padding(
                   padding: EdgeInsets.all(24),
                   child: Text(
-                    'Campaigns are behind a feature flag and not enabled yet. Ask an admin after Gates 1–12.',
+                    'Campaigns are behind a feature flag and not enabled yet. Ask an admin after Gates 1-12.',
                   ),
                 )
               : ListView(

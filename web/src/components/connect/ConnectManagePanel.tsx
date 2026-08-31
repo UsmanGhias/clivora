@@ -74,9 +74,9 @@ type NeedRow = {
 
 const BUDGET_OPTIONS = [
   "Under $500",
-  "$500–$1,000",
-  "$1,000–$2,500",
-  "$2,500–$5,000",
+  "$500-$1,000",
+  "$1,000-$2,500",
+  "$2,500-$5,000",
   "$5,000+",
   "Hourly / TBD",
 ];
@@ -660,7 +660,7 @@ export function ConnectManagePanel() {
                 inputMode="decimal"
               />
               <input
-                placeholder="Rate band label (e.g. $40–60/hr)"
+                placeholder="Rate band label (e.g. $40-60/hr)"
                 value={listing.rate_band}
                 onChange={(e) => setListing({ ...listing, rate_band: e.target.value })}
                 className="w-full rounded-xl border border-border px-3 py-2.5"

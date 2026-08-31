@@ -511,7 +511,7 @@ class ConnectMarketplaceService {
     String? requestId,
   }) async {
     final auth = await _requireAuthedClient();
-    if (rating < 1 || rating > 5) throw StateError('Rating must be 1–5');
+    if (rating < 1 || rating > 5) throw StateError('Rating must be 1-5');
     if (requestId == null || requestId.isEmpty) {
       throw StateError('A released milestone engagement is required to leave a review');
     }

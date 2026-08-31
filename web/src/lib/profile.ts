@@ -25,7 +25,7 @@ export async function getProfile(): Promise<Profile | null> {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  // profiles has updated_at but no created_at — selecting created_at 400s and used to
+  // profiles has updated_at but no created_at - selecting created_at 400s and used to
   // fall through to a fake Free row (never demote paid plans on query failure).
   const { data, error } = await supabase
     .from("profiles")
@@ -51,7 +51,7 @@ export async function getProfile(): Promise<Profile | null> {
   }
   if (data) return data as Profile;
 
-  // Only invent a row shape when no profile exists yet — never demote paid plans.
+  // Only invent a row shape when no profile exists yet - never demote paid plans.
   return {
     id: user.id,
     email: user.email ?? null,
