@@ -161,7 +161,7 @@ export function ClientDashMock({ compact = false }: { compact?: boolean }) {
 
         <main className="min-w-0 flex-1 overflow-hidden bg-[#F4F7F6] p-2.5">
           <p className="font-display text-[11px] font-bold text-[#0F172A]">Good afternoon, Muhammad</p>
-          <p className="text-[9px] text-slate-500">Hiring workspace · live invoice totals</p>
+          <p className="text-[9px] text-slate-500">Hiring workspace · Illustrative preview</p>
 
           <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-5">
             <Stat label="Open jobs" value="3" icon={Briefcase} />

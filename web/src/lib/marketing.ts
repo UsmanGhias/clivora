@@ -64,18 +64,18 @@ export const marketing = {
 
   hero: {
     badge: "Freelancer OS for complete businesses",
-    headline: ["Stop losing 20%", "to marketplace fees."],
+    headline: ["Find work. Keep your rate.", "Run your business with $0 fees."],
     body:
-      "Clivora is a complete Freelancer OS for freelancers and clients worldwide: private Connect (emails unlock only after mutual accept), CRM, projects, timesheets, messages, and invoices. Platform fee on your deals stays $0 - clients pay you directly against your invoice. One account for the web app and Android. The purpose of Clivora is one workspace to hire, deliver, and get paid without marketplace cuts.",
+      "Clivora is a complete Freelancer OS for independent talent and hiring clients worldwide: private Connect hiring, CRM, projects, timesheets, and direct invoices on web and Android. Zero platform fees on negotiated deals, direct client payments, and offline-first cloud synchronization.",
     primaryCta: { label: "I'm a Freelancer", href: "/signup?role=freelancer" },
     secondaryCta: { label: "I'm hiring", href: "/signup?role=client" },
     trusts: [
       "$0 Connect platform fee",
-      "Invoice clients directly",
-      "One account · web + Android",
+      "Direct client invoices",
+      "Offline-first + Cloud sync",
     ],
     socialLine:
-      "Join freelancers and clients already moving off fee-heavy marketplaces into one workspace.",
+      "Built for independent professionals, studios, and hiring clients worldwide.",
   },
 
   traction: {
@@ -154,8 +154,8 @@ export const marketing = {
       "Meetings",
       "File vault",
     ],
-    socialProof: "Shipped by CODCrafters. Used by freelancers and clients worldwide.",
-    activeUsers: "Growing workspaces weekly",
+    socialProof: "Shipped by CODCrafters. Used by independent professionals worldwide.",
+    activeUsers: "Built for freelancers and clients worldwide",
   },
 
   freelancerOs: {
@@ -199,9 +199,9 @@ export const marketing = {
   },
 
   socialProof: {
-    badge: "WHY PEOPLE STAY",
+    badge: "WHY PEOPLE CHOOSE CLIVORA",
     headline: ["Private hiring.", "Direct invoicing."],
-    body: "CLIVORA is not another buzzword OS. It is Connect without contact spam, invoices clients pay you on directly, and one account across web and Android for your whole freelance business.",
+    body: "CLIVORA is a practical operating system built for real freelance businesses: Connect with private contact unlocking, invoices paid directly to you, and offline-first cloud synchronization.",
     features: [
       {
         title: "Talent you can verify",

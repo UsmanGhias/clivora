@@ -14,8 +14,8 @@ const faqs = [
     a: "Download CLIVORA from Google Play, open the app, and tap Sign Up. Enter your name, email, and password. During early access, all features are free.",
   },
   {
-    q: "Is my data stored in the cloud?",
-    a: "All business data is stored locally on your device using SQLite. CLIVORA AI runs offline. Cloud sync is on our roadmap.",
+    q: "How does data storage and cloud synchronization work?",
+    a: "Clivora is built on an offline-first architecture. Your data is stored locally on your device using SQLite for instantaneous offline access, and automatically synchronizes to your secure cloud account across the web app and Android whenever you are connected.",
   },
   {
     q: "What are the Free plan limits?",
@@ -23,15 +23,15 @@ const faqs = [
   },
   {
     q: "How do I upgrade to Pro?",
-    a: `Pro (${site.pricing.proMonthlyLabel}/month) and Pro Plus are available via Google Play Billing in the Android app, and via web checkout at /pro. Subscribe in-app on Android; manage or cancel in Google Play → Subscriptions.`,
+    a: `Pro (${site.pricing.proMonthlyLabel}/month) and Pro Plus are available via Google Play Billing in the Android app, and via web checkout at /pro. Subscribe in-app on Android; manage or cancel in Google Play (Subscriptions).`,
   },
   {
     q: "How do I export PDF invoices?",
-    a: "Open any invoice → tap Preview/Share → choose PDF. Customize branding under More → Invoice Branding with your logo and template style.",
+    a: "Open any invoice, tap Preview/Share, and choose PDF. Customize branding under More (Invoice Branding) with your logo and template style.",
   },
   {
     q: "What is CLIVORA AI?",
-    a: "Open Hub → CLIVORA AI for local insights: follow-up drafts, revenue snapshots, and project alerts. No internet required.",
+    a: "Open Hub and tap CLIVORA AI for intelligent insights: follow-up drafts, proposal generation, revenue snapshots, and project alerts.",
   },
   {
     q: "How do I delete my account?",
