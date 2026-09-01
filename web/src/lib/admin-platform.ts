@@ -143,6 +143,7 @@ export async function loadPlatformSnapshot(): Promise<PlatformSnapshot> {
       events,
       flags,
       settingsRows,
+      reviewRows,
     ] = await Promise.all([
       restCount(cfg, "profiles"),
       restCount(cfg, "profiles", "account_type=eq.freelancer"),
@@ -258,6 +259,13 @@ export async function loadPlatformSnapshot(): Promise<PlatformSnapshot> {
         20,
         "key=in.(connect_auto_approve_profiles,connect_auto_approve_needs)",
       ),
+      restList(
+        cfg,
+        "connect_reviews",
+        "id,client_user_id,freelancer_user_id,rating,title,comment,verified,created_at,updated_at",
+        "created_at.desc",
+        150,
+      ),
     ]);
 
     const freelancerRows = userRows.filter(
@@ -334,6 +342,7 @@ export async function loadPlatformSnapshot(): Promise<PlatformSnapshot> {
         escrow: moneyBadge(escrowHeld || milestones),
         disputes: disputedMilestones,
         tickets,
+        reviews: reviewRows.length,
       },
       overview: {
         totalRevenue,
@@ -358,6 +367,7 @@ export async function loadPlatformSnapshot(): Promise<PlatformSnapshot> {
       invoices: invoiceRows,
       payments: paymentRows,
       escrow: milestoneRows,
+      reviews: reviewRows,
       connect: {
         profiles: connectProfiles,
         needs: connectNeeds,

@@ -34,6 +34,7 @@ export type PlatformSnapshot = {
   /** CRM customers across all owners - for migration / Odoo push overview. */
   customers: Array<Record<string, unknown>>;
   events: Array<Record<string, unknown>>;
+  reviews?: Array<Record<string, unknown>>;
   tickets: number;
   ticketRows: Array<Record<string, unknown>>;
   disputes: number;

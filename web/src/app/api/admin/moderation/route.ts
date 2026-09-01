@@ -102,12 +102,20 @@ export async function POST(req: NextRequest) {
       const userId = String(body.userId ?? "");
       if (!userId) return NextResponse.json({ error: "userId required" }, { status: 400 });
       const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
-      if (typeof body.name === "string" && body.name.trim()) patch.name = body.name.trim();
-      if (typeof body.subscription_plan === "string" && body.subscription_plan.trim()) {
+      if (typeof body.name === "string") patch.name = body.name.trim();
+      if (typeof body.account_type === "string") patch.account_type = body.account_type.trim();
+      if (typeof body.subscription_plan === "string") {
         patch.subscription_plan = body.subscription_plan.trim();
       }
-      if (Object.keys(patch).length <= 1) {
-        return NextResponse.json({ error: "No fields to update" }, { status: 400 });
+      if (typeof body.is_blocked === "boolean") {
+        patch.is_blocked = body.is_blocked;
+        if (body.is_blocked) {
+          patch.blocked_at = new Date().toISOString();
+          patch.block_reason = String(body.block_reason ?? "Blocked by administrator");
+        } else {
+          patch.blocked_at = null;
+          patch.block_reason = "";
+        }
       }
       const res = await fetch(
         `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`,
@@ -115,6 +123,58 @@ export async function POST(req: NextRequest) {
       );
       if (!res.ok) return NextResponse.json({ error: await res.text() }, { status: 400 });
       return NextResponse.json({ ok: true, action, userId });
+    }
+
+    if (action === "delete_review") {
+      const reviewId = String(body.reviewId ?? "");
+      if (!reviewId) return NextResponse.json({ error: "reviewId required" }, { status: 400 });
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/connect_reviews?id=eq.${encodeURIComponent(reviewId)}`,
+        { method: "DELETE", headers: headers(key) },
+      );
+      if (!res.ok) return NextResponse.json({ error: await res.text() }, { status: 400 });
+      return NextResponse.json({ ok: true, action, reviewId });
+    }
+
+    if (action === "update_review") {
+      const reviewId = String(body.reviewId ?? "");
+      if (!reviewId) return NextResponse.json({ error: "reviewId required" }, { status: 400 });
+      const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      if (body.rating != null) patch.rating = Number(body.rating);
+      if (typeof body.title === "string") patch.title = body.title.trim();
+      if (typeof body.comment === "string") patch.comment = body.comment.trim();
+      if (typeof body.verified === "boolean") patch.verified = body.verified;
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/connect_reviews?id=eq.${encodeURIComponent(reviewId)}`,
+        { method: "PATCH", headers: headers(key), body: JSON.stringify(patch) },
+      );
+      if (!res.ok) return NextResponse.json({ error: await res.text() }, { status: 400 });
+      return NextResponse.json({ ok: true, action, reviewId });
+    }
+
+    if (action === "delete_job") {
+      const jobId = String(body.jobId ?? "");
+      if (!jobId) return NextResponse.json({ error: "jobId required" }, { status: 400 });
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/connect_jobs?id=eq.${encodeURIComponent(jobId)}`,
+        { method: "DELETE", headers: headers(key) },
+      );
+      if (!res.ok) return NextResponse.json({ error: await res.text() }, { status: 400 });
+      return NextResponse.json({ ok: true, action, jobId });
+    }
+
+    if (action === "update_job") {
+      const jobId = String(body.jobId ?? "");
+      if (!jobId) return NextResponse.json({ error: "jobId required" }, { status: 400 });
+      const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      if (typeof body.status === "string") patch.status = body.status;
+      if (typeof body.title === "string") patch.title = body.title;
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/connect_jobs?id=eq.${encodeURIComponent(jobId)}`,
+        { method: "PATCH", headers: headers(key), body: JSON.stringify(patch) },
+      );
+      if (!res.ok) return NextResponse.json({ error: await res.text() }, { status: 400 });
+      return NextResponse.json({ ok: true, action, jobId });
     }
 
     return NextResponse.json({ error: "Unknown action" }, { status: 400 });
