@@ -62,10 +62,20 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
           }
 
           await load();
-          const { data: sub } = supabase.auth.onAuthStateChange(() => {
-            void load();
-          });
-          unsub = () => sub.subscription.unsubscribe();
+          try {
+            const { data: sub } = supabase.auth.onAuthStateChange(() => {
+              void load();
+            });
+            unsub = () => {
+              try {
+                sub?.subscription?.unsubscribe?.();
+              } catch {
+                /* ignore */
+              }
+            };
+          } catch {
+            /* ignore */
+          }
         } catch {
           if (mounted) setUser(null);
         }

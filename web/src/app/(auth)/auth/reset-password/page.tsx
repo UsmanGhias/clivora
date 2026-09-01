@@ -108,18 +108,26 @@ export default function ResetPasswordPage() {
       }
     }
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
-        void enterUpdateMode();
-      }
-    });
+    let authSubscription: { unsubscribe: () => void } | null = null;
+    try {
+      const { data } = supabase.auth.onAuthStateChange((event) => {
+        if (event === "PASSWORD_RECOVERY") {
+          void enterUpdateMode();
+        }
+      });
+      authSubscription = data?.subscription ?? null;
+    } catch {
+      /* ignore */
+    }
 
     void hydrateRecovery();
     return () => {
       cancelled = true;
-      subscription.unsubscribe();
+      try {
+        authSubscription?.unsubscribe?.();
+      } catch {
+        /* ignore */
+      }
     };
   }, []);
 
