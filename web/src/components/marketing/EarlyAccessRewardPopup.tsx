@@ -19,16 +19,43 @@ function getTimeLeft() {
 
 export function EarlyAccessRewardPopup() {
   const [open, setOpen] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(getTimeLeft);
+  const [timeLeft, setTimeLeft] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+    ended: false,
+  });
 
   useEffect(() => {
-    setOpen(window.localStorage.getItem(storageKey) !== "true");
-    const id = window.setInterval(() => setTimeLeft(getTimeLeft()), 1000);
+    try {
+      if (typeof window !== "undefined") {
+        setOpen(window.localStorage.getItem(storageKey) !== "true");
+        setTimeLeft(getTimeLeft());
+      }
+    } catch {
+      setOpen(false);
+    }
+
+    const id = window.setInterval(() => {
+      try {
+        setTimeLeft(getTimeLeft());
+      } catch {
+        /* ignore */
+      }
+    }, 1000);
+
     return () => window.clearInterval(id);
   }, []);
 
   function closePopup() {
-    window.localStorage.setItem(storageKey, "true");
+    try {
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(storageKey, "true");
+      }
+    } catch {
+      /* ignore */
+    }
     setOpen(false);
   }
 
@@ -61,52 +88,60 @@ export function EarlyAccessRewardPopup() {
             <button
               type="button"
               onClick={closePopup}
-              className="shrink-0 rounded-full bg-white/10 p-3 text-white transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/70"
-              aria-label="Close early access reward popup"
+              className="rounded-full p-2 text-white/80 transition hover:bg-white/10 hover:text-white"
+              aria-label="Close early access offer"
             >
-              <X className="h-6 w-6" />
+              <X className="h-5 w-5" />
             </button>
           </div>
+          <p className="relative mt-4 max-w-2xl text-sm leading-relaxed text-teal-50/90 sm:text-base">
+            Every user who registers during the next 7 days gets Pro free permanently. Freelancers get unlimited proposals, top placement, and full analytics. Clients get unlimited job posts and contract automation.
+          </p>
+        </div>
 
-          <div className="relative mt-10 grid grid-cols-4 gap-3 text-center sm:gap-6">
-            {countdown.map(([label, value]) => (
-              <div key={label}>
-                <p className="font-display text-3xl font-black tabular-nums sm:text-4xl">{String(value).padStart(2, "0")}</p>
-                <p className="mt-1 text-xs font-extrabold uppercase text-teal-100 sm:text-sm">{label}</p>
+        <div className="-mt-6 px-6 sm:px-8">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-lg shadow-navy/5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Offer expires in</p>
+                <div className="mt-2 flex items-center gap-2 text-navy">
+                  <Clock className="h-4 w-4 text-primary" />
+                  <div className="flex items-center gap-1.5 font-mono text-base font-bold sm:text-lg">
+                    {countdown.map(([label, value]) => (
+                      <div key={label} className="rounded-md bg-slate-100 px-2 py-0.5 text-center">
+                        <span>{String(value).padStart(2, "0")}</span>
+                        <span className="block text-[9px] font-sans font-medium text-slate-500">{label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            ))}
+
+              <div className="flex flex-wrap gap-2.5">
+                <Link
+                  href="/signup"
+                  onClick={closePopup}
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-md shadow-primary/25 transition hover:bg-primary/90"
+                >
+                  <Gift className="h-4 w-4" />
+                  <span>Claim free Pro</span>
+                </Link>
+                <Link
+                  href="/contact?topic=bug-bounty"
+                  onClick={closePopup}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-navy transition hover:bg-slate-50"
+                >
+                  <Bug className="h-4 w-4 text-primary" />
+                  <span>Bug bounty details</span>
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="space-y-6 px-6 py-7 sm:px-8">
-          <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-950 sm:p-6">
-            <p className="text-lg font-black">You will receive the Pro account, not Pro Plus.</p>
-            <p className="mt-2 text-base leading-relaxed text-emerald-900">
-              The free Pro reward applies to users who register before the countdown ends and to people who help report bugs during early access.
-            </p>
-          </div>
-
-          <Link
-            href="/signup"
-            onClick={closePopup}
-            className="flex w-full items-center justify-center gap-3 rounded-3xl bg-primary px-5 py-4 text-center text-base font-black text-white shadow-lg shadow-primary/25 transition hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-          >
-            <Gift className="h-5 w-5" />
-            Claim free Pro access now
-          </Link>
-
-          <Link
-            href="/contact"
-            onClick={closePopup}
-            className="flex w-full items-center justify-center gap-3 rounded-3xl border border-teal-200 bg-teal-50 px-5 py-4 text-center text-base font-black text-primary transition hover:bg-teal-100 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-          >
-            <Bug className="h-5 w-5" />
-            Report a bug and claim Pro review
-          </Link>
-
-          <p className="flex items-start gap-2 text-sm font-semibold leading-relaxed text-slate-500">
-            <Clock className="mt-0.5 h-4 w-4 shrink-0" />
-            Pro access is prepared for when early access ends and CLIVORA is active.
+        <div className="p-6 pt-4 text-center sm:p-8 sm:pt-4">
+          <p className="text-xs text-slate-500">
+            Found a platform issue or suggestion? Report it directly to earn an extra 3 months free Pro Plus.
           </p>
         </div>
       </section>
