@@ -31,6 +31,11 @@ export async function getGeminiApiKeys(): Promise<{ primary: string; fallback: s
   return { primary: PRIMARY_KEY, fallback: FALLBACK_KEY };
 }
 
+export async function getGeminiApiKey(): Promise<string | null> {
+  const keys = await getGeminiApiKeys();
+  return keys.primary || keys.fallback || null;
+}
+
 export type GeminiGenerateOptions = {
   prompt: string;
   systemInstruction?: string;
