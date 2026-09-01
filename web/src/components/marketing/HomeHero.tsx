@@ -53,6 +53,25 @@ export function HomeHero() {
               </Link>
             </div>
 
+            <div className="mt-4 flex flex-wrap items-center gap-2.5">
+              <Link
+                href="/jobs"
+                className="inline-flex items-center gap-2 rounded-xl border border-teal-200 bg-teal-50/90 px-3 py-1.5 text-xs font-bold text-teal-900 transition hover:bg-teal-100 hover:border-teal-300 shadow-xs"
+              >
+                <span className="h-2 w-2 rounded-full bg-teal-600 animate-pulse" />
+                <span>1,120+ Verified Remote Jobs</span>
+                <span className="text-teal-700">→</span>
+              </Link>
+              <Link
+                href="/start-a-project"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-navy transition hover:bg-slate-50 hover:border-slate-300 shadow-xs"
+              >
+                <span className="text-teal-600 font-extrabold">AI</span>
+                <span>Instant Statement of Work (SOW)</span>
+                <span className="text-slate-400">→</span>
+              </Link>
+            </div>
+
             <ul className="mt-8 grid gap-2 sm:grid-cols-3">
               {h.trusts.map((t) => (
                 <li
