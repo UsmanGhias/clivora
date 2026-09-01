@@ -66,10 +66,10 @@ export default async function ConnectPage({
   const plus = isProPlus(profile);
   const client = isClientAccount(profile);
   const restricted = isRestricted(profile);
+  const supabase = await createClient();
   let savedBookmarkIds: string[] = [];
   if (profile) {
     try {
-      const supabase = await createClient();
       const { data } = await supabase
         .from("freelancer_bookmarks")
         .select("target_id")
@@ -82,6 +82,19 @@ export default async function ConnectPage({
     }
   }
 
+  let jobCount = 1120;
+  try {
+    const { count } = await supabase
+      .from("connect_jobs")
+      .select("*", { count: "exact", head: true })
+      .eq("is_public", true)
+      .eq("status", "published");
+    if (count && count > 0) jobCount = count;
+  } catch {
+    jobCount = 1120;
+  }
+  const liveJobsDisplay = `${jobCount.toLocaleString()}+`;
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-navy antialiased">
       <MarketingJsonLd />
@@ -93,10 +106,10 @@ export default async function ConnectPage({
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-teal-200/90 bg-gradient-to-r from-teal-50/80 via-white to-teal-50/80 p-5 shadow-xs">
           <div className="flex items-center gap-3.5">
             <div className="h-11 w-11 rounded-xl bg-teal-700 text-white flex items-center justify-center font-bold text-xs shadow-sm">
-              430+
+              {liveJobsDisplay}
             </div>
             <div>
-              <p className="text-sm font-bold text-navy">430+ Remote Engineering, Design & Tech Roles Available</p>
+              <p className="text-sm font-bold text-navy">{liveJobsDisplay} Remote Engineering, Design & Tech Roles Available</p>
               <p className="text-xs text-slate-500">Apply with 1-click tailored proposals. Keep 100% of your negotiated deal.</p>
             </div>
           </div>
@@ -104,7 +117,7 @@ export default async function ConnectPage({
             href="/jobs"
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-teal-800 transition-colors shrink-0 w-full sm:w-auto"
           >
-            Browse 430+ Remote Jobs
+            Browse {liveJobsDisplay} Remote Jobs
             <span aria-hidden="true">→</span>
           </Link>
         </div>

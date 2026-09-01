@@ -16,12 +16,19 @@ export const marketing = {
   nav: {
     links: [
       {
+        label: "Jobs",
+        href: "/jobs",
+        badge: "1,120+",
+      },
+      {
         label: "For Freelancers",
         href: "/for-freelancers",
         children: [
           { label: "Freelancer OS", href: "/for-freelancers" },
-          { label: "Find Jobs", href: "/connect" },
+          { label: "Remote Jobs Board", href: "/jobs" },
+          { label: "Connect Marketplace", href: "/connect" },
           { label: "Features", href: "/features" },
+          { label: "Pro Tiers", href: "/pro" },
         ],
       },
       {
@@ -30,6 +37,7 @@ export const marketing = {
         children: [
           { label: "Client Portal", href: "/for-clients" },
           { label: "Hire Talent", href: "/connect" },
+          { label: "Instant AI SOW", href: "/start-a-project" },
           { label: "Pricing", href: "/pricing" },
         ],
       },
@@ -39,6 +47,7 @@ export const marketing = {
         children: [
           { label: "All Features", href: "/features" },
           { label: "Connect Marketplace", href: "/connect" },
+          { label: "Remote Jobs Feed", href: "/jobs" },
           { label: "Pro Plans", href: "/pro" },
         ],
       },
@@ -47,6 +56,8 @@ export const marketing = {
         href: "/docs",
         children: [
           { label: "Documentation", href: "/docs" },
+          { label: "Blog & Articles", href: "https://community.clivora.io/blog", external: true },
+          { label: "Community Forum", href: "https://community.clivora.io/forum", external: true },
           { label: "Marketplaces", href: "/connect" },
           { label: "Compare", href: "/compare" },
           { label: "Support", href: "/support" },
@@ -55,6 +66,7 @@ export const marketing = {
         ],
       },
       { label: "Pricing", href: "/pricing" },
+      { label: "Blog", href: "https://community.clivora.io/blog", external: true },
       { label: "Services", href: "https://codcrafters.org", external: true },
       { label: "Community", href: "https://community.clivora.io", external: true },
     ],
@@ -82,10 +94,10 @@ export const marketing = {
   traction: {
     line: "Built for the full freelance loop - hire, deliver, invoice - without marketplace cut on the deal.",
     stats: [
+      { value: "1,120+", label: "Active Remote Jobs" },
       { value: "$0", label: "Deal platform fee" },
-      { value: "1", label: "Account for web + Android" },
-      { value: "Private", label: "Contact until mutual accept" },
-      { value: "Direct", label: "Client → freelancer invoices" },
+      { value: "100%", label: "Direct client payouts" },
+      { value: "Private", label: "Contact & Escrow safety" },
     ],
   },
 
