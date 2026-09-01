@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Loader2, Sparkles, Send, FileText, Check } from "lucide-react";
+import { MarketingNav } from "@/components/marketing/MarketingNav";
 
 export default function StartAProjectPage() {
   const [formData, setFormData] = useState({
@@ -53,23 +54,8 @@ export default function StartAProjectPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between">
-      {/* Top Navbar */}
-      <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Clivora</span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-teal-500/10 text-teal-400 border border-teal-500/20">
-              CODCrafters & Clivora Studio
-            </span>
-          </div>
-        </div>
-      </header>
+      {/* Full Unified Navigation */}
+      <MarketingNav variant="overlay" />
 
       {/* Main Content Area */}
       <main className="max-w-4xl mx-auto px-4 py-12 flex-1 w-full">

@@ -1,7 +1,6 @@
-import Link from "next/link";
-import { Logo } from "@/components/ui/Logo";
-import { site } from "@/lib/site";
+import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
+import { site } from "@/lib/site";
 
 interface LegalPageShellProps {
   children: React.ReactNode;
@@ -19,22 +18,7 @@ export function LegalPageShell({
 }: LegalPageShellProps) {
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-navy">
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
-          <Link href="/" aria-label="CLIVORA Home" className="flex items-center gap-2">
-            <Logo size="sm" showText={false} variant="onLight" />
-            <span className="font-display text-sm font-extrabold text-navy">CLIVORA</span>
-          </Link>
-          <div className="flex items-center gap-4 text-sm">
-            <Link href="/docs" className="hidden text-slate-500 hover:text-primary sm:inline">
-              Docs
-            </Link>
-            <Link href="/" className="font-semibold text-primary hover:underline">
-              Back to Home
-            </Link>
-          </div>
-        </div>
-      </header>
+      <MarketingNav variant="light" />
 
       <main className="mx-auto max-w-4xl px-6 py-14 lg:py-16">
         <div className="mb-10">
