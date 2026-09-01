@@ -55,6 +55,7 @@ export const marketing = {
         ],
       },
       { label: "Pricing", href: "/pricing" },
+      { label: "Services", href: "https://codcrafters.org", external: true },
       { label: "Community", href: "https://community.clivora.io", external: true },
     ],
     cta: { label: "Open free workspace", href: "/signup" },
