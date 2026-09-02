@@ -20,7 +20,7 @@ export const marketing = {
         href: "/for-freelancers",
         children: [
           { label: "Freelancer OS Overview", href: "/for-freelancers" },
-          { label: "Remote Jobs Board (1,120+)", href: "/jobs" },
+          { label: "Remote Jobs Board (1,152+)", href: "/jobs" },
           { label: "Connect Direct Hiring", href: "/connect" },
           { label: "Zero-Commission Billing", href: "/features" },
         ],
@@ -94,7 +94,7 @@ export const marketing = {
   traction: {
     line: "Built for the full freelance loop - hire, deliver, invoice - without marketplace cut on the deal.",
     stats: [
-      { value: "1,120+", label: "Active Remote Jobs" },
+      { value: "1,152+", label: "Active Remote Jobs" },
       { value: "$0", label: "Deal platform fee" },
       { value: "100%", label: "Direct client payouts" },
       { value: "Private", label: "Contact & Escrow safety" },
