@@ -25,71 +25,116 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Defer auth so first paint is not blocked by Supabase JS on marketing pages.
+  // Instant auth hydration with local cache fallback to eliminate layout shift
   useEffect(() => {
     let mounted = true;
     let unsub: (() => void) | undefined;
 
-    const timer = window.setTimeout(() => {
-      void (async () => {
-        try {
-          const { createClient } = await import("@/lib/supabase/client");
-          const supabase = createClient();
+    // 1. Instant hydration from cached session user
+    try {
+      const cached = localStorage.getItem("clivora_session_user");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && typeof parsed === "object") {
+          setUser(parsed);
+        }
+      }
+    } catch {
+      /* ignore storage errors */
+    }
 
-          async function load() {
-            try {
-              const {
-                data: { user: u },
-              } = await supabase.auth.getUser();
-              if (!mounted) return;
-              if (!u) {
-                setUser(null);
-                return;
-              }
-              const { data: profile } = await supabase
-                .from("profiles")
-                .select("name")
-                .eq("id", u.id)
-                .maybeSingle();
-              if (!mounted) return;
-              setUser({
-                email: u.email ?? null,
-                name: (profile?.name as string | null) ?? null,
-              });
-            } catch {
-              if (mounted) setUser(null);
-            }
-          }
+    // 2. Validate session immediately via Supabase client
+    void (async () => {
+      try {
+        const { createClient } = await import("@/lib/supabase/client");
+        const supabase = createClient();
 
-          await load();
+        async function syncUser() {
           try {
-            const { data: sub } = supabase.auth.onAuthStateChange(() => {
-              void load();
-            });
-            unsub = () => {
+            const {
+              data: { session },
+            } = await supabase.auth.getSession();
+            if (!mounted) return;
+            if (!session?.user) {
+              setUser(null);
               try {
-                sub?.subscription?.unsubscribe?.();
+                localStorage.removeItem("clivora_session_user");
               } catch {
                 /* ignore */
               }
+              return;
+            }
+
+            const u = session.user;
+            const metaName = (u.user_metadata?.full_name || u.user_metadata?.name || null) as string | null;
+            const updatedUser: SessionUser = {
+              email: u.email ?? null,
+              name: metaName,
             };
+            setUser(updatedUser);
+            try {
+              localStorage.setItem("clivora_session_user", JSON.stringify(updatedUser));
+            } catch {
+              /* ignore */
+            }
+
+            // Fetch profile in background for custom display name
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("name")
+              .eq("id", u.id)
+              .maybeSingle();
+
+            if (mounted && profile?.name) {
+              const fullUser: SessionUser = {
+                email: u.email ?? null,
+                name: String(profile.name),
+              };
+              setUser(fullUser);
+              try {
+                localStorage.setItem("clivora_session_user", JSON.stringify(fullUser));
+              } catch {
+                /* ignore */
+              }
+            }
           } catch {
-            /* ignore */
+            if (mounted) setUser(null);
           }
-        } catch {
-          if (mounted) setUser(null);
         }
-      })();
-    }, 1200);
+
+        await syncUser();
+
+        try {
+          const { data: sub } = supabase.auth.onAuthStateChange(() => {
+            void syncUser();
+          });
+          unsub = () => {
+            try {
+              sub?.subscription?.unsubscribe?.();
+            } catch {
+              /* ignore */
+            }
+          };
+        } catch {
+          /* ignore */
+        }
+      } catch {
+        if (mounted) setUser(null);
+      }
+    })();
 
     return () => {
       mounted = false;
-      window.clearTimeout(timer);
       unsub?.();
     };
   }, []);
 
   async function signOut() {
+    try {
+      localStorage.removeItem("clivora_session_user");
+    } catch {
+      /* ignore */
+    }
     const { createClient } = await import("@/lib/supabase/client");
     const supabase = createClient();
     await supabase.auth.signOut();
