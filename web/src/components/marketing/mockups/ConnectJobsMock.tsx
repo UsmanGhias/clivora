@@ -58,7 +58,7 @@ export function ConnectJobsMock() {
         <div className="flex-1 bg-slate-50/50 p-3 sm:p-4">
           <div className="flex items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-3 py-1.5 shadow-xs">
             <Search className="h-3.5 w-3.5 text-slate-400" />
-            <span className="text-[10px] text-slate-400">Search 1,152+ remote jobs, technologies, or budgets...</span>
+            <span className="text-[10px] text-slate-400">Search {stats.formattedJobs} remote jobs, technologies, or budgets...</span>
           </div>
 
           <div className="mt-2.5 flex flex-wrap gap-1">

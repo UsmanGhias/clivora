@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   CheckCircle2,
 } from "lucide-react";
+import { useLivePlatformStats } from "@/lib/useLivePlatformStats";
 
 function EarningsChart() {
   const points = [
@@ -78,6 +79,7 @@ function EarningsChart() {
 }
 
 export function FreelancerDashMock({ compact = false }: { compact?: boolean }) {
+  const stats = useLivePlatformStats();
   return (
     <div className="w-full max-w-full overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_20px_50px_-20px_rgba(15,23,42,0.18)]">
       {/* OS Chrome Window Header */}
@@ -159,7 +161,7 @@ export function FreelancerDashMock({ compact = false }: { compact?: boolean }) {
 
             <div className="col-span-2 sm:col-span-1 rounded-xl border border-slate-200/90 bg-white p-2.5 shadow-xs">
               <p className="text-[9px] font-bold uppercase text-slate-500">Live Roles</p>
-              <p className="mt-0.5 font-display text-sm font-black text-navy">1,152+ Roles</p>
+              <p className="mt-0.5 font-display text-sm font-black text-navy">{stats.formattedJobs} Roles</p>
               <Link
                 href="/jobs"
                 className="mt-1.5 inline-block text-[9px] font-bold text-teal-700 hover:underline"

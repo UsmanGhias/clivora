@@ -113,11 +113,11 @@ export default async function HubPage() {
           <HubLink href="/connect" title="CLIVORA Connect" body="Marketplace · $0 fees" icon={Network} />
           <HubLink href="/app/referrals" title="Refer & Earn" body="Share code · bonus Pro days" icon={Gift} />
           <HubLink
-            href="/pro"
-            title="Upgrade"
-            body={`Pro ${site.pricing.proMonthlyLabel}/mo · Plus ${site.pricing.proPlusMonthlyLabel}/mo`}
+            href="/app/settings"
+            title="Founder Access"
+            body="All features included · $0 platform fees"
             icon={CreditCard}
-            tone="amber"
+            tone="teal"
           />
         </div>
       </div>

@@ -6,7 +6,6 @@ import 'package:drift/drift.dart' show Value;
 import '../../auth/auth_service.dart';
 import '../../auth/user_roles.dart';
 import '../../cloud/supabase_auth_helper.dart';
-import '../../constants/plan_features.dart';
 import '../../../data/database/database.dart';
 import '../../../data/database/user_scoped_queries.dart';
 import '../../../data/models/invoice_line_item.dart';
@@ -80,13 +79,10 @@ class ConnectMarketplaceService {
     return (client: c, uid: uid);
   }
 
-  bool get hasConnectAccess {
-    return ref.read(isProPlusProvider) ||
-        PlanFeatures.isProPlus(ref.read(subscriptionPlanProvider).valueOrNull);
-  }
+  bool get hasConnectAccess => true;
 
   /// Legacy alias, prefer [hasConnectAccess].
-  bool get hasProPlus => hasConnectAccess;
+  bool get hasProPlus => true;
 
   Future<List<Map<String, dynamic>>> browseFreelancers({
     String? skill,
@@ -243,7 +239,7 @@ class ConnectMarketplaceService {
           .eq('is_public', true)
           .eq('status', 'published')
           .order('created_at', ascending: false)
-          .limit(300);
+          .limit(1000);
 
       for (final j in (jobRows as List)) {
         final row = Map<String, dynamic>.from(j as Map);

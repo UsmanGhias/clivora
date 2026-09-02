@@ -524,7 +524,7 @@ export function AppShell({
       group: "Navigate",
     }));
     items.push(
-      { href: "/pro", label: "Billing / Plans", group: "Account" },
+      { href: "/app/settings", label: "Settings", group: "Account" },
       { href: "/app/hub", label: "Hub", group: "Navigate" },
     );
     const seen = new Set<string>();
@@ -749,18 +749,6 @@ export function AppShell({
                   <Settings className="h-4 w-4" />
                   Settings
                 </Link>
-                <Link
-                  href="/pro"
-                  role="menuitem"
-                  onClick={() => {
-                    setProfileMenuOpen(false);
-                    onNavigate?.();
-                  }}
-                  className="flex items-center gap-2 px-3 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-white"
-                >
-                  <CreditCard className="h-4 w-4" />
-                  Billing
-                </Link>
                 <button
                   type="button"
                   role="menuitem"
@@ -797,19 +785,19 @@ export function AppShell({
                 {isClient ? "Post a job" : "Post a need"}
               </Link>
               <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                <p className="text-xs font-bold text-white/80">{plan} plan</p>
+                <p className="text-xs font-bold text-white/80">Founder Access</p>
                 <p className="mt-1 text-[10px] text-white/50">
-                  {pro ? (plus ? "Full Pro Plus access" : "Pro access active") : "Upgrade for Connect credits"}
+                  All workspace & Connect features unlocked ($0 platform fees)
                 </p>
                 <Link
-                  href={pro ? "/app/settings?tab=billing" : "/pro?plan=pro_plus"}
+                  href="/app/settings"
                   onClick={onNavigate}
                   className={cn(
                     "mt-2 block rounded-lg px-3 py-1.5 text-center text-xs font-semibold text-white",
                     isClient ? "bg-white/15 hover:bg-white/25" : "bg-primary",
                   )}
                 >
-                  {plus ? "You're on Plus" : pro ? "Manage plan" : "Upgrade plan"}
+                  Account Settings
                 </Link>
               </div>
             </>
@@ -944,15 +932,15 @@ export function AppShell({
                 )}
               </Link>
               <Link
-                href={pro ? "/app/settings?tab=billing" : "/pro?plan=pro_plus"}
+                href="/app/settings"
                 className={cn(
                   "hidden items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-white sm:inline-flex",
                   isClient ? "bg-navy" : "bg-primary",
                 )}
-                title={pro ? `You're on ${plan}` : "Upgrade to Pro Plus"}
+                title="Founder Access: $0 platform fees"
               >
                 <Sparkles className="h-3.5 w-3.5" />
-                {plus ? plan : pro ? plan : "Pro Plus"}
+                Founder Access
               </Link>
               <Link href={profileHref} className="block shrink-0">
                 <UserAvatar

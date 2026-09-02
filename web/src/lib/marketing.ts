@@ -20,7 +20,7 @@ export const marketing = {
         href: "/for-freelancers",
         children: [
           { label: "Freelancer OS Overview", href: "/for-freelancers" },
-          { label: "Remote Jobs Board (1,152+)", href: "/jobs" },
+          { label: "Remote Jobs Board", href: "/jobs" },
           { label: "Connect Direct Hiring", href: "/connect" },
           { label: "Zero-Commission Billing", href: "/features" },
         ],
@@ -40,7 +40,7 @@ export const marketing = {
         children: [
           { label: "Platform Overview", href: "/features" },
           { label: "Zero-Fee Escrow", href: "/connect" },
-          { label: "Pricing & Plans", href: "/pricing" },
+          { label: "Direct Invoicing", href: "/features" },
           { label: "Platform Comparison", href: "/compare" },
         ],
       },
@@ -94,7 +94,7 @@ export const marketing = {
   traction: {
     line: "Built for the full freelance loop - hire, deliver, invoice - without marketplace cut on the deal.",
     stats: [
-      { value: "1,152+", label: "Active Remote Jobs" },
+      { value: "1,205+", label: "Active Remote Jobs" },
       { value: "$0", label: "Deal platform fee" },
       { value: "100%", label: "Direct client payouts" },
       { value: "Private", label: "Contact & Escrow safety" },
@@ -562,7 +562,7 @@ export const marketing = {
     headline: "One operating desk for every client you keep.",
     body: "Stop bouncing between CRM tabs, invoice tools, and marketplace apps. CLIVORA keeps your pipeline, delivery, time, and direct invoices on one account - web and Android.",
     cta: { label: "Start as Freelancer", href: "/signup?role=freelancer" },
-    secondaryCta: { label: "See pricing", href: "/pricing" },
+    secondaryCta: { label: "Explore Platform", href: "/features" },
   },
 
   forClients: {
@@ -576,7 +576,7 @@ export const marketing = {
   faq: [
     {
       q: "Is CLIVORA free to start?",
-      a: `Yes. Start on the Free plan with up to ${site.freeLimits.clients} clients and ${site.freeLimits.projects} projects. Upgrade to Pro (${site.pricing.proMonthlyLabel}/mo) or Pro Plus (${site.pricing.proPlusMonthlyLabel}/mo) when you need unlimited tools and Connect.`,
+      a: "Yes. CLIVORA is 100% free with $0 platform fees. All workspace tools, Connect marketplace access, CRM, direct invoices, and time tracking are fully available with zero commission taken from your client payments.",
     },
     {
       q: "What is CLIVORA Connect?",
@@ -595,8 +595,8 @@ export const marketing = {
       a: "Those marketplaces take fees from freelancers and often add cost for clients, then still leave CRM and invoicing elsewhere. CLIVORA keeps $0 platform fee on negotiated Connect deals, lets clients pay freelancers directly on invoices, and includes CRM, projects, and timesheets in one account. See /compare.",
     },
     {
-      q: "How do Pro and Pro Plus billing work?",
-      a: site.pricing.billingNote,
+      q: "Are there any hidden marketplace fees?",
+      a: "No. CLIVORA keeps a $0 platform fee on negotiated Connect deals. Clients pay freelancers directly against their invoice with zero middleman deductions.",
     },
     {
       q: "Is my data secure?",
@@ -606,7 +606,7 @@ export const marketing = {
 
   cta: {
     headline: "Open your CLIVORA workspace before the next deal slips into five tabs.",
-    body: "Same signup for freelancers and clients. Private Connect until mutual accept. Direct invoices. Upgrade only when you need unlimited tools.",
+    body: "Same signup for freelancers and clients. Private Connect until mutual accept. Direct invoices and zero middleman deductions.",
     primary: { label: "Create free account", href: "/signup" },
     secondary: { label: "Read the docs", href: "/docs" },
   },
@@ -620,8 +620,6 @@ export const marketing = {
         { label: "Connect", href: "/connect" },
         { label: "Community", href: "https://community.clivora.io" },
         { label: "Compare", href: "/compare" },
-        { label: "Pricing", href: "/pricing" },
-        { label: "Pro Plans", href: "/pro" },
         { label: "Documentation", href: "/docs" },
         { label: "Sign in", href: "/login" },
       ],
