@@ -1,68 +1,72 @@
+"use client";
+
 import Link from "next/link";
 import {
   Briefcase,
   DollarSign,
   FolderKanban,
-  MessageSquare,
-  TrendingUp,
+  Receipt,
+  ShieldCheck,
+  Timer,
+  LayoutDashboard,
+  CheckCircle2,
 } from "lucide-react";
 
 function EarningsChart() {
   const points = [
-    { month: "Jan", y: 48, label: "2.1k" },
-    { month: "Feb", y: 40, label: "3.0k" },
-    { month: "Mar", y: 34, label: "3.8k" },
-    { month: "Apr", y: 26, label: "4.6k" },
-    { month: "May", y: 18, label: "5.4k" },
-    { month: "Jun", y: 10, label: "6.2k" },
+    { month: "Jan", y: 44, label: "3.2k" },
+    { month: "Feb", y: 36, label: "4.8k" },
+    { month: "Mar", y: 28, label: "6.5k" },
+    { month: "Apr", y: 20, label: "9.2k" },
+    { month: "May", y: 14, label: "12.4k" },
+    { month: "Jun", y: 8, label: "16.8k" },
   ];
-  // Align plot points to month-label centers (6 equal columns in 176-wide viewBox).
   const xs = points.map((_, i) => Math.round(((i + 0.5) / points.length) * 176));
-  const baseline = 52;
+  const baseline = 48;
   const line = points.map((p, i) => `${xs[i]},${p.y}`).join(" ");
   const area = `${line} ${xs[xs.length - 1]},${baseline} ${xs[0]},${baseline}`;
 
   return (
-    <div className="flex h-full min-h-[72px] flex-col">
-      <svg viewBox="0 0 176 68" className="h-full w-full flex-1" aria-hidden>
+    <div className="flex h-full min-h-[64px] flex-col">
+      <svg viewBox="0 0 176 56" className="h-full w-full flex-1" aria-hidden>
         <defs>
-          <linearGradient id="earnFillV2" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#0D9488" stopOpacity="0.28" />
+          <linearGradient id="earnFillFMock" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#0D9488" stopOpacity="0.3" />
             <stop offset="100%" stopColor="#0D9488" stopOpacity="0.02" />
           </linearGradient>
         </defs>
-        {[16, 32, 48].map((y) => (
+        {[14, 28, 42].map((y) => (
           <line key={y} x1="4" x2="172" y1={y} y2={y} stroke="#E2E8F0" strokeDasharray="2 3" />
         ))}
-        <polygon fill="url(#earnFillV2)" points={area} />
+        <polygon fill="url(#earnFillFMock)" points={area} />
         <polyline
           fill="none"
-          stroke="#0F766E"
-          strokeWidth="2.25"
+          stroke="#0D9488"
+          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
           points={line}
         />
         {points.map((p, i) => (
           <g key={p.month}>
-            <circle cx={xs[i]} cy={p.y} r={i === points.length - 1 ? 3.2 : 2.2} fill="#0D9488" />
+            <circle cx={xs[i]} cy={p.y} r={i === points.length - 1 ? 3 : 2} fill="#0D9488" />
             {i === points.length - 1 && (
               <text
                 x={xs[i]}
-                y={p.y - 6}
+                y={p.y - 4}
                 textAnchor="middle"
                 className="fill-teal-800"
-                style={{ fontSize: 7, fontWeight: 700 }}
+                style={{ fontSize: 6.5, fontWeight: 800 }}
               >
                 ${p.label}
               </text>
             )}
             <text
               x={xs[i]}
-              y={64}
+              y={52}
               textAnchor="middle"
               className="fill-slate-500"
-              style={{ fontSize: 7, fontWeight: 600 }}
+              style={{ fontSize: 6.5, fontWeight: 600 }}
             >
               {p.month}
             </text>
@@ -73,163 +77,114 @@ function EarningsChart() {
   );
 }
 
-function Stat({
-  label,
-  value,
-  trend,
-  icon: Icon,
-}: {
-  label: string;
-  value: string;
-  trend?: string;
-  icon: typeof DollarSign;
-}) {
-  return (
-    <div className="rounded-lg border border-slate-200/80 bg-white px-2 py-1.5">
-      <div className="flex items-center gap-1">
-        <Icon className="h-2.5 w-2.5 shrink-0 text-teal-700" aria-hidden />
-        <p className="truncate text-[8px] font-semibold uppercase tracking-wide text-slate-500">{label}</p>
-      </div>
-      <p className="mt-0.5 font-display text-xs font-bold tabular-nums text-[#0F172A]">{value}</p>
-      {trend && <p className="mt-0.5 text-[8px] font-bold text-emerald-600">{trend}</p>}
-    </div>
-  );
-}
-
-function NavItem({
-  label,
-  href,
-  active,
-  badge,
-}: {
-  label: string;
-  href: string;
-  active?: boolean;
-  badge?: number;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`flex items-center justify-between rounded-md px-2 py-1.5 text-[9px] font-medium transition hover:bg-white/10 ${
-        active ? "bg-teal-500/25 text-white" : "text-white/60"
-      }`}
-    >
-      <span className="truncate">{label}</span>
-      {badge != null && (
-        <span className="rounded bg-teal-500/40 px-1.5 py-px text-[8px] font-bold text-white">{badge}</span>
-      )}
-    </Link>
-  );
-}
-
 export function FreelancerDashMock({ compact = false }: { compact?: boolean }) {
-  const projects = [
-    { name: "SaaS Dashboard", pct: 72 },
-    { name: "Mobile App UI", pct: 45 },
-    { name: "Brand Identity", pct: 90 },
-  ];
-  const clients = [
-    { name: "Acme Corp", spend: "$8,400" },
-    { name: "Nova Labs", spend: "$5,200" },
-    { name: "Pixel Co", spend: "$3,100" },
-  ];
-
   return (
-    <div
-      className={`w-full max-w-full overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-[0_20px_50px_-28px_rgba(15,23,42,0.45)] ${compact ? "text-[95%]" : ""}`}
-    >
-      <div className={compact ? "flex min-h-[320px] sm:h-[380px]" : "flex min-h-[360px] sm:h-[480px]"}>
-        <aside
-          className={`hidden shrink-0 flex-col bg-[#0B1220] p-2.5 text-white sm:flex ${compact ? "w-[108px]" : "w-[132px]"}`}
-        >
-          <p className="font-display text-[11px] font-bold tracking-[0.04em]">CLIVORA</p>
-          <p className="mt-0.5 text-[8px] font-semibold uppercase tracking-[0.16em] text-teal-300/80">
-            Freelancer
-          </p>
-          <div className="mt-3 flex items-center gap-1.5 border-b border-white/10 pb-3">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-teal-600 text-[8px] font-bold">
-              UG
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-[9px] font-semibold">Usman Ghias</p>
-              <span className="mt-0.5 inline-block rounded bg-amber-300 px-1 py-px text-[7px] font-bold text-[#0F172A]">
-                Pro Plus
+    <div className="w-full max-w-full overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_20px_50px_-20px_rgba(15,23,42,0.18)]">
+      {/* OS Chrome Window Header */}
+      <div className="flex items-center justify-between border-b border-slate-200/80 bg-slate-900 px-3.5 py-2 text-white">
+        <div className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-rose-500/80 inline-block" />
+          <span className="h-2.5 w-2.5 rounded-full bg-amber-500/80 inline-block" />
+          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/80 inline-block" />
+          <span className="ml-2 text-[10px] font-bold tracking-wider text-slate-300">
+            CLIVORA OS · Freelancer Workspace
+          </span>
+        </div>
+        <span className="rounded-full bg-teal-500/20 px-2 py-0.5 text-[9px] font-bold text-teal-300 border border-teal-500/30">
+          Founder Access
+        </span>
+      </div>
+
+      <div className={compact ? "flex min-h-[300px]" : "flex min-h-[380px]"}>
+        {/* Dark Sidebar */}
+        <aside className="hidden w-36 shrink-0 flex-col justify-between bg-[#0B1220] p-2.5 text-white sm:flex">
+          <div>
+            <div className="flex items-center gap-1.5 border-b border-white/10 pb-2.5">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-teal-600 text-[8px] font-bold">
+                UG
               </span>
+              <div className="min-w-0">
+                <p className="truncate text-[9px] font-bold">Usman Ghias</p>
+                <p className="text-[7px] text-teal-400">Full Access</p>
+              </div>
             </div>
+
+            <nav className="mt-2.5 space-y-1">
+              <div className="flex items-center gap-1.5 rounded-md bg-teal-600/30 px-2 py-1 text-[9px] font-bold text-teal-200">
+                <LayoutDashboard className="h-3 w-3" />
+                <span>Overview</span>
+              </div>
+              <div className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[9px] font-medium text-slate-400 hover:bg-white/5">
+                <Briefcase className="h-3 w-3" />
+                <span>Jobs Board</span>
+              </div>
+              <div className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[9px] font-medium text-slate-400 hover:bg-white/5">
+                <FolderKanban className="h-3 w-3" />
+                <span>Projects</span>
+              </div>
+              <div className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[9px] font-medium text-slate-400 hover:bg-white/5">
+                <Receipt className="h-3 w-3" />
+                <span>Invoices</span>
+              </div>
+              <div className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[9px] font-medium text-slate-400 hover:bg-white/5">
+                <Timer className="h-3 w-3" />
+                <span>Timesheets</span>
+              </div>
+            </nav>
           </div>
-          <nav className="mt-2 space-y-0.5">
-            <NavItem label="Dashboard" href="/login?next=/app" active />
-            <NavItem label="Projects" href="/login?next=/app/projects" badge={6} />
-            <NavItem label="Proposals" href="/login?next=/app/proposals" badge={5} />
-            <NavItem label="Messages" href="/login?next=/app/messages" badge={4} />
-            <NavItem label="Earnings" href="/login?next=/app/earnings" />
-            <NavItem label="Connect" href="/login?next=/app/connect" />
-            <NavItem label="Settings" href="/login?next=/app/settings" />
-            <NavItem label="Profile" href="/login?next=/app/account" />
-          </nav>
+
+          <div className="rounded-lg border border-teal-500/20 bg-teal-950/40 p-1.5 text-[8px]">
+            <p className="font-bold text-teal-300">Direct Deals</p>
+            <p className="text-slate-400">$0 Platform Fees</p>
+          </div>
         </aside>
 
-        <main className="min-w-0 flex-1 overflow-hidden bg-[#F4F7F6] p-2.5">
-          <p className="font-display text-[11px] font-bold text-[#0F172A]">Good morning, Usman</p>
-          <p className="text-[9px] text-slate-500">Freelance overview · Illustrative preview</p>
-
-          <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-            <Stat label="Earnings" value="$24,560" trend={compact ? undefined : "+12.4%"} icon={DollarSign} />
-            <Stat label="Projects" value="6" icon={FolderKanban} />
-            <Stat label="Proposals" value="5" icon={Briefcase} />
-            <Stat label="Messages" value="4" icon={MessageSquare} />
-          </div>
-
-          <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-5">
-            <div className="rounded-lg border border-slate-200/80 bg-white p-2 sm:col-span-3">
-              <div className="flex items-baseline justify-between gap-2">
-                <div className="flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3 text-teal-700" aria-hidden />
-                  <div>
-                    <p className="text-[9px] font-bold text-[#0F172A]">Earnings</p>
-                    <p className="text-[8px] text-slate-500">Last six months</p>
-                  </div>
-                </div>
-                <span className="text-[8px] font-semibold tabular-nums text-teal-700">$6.2k Jun</span>
-              </div>
-              <div className="mt-1 h-[78px]">
+        {/* Main Content Area */}
+        <div className="flex-1 bg-slate-50/50 p-3 sm:p-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <div className="rounded-xl border border-slate-200/90 bg-white p-2.5 shadow-xs">
+              <p className="text-[9px] font-bold uppercase text-slate-500">Monthly Revenue</p>
+              <p className="mt-0.5 font-display text-sm font-black text-navy">$16,840.00</p>
+              <div className="mt-1">
                 <EarningsChart />
               </div>
             </div>
 
-            <div className="rounded-lg border border-slate-200/80 bg-white p-2 sm:col-span-2">
-              <p className="text-[9px] font-bold text-[#0F172A]">Active projects</p>
-              <ul className="mt-2 space-y-2">
-                {projects.map((p) => (
-                  <li key={p.name}>
-                    <div className="flex justify-between gap-2 text-[8px]">
-                      <span className="truncate text-slate-600">{p.name}</span>
-                      <span className="shrink-0 font-bold tabular-nums text-[#0F172A]">{p.pct}%</span>
-                    </div>
-                    <div className="mt-1 h-[3px] overflow-hidden rounded-full bg-slate-100">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-teal-700 to-teal-400"
-                        style={{ width: `${p.pct}%` }}
-                      />
-                    </div>
-                  </li>
-                ))}
-              </ul>
+            <div className="rounded-xl border border-slate-200/90 bg-white p-2.5 shadow-xs">
+              <p className="text-[9px] font-bold uppercase text-slate-500">Active Deals</p>
+              <p className="mt-0.5 font-display text-sm font-black text-navy">4 Funded</p>
+              <p className="mt-1.5 text-[9px] font-bold text-emerald-600">✓ 100% Payouts</p>
+              <p className="text-[8px] text-slate-400">Direct to bank/crypto</p>
+            </div>
+
+            <div className="col-span-2 sm:col-span-1 rounded-xl border border-slate-200/90 bg-white p-2.5 shadow-xs">
+              <p className="text-[9px] font-bold uppercase text-slate-500">Live Roles</p>
+              <p className="mt-0.5 font-display text-sm font-black text-navy">1,152+ Roles</p>
+              <Link
+                href="/jobs"
+                className="mt-1.5 inline-block text-[9px] font-bold text-teal-700 hover:underline"
+              >
+                Browse Board →
+              </Link>
             </div>
           </div>
 
-          <div className="mt-2 rounded-lg border border-slate-200/80 bg-white p-2">
-            <p className="text-[9px] font-bold text-[#0F172A]">Top clients</p>
-            <ul className="mt-1.5 divide-y divide-slate-100">
-              {clients.map((c) => (
-                <li key={c.name} className="flex items-center justify-between gap-2 py-1.5 first:pt-0 last:pb-0">
-                  <span className="truncate text-[8px] font-medium text-slate-700">{c.name}</span>
-                  <span className="shrink-0 text-[8px] font-bold tabular-nums text-teal-700">{c.spend}</span>
-                </li>
-              ))}
-            </ul>
+          {/* Active Deliverable Tracker */}
+          <div className="mt-3 rounded-xl border border-slate-200/90 bg-white p-3 shadow-xs">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-bold text-navy">Mobile App Backend Architecture</p>
+                <p className="text-[8px] text-slate-500">Client: Horizon Ventures · $3,800 Funded</p>
+              </div>
+              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[8px] font-bold text-emerald-700 border border-emerald-200">
+                Milestone 2/3
+              </span>
+            </div>
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full rounded-full bg-teal-600" style={{ width: "75%" }} />
+            </div>
           </div>
-        </main>
+        </div>
       </div>
     </div>
   );

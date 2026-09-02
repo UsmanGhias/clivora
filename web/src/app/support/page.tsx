@@ -63,21 +63,21 @@ export default function SupportPage() {
         <Link href="/contact">contact our support team</Link>.
       </p>
 
-      <div className="not-prose my-10 space-y-4">
+      <div className="not-prose my-10 space-y-3.5">
         {faqs.map((faq, i) => (
           <details
             key={i}
-            className="group rounded-2xl glass transition-colors open:bg-white/5"
+            className="group rounded-2xl border border-slate-200/90 bg-slate-50/60 p-1 transition-all duration-200 hover:border-teal-500/40 hover:bg-white open:border-teal-500/50 open:bg-white open:shadow-xs"
           >
-            <summary className="cursor-pointer list-none px-6 py-5 font-semibold text-white [&::-webkit-details-marker]:hidden">
+            <summary className="cursor-pointer list-none px-5 py-4 font-bold text-navy [&::-webkit-details-marker]:hidden">
               <span className="flex items-center justify-between gap-4">
-                {faq.q}
-                <span className="text-primary transition-transform group-open:rotate-45">
+                <span className="text-sm font-bold text-navy sm:text-base">{faq.q}</span>
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-50 text-xs font-black text-teal-700 transition-transform duration-200 group-open:rotate-45">
                   +
                 </span>
               </span>
             </summary>
-            <div className="border-t border-white/5 px-6 pb-5 pt-2 text-sm text-white/60 leading-relaxed">
+            <div className="border-t border-slate-100 px-5 pb-5 pt-3 text-sm leading-relaxed text-slate-600">
               {faq.a}
             </div>
           </details>
