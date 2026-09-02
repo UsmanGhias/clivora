@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
     params.set("offset", String(offset));
 
     if (status !== "all") {
-      params.set("or", `(status.eq.${status},status.eq.active,status.eq.published)`);
+      params.set("status", `in.(${status},published,active)`);
     }
 
     if (category) {
