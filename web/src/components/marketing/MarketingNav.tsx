@@ -6,6 +6,7 @@ import { ChevronDown, Globe, LayoutDashboard, LogOut, Menu, X } from "lucide-rea
 import { Logo } from "@/components/ui/Logo";
 import { marketing } from "@/lib/marketing";
 import { cn } from "@/lib/utils";
+import { useLivePlatformStats } from "@/lib/useLivePlatformStats";
 
 type SessionUser = {
   email: string | null;
@@ -13,6 +14,7 @@ type SessionUser = {
 };
 
 export function MarketingNav({ variant = "light" }: { variant?: "light" | "overlay" }) {
+  const stats = useLivePlatformStats();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
@@ -240,9 +242,14 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
                             <Link
                               key={child.href + child.label}
                               href={child.href}
-                              className="block rounded-lg px-3 py-2 text-xs xl:text-sm text-slate-600 transition hover:bg-teal-50 hover:text-navy"
+                              className="flex items-center justify-between rounded-lg px-3 py-2 text-xs xl:text-sm text-slate-600 transition hover:bg-teal-50 hover:text-navy"
                             >
-                              {child.label}
+                              <span>{child.label}</span>
+                              {child.href === "/jobs" && (
+                                <span className="rounded-full bg-teal-100 px-1.5 py-0.5 text-[9px] font-bold text-teal-800">
+                                  {stats.formattedJobs}
+                                </span>
+                              )}
                             </Link>
                           );
                         })}
@@ -371,9 +378,14 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
                           key={child.href + child.label}
                           href={child.href}
                           onClick={() => setMobileOpen(false)}
-                          className="block py-1.5 pl-3 text-sm text-slate-500"
+                          className="flex items-center justify-between py-1.5 pl-3 pr-2 text-sm text-slate-500 hover:text-navy"
                         >
-                          {child.label}
+                          <span>{child.label}</span>
+                          {child.href === "/jobs" && (
+                            <span className="rounded-full bg-teal-100 px-1.5 py-0.5 text-[9px] font-bold text-teal-800">
+                              {stats.formattedJobs}
+                            </span>
+                          )}
                         </Link>
                       ))
                     : null}

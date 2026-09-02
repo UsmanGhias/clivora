@@ -649,12 +649,10 @@ class MoreScreen extends ConsumerWidget {
             onTap: () => _showInvoiceBranding(context, ref),
           ),
           _SettingsTile(
-            icon: Icons.diamond_outlined,
-            label: isPlus ? 'Manage Pro Plus' : isPro ? 'Manage Pro' : 'Upgrade to Pro',
-            subtitle: isPlus
-                ? 'Pro Plus · Cancel in Google Play'
-                : 'Plus includes all Pro + 50GB vault',
-            onTap: () => context.push('/upgrade'),
+            icon: Icons.verified_user_outlined,
+            label: 'Founder Access',
+            subtitle: 'All features unlocked · \$0 platform fees',
+            onTap: () => context.push('/profile'),
           ),
           const SizedBox(height: 24),
           const SectionHeader(title: 'Share & Grow'),

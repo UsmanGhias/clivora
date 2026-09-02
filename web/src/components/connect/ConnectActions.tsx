@@ -92,10 +92,10 @@ export function ConnectActions({
                 Sign in
               </Link>
               <Link
-                href="/pricing"
-                className="inline-flex min-h-11 items-center rounded-xl px-4 py-2.5 text-sm font-semibold text-violet-700 hover:underline"
+                href="/compare"
+                className="inline-flex min-h-11 items-center rounded-xl px-4 py-2.5 text-sm font-semibold text-teal-700 hover:underline"
               >
-                Compare plans
+                Zero-fee comparison
               </Link>
             </div>
           </div>

@@ -80,8 +80,8 @@ export default function FeaturesPage() {
             <Link href="/docs/product-overview" className="text-sm font-semibold text-primary hover:underline">
               Product overview →
             </Link>
-            <Link href="/pricing" className="text-sm font-semibold text-primary hover:underline">
-              Pricing →
+            <Link href="/connect" className="text-sm font-semibold text-primary hover:underline">
+              Connect Marketplace →
             </Link>
           </div>
         </div>

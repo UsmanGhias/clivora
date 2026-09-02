@@ -129,12 +129,10 @@ class MenuScreen extends ConsumerWidget {
             onTap: () => context.push('/more'),
           ),
           _MenuTile(
-            icon: Icons.diamond_outlined,
-            label: isPlus ? 'Manage Pro Plus' : isPro ? 'Manage Pro' : 'Upgrade to Pro',
-            subtitle: isPlus
-                ? 'Pro Plus · Cancel in Google Play'
-                : 'Plus includes all Pro + 50GB vault',
-            onTap: () => context.push('/upgrade'),
+            icon: Icons.verified_user_outlined,
+            label: 'Founder Access',
+            subtitle: 'All features unlocked · \$0 platform fees',
+            onTap: () => context.push('/profile'),
           ),
           const SizedBox(height: 20),
           const _SectionLabel('Share & Grow'),

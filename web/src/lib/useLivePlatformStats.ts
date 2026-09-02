@@ -11,8 +11,8 @@ export type PlatformStats = {
 };
 
 const DEFAULT_STATS: PlatformStats = {
-  totalJobs: 1152,
-  formattedJobs: "1,152+",
+  totalJobs: 1205,
+  formattedJobs: "1,205+",
   platformFee: "$0",
   verifiedTalent: "500+",
   activeContracts: "350+",
@@ -23,6 +23,7 @@ export function useLivePlatformStats(): PlatformStats {
 
   useEffect(() => {
     let mounted = true;
+
     async function fetchStats() {
       try {
         const res = await fetch("/api/v1/stats");
@@ -32,13 +33,17 @@ export function useLivePlatformStats(): PlatformStats {
             setStats(data);
           }
         }
-      } catch (e) {
+      } catch (_) {
         // Fallback gracefully to default
       }
     }
+
     void fetchStats();
+    const interval = setInterval(fetchStats, 30000);
+
     return () => {
       mounted = false;
+      clearInterval(interval);
     };
   }, []);
 
