@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
   const offset = (page - 1) * limit;
   const category = searchParams.get("category");
   const query = searchParams.get("q") || searchParams.get("query");
-  const status = searchParams.get("status") || "active";
+  const status = searchParams.get("status") || "published";
 
   try {
     const params = new URLSearchParams();
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
     params.set("offset", String(offset));
 
     if (status !== "all") {
-      params.set("status", `eq.${status}`);
+      params.set("or", `(status.eq.${status},status.eq.active,status.eq.published)`);
     }
 
     if (category) {
