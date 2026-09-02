@@ -62,10 +62,15 @@ export default function AboutPage() {
             text: "Cloud sync, AI assistant, team features, and more on our active roadmap.",
           },
         ].map((item) => (
-          <div key={item.title} className="rounded-2xl glass p-6">
-            <item.icon className="mb-3 h-8 w-8 text-primary" />
-            <h3 className="font-bold text-white">{item.title}</h3>
-            <p className="mt-2 text-sm text-white/60">{item.text}</p>
+          <div
+            key={item.title}
+            className="rounded-2xl border border-slate-200/90 bg-slate-50/60 p-6 shadow-xs hover:border-teal-500/40 hover:bg-white transition-all"
+          >
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
+              <item.icon className="h-5 w-5" />
+            </div>
+            <h3 className="text-base font-bold text-navy">{item.title}</h3>
+            <p className="mt-1.5 text-sm text-slate-600 leading-relaxed">{item.text}</p>
           </div>
         ))}
       </div>
