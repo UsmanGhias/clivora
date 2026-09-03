@@ -20,6 +20,7 @@ const RAW_KEYS = (process.env.GEMINI_API_KEYS || "").split(",").map(k => k.trim(
 const DEFAULT_KEYS = [
   process.env.GEMINI_API_KEY || "REDACTED_GEMINI_KEY",
   process.env.GEMINI_FALLBACK_API_KEY || "REDACTED_GEMINI_KEY",
+  process.env.GEMINI_TERTIARY_API_KEY || "REDACTED_GEMINI_KEY",
 ];
 const GEMINI_KEYS = Array.from(new Set([...RAW_KEYS, ...DEFAULT_KEYS])).filter(Boolean);
 

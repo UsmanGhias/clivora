@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const PRIMARY_KEY = (process.env.GEMINI_API_KEY || "REDACTED_GEMINI_KEY").trim();
 const FALLBACK_KEY = (process.env.GEMINI_FALLBACK_API_KEY || "REDACTED_GEMINI_KEY").trim();
+const TERTIARY_KEY = (process.env.GEMINI_TERTIARY_API_KEY || "REDACTED_GEMINI_KEY").trim();
 
 /**
  * Remove em dashes and en dashes to enforce user preference across all outputs
@@ -16,19 +17,19 @@ export function sanitizeDashes(text: string): string {
 /**
  * Resolves the active Gemini API keys
  */
-export async function getGeminiApiKeys(): Promise<{ primary: string; fallback: string }> {
+export async function getGeminiApiKeys(): Promise<{ primary: string; fallback: string; tertiary: string }> {
   try {
     const supabase = await createClient();
     const { data } = await supabase.rpc("admin_get_integration_secret", {
       p_key: "GEMINI_API_KEY",
     });
     if (typeof data === "string" && data.trim()) {
-      return { primary: data.trim(), fallback: FALLBACK_KEY };
+      return { primary: data.trim(), fallback: FALLBACK_KEY, tertiary: TERTIARY_KEY };
     }
   } catch {
-    // Database lookup unavailable, use default primary and fallback
+    // Database lookup unavailable, use default keys
   }
-  return { primary: PRIMARY_KEY, fallback: FALLBACK_KEY };
+  return { primary: PRIMARY_KEY, fallback: FALLBACK_KEY, tertiary: TERTIARY_KEY };
 }
 
 export async function getGeminiApiKey(): Promise<string | null> {
@@ -122,6 +123,13 @@ export async function callGemini(options: GeminiGenerateOptions): Promise<string
     console.log("[callGemini] Primary key failed. Executing seamless fallback to backup key...");
     const fallbackResult = await executeGeminiRequest(keys.fallback, options);
     if (fallbackResult) return fallbackResult;
+  }
+
+  // 3. If Fallback Key failed, use Tertiary Key
+  if (keys.tertiary && keys.tertiary !== keys.fallback && keys.tertiary !== keys.primary) {
+    console.log("[callGemini] Fallback key failed. Executing fallback to tertiary key...");
+    const tertiaryResult = await executeGeminiRequest(keys.tertiary, options);
+    if (tertiaryResult) return tertiaryResult;
   }
 
   return null;
