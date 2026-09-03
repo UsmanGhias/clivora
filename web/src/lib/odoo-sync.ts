@@ -15,7 +15,7 @@ export type OdooCfg = {
   target?: OdooTarget;
 };
 
-export type OdooTarget = "main" | "social" | "legacy";
+export type OdooTarget = "main" | "social" | "hr" | "legacy";
 export type OdooSyncDirection = "push" | "pull" | "both";
 
 export type CrmCustomerRow = {
@@ -60,6 +60,7 @@ const ODOO_KEY_SUFFIXES: OdooKeySuffix[] = ["URL", "DB", "USERNAME", "API_KEY"];
 const ODOO_PREFIX_BY_TARGET = {
   main: "ODOO_MAIN",
   social: "ODOO_SOCIAL",
+  hr: "ODOO_HR",
   legacy: "ODOO",
 } satisfies Record<OdooTarget, string>;
 
@@ -83,7 +84,7 @@ function missingEnvKeys(target: OdooTarget) {
 }
 
 function normalizeOdooTarget(value: unknown): OdooTarget {
-  return value === "social" || value === "legacy" ? value : "main";
+  return value === "social" || value === "hr" || value === "legacy" ? value : "main";
 }
 
 export function isOdooSyncEnabled() {
@@ -149,6 +150,12 @@ function envPresence() {
       ODOO_SOCIAL_DB: Boolean(process.env.ODOO_SOCIAL_DB?.trim()),
       ODOO_SOCIAL_USERNAME: Boolean(process.env.ODOO_SOCIAL_USERNAME?.trim()),
       ODOO_SOCIAL_API_KEY: Boolean(process.env.ODOO_SOCIAL_API_KEY?.trim()),
+    },
+    hr: {
+      ODOO_HR_URL: Boolean(process.env.ODOO_HR_URL?.trim()),
+      ODOO_HR_DB: Boolean(process.env.ODOO_HR_DB?.trim()),
+      ODOO_HR_USERNAME: Boolean(process.env.ODOO_HR_USERNAME?.trim()),
+      ODOO_HR_API_KEY: Boolean(process.env.ODOO_HR_API_KEY?.trim()),
     },
     legacy: {
       ODOO_URL: Boolean(process.env.ODOO_URL?.trim()),
@@ -1306,4 +1313,106 @@ export async function publishJobToSocial(job: {
     autoPublish: true,
   });
 }
+
+export type OdooApplicantInput = {
+  partnerName: string;
+  email: string;
+  phone?: string;
+  jobId?: number;
+  jobTitle?: string;
+  applicantNotes?: string;
+  salaryExpected?: number;
+  linkedinProfile?: string;
+};
+
+export type OdooJobPosition = {
+  id: number;
+  name: string;
+  no_of_recruitment: number;
+  application_count: number;
+};
+
+export async function listOdooJobPositions(): Promise<OdooJobPosition[]> {
+  const { cfg } = await loadOdooCfg("hr");
+  if (!cfg) {
+    throw new Error("Odoo HR configuration not found");
+  }
+  const uid = 2;
+  const jobs = (await odooJsonRpc(cfg.url, "object", "execute_kw", [
+    cfg.db,
+    uid,
+    cfg.apiKey,
+    "hr.job",
+    "search_read",
+    [[["active", "=", true]]],
+    { fields: ["id", "name", "no_of_recruitment", "application_count"], order: "name asc" },
+  ])) as OdooJobPosition[];
+  return jobs;
+}
+
+export async function createOdooApplicant(input: OdooApplicantInput) {
+  const { cfg } = await loadOdooCfg("hr");
+  if (!cfg) {
+    throw new Error("Odoo HR configuration not found");
+  }
+  const uid = 2;
+
+  let jobId = input.jobId;
+  if (!jobId && input.jobTitle) {
+    const existing = (await odooJsonRpc(cfg.url, "object", "execute_kw", [
+      cfg.db,
+      uid,
+      cfg.apiKey,
+      "hr.job",
+      "search_read",
+      [[["name", "=", input.jobTitle.trim()]]],
+      { fields: ["id"], limit: 1 },
+    ])) as Array<{ id: number }>;
+
+    if (existing && existing.length > 0) {
+      jobId = existing[0].id;
+    } else {
+      jobId = (await odooJsonRpc(cfg.url, "object", "execute_kw", [
+        cfg.db,
+        uid,
+        cfg.apiKey,
+        "hr.job",
+        "create",
+        [
+          {
+            name: input.jobTitle.trim(),
+            no_of_recruitment: 1,
+          },
+        ],
+      ])) as number;
+    }
+  }
+
+  const payload: Record<string, unknown> = {
+    partner_name: input.partnerName.trim(),
+    email_from: input.email.trim(),
+  };
+
+  if (jobId) payload.job_id = jobId;
+  if (input.phone) payload.partner_phone = input.phone.trim();
+  if (input.linkedinProfile) payload.linkedin_profile = input.linkedinProfile.trim();
+  if (input.salaryExpected) payload.salary_expected = input.salaryExpected;
+  if (input.applicantNotes) payload.applicant_notes = input.applicantNotes;
+
+  const applicantId = (await odooJsonRpc(cfg.url, "object", "execute_kw", [
+    cfg.db,
+    uid,
+    cfg.apiKey,
+    "hr.applicant",
+    "create",
+    [payload],
+  ])) as number;
+
+  return {
+    success: true,
+    applicantId,
+    jobId,
+  };
+}
+
 
