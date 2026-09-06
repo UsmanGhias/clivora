@@ -5,6 +5,7 @@ import { site } from "@/lib/site";
 export const metadata: Metadata = {
   title: `Data Safety - ${site.name}`,
   description: `Data safety and security practices for ${site.name} by ${site.company.name}. For Google Play Data Safety form reference.`,
+  alternates: { canonical: `${site.url}/data-safety` },
 };
 
 export default function DataSafetyPage() {

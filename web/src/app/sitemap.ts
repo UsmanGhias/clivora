@@ -60,22 +60,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/for-clients", priority: 0.9, changeFrequency: "weekly" },
     { path: "/features", priority: 0.9, changeFrequency: "weekly" },
     { path: "/pricing", priority: 0.9, changeFrequency: "weekly" },
-    { path: "/calculator", priority: 0.85, changeFrequency: "monthly" },
-    { path: "/tools/invoice-generator", priority: 0.85, changeFrequency: "monthly" },
-    { path: "/tools/proposal-generator", priority: 0.85, changeFrequency: "monthly" },
-    { path: "/tools/contract-generator", priority: 0.85, changeFrequency: "monthly" },
-    { path: "/tools/rate-calculator", priority: 0.85, changeFrequency: "monthly" },
-    { path: "/agency", priority: 0.8, changeFrequency: "monthly" },
+    { path: "/start-a-project", priority: 0.85, changeFrequency: "weekly" },
     { path: "/compare", priority: 0.85, changeFrequency: "monthly" },
     { path: "/pro", priority: 0.8, changeFrequency: "monthly" },
     { path: "/docs", priority: 0.8, changeFrequency: "weekly" },
     { path: "/about", priority: 0.7, changeFrequency: "monthly" },
-    { path: "/careers", priority: 0.7, changeFrequency: "monthly" },
-    { path: "/changelog", priority: 0.7, changeFrequency: "weekly" },
     { path: "/support", priority: 0.6, changeFrequency: "monthly" },
     { path: "/contact", priority: 0.6, changeFrequency: "monthly" },
-    { path: "/login", priority: 0.5, changeFrequency: "monthly" },
-    { path: "/signup", priority: 0.7, changeFrequency: "monthly" },
   ];
 
   const docs: SitemapEntry[] = DOC_CATALOG.filter((d) => d.slug !== "index").map((d) => ({

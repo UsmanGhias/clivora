@@ -7,6 +7,7 @@ import { Code2, Rocket, Shield, Users } from "lucide-react";
 export const metadata: Metadata = {
   title: `About - ${site.company.name}`,
   description: `Learn about ${site.company.name}, the team behind ${site.name}.`,
+  alternates: { canonical: `${site.url}/about` },
 };
 
 export default function AboutPage() {
