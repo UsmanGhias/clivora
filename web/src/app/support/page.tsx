@@ -6,6 +6,7 @@ import { site } from "@/lib/site";
 export const metadata: Metadata = {
   title: `Support & FAQ - ${site.name}`,
   description: `Get help with ${site.name}. Frequently asked questions, troubleshooting, and support resources.`,
+  alternates: { canonical: `${site.url}/support` },
 };
 
 const faqs = [

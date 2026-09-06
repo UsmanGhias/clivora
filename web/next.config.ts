@@ -24,6 +24,31 @@ const nextConfig: NextConfig = {
         destination: "/docs",
         permanent: true,
       },
+      {
+        source: "/calculator",
+        destination: "/pricing",
+        permanent: true,
+      },
+      {
+        source: "/agency",
+        destination: "/for-clients",
+        permanent: true,
+      },
+      {
+        source: "/careers",
+        destination: "/jobs",
+        permanent: true,
+      },
+      {
+        source: "/changelog",
+        destination: "/docs/changelog",
+        permanent: true,
+      },
+      {
+        source: "/tools/:path*",
+        destination: "/features",
+        permanent: true,
+      },
     ];
   },
   async headers() {

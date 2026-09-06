@@ -4,6 +4,7 @@ import ProCheckout from "./pro-checkout";
 export const metadata = {
   title: "CLIVORA Pro Plus - Subscribe",
   description: "Upgrade to CLIVORA Pro or Pro Plus. Available worldwide.",
+  alternates: { canonical: "https://clivora.io/pro" },
 };
 
 export default function ProPage() {

@@ -5,6 +5,7 @@ import { site } from "@/lib/site";
 export const metadata: Metadata = {
   title: `Account & Data Deletion - ${site.name}`,
   description: `How to delete your ${site.name} account and associated data on web and Android.`,
+  alternates: { canonical: `${site.url}/delete-account` },
 };
 
 export default function DeleteAccountPage() {

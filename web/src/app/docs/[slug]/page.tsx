@@ -20,6 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${doc.meta.title} | Docs`,
     description: `CLIVORA documentation: ${doc.meta.title}`,
+    alternates: { canonical: `${site.url}/docs/${slug}` },
     openGraph: {
       title: `${doc.meta.title} | ${site.name} Docs`,
       url: `${site.url}/docs/${slug}`,

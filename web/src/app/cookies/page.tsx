@@ -5,6 +5,7 @@ import { site } from "@/lib/site";
 export const metadata: Metadata = {
   title: `Cookie Policy - ${site.name}`,
   description: `Cookie and tracking policy for ${site.company.url}.`,
+  alternates: { canonical: `${site.url}/cookies` },
 };
 
 export default function CookiesPage() {

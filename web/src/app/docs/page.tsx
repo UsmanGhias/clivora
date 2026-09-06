@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: "Documentation",
   description:
     "Official CLIVORA documentation, user guide, Connect marketplace, plans, architecture, and AI research brief.",
+  alternates: { canonical: `${site.url}/docs` },
   openGraph: {
     title: `Documentation | ${site.name}`,
     url: `${site.url}/docs`,
