@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/auth/auth_service.dart';
 import '../../core/auth/user_roles.dart';
@@ -549,7 +550,9 @@ class _ConnectMarketplaceScreenState
         avgRating: null,
         reviewCount: null,
         verified: false,
-        ctaLabel: canApply ? 'Apply (\$0 Platform Fee)' : null,
+        sourceUrl: row['source_url'] as String?,
+        isExternal: row['is_external'] == true,
+        ctaLabel: canApply ? 'Apply via CLIVORA (\$0 Platform Fee)' : null,
         onCta: canApply
             ? () {
                 Navigator.pop(ctx);
@@ -1242,6 +1245,28 @@ class _NeedFeedRow extends StatelessWidget {
                             ),
                           ),
                         ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: (row['is_external'] == true)
+                                ? Colors.blueGrey.withValues(alpha: 0.12)
+                                : const Color(0xFF047857).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            (row['is_external'] == true)
+                                ? 'Curated Remote'
+                                : 'Clivora Client',
+                            style: TextStyle(
+                              color: (row['is_external'] == true)
+                                  ? Colors.blueGrey.shade800
+                                  : const Color(0xFF047857),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                     if (skillLine.isNotEmpty)
@@ -1764,6 +1789,8 @@ class _ConnectDetailSheet extends StatelessWidget {
     required this.verified,
     required this.ctaLabel,
     required this.onCta,
+    this.sourceUrl,
+    this.isExternal = false,
   });
 
   final String title;
@@ -1778,6 +1805,8 @@ class _ConnectDetailSheet extends StatelessWidget {
   final bool verified;
   final String? ctaLabel;
   final VoidCallback? onCta;
+  final String? sourceUrl;
+  final bool isExternal;
 
   @override
   Widget build(BuildContext context) {
@@ -1842,6 +1871,32 @@ class _ConnectDetailSheet extends StatelessWidget {
                     height: 1.35,
                   ),
                 ),
+              if (isExternal) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: Colors.blueGrey.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.public, size: 14, color: Colors.blueGrey.shade700),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Curated Remote Listing · \$0 Platform Take Rate on CLIVORA',
+                          style: TextStyle(
+                            color: Colors.blueGrey.shade800,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               Wrap(
                 spacing: 8,
@@ -1904,14 +1959,28 @@ class _ConnectDetailSheet extends StatelessWidget {
                   ],
                 ),
               ],
+              if (sourceUrl != null && sourceUrl!.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => launchUrl(
+                      Uri.parse(sourceUrl!),
+                      mode: LaunchMode.externalApplication,
+                    ),
+                    icon: const Icon(Icons.open_in_new, size: 16),
+                    label: const Text('Open Official Employer Portal'),
+                  ),
+                ),
+              ],
               if (ctaLabel != null && onCta != null) ...[
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
                     onPressed: onCta,
                     icon: Icon(
-                      ctaLabel == 'Apply'
+                      ctaLabel!.contains('Apply')
                           ? Icons.send_outlined
                           : Icons.chat_bubble_outline,
                     ),

@@ -90,3 +90,5 @@ analysis/
 **/node_modules/
 **/.next/
 tools/clivora-mcp/dist/
+web/
+.codex/

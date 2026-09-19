@@ -1,4 +1,6 @@
+import 'dart:async' show TimeoutException;
 import 'dart:convert';
+import 'dart:io' show HttpException, HandshakeException, SocketException;
 import 'dart:math';
 
 import 'package:drift/drift.dart' show Value;
@@ -38,7 +40,7 @@ class SyncOutboxService {
   static const _legacyOutboxKey = 'clivora_sync_outbox_v1';
   static const _legacyConflictKey = 'clivora_invoice_conflicts_v1';
   static const _migratedFlag = 'clivora_sync_outbox_migrated_v18';
-  static const _maxRetries = 8;
+  static const _maxRetries = 10;
   static const _uuid = Uuid();
 
   bool _migrating = false;
@@ -363,12 +365,57 @@ class SyncOutboxService {
     }
   }
 
+  bool _isNetworkDropout(Object error) {
+    if (error is SocketException ||
+        error is TimeoutException ||
+        error is HttpException ||
+        error is HandshakeException) {
+      return true;
+    }
+    final s = error.toString().toLowerCase();
+    return s.contains('socketexception') ||
+        s.contains('timeoutexception') ||
+        s.contains('network is unreachable') ||
+        s.contains('connection refused') ||
+        s.contains('connection reset') ||
+        s.contains('connection closed') ||
+        s.contains('failed host lookup') ||
+        s.contains('software caused connection abort') ||
+        s.contains('handshake failed') ||
+        s.contains('clientexception');
+  }
+
+  /// Recovers any outbox rows that were marked 'processing' but left stranded
+  /// by a process kill or crash mid-drain (> 5 minutes ago).
+  Future<void> reapStrandedProcessingRows() async {
+    try {
+      final now = DateTime.now();
+      final cutoff = now.subtract(const Duration(minutes: 5));
+      final active = await _db.listActiveOutbox(ownerUserId: _localOwnerId);
+      for (final row in active) {
+        if (row.status == 'processing' && row.updatedAt.isBefore(cutoff)) {
+          debugPrint('Reaping stranded outbox row ${row.operationId} back to pending');
+          await _db.updateSyncOutbox(
+            row.copyWith(
+              status: 'pending',
+              updatedAt: now,
+              lastError: const Value('Recovered from interrupted drain'),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error reaping stranded outbox rows: $e');
+    }
+  }
+
   Future<void> processQueue() async {
     if (SupabaseAuthHelper.currentUid == null) return;
     if (_processing) return;
     _processing = true;
     try {
       await ensureMigrated();
+      await reapStrandedProcessingRows();
       final due = await _db.listDueOutbox(ownerUserId: _localOwnerId);
       if (due.isEmpty) {
         await _updateBanner();
@@ -403,17 +450,17 @@ class SyncOutboxService {
               ),
             );
           } else {
-            final retries = row.retries + 1;
-            if (retries >= _maxRetries) {
+            if (row.retries >= _maxRetries) {
               await _db.updateSyncOutbox(
                 processing.copyWith(
                   status: 'permanently_failed',
-                  retries: retries,
+                  retries: row.retries,
                   updatedAt: DateTime.now(),
                   lastError: const Value('Max retries exceeded'),
                 ),
               );
             } else {
+              final retries = row.retries + 1;
               final delay = _backoff(retries);
               await _db.updateSyncOutbox(
                 processing.copyWith(
@@ -428,17 +475,31 @@ class SyncOutboxService {
           }
         } catch (e) {
           debugPrint('Sync outbox item failed: $e');
-          final retries = row.retries + 1;
-          if (retries >= _maxRetries) {
+          if (_isNetworkDropout(e)) {
+            // Network transport failure: do NOT burn user retry budget.
+            await _db.updateSyncOutbox(
+              processing.copyWith(
+                status: 'retrying',
+                nextAttemptAt: Value(DateTime.now().add(const Duration(seconds: 45))),
+                updatedAt: DateTime.now(),
+                lastError: Value('Waiting for network connectivity: $e'),
+              ),
+            );
+            // Cease further drain attempts while offline to conserve battery
+            break;
+          }
+
+          if (row.retries >= _maxRetries) {
             await _db.updateSyncOutbox(
               processing.copyWith(
                 status: 'permanently_failed',
-                retries: retries,
+                retries: row.retries,
                 updatedAt: DateTime.now(),
                 lastError: Value(e.toString()),
               ),
             );
           } else {
+            final retries = row.retries + 1;
             final delay = _backoff(retries);
             await _db.updateSyncOutbox(
               processing.copyWith(

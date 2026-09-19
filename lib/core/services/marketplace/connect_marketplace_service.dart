@@ -234,7 +234,7 @@ class ConnectMarketplaceService {
       final jobRows = await c
           .from('connect_jobs')
           .select(
-            'id,title,company_name,company_domain,company_email,description,category,tags,salary_min,salary_max,currency,location,job_type,seo_slug,posted_by,created_at',
+            'id,title,company_name,company_domain,company_email,source_url,description,category,tags,salary_min,salary_max,currency,location,job_type,seo_slug,posted_by,created_at',
           )
           .eq('is_public', true)
           .eq('status', 'published')
@@ -260,6 +260,9 @@ class ConnectMarketplaceService {
           skills = [cleanJobText(row['category'])];
         }
 
+        final sourceUrl = row['source_url']?.toString().trim();
+        final isExternal = sourceUrl != null && sourceUrl.isNotEmpty;
+
         combined.add({
           'id': row['id'],
           'client_user_id': row['posted_by'] ?? '00000000-0000-0000-0000-000000000000',
@@ -272,10 +275,13 @@ class ConnectMarketplaceService {
           'is_open': true,
           'company_name': cleanJobText(row['company_name']),
           'company_email': row['company_email'],
+          'company_domain': row['company_domain'],
+          'source_url': sourceUrl,
+          'is_external': isExternal,
           'location': cleanJobText(row['location'] ?? 'Remote'),
           'seo_slug': row['seo_slug'],
           'category': row['category'],
-          'is_crawled_job': true,
+          'is_crawled_job': isExternal,
         });
       }
     } catch (e) {

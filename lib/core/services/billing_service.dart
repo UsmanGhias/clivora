@@ -11,6 +11,7 @@ import 'analytics_service.dart';
 import 'play_billing_verify_service.dart';
 import 'referral_service.dart';
 import 'subscription_manager.dart';
+import '../../data/database/database.dart';
 import '../../data/providers/app_providers.dart';
 
 final billingServiceProvider = Provider<BillingService>((ref) {
@@ -19,22 +20,28 @@ final billingServiceProvider = Provider<BillingService>((ref) {
 
 /// Google Play Billing. Pro and Pro Plus monthly subscriptions (no external web checkout in-app).
 class BillingService {
-  BillingService(this.ref);
+  BillingService(this.ref, [InAppPurchase? iap, this.currentUserResolver])
+      : _iap = iap ?? InAppPurchase.instance;
 
   final Ref ref;
-  final InAppPurchase _iap = InAppPurchase.instance;
+  final InAppPurchase _iap;
+  final User? Function()? currentUserResolver;
 
   final Map<String, ProductDetails> _products = {};
+
+  User? get _currentUser => currentUserResolver != null
+      ? currentUserResolver!()
+      : ref.read(authStateProvider).valueOrNull;
 
   Future<bool> isAvailable() => _iap.isAvailable();
 
   bool get isBillingOpenToUser {
-    final user = ref.read(authStateProvider).valueOrNull;
+    final user = _currentUser;
     return user != null && !isGuestUser(user);
   }
 
   String _accountType() {
-    final user = ref.read(authStateProvider).valueOrNull;
+    final user = _currentUser;
     return isClientUser(user) ? 'client' : 'freelancer';
   }
 
@@ -99,7 +106,7 @@ class BillingService {
       if (!BillingProducts.isProProduct(purchase.productID)) continue;
 
       if (purchase.status == PurchaseStatus.purchased || purchase.status == PurchaseStatus.restored) {
-        final user = ref.read(authStateProvider).valueOrNull;
+        final user = _currentUser;
         final expectedPro = productIdForCurrentUser(plus: false);
         final expectedPlus = productIdForCurrentUser(plus: true);
 
