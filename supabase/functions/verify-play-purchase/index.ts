@@ -148,6 +148,27 @@ serve(async (req) => {
   const plan = active ? (isPlus ? "pro_plus" : "pro") : "free";
 
   const admin = createClient(supabaseUrl, serviceKey);
+
+  // A purchase token belongs to the account that first verified it. Without this check any
+  // signed-in user replaying someone else's token took over the subscription row and got Pro.
+  const { data: existing, error: existingError } = await admin
+    .from("subscriptions")
+    .select("user_id")
+    .eq("purchase_token", purchaseToken)
+    .maybeSingle();
+  if (existingError) {
+    return new Response(JSON.stringify({ error: "Could not check purchase ownership" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  if (existing && existing.user_id !== userData.user.id) {
+    return new Response(JSON.stringify({ error: "Purchase is linked to another account" }), {
+      status: 409,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   const { error: subscriptionError } = await admin.from("subscriptions").upsert(
     {
       user_id: userData.user.id,
