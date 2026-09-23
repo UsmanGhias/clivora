@@ -30,9 +30,16 @@ import '../../shared/widgets/entity_activity_timeline.dart';
 import '../../shared/widgets/entity_attachments_panel.dart';
 
 class InvoiceFormScreen extends ConsumerStatefulWidget {
-  const InvoiceFormScreen({super.key, this.invoiceId});
+  const InvoiceFormScreen({
+    super.key,
+    this.invoiceId,
+    this.initialLineItems,
+    this.initialDescription,
+  });
 
   final int? invoiceId;
+  final List<InvoiceLineItem>? initialLineItems;
+  final String? initialDescription;
 
   @override
   ConsumerState<InvoiceFormScreen> createState() => _InvoiceFormScreenState();
@@ -65,6 +72,12 @@ class _InvoiceFormScreenState extends ConsumerState<InvoiceFormScreen> {
       _loadInvoice();
     } else {
       _numberController.text = 'INV-${DateFormat('yyyyMMdd-HHmm').format(DateTime.now())}';
+      if (widget.initialLineItems != null && widget.initialLineItems!.isNotEmpty) {
+        _lineItems.addAll(widget.initialLineItems!);
+        _descriptionController.text = widget.initialDescription ?? widget.initialLineItems!.first.description;
+        final total = _lineItems.fold<double>(0, (sum, item) => sum + item.amount);
+        _amountController.text = total.toStringAsFixed(2);
+      }
       _loading = false;
     }
   }

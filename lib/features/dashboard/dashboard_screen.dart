@@ -23,6 +23,7 @@ import '../../shared/widgets/messages_icon_button.dart';
 import '../../shared/widgets/notification_icon_button.dart';
 import '../../shared/widgets/skeleton_loading.dart';
 import '../../shared/widgets/today_overdue_card.dart';
+import '../ai_assistant/presentation/gemini_assistant_sheet.dart';
 import 'priority_strips.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -365,6 +366,17 @@ class _DashboardHeader extends StatelessWidget {
             ],
           ),
         ),
+        IconButton(
+          onPressed: () => showGeminiAssistantSheet(context),
+          tooltip: 'Gemini AI Assistant',
+          icon: const Icon(Icons.auto_awesome_rounded, size: 20, color: ClivoraColors.primaryDark),
+          style: IconButton.styleFrom(
+            backgroundColor: Theme.of(context).brightness == Brightness.light
+                ? ClivoraColors.primaryLight
+                : ClivoraColors.darkBorder,
+          ),
+        ),
+        const SizedBox(width: 8),
         const MessagesIconButton(route: '/freelancer-messages'),
         const SizedBox(width: 8),
         const NotificationIconButton(isClient: false),
