@@ -43,10 +43,12 @@ class GeneratedInvoiceItem {
 /// Integrates directly with Gemini API (gemini-flash-lite-latest) with 3-key failover pool.
 class GeminiAssistantService {
   static const _primaryKey = 'REDACTED_GEMINI_KEY';
+  static const _keyApp = 'REDACTED_GEMINI_KEY';
+  static const _keyAi = 'REDACTED_GEMINI_KEY';
   static const _fallbackKey = 'REDACTED_GEMINI_KEY';
   static const _tertiaryKey = 'REDACTED_GEMINI_KEY';
 
-  static const _apiKeys = [_primaryKey, _fallbackKey, _tertiaryKey];
+  static const _apiKeys = [_primaryKey, _keyApp, _keyAi, _fallbackKey, _tertiaryKey];
   static const _model = 'gemini-flash-lite-latest';
 
   /// Sanitizes text to remove em-dashes and en-dashes per CLIVORA standards.
@@ -97,7 +99,7 @@ class GeminiAssistantService {
           url,
           headers: {'Content-Type': 'application/json'},
           body: body,
-        ).timeout(const Duration(seconds: 12));
+        ).timeout(const Duration(seconds: 8));
 
         if (resp.statusCode == 200) {
           final data = jsonDecode(resp.body) as Map<String, dynamic>;
