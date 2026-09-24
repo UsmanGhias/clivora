@@ -25,6 +25,21 @@ interface NormalizedJob {
   source_id: string;
   source_url: string;
   seo_slug: string;
+  language: string;
+}
+
+function detectLanguage(title: string, desc: string): string {
+  const sample = (title + " " + (desc || "").slice(0, 1000)).toLowerCase();
+  if (/\b(der|die|das|und|von|mit|sich|für|eine|einer|einem|unser|ihre|aufgaben|wir suchen|über uns|standort)\b/i.test(sample)) {
+    return "de";
+  }
+  if (/\b(le|la|les|des|du|dans|pour|avec|vous|nous|missions|équipe|entreprise|gestionnaire|poste|notre)\b/i.test(sample)) {
+    return "fr";
+  }
+  if (/\b(el|los|las|para|con|por|requisitos|empresa|nuestro|equipo|experiencia)\b/i.test(sample)) {
+    return "es";
+  }
+  return "en";
 }
 
 // ── HTML Entity Decoder ──────────────────────────────────────────────────────
@@ -200,6 +215,7 @@ async function fetchRemotiveJobs(): Promise<NormalizedJob[]> {
         source_id: String(j.id),
         source_url: j.url || `https://remotive.com/remote-jobs/${j.id}`,
         seo_slug: slugify(`${cleanCompany}-${cleanTitle}-${j.id}`),
+        language: detectLanguage(cleanTitle, cleanDesc),
       };
     });
   } catch (e) {
@@ -241,6 +257,7 @@ async function fetchArbeitnowJobs(): Promise<NormalizedJob[]> {
         source_id: String(j.slug || j.title).slice(0, 200),
         source_url: j.url || `https://www.arbeitnow.com/view/${j.slug}`,
         seo_slug: slugify(`${cleanCompany}-${cleanTitle}-an-${j.slug || Date.now()}`),
+        language: detectLanguage(cleanTitle, cleanDesc),
       };
     });
   } catch (e) {
@@ -331,6 +348,7 @@ async function fetchHackerNewsJobs(): Promise<NormalizedJob[]> {
         source_id: String(c.objectID),
         source_url: `https://news.ycombinator.com/item?id=${c.objectID}`,
         seo_slug: slugify(`hn-${companyName}-${title}-${c.objectID}`),
+        language: "en",
       });
     }
 
@@ -374,15 +392,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 });
   }
 
-  // 1. Auto-archive jobs older than 90 days with 0 active proposals
-  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
-  await db
-    .from("connect_jobs")
-    .update({ status: "archived", is_public: false })
-    .lt("created_at", ninetyDaysAgo)
-    .eq("status", "published");
-
-  // 2. Fetch from all sources in parallel
+  // 1. Fetch from all sources in parallel (jobs are kept permanently, no auto-archive or deletion)
   const [remotiveJobs, arbeitnowJobs, hnJobs] = await Promise.all([
     fetchRemotiveJobs(),
     fetchArbeitnowJobs(),
