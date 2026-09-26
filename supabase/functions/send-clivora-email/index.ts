@@ -69,7 +69,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         error:
-          "Email not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS (Hostinger mailbox) on Edge Function secrets.",
+          "Email not configured. Set RESEND_API_KEY or SMTP_HOST, SMTP_USER, SMTP_PASS on Edge Function secrets.",
       }),
       { status: 503 },
     );

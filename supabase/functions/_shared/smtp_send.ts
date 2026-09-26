@@ -14,11 +14,14 @@ function env(name: string, fallback = ""): string {
 }
 
 export function smtpConfigured(): boolean {
-  return Boolean(env("SMTP_HOST") && env("SMTP_USER") && env("SMTP_PASS"));
+  return Boolean(
+    env("RESEND_API_KEY", "REDACTED_RESEND_KEY") ||
+    (env("SMTP_HOST") && env("SMTP_USER") && env("SMTP_PASS"))
+  );
 }
 
 export function smtpFromAddress(): string {
-  return env("SMTP_FROM") || `CLIVORA <${env("SMTP_USER") || "contact@clivora.io"}>`;
+  return env("RESEND_FROM") || env("SMTP_FROM") || `CLIVORA <${env("SMTP_USER") || "contact@clivora.io"}>`;
 }
 
 function encodeBase64(s: string): string {
@@ -35,15 +38,45 @@ function dotStuff(body: string): string {
   return body.replace(/\r\n/g, "\n").split("\n").map((line) => (line.startsWith(".") ? "." + line : line)).join("\r\n");
 }
 
-/** Minimal SMTP over TLS (Hostinger: smtp.hostinger.com:465). */
+/** Primary: Resend API over HTTPS. Fallback: Minimal SMTP over TLS (Hostinger: smtp.hostinger.com:465). */
 export async function sendSmtpEmail(input: SmtpSendInput): Promise<void> {
+  const fromRaw = smtpFromAddress();
+  const resendApiKey = env("RESEND_API_KEY", "REDACTED_RESEND_KEY");
+
+  // Attempt Resend first (protects Hostinger mailbox from rate limit suspension)
+  if (resendApiKey) {
+    try {
+      const resp = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: fromRaw,
+          to: [input.to],
+          subject: input.subject,
+          html: input.html,
+        }),
+      });
+
+      if (resp.ok) {
+        return;
+      }
+      const errText = await resp.text();
+      console.warn("[email] Resend API error:", resp.status, errText);
+    } catch (fetchErr) {
+      console.warn("[email] Resend fetch exception:", fetchErr);
+    }
+  }
+
+  // Fallback to Hostinger SMTP over TLS
   const host = env("SMTP_HOST", "smtp.hostinger.com");
   const port = Number(env("SMTP_PORT", "465")) || 465;
   const user = env("SMTP_USER");
   const pass = env("SMTP_PASS");
-  const fromRaw = smtpFromAddress();
   if (!host || !user || !pass) {
-    throw new Error("SMTP not configured (need SMTP_HOST, SMTP_USER, SMTP_PASS)");
+    throw new Error("Email sending failed (Resend unsuccessful and Hostinger SMTP not configured)");
   }
 
   const from = parseFrom(fromRaw);
