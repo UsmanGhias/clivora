@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/auth_service.dart';
 import '../../../core/providers/gemini_assistant_provider.dart';
@@ -42,10 +43,15 @@ class _GeminiAssistantSheetState extends ConsumerState<GeminiAssistantSheet>
   final _invoiceScopeController = TextEditingController();
   final _invoiceBudgetController = TextEditingController();
 
+  // Job Scope tab controllers
+  final _jobScopeIdeaController = TextEditingController();
+  final _jobScopeBudgetController = TextEditingController(text: r'$500-1,500');
+  final _jobScopeCategoryController = TextEditingController(text: 'Full-Stack Development');
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -58,6 +64,9 @@ class _GeminiAssistantSheetState extends ConsumerState<GeminiAssistantSheet>
     _scopeController.dispose();
     _invoiceScopeController.dispose();
     _invoiceBudgetController.dispose();
+    _jobScopeIdeaController.dispose();
+    _jobScopeBudgetController.dispose();
+    _jobScopeCategoryController.dispose();
     super.dispose();
   }
 
@@ -158,6 +167,7 @@ class _GeminiAssistantSheetState extends ConsumerState<GeminiAssistantSheet>
               indicatorWeight: 3,
               labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
               tabs: const [
+                Tab(icon: Icon(Icons.work_outline, size: 18), text: 'Scope'),
                 Tab(icon: Icon(Icons.description_outlined, size: 18), text: 'Proposals'),
                 Tab(icon: Icon(Icons.receipt_long_outlined, size: 18), text: 'Invoices'),
                 Tab(icon: Icon(Icons.insights_outlined, size: 18), text: 'Health'),
@@ -202,6 +212,7 @@ class _GeminiAssistantSheetState extends ConsumerState<GeminiAssistantSheet>
               child: TabBarView(
                 controller: _tabController,
                 children: [
+                  _buildJobScopeTab(state),
                   _buildProposalTab(state),
                   _buildInvoiceTab(state),
                   _buildHealthTab(state),
@@ -603,6 +614,272 @@ class _GeminiAssistantSheetState extends ConsumerState<GeminiAssistantSheet>
               child: SelectableText(
                 state.briefing!,
                 style: const TextStyle(fontSize: 13, height: 1.6),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // --------------------------------------------------------------------------
+  // Tab: Client Job Scope & Milestones
+  // --------------------------------------------------------------------------
+  Widget _buildJobScopeTab(GeminiAssistantState state) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: ClivoraColors.primaryLight.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: ClivoraColors.primary.withValues(alpha: 0.2)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.verified_rounded, color: ClivoraColors.primaryDark, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Zero platform fee for clients. Gemini transforms your raw requirements into complete deliverables, milestone phases, and budget bands.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: ClivoraColors.primaryDark,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _jobScopeIdeaController,
+            maxLines: 4,
+            decoration: const InputDecoration(
+              labelText: 'Project Idea / Client Requirements',
+              hintText: 'e.g. Build a Flutter and Supabase mobile app for real-time delivery tracking with push notifications...',
+              alignLabelWithHint: true,
+              border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                ActionChip(
+                  label: const Text('SaaS MVP', style: TextStyle(fontSize: 11)),
+                  onPressed: () {
+                    _jobScopeIdeaController.text =
+                        'Build a B2B SaaS MVP with Next.js App Router, Supabase Auth, PostgreSQL schema, and Stripe recurring subscriptions.';
+                  },
+                ),
+                const SizedBox(width: 8),
+                ActionChip(
+                  label: const Text('Flutter App', style: TextStyle(fontSize: 11)),
+                  onPressed: () {
+                    _jobScopeIdeaController.text =
+                        'Cross-platform Flutter mobile application with Riverpod, offline-first SQLite/Drift sync, push notifications, and biometric auth.';
+                  },
+                ),
+                const SizedBox(width: 8),
+                ActionChip(
+                  label: const Text('ZATCA E-Invoicing', style: TextStyle(fontSize: 11)),
+                  onPressed: () {
+                    _jobScopeIdeaController.text =
+                        'Implement KSA ZATCA Phase 2 E-Invoicing compliance with XML generation, UBL 2.1 formatting, and cryptographic stamp.';
+                  },
+                ),
+                const SizedBox(width: 8),
+                ActionChip(
+                  label: const Text('Shopify Store', style: TextStyle(fontSize: 11)),
+                  onPressed: () {
+                    _jobScopeIdeaController.text =
+                        'Custom Shopify Liquid theme setup, headless storefront optimization, product catalog migration, and custom checkout apps.';
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _jobScopeCategoryController,
+                  decoration: const InputDecoration(
+                    labelText: 'Category',
+                    hintText: 'e.g. Mobile Development',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  initialValue: _jobScopeBudgetController.text.isNotEmpty ? _jobScopeBudgetController.text : r'$500-1,500',
+                  decoration: const InputDecoration(
+                    labelText: 'Budget Band',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'Under \$500', child: Text('Under \$500')),
+                    DropdownMenuItem(value: '\$500-1,500', child: Text('\$500-1,500')),
+                    DropdownMenuItem(value: '\$1,500-5,000', child: Text('\$1,500-5,000')),
+                    DropdownMenuItem(value: '\$5,000+', child: Text('\$5,000+')),
+                    DropdownMenuItem(value: 'negotiable', child: Text('Negotiable')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) {
+                      _jobScopeBudgetController.text = val;
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: state.isLoading
+                ? null
+                : () async {
+                    if (_jobScopeIdeaController.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please describe your project idea or requirements'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                      return;
+                    }
+                    await ref.read(geminiAssistantProvider.notifier).draftJobScope(
+                          rawIdea: _jobScopeIdeaController.text.trim(),
+                          category: _jobScopeCategoryController.text.trim(),
+                          targetBudget: _jobScopeBudgetController.text.trim(),
+                        );
+                  },
+            icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+            label: Text(state.isLoading ? 'Structuring Scope & Milestones...' : 'Draft Job Scope & Milestones'),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+          ),
+          if (state.jobScope != null) ...[
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Structured Job Posting',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    final scope = state.jobScope!;
+                    final fullText =
+                        '${scope.title}\nBudget: ${scope.budgetBand} (0% platform fee)\nSkills: ${scope.skills}\n\n${scope.summary}';
+                    _copyToClipboard(fullText, 'Job scope & milestones');
+                  },
+                  icon: const Icon(Icons.copy_rounded, size: 16),
+                  label: const Text('Copy All'),
+                ),
+              ],
+            ),
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: const BorderSide(color: ClivoraColors.borderLight),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      state.jobScope!.title,
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: ClivoraColors.primaryLight,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            state.jobScope!.budgetBand,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: ClivoraColors.primaryDark,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            '0% Platform Fee',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.green,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (state.jobScope!.skills.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: state.jobScope!.skills
+                            .split(',')
+                            .map((s) => s.trim())
+                            .where((s) => s.isNotEmpty)
+                            .map(
+                              (s) => Chip(
+                                label: Text(s, style: const TextStyle(fontSize: 11)),
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.zero,
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ],
+                    const Divider(height: 24),
+                    SelectableText(
+                      state.jobScope!.summary,
+                      style: const TextStyle(fontSize: 13, height: 1.6),
+                    ),
+                    const SizedBox(height: 16),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        context.push('/connect/need');
+                      },
+                      icon: const Icon(Icons.post_add_rounded, size: 18),
+                      label: const Text('Open Post a Job Form'),
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

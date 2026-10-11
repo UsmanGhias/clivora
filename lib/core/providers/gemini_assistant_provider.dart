@@ -15,6 +15,7 @@ class GeminiAssistantState {
     this.proposal,
     this.invoiceItems = const [],
     this.briefing,
+    this.jobScope,
     this.error,
   });
 
@@ -22,6 +23,7 @@ class GeminiAssistantState {
   final String? proposal;
   final List<GeneratedInvoiceItem> invoiceItems;
   final String? briefing;
+  final GeneratedJobScope? jobScope;
   final String? error;
 
   GeminiAssistantState copyWith({
@@ -29,6 +31,7 @@ class GeminiAssistantState {
     String? proposal,
     List<GeneratedInvoiceItem>? invoiceItems,
     String? briefing,
+    GeneratedJobScope? jobScope,
     String? error,
   }) {
     return GeminiAssistantState(
@@ -36,6 +39,7 @@ class GeminiAssistantState {
       proposal: proposal ?? this.proposal,
       invoiceItems: invoiceItems ?? this.invoiceItems,
       briefing: briefing ?? this.briefing,
+      jobScope: jobScope ?? this.jobScope,
       error: error,
     );
   }
@@ -139,6 +143,28 @@ class GeminiAssistantNotifier extends StateNotifier<GeminiAssistantState> {
       final err = 'Error generating briefing: $e';
       state = state.copyWith(isLoading: false, error: err);
       return '';
+    }
+  }
+
+  /// Generates a structured client job posting from raw project idea.
+  Future<GeneratedJobScope?> draftJobScope({
+    required String rawIdea,
+    String? category,
+    String? targetBudget,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final scope = await _service.generateJobScope(
+        rawIdea: rawIdea,
+        category: category,
+        targetBudget: targetBudget,
+      );
+      state = state.copyWith(isLoading: false, jobScope: scope);
+      return scope;
+    } catch (e) {
+      final err = 'Error generating job scope: $e';
+      state = state.copyWith(isLoading: false, error: err);
+      return null;
     }
   }
 

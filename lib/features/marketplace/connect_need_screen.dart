@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/services/marketplace/connect_marketplace_service.dart';
+import '../../core/providers/gemini_assistant_provider.dart';
 import '../../data/providers/app_providers.dart';
 import '../../shared/widgets/clivora_scaffold.dart';
 
@@ -17,14 +18,17 @@ class _ConnectNeedScreenState extends ConsumerState<ConnectNeedScreen> {
   final _title = TextEditingController();
   final _summary = TextEditingController();
   final _skills = TextEditingController();
+  final _aiPrompt = TextEditingController();
   String _budget = '\$500-1,500';
   bool _busy = false;
+  bool _aiLoading = false;
 
   @override
   void dispose() {
     _title.dispose();
     _summary.dispose();
     _skills.dispose();
+    _aiPrompt.dispose();
     super.dispose();
   }
 
@@ -69,6 +73,104 @@ class _ConnectNeedScreenState extends ConsumerState<ConnectNeedScreen> {
                 ),
           ),
           const SizedBox(height: 16),
+          // Gemini AI Scope Assistant Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.35),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.25),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.auto_awesome, size: 20, color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Text(
+                      'AI Job Scope Assistant',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '0% Platform Fee',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Enter 1 sentence and Gemini will draft full deliverables, milestones, and required skills.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _aiPrompt,
+                        decoration: InputDecoration(
+                          hintText: 'e.g. Mobile laundry app with Stripe...',
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onSubmitted: (_) => _generateScope(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton.icon(
+                      onPressed: _aiLoading ? null : () => _generateScope(),
+                      icon: _aiLoading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Icon(Icons.bolt, size: 18),
+                      label: Text(_aiLoading ? 'Drafting…' : 'Generate'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      ActionChip(
+                        label: const Text('Flutter Mobile App'),
+                        onPressed: _aiLoading ? null : () => _generateScope('Flutter Mobile App for iOS and Android with Supabase backend'),
+                      ),
+                      const SizedBox(width: 6),
+                      ActionChip(
+                        label: const Text('Next.js SaaS MVP'),
+                        onPressed: _aiLoading ? null : () => _generateScope('Next.js full-stack SaaS web app with Stripe billing'),
+                      ),
+                      const SizedBox(width: 6),
+                      ActionChip(
+                        label: const Text('AI Agent Integration'),
+                        onPressed: _aiLoading ? null : () => _generateScope('Python AI backend integrating Gemini LLM API and vector search'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
           TextField(controller: _title, decoration: const InputDecoration(labelText: 'Job title')),
           const SizedBox(height: 12),
           TextField(controller: _summary, maxLines: 4, decoration: const InputDecoration(labelText: 'Summary')),
@@ -96,6 +198,43 @@ class _ConnectNeedScreenState extends ConsumerState<ConnectNeedScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _generateScope([String? overrideText]) async {
+    final query = (overrideText ?? _aiPrompt.text).trim();
+    if (query.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a short project idea to draft scope.')),
+      );
+      return;
+    }
+    setState(() => _aiLoading = true);
+    try {
+      final scope = await ref.read(geminiAssistantProvider.notifier).draftJobScope(
+            rawIdea: query,
+            targetBudget: _budget,
+          );
+      if (scope != null && mounted) {
+        setState(() {
+          _title.text = scope.title;
+          _summary.text = scope.summary;
+          _skills.text = scope.skills;
+          const validBudgets = ['Under \$500', '\$500-1,500', '\$1,500-5,000', '\$5,000+', 'negotiable'];
+          if (validBudgets.contains(scope.budgetBand)) {
+            _budget = scope.budgetBand;
+          }
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Job scope drafted with Gemini AI!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _aiLoading = false);
+    }
   }
 
   Future<void> _save() async {

@@ -39,6 +39,36 @@ class GeneratedInvoiceItem {
   }
 }
 
+class GeneratedJobScope {
+  const GeneratedJobScope({
+    required this.title,
+    required this.summary,
+    required this.skills,
+    required this.budgetBand,
+  });
+
+  final String title;
+  final String summary;
+  final String skills;
+  final String budgetBand;
+
+  Map<String, dynamic> toJson() => {
+        'title': title,
+        'summary': summary,
+        'skills': skills,
+        'budget_band': budgetBand,
+      };
+
+  factory GeneratedJobScope.fromJson(Map<String, dynamic> json) {
+    return GeneratedJobScope(
+      title: json['title']?.toString() ?? 'Custom Software Development',
+      summary: json['summary']?.toString() ?? '',
+      skills: json['skills']?.toString() ?? 'React, TypeScript, Next.js',
+      budgetBand: json['budget_band']?.toString() ?? '\$500-1,500',
+    );
+  }
+}
+
 /// Native Google Gemini AI Service for Clivora Mobile.
 /// Integrates directly with Gemini API (gemini-flash-lite-latest) with 3-key failover pool.
 class GeminiAssistantService {
@@ -292,5 +322,87 @@ Keep it sharp, tactical, and motivating. Zero em dashes. 3 bullet points maximum
 - Delivery Velocity: You have $activeProjects active project${activeProjects == 1 ? '' : 's'} in progress. Prioritize the highest-value milestone.
 - Deal Retained Rate: Zero platform fees on negotiated CLIVORA contracts protects 100% of your earnings.
 ''';
+  }
+
+  /// Generates a structured client job posting and scope breakdown.
+  Future<GeneratedJobScope> generateJobScope({
+    required String rawIdea,
+    String? category,
+    String? targetBudget,
+  }) async {
+    final prompt = '''
+Analyze this client requirement and generate a structured job posting for CLIVORA Connect (0% platform fee freelance marketplace).
+
+Client Requirement: "$rawIdea"
+Target Category: "${category ?? 'Custom Software'}"
+Approximate Budget: "${targetBudget ?? '\$500-1,500'}"
+
+Standard Budget Options in CLIVORA:
+- Under \$500
+- \$500-1,500
+- \$1,500-5,000
+- \$5,000+
+- negotiable
+
+Requirements:
+1. Title: Concise, professional role/project title (under 50 chars). E.g. "Full-Stack Next.js E-Commerce Platform"
+2. Summary: Clear, professional scope of work (2-4 paragraphs) covering:
+   - Project Objectives & Technical Overview
+   - Core Features & Acceptance Criteria
+   - Phased Delivery Milestones (Milestone 1, Milestone 2, Milestone 3)
+   - Zero Platform Commission Notice ("CLIVORA charges 0% fees; both parties keep 100% of negotiated agreement value.")
+3. Skills: 4 to 6 comma-separated technical skills matching standard stacks (e.g. "React, Next.js, TypeScript, PostgreSQL").
+4. BudgetBand: Exactly one of the standard budget options above that best fits the scope.
+5. Zero em dashes (use hyphens or clean colons instead). Zero corporate buzzwords.
+
+Output ONLY a valid JSON object with keys:
+"title", "summary", "skills", "budget_band".
+No markdown blocks, no commentary. Pure JSON only.
+''';
+
+    final result = await _callGemini(
+      prompt: prompt,
+      systemInstruction: 'You are a senior technical recruiter and system architect structuring job postings for clients. Always return pure JSON only.',
+      maxOutputTokens: 900,
+      temperature: 0.3,
+    );
+
+    if (result != null && result.isNotEmpty) {
+      try {
+        final clean = result.replaceAll(RegExp(r'^```json\s*|^```\s*|```$', multiLine: true), '').trim();
+        final decoded = jsonDecode(clean) as Map<String, dynamic>;
+        return GeneratedJobScope(
+          title: sanitizeDashes(decoded['title']?.toString() ?? 'Custom Software Development'),
+          summary: sanitizeDashes(decoded['summary']?.toString() ?? rawIdea),
+          skills: sanitizeDashes(decoded['skills']?.toString() ?? 'React, TypeScript, Next.js'),
+          budgetBand: decoded['budget_band']?.toString() ?? (targetBudget ?? '\$500-1,500'),
+        );
+      } catch (e) {
+        debugPrint('[GeminiAssistant] Failed to parse JSON job scope: $e');
+      }
+    }
+
+    final fallbackTitle = sanitizeDashes(rawIdea.length > 45 ? '${rawIdea.substring(0, 42)}...' : rawIdea);
+    final fallbackSummary = sanitizeDashes('''Project Overview:
+$rawIdea
+
+Scope & Deliverables:
+- Technical design and implementation matching agreed requirements
+- Integration testing, quality assurance, and responsive design verification
+- Codebase documentation and deployment handoff
+
+Phased Milestones:
+- Milestone 1: Requirements sign-off and environment setup
+- Milestone 2: Core feature development and demo
+- Milestone 3: Final verification and production release
+
+Note: CLIVORA charges 0% platform commissions. 100% of payouts go directly to your hired engineer.''');
+
+    return GeneratedJobScope(
+      title: fallbackTitle,
+      summary: fallbackSummary,
+      skills: 'React, TypeScript, Next.js, PostgreSQL',
+      budgetBand: targetBudget ?? '\$500-1,500',
+    );
   }
 }
