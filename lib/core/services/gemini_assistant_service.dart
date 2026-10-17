@@ -72,13 +72,19 @@ class GeneratedJobScope {
 /// Native Google Gemini AI Service for Clivora Mobile.
 /// Integrates directly with Gemini API (gemini-flash-lite-latest) with 3-key failover pool.
 class GeminiAssistantService {
-  static const _primaryKey = 'REDACTED_GEMINI_KEY';
-  static const _keyApp = 'REDACTED_GEMINI_KEY';
-  static const _keyAi = 'REDACTED_GEMINI_KEY';
-  static const _fallbackKey = 'REDACTED_GEMINI_KEY';
-  static const _tertiaryKey = 'REDACTED_GEMINI_KEY';
+  static const _primaryKey = String.fromEnvironment('GEMINI_API_KEY');
+  static const _keyApp = String.fromEnvironment('GEMINI_API_KEY_APP');
+  static const _keyAi = String.fromEnvironment('GEMINI_API_KEY_AI');
+  static const _fallbackKey = String.fromEnvironment('GEMINI_API_KEY_FALLBACK');
+  static const _tertiaryKey = String.fromEnvironment('GEMINI_API_KEY_TERTIARY');
 
-  static const _apiKeys = [_primaryKey, _keyApp, _keyAi, _fallbackKey, _tertiaryKey];
+  static List<String> get _apiKeys => [
+        _primaryKey,
+        _keyApp,
+        _keyAi,
+        _fallbackKey,
+        _tertiaryKey,
+      ].where((k) => k.isNotEmpty).toList();
   static const _model = 'gemini-flash-lite-latest';
 
   /// Sanitizes text to remove em-dashes and en-dashes per CLIVORA standards.
@@ -86,15 +92,16 @@ class GeminiAssistantService {
     return text.replaceAll('\u2014', '-').replaceAll('\u2013', '-');
   }
 
-  /// Internal caller with automatic 3-key failover.
+  /// Internal caller with automatic key failover and server proxy fallback.
   Future<String?> _callGemini({
     required String prompt,
     String? systemInstruction,
     int maxOutputTokens = 800,
     double temperature = 0.5,
   }) async {
-    for (var i = 0; i < _apiKeys.length; i++) {
-      final key = _apiKeys[i];
+    final keys = _apiKeys;
+    for (var i = 0; i < keys.length; i++) {
+      final key = keys[i];
       final url = Uri.parse(
         'https://generativelanguage.googleapis.com/v1beta/models/$_model:generateContent?key=$key',
       );
@@ -147,6 +154,44 @@ class GeminiAssistantService {
       } catch (e) {
         debugPrint('[GeminiAssistant] Key ${i + 1} failed with error: $e');
       }
+    }
+
+    // Fallback: Proxy request via secure CLIVORA Server API
+    return _callServerProxy(
+      prompt: prompt,
+      systemInstruction: systemInstruction,
+      maxOutputTokens: maxOutputTokens,
+      temperature: temperature,
+    );
+  }
+
+  Future<String?> _callServerProxy({
+    required String prompt,
+    String? systemInstruction,
+    int maxOutputTokens = 800,
+    double temperature = 0.5,
+  }) async {
+    try {
+      final res = await http.post(
+        Uri.parse('https://clivora.io/api/ai/assistant'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'prompt': prompt,
+          'systemInstruction': systemInstruction,
+          'maxTokens': maxOutputTokens,
+          'temperature': temperature,
+        }),
+      ).timeout(const Duration(seconds: 10));
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        final text = data['text']?.toString() ?? data['response']?.toString();
+        if (text != null && text.isNotEmpty) {
+          return sanitizeDashes(text.trim());
+        }
+      }
+    } catch (e) {
+      debugPrint('[GeminiAssistant] Server proxy error: $e');
     }
     return null;
   }
