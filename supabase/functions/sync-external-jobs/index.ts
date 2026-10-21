@@ -235,31 +235,45 @@ async function fetchArbeitnowJobs(): Promise<NormalizedJob[]> {
     }
     const data = await res.json();
     const jobs = data.data || [];
+    const results: NormalizedJob[] = [];
 
-    return jobs.map((j: any) => {
+    for (const j of jobs) {
       const cleanTitle = decodeHtmlEntities(j.title || "").trim();
       const cleanCompany = decodeHtmlEntities(j.company_name || "").trim();
       const cleanDesc = stripHtmlTags(j.description || "").slice(0, 10000);
-      return {
+      const cleanLocation = decodeHtmlEntities(j.location || "Remote").trim();
+      const lang = detectLanguage(cleanTitle, cleanDesc);
+
+      // Strictly require remote and English
+      const isRemote = j.remote === true || cleanLocation.toLowerCase().includes("remote");
+      if (!isRemote) continue;
+      if (lang !== "en") continue;
+
+      const category = mapCategory(j.tags?.[0] || "software-development");
+      if (category === "human-resources" || category === "education") continue;
+
+      results.push({
         title: cleanTitle,
         company_name: cleanCompany,
         company_domain: extractDomain(j.url),
         company_email: extractContactEmail(j.description || ""),
         description: cleanDesc,
-        category: mapCategory(j.tags?.[0] || "general"),
+        category,
         tags: (j.tags || []).map((t: string) => decodeHtmlEntities(t).toLowerCase().trim()).filter(Boolean),
         salary_min: null,
         salary_max: null,
         currency: "USD",
-        location: decodeHtmlEntities(j.location || "Remote").trim(),
+        location: cleanLocation || "Remote",
         job_type: "full_time",
         source: "arbeitnow",
         source_id: String(j.slug || j.title).slice(0, 200),
         source_url: j.url || `https://www.arbeitnow.com/view/${j.slug}`,
         seo_slug: slugify(`${cleanCompany}-${cleanTitle}-an-${j.slug || Date.now()}`),
-        language: detectLanguage(cleanTitle, cleanDesc),
-      };
-    });
+        language: lang,
+      });
+    }
+
+    return results;
   } catch (e) {
     console.error("[arbeitnow] Fetch error:", e);
     return [];
@@ -361,7 +375,18 @@ async function fetchHackerNewsJobs(): Promise<NormalizedJob[]> {
 
 async function fetchFreeHireJobs(): Promise<NormalizedJob[]> {
   try {
-    const clusters = ["remote", "python", "flutter", "react", "golang", "devops"];
+    const clusters = [
+      "remote",
+      "python",
+      "flutter",
+      "react",
+      "golang",
+      "devops",
+      "typescript",
+      "nextjs",
+      "fullstack",
+      "ai",
+    ];
     const results: NormalizedJob[] = [];
 
     for (const cluster of clusters) {
