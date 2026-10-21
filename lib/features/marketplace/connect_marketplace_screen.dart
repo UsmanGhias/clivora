@@ -1160,7 +1160,6 @@ class _NeedFeedRow extends StatelessWidget {
     final summary = row['summary'] as String? ?? '';
     final budget = row['budget_band'] as String? ?? 'Negotiable';
     final skills = _stringList(row['skills']);
-    final skillLine = skills.take(3).where((s) => s.trim().isNotEmpty).join(' · ');
 
     return Material(
       color: Colors.transparent,
@@ -1266,19 +1265,54 @@ class _NeedFeedRow extends StatelessWidget {
                             ),
                           ),
                         ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.25), width: 0.6),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.circle, size: 5, color: Color(0xFF059669)),
+                              SizedBox(width: 3.5),
+                              Text(
+                                'Fresh',
+                                style: TextStyle(
+                                  color: Color(0xFF047857),
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
-                    if (skillLine.isNotEmpty)
-                      Text(
-                        skillLine,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: onSurface.withValues(alpha: 0.5),
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    if (skills.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
+                        children: skills.take(4).map((s) => Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: onSurface.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            s,
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              color: onSurface.withValues(alpha: 0.75),
+                            ),
+                          ),
+                        )).toList(),
                       ),
+                    ],
                   ],
                 ),
               ),

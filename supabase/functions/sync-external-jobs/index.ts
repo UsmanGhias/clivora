@@ -359,6 +359,61 @@ async function fetchHackerNewsJobs(): Promise<NormalizedJob[]> {
   }
 }
 
+async function fetchFreeHireJobs(): Promise<NormalizedJob[]> {
+  try {
+    const clusters = ["remote", "python", "flutter", "react", "golang", "devops"];
+    const results: NormalizedJob[] = [];
+
+    for (const cluster of clusters) {
+      try {
+        const url = `https://freehire.me/api/v1/jobs/search?q=${encodeURIComponent(cluster)}&work_mode=remote&reality=fresh&limit=25`;
+        const res = await fetch(url, {
+          headers: { "User-Agent": "CLIVORA-JobCrawler/1.0" },
+        });
+        if (!res.ok) continue;
+        const json = await res.json();
+        const items = json.data || [];
+        for (const j of items) {
+          const cleanTitle = decodeHtmlEntities(j.title || "").trim();
+          const cleanCompany = decodeHtmlEntities(j.company || "Direct Client").trim();
+          const cleanDesc = stripHtmlTags(j.description || "").slice(0, 10000);
+          const enrichment = j.enrichment || {};
+          const salaryMin = enrichment.salary_min || null;
+          const salaryMax = enrichment.salary_max || null;
+          const location = decodeHtmlEntities(j.location || "Remote").trim();
+          const skills = Array.isArray(j.skills) ? j.skills : [];
+
+          results.push({
+            title: cleanTitle,
+            company_name: cleanCompany,
+            company_domain: extractDomain(j.url),
+            company_email: extractContactEmail(cleanDesc),
+            description: cleanDesc,
+            category: mapCategory(enrichment.category || "software-development"),
+            tags: ["freehire", ...skills].map((s: string) => s.toLowerCase().trim()).filter(Boolean),
+            salary_min: typeof salaryMin === "number" ? salaryMin : null,
+            salary_max: typeof salaryMax === "number" ? salaryMax : null,
+            currency: "USD",
+            location: location || "Remote",
+            job_type: "contract",
+            source: "freehire",
+            source_id: String(j.public_slug || j.external_id || cleanTitle).slice(0, 200),
+            source_url: j.url || `https://freehire.me/jobs/${j.public_slug}`,
+            seo_slug: slugify(`fh-${cleanCompany}-${cleanTitle}-${j.public_slug || Date.now()}`),
+            language: detectLanguage(cleanTitle, cleanDesc),
+          });
+        }
+      } catch (err) {
+        console.error(`[freehire] Error fetching cluster ${cluster}:`, err);
+      }
+    }
+    return results;
+  } catch (e) {
+    console.error("[freehire] General fetch error:", e);
+    return [];
+  }
+}
+
 // ── Main Handler ─────────────────────────────────────────────────────────────
 
 serve(async (req) => {
@@ -393,13 +448,14 @@ serve(async (req) => {
   }
 
   // 1. Fetch from all sources in parallel (jobs are kept permanently, no auto-archive or deletion)
-  const [remotiveJobs, arbeitnowJobs, hnJobs] = await Promise.all([
+  const [remotiveJobs, arbeitnowJobs, hnJobs, freehireJobs] = await Promise.all([
     fetchRemotiveJobs(),
     fetchArbeitnowJobs(),
     fetchHackerNewsJobs(),
+    fetchFreeHireJobs(),
   ]);
 
-  const allJobs = [...remotiveJobs, ...arbeitnowJobs, ...hnJobs];
+  const allJobs = [...remotiveJobs, ...arbeitnowJobs, ...hnJobs, ...freehireJobs];
 
   if (allJobs.length === 0) {
     return new Response(
