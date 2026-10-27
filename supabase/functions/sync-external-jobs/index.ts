@@ -475,6 +475,63 @@ async function fetchFreeHireJobs(): Promise<NormalizedJob[]> {
   }
 }
 
+async function fetchGithubOssJobs(): Promise<NormalizedJob[]> {
+  try {
+    const url = "https://raw.githubusercontent.com/poteto/hiring-without-whiteboards/master/README.md";
+    const res = await fetch(url, {
+      headers: { "User-Agent": "CLIVORA-JobCrawler/1.0" },
+    });
+    if (!res.ok) return [];
+    const text = await res.text();
+    const results: NormalizedJob[] = [];
+    const seen = new Set<string>();
+
+    for (const line of text.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith("- [")) continue;
+      const match = trimmed.match(/^-\s*\[([^\]]+)\]\((https?:\/\/[^\)]+)\)\s*(?:\|\s*([^|]+))?(?:\|\s*(.+))?$/);
+      if (!match) continue;
+
+      const companyName = match[1].trim();
+      const careersUrl = match[2].trim();
+      const location = (match[3] || "Remote").trim();
+      const details = (match[4] || "").trim();
+
+      if (companyName.length < 2 || /hackernews|finding a better|how to hire/i.test(companyName)) continue;
+      const slug = slugify(companyName);
+      if (seen.has(slug)) continue;
+      seen.add(slug);
+
+      const domain = extractDomain(careersUrl);
+      const desc = `### Role Overview\nEngineering opportunity at ${companyName}. This team evaluates candidates using practical engineering discussions and real-world work-sample assessments instead of traditional whiteboard puzzles.\n\n### Location & Work Mode\n${location}\n\n### Hiring Process Notes\n${details || "Practical technical discussion and team culture alignment."}\n\n### How to Apply\nVisit the official company portal to review current open roles: ${careersUrl}`;
+
+      results.push({
+        title: `Software Engineer at ${companyName}`,
+        company_name: companyName,
+        company_domain: domain,
+        company_email: null,
+        description: desc,
+        category: "software-development",
+        tags: ["github-oss", "no-whiteboard", "software-development"],
+        salary_min: null,
+        salary_max: null,
+        currency: "USD",
+        location: location.slice(0, 60),
+        job_type: "full_time",
+        source: "github-oss",
+        source_id: `hww-${slug}`,
+        source_url: careersUrl,
+        seo_slug: slugify(`oss-${slug}-software-engineer`),
+        language: "en",
+      });
+    }
+    return results;
+  } catch (e) {
+    console.error("[github-oss] Fetch error:", e);
+    return [];
+  }
+}
+
 // ── Main Handler ─────────────────────────────────────────────────────────────
 
 serve(async (req) => {
@@ -512,14 +569,15 @@ serve(async (req) => {
   }
 
   // 1. Fetch from all sources in parallel (jobs are kept permanently, no auto-archive or deletion)
-  const [remotiveJobs, arbeitnowJobs, hnJobs, freehireJobs] = await Promise.all([
+  const [remotiveJobs, arbeitnowJobs, hnJobs, freehireJobs, ossJobs] = await Promise.all([
     fetchRemotiveJobs(),
     fetchArbeitnowJobs(),
     fetchHackerNewsJobs(),
     fetchFreeHireJobs(),
+    fetchGithubOssJobs(),
   ]);
 
-  const allJobs = [...remotiveJobs, ...arbeitnowJobs, ...hnJobs, ...freehireJobs];
+  const allJobs = [...remotiveJobs, ...arbeitnowJobs, ...hnJobs, ...freehireJobs, ...ossJobs];
 
   if (allJobs.length === 0) {
     return new Response(
@@ -583,7 +641,7 @@ serve(async (req) => {
   }
 
   console.log(
-    `[sync-external-jobs] Ingested ${ingested} clean jobs (remotive: ${remotiveJobs.length}, arbeitnow: ${arbeitnowJobs.length}, hn: ${hnJobs.length}, freehire: ${freehireJobs.length})`
+    `[sync-external-jobs] Ingested ${ingested} clean jobs (remotive: ${remotiveJobs.length}, arbeitnow: ${arbeitnowJobs.length}, hn: ${hnJobs.length}, freehire: ${freehireJobs.length}, oss: ${ossJobs.length})`
   );
 
   return new Response(
@@ -596,6 +654,7 @@ serve(async (req) => {
         arbeitnow: arbeitnowJobs.length,
         hackernews: hnJobs.length,
         freehire: freehireJobs.length,
+        oss: ossJobs.length,
       },
     }),
     { status: 200 }
