@@ -103,11 +103,31 @@ function slugify(text: string): string {
     .slice(0, 100);
 }
 
+const EXCLUDED_AGGREGATOR_DOMAINS = [
+  "whatjobs.com",
+  "adzuna.com",
+  "adzuna.co.uk",
+  "jobleads.com",
+  "jobleads.de",
+  "arbeitsagentur.de",
+  "nofluffjobs.com",
+  "djinni.co",
+  "wantapply.com",
+];
+
+function isAggregatorDomain(domain: string | null): boolean {
+  if (!domain) return false;
+  const d = domain.toLowerCase();
+  return EXCLUDED_AGGREGATOR_DOMAINS.some((agg) => d === agg || d.endsWith(`.${agg}`));
+}
+
 function extractDomain(url: string | null | undefined): string | null {
   if (!url) return null;
   try {
     const hostname = new URL(url.startsWith("http") ? url : `https://${url}`).hostname;
-    return hostname.replace(/^www\./, "");
+    const cleanHost = hostname.replace(/^www\./, "");
+    if (isAggregatorDomain(cleanHost)) return null;
+    return cleanHost;
   } catch {
     return null;
   }
@@ -386,12 +406,22 @@ async function fetchFreeHireJobs(): Promise<NormalizedJob[]> {
       "nextjs",
       "fullstack",
       "ai",
+      "frontend",
+      "backend",
+      "rust",
+      "mobile",
+      "solidity",
+      "data-science",
+      "vue",
+      "aws",
+      "kubernetes",
+      "nodejs",
     ];
     const results: NormalizedJob[] = [];
 
     for (const cluster of clusters) {
       try {
-        const url = `https://freehire.me/api/v1/jobs/search?q=${encodeURIComponent(cluster)}&work_mode=remote&reality=fresh&limit=25`;
+        const url = `https://freehire.me/api/v1/jobs/search?q=${encodeURIComponent(cluster)}&work_mode=remote&reality=fresh&limit=30`;
         const res = await fetch(url, {
           headers: { "User-Agent": "CLIVORA-JobCrawler/1.0" },
         });
@@ -399,8 +429,14 @@ async function fetchFreeHireJobs(): Promise<NormalizedJob[]> {
         const json = await res.json();
         const items = json.data || [];
         for (const j of items) {
+          const rawUrl = j.url || "";
+          const domain = extractDomain(rawUrl);
+          if (isAggregatorDomain(domain)) continue;
+
           const cleanTitle = decodeHtmlEntities(j.title || "").trim();
           const cleanCompany = decodeHtmlEntities(j.company || "Direct Client").trim();
+          if (isAggregatorDomain(cleanCompany.toLowerCase())) continue;
+
           const cleanDesc = stripHtmlTags(j.description || "").slice(0, 10000);
           const enrichment = j.enrichment || {};
           const salaryMin = enrichment.salary_min || null;
@@ -411,7 +447,7 @@ async function fetchFreeHireJobs(): Promise<NormalizedJob[]> {
           results.push({
             title: cleanTitle,
             company_name: cleanCompany,
-            company_domain: extractDomain(j.url),
+            company_domain: domain,
             company_email: extractContactEmail(cleanDesc),
             description: cleanDesc,
             category: mapCategory(enrichment.category || "software-development"),
