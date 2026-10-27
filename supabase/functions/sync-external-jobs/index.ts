@@ -257,6 +257,18 @@ async function fetchArbeitnowJobs(): Promise<NormalizedJob[]> {
     const jobs = data.data || [];
     const results: NormalizedJob[] = [];
 
+    const ALLOWED_CATEGORIES = new Set([
+      "software-development",
+      "devops-sysadmin",
+      "data-science",
+      "product",
+      "design",
+      "quality-assurance",
+      "marketing",
+    ]);
+
+    const TITLE_EXCLUDES = /\b(werkstudent|praktik|intern\b|internship|ausbildung|landwirt|pflege|arzt|buchhalter|assistenz|rezeption|facility|driver|fahrer)\b/i;
+
     for (const j of jobs) {
       const cleanTitle = decodeHtmlEntities(j.title || "").trim();
       const cleanCompany = decodeHtmlEntities(j.company_name || "").trim();
@@ -264,13 +276,23 @@ async function fetchArbeitnowJobs(): Promise<NormalizedJob[]> {
       const cleanLocation = decodeHtmlEntities(j.location || "Remote").trim();
       const lang = detectLanguage(cleanTitle, cleanDesc);
 
-      // Strictly require remote and English
-      const isRemote = j.remote === true || cleanLocation.toLowerCase().includes("remote");
-      if (!isRemote) continue;
+      // 1. Strictly English only
       if (lang !== "en") continue;
 
-      const category = mapCategory(j.tags?.[0] || "software-development");
-      if (category === "human-resources" || category === "education") continue;
+      // 2. Strictly Remote (location must explicitly state remote or worldwide)
+      const locLower = cleanLocation.toLowerCase();
+      const isExplicitlyRemote =
+        locLower.includes("remote") ||
+        locLower.includes("worldwide") ||
+        locLower.includes("telework");
+      if (!isExplicitlyRemote) continue;
+
+      // 3. Exclude non-tech / student / non-relevant titles
+      if (TITLE_EXCLUDES.test(cleanTitle)) continue;
+
+      // 4. Require approved tech/digital category
+      const category = mapCategory(j.tags?.[0] || "");
+      if (!ALLOWED_CATEGORIES.has(category)) continue;
 
       results.push({
         title: cleanTitle,
@@ -291,6 +313,9 @@ async function fetchArbeitnowJobs(): Promise<NormalizedJob[]> {
         seo_slug: slugify(`${cleanCompany}-${cleanTitle}-an-${j.slug || Date.now()}`),
         language: lang,
       });
+
+      // Cap at top 40 freshest verified matches per run
+      if (results.length >= 40) break;
     }
 
     return results;
