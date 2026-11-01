@@ -275,7 +275,7 @@ def build_credentials_doc():
     doc.add_paragraph()
     for line in [
         'iusmanghias@gmail.com  |  +92 312 691 2440',
-        'usman.codcrafters.org  |  github.com/UsmanGhias',
+        'usmanghias.co.uk  |  github.com/UsmanGhias',
         'Samundri, Punjab, Pakistan  |  Remote Worldwide',
     ]:
         p = doc.add_paragraph()
@@ -639,7 +639,7 @@ def build_credentials_doc():
 
     add_heading(doc, 'Resources & References', 2)
     for line in [
-        'Portfolio: https://usman.codcrafters.org',
+        'Portfolio: https://usmanghias.co.uk',
         'GitHub: https://github.com/UsmanGhias (192 public repositories)',
         'Problem Solution Document: https://docs.google.com/document/d/1TJdZYc7oMWCBv7C6QjMgILOPizTDw1OA2e5i_LCvS4M/edit',
         'Video Overview: https://www.loom.com/share/f1858a28f08843d9aa7da86c82bc2721',
@@ -722,7 +722,7 @@ def build_prep_doc():
     ]:
         add_numbered(doc, step)
 
-    add_body(doc, 'Full credentials deck: Usman_Khan_Odoo_Manufacturing_Credentials.docx  |  iusmanghias@gmail.com  |  usman.codcrafters.org', muted=True)
+    add_body(doc, 'Full credentials deck: Usman_Khan_Odoo_Manufacturing_Credentials.docx  |  iusmanghias@gmail.com  |  usmanghias.co.uk', muted=True)
 
     out = '/home/usmanghias/Projects/clivora/Clivora/docs/meeting/Meeting_Prep_Sheet.docx'
     doc.save(out)
