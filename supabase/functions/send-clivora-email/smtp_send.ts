@@ -15,7 +15,7 @@ function env(name: string, fallback = ""): string {
 
 export function smtpConfigured(): boolean {
   return Boolean(
-    env("RESEND_API_KEY", "REDACTED_RESEND_KEY") ||
+    env("RESEND_API_KEY") ||
     (env("SMTP_HOST") && env("SMTP_USER") && env("SMTP_PASS"))
   );
 }
@@ -41,7 +41,7 @@ function dotStuff(body: string): string {
 /** Primary: Resend API over HTTPS. Fallback: Minimal SMTP over TLS (Hostinger: smtp.hostinger.com:465). */
 export async function sendSmtpEmail(input: SmtpSendInput): Promise<void> {
   const fromRaw = smtpFromAddress();
-  const resendApiKey = env("RESEND_API_KEY", "REDACTED_RESEND_KEY");
+  const resendApiKey = env("RESEND_API_KEY");
 
   // Attempt Resend first (protects Hostinger mailbox from rate limit suspension)
   if (resendApiKey) {

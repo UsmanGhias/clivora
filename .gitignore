@@ -93,3 +93,6 @@ analysis/
 tools/clivora-mcp/dist/
 web/
 .codex/
+scripts/outreach-engine/
+.env*
+*.env
