@@ -1,139 +1,130 @@
 <div align="center">
   <img src="assets/images/clivora_logo.png" alt="CLIVORA logo" width="112" />
   <h1>CLIVORA</h1>
-  <p><strong>The open-source Freelancer OS for freelancers, agencies, and clients.</strong></p>
-  <p>Find opportunities, manage work, collaborate with clients, and run your freelance business from one community-built platform.</p>
+  <p><strong>The open-source Freelancer OS for independent professionals, agencies, and clients.</strong></p>
+  <p>Discover opportunities, manage client relationships, track projects, issue invoices, and synchronize operations across mobile and web.</p>
 
-  <p>
-    <a href="https://github.com/UsmanGhias/clivora"><img src="assets/images/btn-clivora.png" alt="CLIVORA — Android app, platform, Capstone docs" width="720" /></a>
-  </p>
-  <p>
-    <a href="https://github.com/UsmanGhias/clivora-web"><img src="assets/images/btn-clivora-web.png" alt="clivora-web — Next.js site and web app" width="720" /></a>
-  </p>
-  <p>
-    <a href="https://drive.google.com/drive/folders/1RETX5qyRIfKbB0NZpvIPW0RnUczc1xPS?usp=sharing"><img src="assets/images/btn-capstone-drive.png" alt="Capstone Drive folder — all Quantic project data" width="720" /></a>
-  </p>
-
+  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22843765.svg)](https://doi.org/10.5281/zenodo.22843765)
   [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-0F766E.svg)](LICENSE)
-  [![Flutter](https://img.shields.io/badge/Flutter-Android-02569B.svg)](https://flutter.dev)
+  [![Flutter](https://img.shields.io/badge/Flutter-Android_3.x-02569B.svg?logo=flutter)](https://flutter.dev)
+  [![Next.js 15](https://img.shields.io/badge/Next.js-15-black.svg?logo=nextdotjs)](https://github.com/UsmanGhias/clivora-web)
+  [![Supabase](https://img.shields.io/badge/Backend-Supabase_Postgres-3ECF8E.svg?logo=supabase)](https://supabase.com)
+  [![Google Play](https://img.shields.io/badge/Get_it_on-Google_Play-414141.svg?logo=google-play)](https://play.google.com/store/apps/details?id=org.codcrafters.clivora)
   [![Website](https://img.shields.io/badge/Live-clivora.io-0F172A.svg)](https://clivora.io)
-  [![Google Play](https://img.shields.io/badge/Get_it_on-Google_Play-414141.svg)](https://play.google.com/store/apps/details?id=org.codcrafters.clivora)
 
-  [Website](https://clivora.io) · [Web app](https://clivora.io/app) · [Google Play](https://play.google.com/store/apps/details?id=org.codcrafters.clivora) · [Documentation](https://clivora.io/docs) · [Community](https://community.clivora.io)
+  <p>
+    <a href="https://clivora.io">Website</a> &middot;
+    <a href="https://clivora.io/app">Web App</a> &middot;
+    <a href="https://play.google.com/store/apps/details?id=org.codcrafters.clivora">Google Play</a> &middot;
+    <a href="https://clivora.io/docs">Documentation</a> &middot;
+    <a href="https://github.com/UsmanGhias/clivora-web">Web Repository</a>
+  </p>
 </div>
 
 ## Why CLIVORA exists
 
-Freelancers are often forced to combine crowded marketplaces with separate tools for CRM, proposals, projects, time tracking, invoices, files, meetings, and analytics. CLIVORA brings that workflow together and gives the community a real voice in how the product evolves.
+Independent professionals often navigate disjointed tools across client discovery, CRM, proposals, contracts, project delivery, time tracking, invoicing, and analytics. CLIVORA combines these workflows into a cohesive, open-source platform where users control their data.
 
-Our ambition is to build the world's leading community-driven Freelancer OS:
+- **Zero platform fees on direct work:** clients settle negotiated payments directly with freelancers.
+- **Opportunities and daily operations:** unified discovery on CLIVORA Connect with full business management tools.
+- **Privacy by default:** direct contact information remains private until mutual acceptance between parties.
+- **Reliable offline synchronization:** mobile client persists state locally and synchronizes when connected.
+- **Grounded AI assistance:** retrieval-augmented generation grounded in actual CRM data with strict human-in-the-loop review.
+- **Multi-client parity:** unified data contracts between Flutter mobile and Next.js web clients.
 
-- **$0 platform fee on negotiated work:** clients pay freelancers directly.
-- **Opportunity plus operations:** CLIVORA Connect and daily business tools in one product.
-- **Freelancer-first design:** transparent rules, private contact until mutual acceptance, and no hidden ranking promises.
-- **AI with human control:** useful assistance without replacing professional judgment or user ownership.
-- **Web and Android:** one account and one shared platform direction.
-- **Open development:** public issues, reviewable decisions, and contributions from around the world.
+## Architecture and repositories
 
-> CLIVORA is a growing independent product. It is not affiliated with Upwork, Fiverr, Toptal, or Freelancer.com.
+The CLIVORA suite is organized across specialized repositories sharing unified PostgreSQL schemas and business contracts:
 
-## What is included
+| Repository | Scope and role | Technology | Link |
+|---|---|---|---|
+| **CLIVORA Mobile** (this repo) | Mobile client, offline outbox engine, and local SQLite data store | Flutter, Dart, Drift | [UsmanGhias/clivora](https://github.com/UsmanGhias/clivora) |
+| **CLIVORA Web** | Production web platform, authenticated dashboard, and public docs | Next.js 15, TypeScript, Tailwind | [UsmanGhias/clivora-web](https://github.com/UsmanGhias/clivora-web) |
 
-| Area | Capabilities |
+### Core system modules
+
+| Module | Core capabilities |
 |---|---|
-| CLIVORA Connect | Profiles, jobs, proposals, mutual connection, private contact |
-| Business OS | CRM, clients, projects, tasks, invoices, expenses, files |
-| Productivity | Time tracking, meetings, notifications, reports, analytics |
-| Collaboration | Freelancer and client workspaces, messaging, teams |
-| Intelligence | AI assistance, business insights, automations |
-| Platform | Offline-first Flutter app, web app, Supabase backend, admin operations |
+| **CLIVORA Connect** | Talent profiles, job listings, structured proposals, and direct mutual connections |
+| **Business OS** | Contacts CRM, client workspaces, active projects, tasks, milestones, invoices, and expenses |
+| **Productivity** | Time tracking, calendar scheduling, push notifications, and financial reports |
+| **Collaboration** | Role-scoped team workspaces, authenticated messaging, and client portals |
+| **Edge Sync Engine** | Offline-first Drift database, durable transactional outbox, and deterministic conflict resolution |
+| **Data & Auth** | Supabase managed PostgreSQL, database triggers, Row Level Security, and encrypted file vault |
 
-## Repository family
+## Documentation and engineering specifications
 
-This is the **primary** GitHub link for Quantic. The Next.js site lives in a sibling repo — open it from here:
+Detailed system design and verification specifications:
 
-| Repository | What it is | Link |
-|---|---|---|
-| **CLIVORA** (this repo) | Flutter Android app, shared platform source, Supabase, Capstone docs | [github.com/UsmanGhias/clivora](https://github.com/UsmanGhias/clivora) |
-| **clivora-web** | Next.js marketing site, signed-in web app, and public documentation | [github.com/UsmanGhias/clivora-web](https://github.com/UsmanGhias/clivora-web) |
+- [System Architecture & Testing Specification](docs/architecture/DESIGN_AND_TESTING.md): details feature boundaries, transactional outbox design, RLS policies, and Vitest/Flutter test suites.
+- [Security & Performance Audit](docs/audit/SECURITY_AUDIT_2026-08.md): comprehensive audit findings, RLS hardening, and catalog assertions.
+- [Ask AI Evaluation Dataset](docs/ai/ASK_AI_EVAL.md): benchmark test cases verifying grounded answers and human-in-the-loop constraints.
+- [Security Disclosure Policy](SECURITY.md): reporting protocol and vulnerability handling.
 
-The `web/` folder in this repo is the source of truth for the site. `clivora-web` is the synced GitHub copy used for Hostinger/Vercel deploys.
+## Citation and research
 
-## Quantic MSSE Capstone
+CLIVORA's transactional outbox synchronization engine is documented in research archived on Zenodo:
 
-CLIVORA is also the MSSE Capstone product. The live app is the **baseline**; Capstone is a three-sprint increment (docs/tests/CI, Ask AI RAG, hire→invoice demo). It does not replace the product above.
+```bibtex
+@article{khan2026clivora,
+  title={Durable Edge-Outbox Synchronization: Managing Relational Divergence in Intermittent Mobile Enterprise Workloads},
+  author={Khan, Muhammad Usman},
+  journal={Zenodo},
+  year={2026},
+  month={9},
+  doi={10.5281/zenodo.22843765},
+  url={https://doi.org/10.5281/zenodo.22843765}
+}
+```
 
-| Grader item | Link |
-|---|---|
-| GitHub — Android / platform (this repo) | [UsmanGhias/clivora](https://github.com/UsmanGhias/clivora) |
-| GitHub — web (Next.js) | [UsmanGhias/clivora-web](https://github.com/UsmanGhias/clivora-web) |
-| Capstone Drive folder (all project data) | [Google Drive](https://drive.google.com/drive/folders/1RETX5qyRIfKbB0NZpvIPW0RnUczc1xPS?usp=sharing) |
-| Live web app | [https://clivora.io](https://clivora.io) |
-| Android | [Google Play](https://play.google.com/store/apps/details?id=org.codcrafters.clivora) |
-| Agile board | [Issues labeled `capstone`](https://github.com/UsmanGhias/clivora/issues?q=is%3Aissue+label%3Acapstone) |
-| Design and testing | [docs/capstone/DESIGN_AND_TESTING.md](docs/capstone/DESIGN_AND_TESTING.md) |
-| User stories / sprints | [USER_STORIES.md](docs/capstone/USER_STORIES.md) · [SPRINT_PLAN.md](docs/capstone/SPRINT_PLAN.md) |
-| What to submit | [docs/capstone/WHAT_TO_SUBMIT.md](docs/capstone/WHAT_TO_SUBMIT.md) |
-| Demo script | [docs/capstone/DEMO_SCRIPT.md](docs/capstone/DEMO_SCRIPT.md) |
-| Security audit (Aug 2026) | [docs/capstone/SECURITY_AUDIT_2026-08.md](docs/capstone/SECURITY_AUDIT_2026-08.md) |
-| Baseline vs Capstone | [BASELINE_VS_CAPSTONE.md](docs/capstone/BASELINE_VS_CAPSTONE.md) |
-| Capstone index | [docs/capstone/README.md](docs/capstone/README.md) |
-
-Share **both** private repositories (`clivora` and `clivora-web`) with GitHub user `quantic-grader` before final submission. Capstone files (deck, notes, recordings) are also in the [Drive folder](https://drive.google.com/drive/folders/1RETX5qyRIfKbB0NZpvIPW0RnUczc1xPS?usp=sharing).
+If you reference CLIVORA or its synchronization architecture in academic or engineering work, please consult [CITATION.cff](CITATION.cff).
 
 ## Quick start
 
-### Requirements
+### Prerequisites
 
-- Flutter SDK matching the version used by the project
-- Dart SDK declared in [pubspec.yaml](pubspec.yaml)
-- Android Studio or another configured Android toolchain
-- A separate development Supabase project for cloud features
+- Flutter SDK 3.x (compatible with Dart SDK constraints in [pubspec.yaml](pubspec.yaml))
+- Android Studio or configured Android toolchain
+- Supabase project for backend services
 
 ### Run locally
 
 ```bash
+# Clone repository
 git clone https://github.com/UsmanGhias/clivora.git
 cd clivora
+
+# Install dependencies and verify environment
 flutter pub get
 flutter analyze
 flutter test
+
+# Run application on connected device or emulator
 flutter run
 ```
 
-Never commit production credentials, signing keys, customer data, or private environment files. Use your own development services and follow the setup documentation before enabling integrations.
+Never commit production credentials, keystores, or private signing keys. Copy `android/app/google-services.json.example` to `android/app/google-services.json` and provide your development credentials.
 
-## Contribute
+## Contributing
 
-We welcome developers, designers, QA engineers, security researchers, technical writers, translators, product thinkers, and responsible AI contributors.
+We welcome contributions from engineers, designers, and technical writers.
 
-1. Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), and [GOVERNANCE.md](GOVERNANCE.md).
-2. Open or join an issue before starting a large change.
-3. Fork the repository and create a focused branch.
-4. Add tests and documentation for behavior changes.
-5. Sign off your commits and open a clear pull request.
+1. Review [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+2. Open an issue before submitting large architectural changes.
+3. Fork the repository and develop on a focused topic branch.
+4. Verify all tests pass locally: `flutter analyze` and `flutter test`.
+5. Open a pull request describing the change and testing evidence.
 
-Good starting areas include accessibility, translations, Flutter quality, offline sync, testing, documentation, privacy, security, marketplace safety, and freelancer-focused AI.
-
-If CLIVORA's mission matters to you, please **star the repository**, try the app, share constructive feedback, and help another contributor get started.
+Key contribution areas include accessibility, localized translations, offline sync optimizations, integration testing, and documentation.
 
 ## Security
 
-Do not report vulnerabilities in public issues. Follow [SECURITY.md](SECURITY.md) and email **contact@clivora.io** with the subject `[SECURITY] CLIVORA`.
+Report vulnerabilities responsibly to **contact@clivora.io** with subject `[SECURITY] CLIVORA` in accordance with [SECURITY.md](SECURITY.md). Do not submit security disclosures through public issues.
 
-## Licence and brand
+## License
 
-The source code is licensed under the **GNU Affero General Public License v3.0**. If you modify CLIVORA and make that version available to users over a network, AGPLv3 generally requires you to offer those users the corresponding source code under the same licence.
+Source code is released under the **GNU Affero General Public License v3.0 (AGPL-3.0)**. See [LICENSE](LICENSE) for terms.
 
-AGPLv3 permits commercial use. It does **not** grant rights to present a fork as the official CLIVORA service. The CLIVORA and CODCrafters names, logos, domains, app identity, and official branding are addressed separately in [TRADEMARKS.md](TRADEMARKS.md).
+Trademarks, product naming, and visual identity are governed separately under [TRADEMARKS.md](TRADEMARKS.md).
 
-Copyright © 2026 Muhammad Usman Khan, professionally known as **Usman Ghias**, trading as **CODCrafters**, and contributors.
-
-## Support the mission
-
-CLIVORA is being built independently with limited resources. Sponsorship, infrastructure credits, documentation help, testing, design work, and responsible engineering contributions can directly accelerate the project.
-
-- Collaboration: [usmanghias@clivora.io](mailto:usmanghias@clivora.io)
-- General contact: [contact@clivora.io](mailto:contact@clivora.io)
-- Product: [clivora.io](https://clivora.io)
-- CODCrafters: [codcrafters.org](https://codcrafters.org)
+Curated and architected by [Usman Ghias](https://usmanghias.co.uk).

@@ -1,0 +1,24 @@
+{
+  "title": "CLIVORA: The Open-Source Freelancer OS (Mobile & Platform Engine)",
+  "description": "An offline-first, open-source Freelancer OS providing opportunities, CRM, invoicing, project operations, and durable edge synchronization for independent professionals and agencies.",
+  "creators": [
+    {
+      "name": "Khan, Muhammad Usman",
+      "affiliation": "CODCrafters",
+      "orcid": ""
+    }
+  ],
+  "access_right": "open",
+  "license": "AGPL-3.0-only",
+  "keywords": [
+    "freelancer",
+    "open-source",
+    "flutter",
+    "supabase",
+    "offline-first",
+    "transactional-outbox",
+    "mobile-app",
+    "crm",
+    "invoicing"
+  ]
+}

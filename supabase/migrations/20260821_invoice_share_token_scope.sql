@@ -1,4 +1,4 @@
--- Close the invoice_shares guest-link data exposure (Capstone Sprint 3 audit).
+-- Close the invoice_shares guest-link data exposure (Production security audit).
 --
 -- THE BUG
 -- -------

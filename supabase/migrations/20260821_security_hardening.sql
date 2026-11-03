@@ -1,4 +1,4 @@
--- Security hardening pass (Capstone Sprint 3 audit).
+-- Security hardening pass (Production security audit).
 --
 -- Findings this migration closes, in order of severity:
 --

@@ -1,4 +1,4 @@
--- RLS and index performance pass (Capstone Sprint 3 audit).
+-- RLS and index performance pass (Security & performance audit).
 --
 -- Three findings, all measured against the live schema:
 --

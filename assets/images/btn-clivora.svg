@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="720" height="96" viewBox="0 0 720 96" role="img" aria-label="CLIVORA GitHub repository">
-  <rect width="720" height="96" rx="20" fill="#0F766E"/>
-  <rect x="4" y="4" width="712" height="88" rx="16" fill="none" stroke="#5EEAD4" stroke-width="2" opacity="0.45"/>
-  <text x="360" y="42" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#FFFFFF">CLIVORA</text>
-  <text x="360" y="70" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#CCFBF1">Android app · platform · Capstone docs</text>
-</svg>
