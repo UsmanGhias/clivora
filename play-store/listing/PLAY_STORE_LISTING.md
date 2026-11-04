@@ -1,8 +1,8 @@
 # CLIVORA — Google Play Store Listing (production)
 
 **Package name:** `org.codcrafters.clivora`  
-**Version name:** `5.3.10`  
-**Version code:** `540`  
+**Version name:** `5.6.1`  
+**Version code:** `601`  
 **Upload signing SHA-1:** `96:93:81:80:EE:59:27:D2:46:B2:BD:FC:6C:96:C6:93:2E:1A:1D:36`
 **Support email:** `contact@clivora.io`
 **Website:** `https://clivora.io`
@@ -103,17 +103,15 @@ Advertising ID: **Not used** (manifest removes `AD_ID`).
 https://clivora.io/privacy
 ```
 
-## Release notes (4.2.3)
+## Release notes (5.6.1)
 
 ```
-• Production build with Play upload signing
-• Command Center / Hub restored to the 3.9.6 layout
-• Connect logo (travel_explore) on freelancer and client
-• Hub network icon on navigation
-• Native Google Sign-In
-• Play Billing for Pro / Pro Plus
-• Account deletion and privacy links
-• Policy-friendly permissions (no advertising ID)
+• High-density remote tech jobs directory with real-time category filtering
+• Integrated FreeHire ATS job crawler synchronization
+• AI Job Scope Assistant for proposal structuring and scope definition
+• Offline-first SQLite CRM with local biometric authentication (fingerprint/face)
+• Native Google Sign-In and direct multi-currency client invoicing
+• Android 14/15/16 (Target SDK 36) platform optimizations
 ```
 
 ---
@@ -122,8 +120,8 @@ https://clivora.io/privacy
 
 | File | Path / URL |
 |------|------------|
-| AAB (Play) | `releases/clivora-4.2.3.aab` |
-| APK (sideload QA only) | `releases/clivora-4.2.3.apk` |
-| GitHub release | `v4.2.3-playstore` |
+| AAB (Play Console) | `releases/clivora-5.6.1.aab` |
+| APK (sideload QA only) | `releases/clivora-5.6.1.apk` |
+| GitHub release | `v5.6.1-open-source` |
 
-Upload **only** the AAB signed with SHA-1 `96:93:81:80:...` to Play Console.
+Upload **only** the AAB signed with SHA-1 `96:93:81:80:EE:59:27:D2:46:B2:BD:FC:6C:96:C6:93:2E:1A:1D:36` to Play Console.
