@@ -4,22 +4,51 @@
   <p><strong>The open-source Freelancer OS for independent professionals, agencies, and clients.</strong></p>
   <p>Discover opportunities, manage client relationships, track projects, issue invoices, and synchronize operations across mobile and web.</p>
 
+  [![Website](https://img.shields.io/badge/Website-clivora.io-0F172A.svg?logo=googlechrome&logoColor=white)](https://clivora.io)
+  [![Google Play](https://img.shields.io/badge/Google_Play-v5.6.1-34A853.svg?logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=org.codcrafters.clivora)
   [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22843765.svg)](https://doi.org/10.5281/zenodo.22843765)
+  [![Downloads](https://img.shields.io/badge/Downloads-100%2B-2563EB.svg?logo=android&logoColor=white)](https://clivora.io/download)
+  [![Views](https://img.shields.io/badge/Views-100%2B-0284C7.svg)](https://clivora.io)
+  [![GitHub Stars](https://img.shields.io/github/stars/UsmanGhias/clivora?style=flat&logo=github&color=0F766E)](https://github.com/UsmanGhias/clivora/stargazers)
   [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-0F766E.svg)](LICENSE)
   [![Flutter](https://img.shields.io/badge/Flutter-Android_3.x-02569B.svg?logo=flutter)](https://flutter.dev)
   [![Next.js 15](https://img.shields.io/badge/Next.js-15-black.svg?logo=nextdotjs)](https://github.com/UsmanGhias/clivora-web)
   [![Supabase](https://img.shields.io/badge/Backend-Supabase_Postgres-3ECF8E.svg?logo=supabase)](https://supabase.com)
-  [![Google Play](https://img.shields.io/badge/Get_it_on-Google_Play-414141.svg?logo=google-play)](https://play.google.com/store/apps/details?id=org.codcrafters.clivora)
-  [![Website](https://img.shields.io/badge/Live-clivora.io-0F172A.svg)](https://clivora.io)
 
   <p>
-    <a href="https://clivora.io">Website</a> &middot;
+    <a href="https://clivora.io">Official Website</a> &middot;
     <a href="https://clivora.io/app">Web App</a> &middot;
-    <a href="https://play.google.com/store/apps/details?id=org.codcrafters.clivora">Google Play</a> &middot;
+    <a href="https://play.google.com/store/apps/details?id=org.codcrafters.clivora">Google Play Store</a> &middot;
+    <a href="https://clivora.io/download">Download Center</a> &middot;
+    <a href="https://clivora.io/open-source">Open Source Hub</a> &middot;
+    <a href="https://clivora.io/jobs">Remote Jobs (7,150+)</a> &middot;
     <a href="https://clivora.io/docs">Documentation</a> &middot;
     <a href="https://github.com/UsmanGhias/clivora-web">Web Repository</a>
   </p>
 </div>
+
+## Platform Traction and Community Metrics
+
+| Metric | Verified Metric / Status | Source and Direct Links |
+|---|---|---|
+| **Downloads & Package Installs** | **100+** | [Google Play Store](https://play.google.com/store/apps/details?id=org.codcrafters.clivora) &amp; [Verified APK/AAB Builds](https://clivora.io/download) |
+| **Community Views & Visitors** | **100+** | [Official Portal (clivora.io)](https://clivora.io) &amp; [Open Source Hub](https://clivora.io/open-source) |
+| **GitHub Stars** | **★ 1+** (Growing) | [Star on GitHub](https://github.com/UsmanGhias/clivora/stargazers) |
+| **Zenodo DOI Research Archive** | `10.5281/zenodo.22843765` | [Permanent Scientific Archive](https://doi.org/10.5281/zenodo.22843765) |
+| **Deal Platform Fee** | **$0 (0% cut)** | Direct client-to-freelancer payments |
+| **Indexed Tech Jobs** | **7,150+ listings** | [Remote Jobs Harvester](https://clivora.io/jobs) |
+
+## Direct Platform Connections
+
+Access live CLIVORA environments directly:
+
+- **Official Web Portal**: [clivora.io](https://clivora.io)
+- **Web Application**: [clivora.io/app](https://clivora.io/app)
+- **Google Play Store Listing**: [CLIVORA on Google Play](https://play.google.com/store/apps/details?id=org.codcrafters.clivora)
+- **Official Download Center**: [clivora.io/download](https://clivora.io/download)
+- **Open Source Suite**: [clivora.io/open-source](https://clivora.io/open-source)
+- **Remote Jobs Harvester**: [clivora.io/jobs](https://clivora.io/jobs)
+- **Platform Documentation**: [clivora.io/docs](https://clivora.io/docs)
 
 ## Why CLIVORA exists
 
