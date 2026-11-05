@@ -5,7 +5,7 @@
   <p>Discover opportunities, manage client relationships, track projects, issue invoices, and synchronize operations across mobile and web.</p>
 
   [![Website](https://img.shields.io/badge/Website-clivora.io-0F172A.svg?logo=googlechrome&logoColor=white)](https://clivora.io)
-  [![Google Play](https://img.shields.io/badge/Google_Play-v5.6.1-34A853.svg?logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=org.codcrafters.clivora)
+  [![Google Play](https://img.shields.io/badge/Google_Play-v5.6.2-34A853.svg?logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=org.codcrafters.clivora)
   [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22843765.svg)](https://doi.org/10.5281/zenodo.22843765)
   [![Downloads](https://img.shields.io/badge/Downloads-100%2B-2563EB.svg?logo=android&logoColor=white)](https://clivora.io/download)
   [![Views](https://img.shields.io/badge/Views-100%2B-0284C7.svg)](https://clivora.io)

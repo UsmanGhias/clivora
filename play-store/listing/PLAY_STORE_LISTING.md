@@ -1,8 +1,8 @@
 # CLIVORA — Google Play Store Listing (production)
 
 **Package name:** `org.codcrafters.clivora`  
-**Version name:** `5.6.1`  
-**Version code:** `601`  
+**Version name:** `5.6.2`  
+**Version code:** `602`  
 **Upload signing SHA-1:** `96:93:81:80:EE:59:27:D2:46:B2:BD:FC:6C:96:C6:93:2E:1A:1D:36`
 **Support email:** `contact@clivora.io`
 **Website:** `https://clivora.io`
@@ -103,7 +103,7 @@ Advertising ID: **Not used** (manifest removes `AD_ID`).
 https://clivora.io/privacy
 ```
 
-## Release notes (5.6.1)
+## Release notes (5.6.2)
 
 ```
 • High-density remote tech jobs directory with real-time category filtering
@@ -120,8 +120,8 @@ https://clivora.io/privacy
 
 | File | Path / URL |
 |------|------------|
-| AAB (Play Console) | `releases/clivora-5.6.1.aab` |
-| APK (sideload QA only) | `releases/clivora-5.6.1.apk` |
-| GitHub release | `v5.6.1-open-source` |
+| AAB (Play Console) | `releases/clivora-5.6.2.aab` |
+| APK (sideload QA only) | `releases/clivora-5.6.2.apk` |
+| GitHub release | `v5.6.2-open-source` |
 
 Upload **only** the AAB signed with SHA-1 `96:93:81:80:EE:59:27:D2:46:B2:BD:FC:6C:96:C6:93:2E:1A:1D:36` to Play Console.
