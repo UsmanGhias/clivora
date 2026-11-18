@@ -1,4 +1,4 @@
-/** CLIVORA branded transactional email HTML (Hostinger SMTP / clivora.io). */
+/** CLIVORA branded transactional email HTML. Deployment details come from function secrets. */
 
 const BRAND = {
   name: "CLIVORA",
@@ -9,10 +9,10 @@ const BRAND = {
   muted: "#64748B",
   surface: "#F8FAFC",
   border: "#E2E8F0",
-  webUrl: "https://clivora.io",
-  playUrl: "https://play.google.com/store/apps/details?id=org.codcrafters.clivora",
-  supportEmail: "contact@clivora.io",
-  company: "CODCrafters",
+  webUrl: (Deno.env.get("SITE_URL") ?? "http://localhost:3000").replace(/\/+$/, ""),
+  playUrl: Deno.env.get("PLAY_STORE_URL") || (Deno.env.get("SITE_URL") ?? "http://localhost:3000"),
+  supportEmail: Deno.env.get("SUPPORT_EMAIL") ?? "support@example.com",
+  company: Deno.env.get("OPERATOR_NAME") ?? "CLIVORA",
 };
 
 function escapeHtml(s: string): string {
@@ -21,6 +21,33 @@ function escapeHtml(s: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function sanitizeUrl(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  try {
+    const trimmed = raw.trim();
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+      return undefined;
+    }
+    const allowedHosts = new Set([
+      "clivora.io",
+      "www.clivora.io",
+      "play.google.com",
+    ]);
+    try {
+      const brandHost = new URL(BRAND.webUrl).hostname.toLowerCase();
+      if (brandHost) allowedHosts.add(brandHost);
+    } catch (_) {}
+
+    if (!allowedHosts.has(parsed.hostname.toLowerCase())) {
+      return undefined;
+    }
+    return escapeHtml(parsed.toString());
+  } catch {
+    return undefined;
+  }
 }
 
 function featureList(items: string[]): string {
@@ -47,17 +74,20 @@ export function wrapBrandedEmail(opts: {
       ? `linear-gradient(135deg,${BRAND.navy} 0%,#1e293b 100%)`
       : `linear-gradient(135deg,${BRAND.navy} 0%,${BRAND.primary} 100%)`;
 
+  const safeCtaUrl = sanitizeUrl(opts.ctaUrl);
+  const safeSecondaryCtaUrl = sanitizeUrl(opts.secondaryCtaUrl);
+
   const primaryCta =
-    opts.ctaLabel && opts.ctaUrl
+    opts.ctaLabel && safeCtaUrl
       ? `<p style="margin:28px 0 0;text-align:center;">
-          <a href="${opts.ctaUrl}" style="display:inline-block;background:${BRAND.primary};color:#fff;text-decoration:none;font-weight:700;padding:14px 28px;border-radius:12px;font-size:15px;box-shadow:0 4px 14px rgba(108,60,225,0.35);">${escapeHtml(opts.ctaLabel)}</a>
+          <a href="${safeCtaUrl}" style="display:inline-block;background:${BRAND.primary};color:#fff;text-decoration:none;font-weight:700;padding:14px 28px;border-radius:12px;font-size:15px;box-shadow:0 4px 14px rgba(108,60,225,0.35);">${escapeHtml(opts.ctaLabel)}</a>
         </p>`
       : "";
 
   const secondaryCta =
-    opts.secondaryCtaLabel && opts.secondaryCtaUrl
+    opts.secondaryCtaLabel && safeSecondaryCtaUrl
       ? `<p style="margin:12px 0 0;text-align:center;">
-          <a href="${opts.secondaryCtaUrl}" style="color:${BRAND.primary};text-decoration:none;font-weight:600;font-size:14px;">${escapeHtml(opts.secondaryCtaLabel)}</a>
+          <a href="${safeSecondaryCtaUrl}" style="color:${BRAND.primary};text-decoration:none;font-weight:600;font-size:14px;">${escapeHtml(opts.secondaryCtaLabel)}</a>
         </p>`
       : "";
 
@@ -97,7 +127,7 @@ export function wrapBrandedEmail(opts: {
           <tr>
             <td style="padding:20px 32px 28px;border-top:1px solid ${BRAND.border};text-align:center;">
               <p style="margin:0 0 8px;font-size:12px;color:${BRAND.muted};">
-                <a href="${BRAND.webUrl}" style="color:${BRAND.primary};text-decoration:none;font-weight:600;">clivora.io</a>
+                <a href="${BRAND.webUrl}" style="color:${BRAND.primary};text-decoration:none;font-weight:600;">${BRAND.webUrl.replace(/^https?:\/\//, "")}</a>
                 · Developed by ${BRAND.company}
               </p>
               <p style="margin:0;font-size:11px;color:#94A3B8;">
@@ -129,7 +159,7 @@ export function clientInviteTemplate(freelancerName: string, clientName: string)
       ])}`,
     ctaLabel: "Get CLIVORA on Google Play",
     ctaUrl: BRAND.playUrl,
-    secondaryCtaLabel: "Learn more at clivora.io",
+    secondaryCtaLabel: "Learn more",
     secondaryCtaUrl: BRAND.webUrl,
     footerNote: "If you were not expecting this invite, you can safely ignore this email.",
   });
@@ -176,7 +206,7 @@ export function passwordResetNoticeTemplate(): string {
     title: "Reset your CLIVORA password",
     bodyHtml: `
       <p>We received a request to reset your CLIVORA password.</p>
-      <p>Use the secure link from your official reset email, or tap <strong>Forgot password</strong> in the app. The link should open <strong>clivora.io</strong>, not localhost.</p>
+      <p>Use the secure link from your official reset email, or tap <strong>Forgot password</strong> in the app. The link should open this site, not localhost.</p>
       <p>If you did not request this, ignore this message. Your account stays secure.</p>`,
     ctaLabel: "Reset password on web",
     ctaUrl: `${BRAND.webUrl}/auth/reset-password`,
@@ -245,7 +275,7 @@ export function welcomeTemplate(userName: string, accountType: string): string {
       ${tips}`,
     ctaLabel: "Get started in the app",
     ctaUrl: BRAND.playUrl,
-    secondaryCtaLabel: "Visit clivora.io",
+    secondaryCtaLabel: "Visit the site",
     secondaryCtaUrl: BRAND.webUrl,
   });
 }
@@ -283,7 +313,7 @@ export function proposalReceivedTemplate(
       <p>Click below to review the complete proposal, inspect portfolio items, and start a <strong>direct private chat with 0% platform fees</strong>:</p>`,
     ctaLabel: "Review Proposal & Connect ($0 Fee)",
     ctaUrl: reviewUrl,
-    secondaryCtaLabel: "Browse marketplace at clivora.io",
+    secondaryCtaLabel: "Browse the marketplace",
     secondaryCtaUrl: BRAND.webUrl,
     footerNote: "CLIVORA is 100% free with $0 platform fees on your negotiated deals. You and the freelancer keep 100% of your earnings.",
   });
@@ -315,7 +345,7 @@ export function jobClaimTemplate(
       <p>Click below to claim your listing and start reviewing applicants:</p>`,
     ctaLabel: "Claim Your Job Listing",
     ctaUrl: claimUrl,
-    secondaryCtaLabel: "Learn more at clivora.io",
+    secondaryCtaLabel: "Learn more",
     secondaryCtaUrl: BRAND.webUrl,
     footerNote: "This listing was automatically published from a public job board. If this is not your company, please ignore this email. The listing will remain public with no action required.",
   });
@@ -382,5 +412,5 @@ export function renderTemplate(
   if (purpose === "job_claim" && payload.companyName && payload.jobTitle && payload.claimUrl) {
     return jobClaimTemplate(payload.companyName, payload.jobTitle, payload.claimUrl);
   }
-  return payload.html ?? "";
+  return "";
 }
