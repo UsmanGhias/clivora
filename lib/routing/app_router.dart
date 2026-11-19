@@ -41,6 +41,8 @@ import '../features/settings/backup_restore_screen.dart';
 import '../features/marketplace/connect_marketplace_screen.dart';
 import '../features/marketplace/connect_listing_screen.dart';
 import '../features/marketplace/connect_need_screen.dart';
+import '../features/marketplace/connect_milestones_screen.dart';
+import '../features/marketplace/connect_proposals_screen.dart';
 import '../features/settings/legal_document_screen.dart';
 import '../features/settings/notification_settings_screen.dart';
 import '../features/settings/security_settings_screen.dart';
@@ -476,6 +478,16 @@ final appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/connect/need',
       builder: (context, state) => const ConnectNeedScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/connect/milestones',
+      builder: (context, state) => const ConnectMilestonesScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/connect/proposals',
+      builder: (context, state) => const ConnectProposalsScreen(),
     ),
 
     GoRoute(

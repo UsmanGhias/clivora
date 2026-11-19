@@ -24,18 +24,24 @@ on public.connect_jobs using gin (to_tsvector('english', title || ' ' || coalesc
 where is_active = true or status = 'active';
 
 -- 3. Audit Trail Payload Integrity
--- Ensure clivora_events has structured payload
-do $$
+-- Drop empty events at database level and require valid payload
+create or replace function public.reject_empty_events()
+returns trigger as $$
 begin
-  update public.clivora_events 
-  set payload = '{}' 
-  where payload is null or trim(payload) = '';
+  if new.payload is null or trim(new.payload) = '' or new.payload = '{}' then
+    return null; -- Silently drop unpopulated empty telemetry events
+  end if;
+  return new;
+end;
+$$ language plpgsql;
 
-  alter table public.clivora_events 
-    alter column payload set default '{}';
-end $$;
+drop trigger if exists trg_reject_empty_events on public.clivora_events;
+create trigger trg_reject_empty_events
+  before insert on public.clivora_events
+  for each row execute function public.reject_empty_events();
 
 -- 4. Invoice Audit Timestamps
 alter table public.crm_invoices 
 add column if not exists updated_at timestamptz default now();
+
 

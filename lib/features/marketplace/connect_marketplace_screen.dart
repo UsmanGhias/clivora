@@ -162,6 +162,8 @@ class _ConnectMarketplaceScreenState
                 : context.push('/upgrade'),
             onSaved: _showSaved,
             onInbox: () => _tabs.animateTo(2),
+            onMilestones: () => context.push('/connect/milestones'),
+            onProposals: () => context.push('/connect/proposals'),
           ),
                 TabBar(
                   controller: _tabs,
@@ -718,6 +720,8 @@ class _QuickActionsRow extends StatelessWidget {
     required this.onPostJob,
     required this.onSaved,
     required this.onInbox,
+    required this.onMilestones,
+    required this.onProposals,
   });
 
   final bool isClient;
@@ -726,6 +730,8 @@ class _QuickActionsRow extends StatelessWidget {
   final VoidCallback onPostJob;
   final VoidCallback onSaved;
   final VoidCallback onInbox;
+  final VoidCallback onMilestones;
+  final VoidCallback onProposals;
 
   @override
   Widget build(BuildContext context) {
@@ -745,6 +751,16 @@ class _QuickActionsRow extends StatelessWidget {
               label: 'Post job',
               onPressed: onPostJob,
             ),
+          _ActionTextButton(
+            icon: Icons.account_balance_wallet_outlined,
+            label: 'Escrow & Milestones',
+            onPressed: onMilestones,
+          ),
+          _ActionTextButton(
+            icon: Icons.description_outlined,
+            label: 'Proposals',
+            onPressed: onProposals,
+          ),
           _ActionTextButton(
             icon: Icons.favorite_border,
             label: savedCount == 0 ? 'Saved' : 'Saved $savedCount',

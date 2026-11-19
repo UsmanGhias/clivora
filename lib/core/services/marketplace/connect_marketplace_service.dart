@@ -125,7 +125,7 @@ class ConnectMarketplaceService {
     }
   }
 
-  Future<void> acceptProposal({
+  Future<Map<String, dynamic>?> acceptProposal({
     required String proposalId,
     required String clientUserId,
     required String freelancerUserId,
@@ -135,23 +135,18 @@ class ConnectMarketplaceService {
     final auth = await _requireAuthedClient();
     final c = auth.client;
     try {
-      await c.rpc('connect_accept_proposal', params: {'p_proposal_id': proposalId});
+      final res = await c.rpc('accept_proposal_and_create_milestone', params: {
+        'p_proposal_id': proposalId,
+      });
+      return res is Map<String, dynamic> ? res : {'success': true, 'proposal_id': proposalId};
     } catch (e) {
-      throw mapConnectRpcError(e);
+      try {
+        await c.rpc('connect_accept_proposal', params: {'p_proposal_id': proposalId});
+        return {'success': true, 'proposal_id': proposalId};
+      } catch (e2) {
+        throw mapConnectRpcError(e2);
+      }
     }
-    if (requestId == null || requestId.isEmpty) {
-      return;
-    }
-    // Kickoff milestone remains a free follow-up after accepting an engagement request.
-    await c.from('connect_milestones').insert({
-      'engagement_request_id': requestId,
-      'client_user_id': clientUserId,
-      'freelancer_user_id': freelancerUserId,
-      'title': 'Kickoff milestone',
-      'amount': amount,
-      'currency': 'USD',
-      'status': 'pending',
-    });
   }
 
   Future<List<Map<String, dynamic>>> _browseProfiles({
@@ -341,23 +336,48 @@ class ConnectMarketplaceService {
     final proposalId = inserted['id'] as String?;
     final reviewToken = inserted['review_token'] as String? ?? proposalId;
 
-    if (companyEmail != null && companyEmail.trim().isNotEmpty) {
-      try {
-        await c.functions.invoke('send-clivora-email', body: {
-          'to': companyEmail.trim(),
-          'subject': 'New proposal on CLIVORA (\$0 Platform Fee)',
-          'purpose': 'proposal_received',
-          'companyName': companyName ?? 'Hiring Team',
-          'freelancerName': 'CLIVORA Candidate',
-          'jobTitle': 'Remote Role',
-          'amount': amount,
-          'timelineDays': timelineDays,
-          'pitchMessage': message.trim(),
-          'reviewUrl': 'https://clivora.io/connect/review?token=$reviewToken',
-        });
-      } catch (err) {
-        debugPrint('[submitJobProposal] email notification note: $err');
+    try {
+      final jobData = await c
+          .from('connect_jobs')
+          .select('id, title, company_name, company_email, claimed_by, claim_token')
+          .eq('id', jobId)
+          .maybeSingle();
+
+      final jobTitle = jobData?['title'] as String? ?? 'Remote Role';
+      final resolvedCompanyName = jobData?['company_name'] as String? ?? companyName ?? 'Hiring Team';
+      final targetEmail = (jobData?['company_email'] as String? ?? companyEmail)?.trim().toLowerCase();
+      final isUnclaimed = jobData != null && jobData['claimed_by'] == null;
+      final claimToken = jobData?['claim_token'] as String?;
+
+      if (targetEmail != null && targetEmail.isNotEmpty && targetEmail.contains('@')) {
+        final emailPayload = isUnclaimed
+            ? {
+                'to': targetEmail,
+                'subject': 'Your "$jobTitle" role is live on CLIVORA (Applicants awaiting review)',
+                'purpose': 'job_claim',
+                'companyName': resolvedCompanyName,
+                'jobTitle': jobTitle,
+                'claimUrl': claimToken != null
+                    ? 'https://clivora.io/connect/claim?token=$claimToken&job=$jobId'
+                    : 'https://clivora.io/connect/jobs/$jobId',
+              }
+            : {
+                'to': targetEmail,
+                'subject': 'New \$0-Fee Proposal for "$jobTitle"',
+                'purpose': 'proposal_received',
+                'companyName': resolvedCompanyName,
+                'freelancerName': 'CLIVORA Candidate',
+                'jobTitle': jobTitle,
+                'amount': amount,
+                'timelineDays': timelineDays,
+                'pitchMessage': message.trim(),
+                'reviewUrl': 'https://clivora.io/connect/review?token=$reviewToken',
+              };
+
+        await c.functions.invoke('send-clivora-email', body: emailPayload);
       }
+    } catch (err) {
+      debugPrint('[submitJobProposal] email notification note: $err');
     }
 
     return proposalId;
@@ -594,6 +614,116 @@ class ConnectMarketplaceService {
       await auth.client.rpc('connect_transition_milestone', params: {
         'p_milestone_id': milestoneId,
         'p_status': status,
+      });
+    } catch (e) {
+      throw mapConnectRpcError(e);
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchMyMilestones() async {
+    final auth = await _requireAuthedClient();
+    final uid = auth.uid;
+    try {
+      final res = await auth.client
+          .from('connect_milestones')
+          .select()
+          .or('client_user_id.eq.$uid,freelancer_user_id.eq.$uid')
+          .order('created_at', ascending: false);
+      return (res as List).cast<Map<String, dynamic>>();
+    } catch (e) {
+      throw mapConnectRpcError(e);
+    }
+  }
+
+  Future<void> submitMilestoneDeliverable({
+    required String milestoneId,
+    required String notes,
+  }) async {
+    final auth = await _requireAuthedClient();
+    try {
+      await auth.client.rpc('submit_milestone_deliverable', params: {
+        'p_milestone_id': milestoneId,
+        'p_notes': notes,
+      });
+    } catch (e) {
+      throw mapConnectRpcError(e);
+    }
+  }
+
+  Future<void> approveAndReleaseMilestone({
+    required String milestoneId,
+  }) async {
+    final auth = await _requireAuthedClient();
+    try {
+      await auth.client.rpc('approve_and_release_milestone', params: {
+        'p_milestone_id': milestoneId,
+      });
+    } catch (e) {
+      throw mapConnectRpcError(e);
+    }
+  }
+
+  Future<void> disputeMilestone({
+    required String milestoneId,
+    required String reason,
+  }) async {
+    final auth = await _requireAuthedClient();
+    try {
+      await auth.client.rpc('dispute_milestone', params: {
+        'p_milestone_id': milestoneId,
+        'p_reason': reason,
+      });
+    } catch (e) {
+      throw mapConnectRpcError(e);
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchMyProposals() async {
+    final auth = await _requireAuthedClient();
+    final uid = auth.uid;
+    try {
+      final res = await auth.client
+          .from('connect_proposals')
+          .select()
+          .eq('from_user_id', uid)
+          .order('created_at', ascending: false);
+      return (res as List).cast<Map<String, dynamic>>();
+    } catch (e) {
+      throw mapConnectRpcError(e);
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchReceivedProposals() async {
+    final auth = await _requireAuthedClient();
+    final uid = auth.uid;
+    try {
+      final res = await auth.client
+          .from('connect_proposals')
+          .select()
+          .eq('to_user_id', uid)
+          .order('created_at', ascending: false);
+      return (res as List).cast<Map<String, dynamic>>();
+    } catch (e) {
+      throw mapConnectRpcError(e);
+    }
+  }
+
+  Future<void> shortlistProposal(String proposalId) async {
+    final auth = await _requireAuthedClient();
+    try {
+      await auth.client.rpc('connect_shortlist_proposal', params: {
+        'p_proposal_id': proposalId,
+      });
+    } catch (e) {
+      throw mapConnectRpcError(e);
+    }
+  }
+
+  Future<void> declineProposal(String proposalId) async {
+    final auth = await _requireAuthedClient();
+    try {
+      await auth.client.rpc('connect_decline_proposal', params: {
+        'p_proposal_id': proposalId,
       });
     } catch (e) {
       throw mapConnectRpcError(e);
