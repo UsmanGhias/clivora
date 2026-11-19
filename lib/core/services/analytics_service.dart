@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -26,6 +28,17 @@ class AnalyticsService {
     double amount = 0,
     String payload = '{}',
   }) async {
+    final resolvedPayload = (payload.isEmpty || payload == '{}' || payload == 'null')
+        ? jsonEncode({
+            'event': eventType,
+            'email': email ?? '',
+            'name': name ?? '',
+            'plan': plan,
+            'source': 'android',
+            'timestamp': DateTime.now().toIso8601String(),
+          })
+        : payload;
+
     final db = ref.read(databaseProvider);
     await db.insertAnalytics(
       AppAnalyticsCompanion.insert(
@@ -34,7 +47,7 @@ class AnalyticsService {
         userName: Value(name ?? ''),
         plan: Value(plan),
         amount: Value(amount),
-        payload: Value(payload),
+        payload: Value(resolvedPayload),
       ),
     );
     ref.read(adminSyncServiceProvider).syncPendingEvents();
@@ -47,7 +60,7 @@ class AnalyticsService {
               userName: name ?? '',
               plan: plan,
               amount: amount,
-              payload: payload,
+              payload: resolvedPayload,
             );
       } catch (_) {}
     } else {
@@ -60,7 +73,7 @@ class AnalyticsService {
                 'name': name,
                 'plan': plan,
                 'amount': amount,
-                'payload': payload,
+                'payload': resolvedPayload,
               },
             ),
           );
