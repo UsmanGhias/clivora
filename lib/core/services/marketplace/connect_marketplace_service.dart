@@ -316,9 +316,12 @@ class ConnectMarketplaceService {
     required String message,
     String? companyName,
     String? companyEmail,
-    double amount = 0,
+    required double amount,
     int timelineDays = 7,
   }) async {
+    if (amount <= 0) {
+      throw ArgumentError('Proposal amount must be greater than zero.');
+    }
     final auth = await _requireAuthedClient();
     final c = auth.client;
     final uid = auth.uid;

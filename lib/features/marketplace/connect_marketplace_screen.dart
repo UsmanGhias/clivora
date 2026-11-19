@@ -423,18 +423,16 @@ class _ConnectMarketplaceScreenState
   Future<void> _contactNeed(Map<String, dynamic> row) async {
     final isCrawled = row['is_crawled_job'] == true;
     final companyName = row['company_name'] as String?;
-    final message = await _askMessage(
-      isCrawled
-          ? 'Pitch your fit for ${companyName ?? 'this role'}. Keep 100% of your earnings (\$0 Platform Fee).'
-          : 'Pitch your fit for this need. Stay anonymous for now.',
-    );
-    if (message == null || message.isEmpty) return;
-    try {
-      final svc = ref.read(connectMarketplaceServiceProvider);
-      if (isCrawled) {
+
+    if (isCrawled) {
+      final details = await _askProposalDetails(companyName ?? 'this role');
+      if (details == null) return;
+      try {
+        final svc = ref.read(connectMarketplaceServiceProvider);
         await svc.submitJobProposal(
           jobId: row['id'] as String,
-          message: message,
+          message: details.message,
+          amount: details.amount,
           companyName: companyName,
           companyEmail: row['company_email'] as String?,
         );
@@ -446,27 +444,100 @@ class _ConnectMarketplaceScreenState
           );
           await _reload();
         }
-      } else {
-        await svc.sendContactRequest(
-          toUserId: row['client_user_id'] as String,
-          targetNeedId: row['id'] as String?,
-          message: message,
-        );
-        await svc.logConnectEvent('connect_need_pitch_sent');
+      } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Pitch sent anonymously.')),
-          );
-          await _reload();
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
         }
+      }
+      return;
+    }
+
+    final message = await _askMessage(
+      'Pitch your fit for this need. Stay anonymous for now.',
+    );
+    if (message == null || message.isEmpty) return;
+    try {
+      final svc = ref.read(connectMarketplaceServiceProvider);
+      await svc.sendContactRequest(
+        toUserId: row['client_user_id'] as String,
+        targetNeedId: row['id'] as String?,
+        message: message,
+      );
+      await svc.logConnectEvent('connect_need_pitch_sent');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Pitch submitted! Client will be notified.'),
+          ),
+        );
+        await _reload();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('$e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
       }
     }
+  }
+
+  Future<({String message, double amount})?> _askProposalDetails(String companyName) async {
+    final msgCtrl = TextEditingController();
+    final amtCtrl = TextEditingController(text: '250');
+    return showDialog<({String message, double amount})>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Apply to $companyName (\$0 Fee)'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: amtCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'Proposed Bid (USD)',
+                prefixText: '\$ ',
+                hintText: 'e.g. 250',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: msgCtrl,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: 'Cover Note & Experience',
+                hintText: 'Pitch your experience and portfolio links...',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final amt = double.tryParse(amtCtrl.text.trim()) ?? 0;
+              final msg = msgCtrl.text.trim();
+              if (amt <= 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please enter a bid amount greater than \$0.')),
+                );
+                return;
+              }
+              if (msg.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please enter a cover pitch.')),
+                );
+                return;
+              }
+              Navigator.pop(ctx, (message: msg, amount: amt));
+            },
+            child: const Text('Submit Proposal'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<String?> _askMessage(String hint) async {
