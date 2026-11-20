@@ -2,7 +2,8 @@
 # Build signed CLIVORA Android APK and AAB. Release builds fail closed without the Play upload key.
 set -euo pipefail
 
-export PATH="${FLUTTER_HOME:-$HOME/flutter}/bin:${PATH}"
+export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-21-openjdk-amd64}"
+export PATH="${JAVA_HOME}/bin:${FLUTTER_HOME:-$HOME/flutter}/bin:${PATH}"
 export ANDROID_HOME="${ANDROID_HOME:-$HOME/android-sdk}"
 cd "$(dirname "$0")"
 
